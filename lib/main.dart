@@ -78,7 +78,8 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
       body: SfDataGrid(
         source: _dataSource,
         allowEditing: true,
-        frozenColumnsCount: 1,
+        selectionMode: SelectionMode.single,
+        navigationMode: GridNavigationMode.cell,
         gridLinesVisibility: GridLinesVisibility.both,
         headerGridLinesVisibility: GridLinesVisibility.both,
         columnWidthMode: ColumnWidthMode.fill,
@@ -86,7 +87,11 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
           5,
           (index) => GridColumn(
             columnName: 'Col$index',
-            label: Center(child: Text('Col $index')),
+            label: Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.all(8.0),
+              child: Text('Col $index', style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
           ),
         ),
       ),
@@ -133,6 +138,27 @@ class SpreadsheetDataSource extends DataGridSource {
           child: Text(cell.value.toString()),
         );
       }).toList(),
+    );
+  }
+
+  @override
+  Widget? buildEditWidget(DataGridRow row, RowColumnIndex rowColumnIndex,
+      GridColumn column, CellSubmit submitCell) {
+    final oldValue = row
+        .getCells()
+        .firstWhere((c) => c.columnName == column.columnName)
+        .value
+        .toString();
+
+    final TextEditingController controller = TextEditingController(text: oldValue);
+
+    return TextField(
+      controller: controller,
+      autofocus: true,
+      onSubmitted: (newValue) {
+        submitCell();
+        setCellValue(row, column.columnName, newValue);
+      },
     );
   }
 
