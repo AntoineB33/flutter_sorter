@@ -152,27 +152,38 @@ class SpreadsheetDataSource extends DataGridSource {
 
     final TextEditingController controller = TextEditingController(text: oldValue);
 
-    return TextField(
-      controller: controller,
-      autofocus: true,
-      onSubmitted: (newValue) {
-        submitCell();
-        setCellValue(row, column.columnName, newValue);
+    return Focus(
+      onFocusChange: (hasFocus) {
+        if (!hasFocus) {
+          setCellValue(row, column.columnName, controller.text);
+          submitCell();
+        }
       },
+      child: TextField(
+        controller: controller,
+        autofocus: true,
+        onSubmitted: (newValue) {
+          setCellValue(row, column.columnName, newValue);
+          submitCell();
+        },
+      ),
     );
   }
 
   @override
   bool setCellValue(DataGridRow row, String columnName, dynamic value) {
     final rowIndex = _rows.indexOf(row);
-    final cellIndex = row.getCells().indexWhere((c) => c.columnName == columnName);
-    if (cellIndex != -1) {
-      final updatedCells = List<DataGridCell>.from(_rows[rowIndex].getCells());
-      updatedCells[cellIndex] = DataGridCell(columnName: columnName, value: value);
-      _rows[rowIndex] = DataGridRow(cells: updatedCells);
-      notifyListeners();
-      return true;
-    }
-    return false;
+    if (rowIndex == -1) return false;
+
+    final oldCells = _rows[rowIndex].getCells();
+    final cellIndex = oldCells.indexWhere((c) => c.columnName == columnName);
+    if (cellIndex == -1) return false;
+
+    final updatedCells = List<DataGridCell>.from(oldCells);
+    updatedCells[cellIndex] = DataGridCell(columnName: columnName, value: value);
+
+    _rows[rowIndex] = DataGridRow(cells: updatedCells);
+    notifyListeners();
+    return true;
   }
 }
