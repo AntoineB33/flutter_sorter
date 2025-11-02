@@ -1,41 +1,152 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
-import 'package:flutter/services.dart'; // for PhysicalKeyboardKey
+import 'package:syncfusion_flutter_datagrid/datagrid.dart';
+import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Must initialize the manager before registering hotkeys
-  await hotKeyManager.unregisterAll();
-
-  // ✅ Define a system-wide hotkey: Ctrl + Shift + H
-  HotKey hotKey = HotKey(
-    key: PhysicalKeyboardKey.keyH, // <-- required named parameter
-    modifiers: [HotKeyModifier.control, HotKeyModifier.shift],
-    scope: HotKeyScope.system, // system-wide (works even when unfocused)
-  );
-
-  // ✅ Register the hotkey
-  await hotKeyManager.register(
-    hotKey,
-    keyDownHandler: (hotKey) {
-      debugPrint("🎯 Global hotkey pressed!");
-    },
-  );
-
-  runApp(MyApp());
+void main() {
+  runApp(const SpreadsheetApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class SpreadsheetApp extends StatelessWidget {
+  const SpreadsheetApp({super.key});
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-        home: Scaffold(
-          appBar: AppBar(title: const Text("Global Hotkey Example")),
-          body: const Center(
-            child: Text("Press Ctrl + Shift + H (even when app not focused)"),
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Spreadsheet',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+      ),
+      home: const SpreadsheetPage(),
+    );
+  }
+}
+
+class SpreadsheetPage extends StatefulWidget {
+  const SpreadsheetPage({super.key});
+
+  @override
+  State<SpreadsheetPage> createState() => _SpreadsheetPageState();
+}
+
+class _SpreadsheetPageState extends State<SpreadsheetPage> {
+  late SpreadsheetDataSource _dataSource;
+
+  @override
+  void initState() {
+    super.initState();
+    _dataSource = SpreadsheetDataSource();
+  }
+
+  Future<void> _exportToExcel() async {
+    final workbook = xlsio.Workbook();
+    final sheet = workbook.worksheets[0];
+
+    for (int r = 0; r < _dataSource.rows.length; r++) {
+      final row = _dataSource.rows[r].getCells();
+      for (int c = 0; c < row.length; c++) {
+        sheet.getRangeByIndex(r + 1, c + 1).setText(row[c].value.toString());
+      }
+    }
+
+    final bytes = workbook.saveAsStream();
+    workbook.dispose();
+
+    final dir = await getApplicationDocumentsDirectory();
+    final path = '${dir.path}/spreadsheet.xlsx';
+    final file = File(path);
+    await file.writeAsBytes(bytes, flush: true);
+    await OpenFile.open(path);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Flutter Spreadsheet'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _exportToExcel,
+          )
+        ],
+      ),
+      body: SfDataGrid(
+        source: _dataSource,
+        allowEditing: true,
+        frozenColumnsCount: 1,
+        gridLinesVisibility: GridLinesVisibility.both,
+        headerGridLinesVisibility: GridLinesVisibility.both,
+        columnWidthMode: ColumnWidthMode.fill,
+        columns: List.generate(
+          5,
+          (index) => GridColumn(
+            columnName: 'Col$index',
+            label: Center(child: Text('Col $index')),
           ),
         ),
-      );
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          setState(() {
+            _dataSource.addRow();
+          });
+        },
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class SpreadsheetDataSource extends DataGridSource {
+  List<DataGridRow> _rows = [];
+
+  SpreadsheetDataSource() {
+    for (int i = 0; i < 10; i++) {
+      _rows.add(DataGridRow(
+        cells: List.generate(5, (j) => DataGridCell(columnName: 'Col$j', value: '')),
+      ));
+    }
+  }
+
+  void addRow() {
+    _rows.add(DataGridRow(
+      cells: List.generate(5, (j) => DataGridCell(columnName: 'Col$j', value: '')),
+    ));
+    notifyListeners();
+  }
+
+  @override
+  List<DataGridRow> get rows => _rows;
+
+  @override
+  DataGridRowAdapter buildRow(DataGridRow row) {
+    return DataGridRowAdapter(
+      cells: row.getCells().map((cell) {
+        return Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(8.0),
+          child: Text(cell.value.toString()),
+        );
+      }).toList(),
+    );
+  }
+
+  @override
+  bool setCellValue(DataGridRow row, String columnName, dynamic value) {
+    final rowIndex = _rows.indexOf(row);
+    final cellIndex = row.getCells().indexWhere((c) => c.columnName == columnName);
+    if (cellIndex != -1) {
+      final updatedCells = List<DataGridCell>.from(_rows[rowIndex].getCells());
+      updatedCells[cellIndex] = DataGridCell(columnName: columnName, value: value);
+      _rows[rowIndex] = DataGridRow(cells: updatedCells);
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
 }
