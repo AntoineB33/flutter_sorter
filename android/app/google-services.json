@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "169750653557",
+    "project_id": "my-sync-app-2025",
+    "storage_bucket": "my-sync-app-2025.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:169750653557:android:2ea51f6769aece52abe63c",
+        "android_client_info": {
+          "package_name": "com.example.trying_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD22fjEnnEt1bOWxWmRC9p2cxwPEKV7R58"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

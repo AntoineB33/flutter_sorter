@@ -108,7 +108,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
 }
 
 class SpreadsheetDataSource extends DataGridSource {
-  List<DataGridRow> _rows = [];
+  final List<DataGridRow> _rows = [];
 
   SpreadsheetDataSource() {
     for (int i = 0; i < 10; i++) {
