@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'my-sync-app-2025.firebasestorage.app',
     measurementId: 'G-3EDHVGQY45',
   );
+
 }
