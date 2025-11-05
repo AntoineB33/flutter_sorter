@@ -4,6 +4,7 @@ import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
+import 'dart:math' as math;
 
 void main() {
   runApp(const SpreadsheetApp());
@@ -37,7 +38,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
   late SpreadsheetDataSource _dataSource;
   final int _columnCount = 20;
   final int _initialRowCount = 20;
-  final int _minRowCount = 20;
+  int _minRowCount = 0;
 
   final ScrollController _verticalController = ScrollController();
   bool _isAdding = false;
@@ -63,11 +64,14 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
         });
       }
 
-      // When last row is no longer visible, remove it (respect min rows)
-      if (current < maxScroll - 200 && _dataSource.rows.length > _minRowCount) {
-        setState(() {
-          _dataSource.removeLastRow();
-        });
+      if (current < maxScroll - 200) {
+        final lastUsedRow = _dataSource.getLastNonEmptyRowIndex();
+        final minRows = math.max(_minRowCount, lastUsedRow + 1);
+        if (_dataSource.rows.length > minRows) {
+          setState(() {
+            _dataSource.trimRows(minRows);
+          });
+        }
       }
     });
   }
@@ -137,34 +141,42 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
           )
         ],
       ),
-      body: Stack(
-        children: [
-          // Wrap grid with ScrollConfiguration to always show scrollbars
-          ScrollConfiguration(
-            behavior: const ScrollBehavior().copyWith(scrollbars: true),
-            child: SfDataGrid(
-              source: _dataSource,
-              allowEditing: true,
-              selectionMode: SelectionMode.single,
-              navigationMode: GridNavigationMode.cell,
-              gridLinesVisibility: GridLinesVisibility.both,
-              headerGridLinesVisibility: GridLinesVisibility.both,
-              columnWidthMode: ColumnWidthMode.none,
-              verticalScrollController: _verticalController,
-              columns: columns,
-            ),
-          ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Estimate how many rows fit based on height and row height
+          final visibleRowCount = (constraints.maxHeight / 49).floor();
 
-          // Floating panel over the spreadsheet
-          DraggableFloatingPanel(
-            onAddRow: () {
-              setState(() {
-                _dataSource.addRow();
-              });
-            },
-            onExport: _exportToExcel,
-          ),
-        ],
+          // Update min row count dynamically
+          _minRowCount = visibleRowCount;
+
+          return Stack(
+            children: [
+              ScrollConfiguration(
+                behavior: const ScrollBehavior().copyWith(scrollbars: true),
+                child: SfDataGrid(
+                  source: _dataSource,
+                  allowEditing: true,
+                  selectionMode: SelectionMode.single,
+                  navigationMode: GridNavigationMode.cell,
+                  gridLinesVisibility: GridLinesVisibility.both,
+                  headerGridLinesVisibility: GridLinesVisibility.both,
+                  columnWidthMode: ColumnWidthMode.none,
+                  verticalScrollController: _verticalController,
+                  columns: columns,
+                ),
+              ),
+
+              DraggableFloatingPanel(
+                onAddRow: () {
+                  setState(() {
+                    _dataSource.addRow();
+                  });
+                },
+                onExport: _exportToExcel,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -285,6 +297,23 @@ class SpreadsheetDataSource extends DataGridSource {
     _rows[rowIndex] = DataGridRow(cells: updatedCells);
     notifyListeners();
     return true;
+  }
+
+  int getLastNonEmptyRowIndex() {
+    for (int i = _rows.length - 1; i >= 0; i--) {
+      final hasContent = _rows[i]
+          .getCells()
+          .any((c) => c.columnName != 'RowHeader' && (c.value?.toString().trim().isNotEmpty ?? false));
+      if (hasContent) return i;
+    }
+    return 0;
+  }
+
+  void trimRows(int keepCount) {
+    if (_rows.length > keepCount) {
+      _rows.removeRange(keepCount, _rows.length);
+      notifyListeners();
+    }
   }
 }
 
