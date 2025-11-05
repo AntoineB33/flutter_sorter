@@ -43,3 +43,6 @@ flutter build apk --release
 build\app\outputs\flutter-apk\app-release.apk
 Ce PC\Redmi Note 10 5G\Espace de stockage interne partagé\FlutterApps
 C:\Users\antoi\AppData\Local\Android\Sdk\platform-tools adb kill-server
+
+flutter build windows
+build\windows\x64\runner\Release\trying_flutter.exe
