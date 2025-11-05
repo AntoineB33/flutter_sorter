@@ -35,18 +35,19 @@ class SpreadsheetPage extends StatefulWidget {
 
 class _SpreadsheetPageState extends State<SpreadsheetPage> {
   late SpreadsheetDataSource _dataSource;
+  final int _columnCount = 20; // more columns
+  final int _rowCount = 100; // more rows
 
   @override
   void initState() {
     super.initState();
-    _dataSource = SpreadsheetDataSource();
+    _dataSource = SpreadsheetDataSource(rowsCount: _rowCount, colsCount: _columnCount);
   }
 
   Future<void> _exportToExcel() async {
     final workbook = xlsio.Workbook();
     final sheet = workbook.worksheets[0];
 
-    // Skip row header (column 0)
     for (int r = 0; r < _dataSource.rows.length; r++) {
       final row = _dataSource.rows[r].getCells();
       for (int c = 1; c < row.length; c++) {
@@ -76,9 +77,10 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
           child: const Text('#', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       ),
-      for (int i = 0; i < 5; i++)
+      for (int i = 0; i < _columnCount; i++)
         GridColumn(
           columnName: columnLetter(i),
+          width: 120,
           label: Container(
             alignment: Alignment.center,
             padding: const EdgeInsets.all(8.0),
@@ -103,18 +105,22 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
       ),
       body: Stack(
         children: [
-          SfDataGrid(
-            source: _dataSource,
-            allowEditing: true,
-            selectionMode: SelectionMode.single,
-            navigationMode: GridNavigationMode.cell,
-            gridLinesVisibility: GridLinesVisibility.both,
-            headerGridLinesVisibility: GridLinesVisibility.both,
-            columnWidthMode: ColumnWidthMode.fill,
-            columns: columns,
+          // Wrap grid with ScrollConfiguration to always show scrollbars
+          ScrollConfiguration(
+            behavior: const ScrollBehavior().copyWith(scrollbars: true),
+            child: SfDataGrid(
+              source: _dataSource,
+              allowEditing: true,
+              selectionMode: SelectionMode.single,
+              navigationMode: GridNavigationMode.cell,
+              gridLinesVisibility: GridLinesVisibility.both,
+              headerGridLinesVisibility: GridLinesVisibility.both,
+              columnWidthMode: ColumnWidthMode.none,
+              columns: columns,
+            ),
           ),
 
-          // Floating draggable window
+          // Floating panel over the spreadsheet
           DraggableFloatingPanel(
             onAddRow: () {
               setState(() {
@@ -136,6 +142,107 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
       index = (index ~/ 26) - 1;
     }
     return result;
+  }
+}
+
+class SpreadsheetDataSource extends DataGridSource {
+  final List<DataGridRow> _rows = [];
+  final int colsCount;
+
+  SpreadsheetDataSource({int rowsCount = 10, this.colsCount = 5}) {
+    for (int i = 0; i < rowsCount; i++) {
+      _rows.add(_createRow(i + 1));
+    }
+  }
+
+  void addRow() {
+    _rows.add(_createRow(_rows.length + 1));
+    notifyListeners();
+  }
+
+  DataGridRow _createRow(int rowNumber) {
+    return DataGridRow(cells: [
+      DataGridCell(columnName: 'RowHeader', value: rowNumber),
+      ...List.generate(colsCount,
+          (j) => DataGridCell(columnName: columnLetter(j), value: '')),
+    ]);
+  }
+
+  static String columnLetter(int index) {
+    String result = '';
+    while (index >= 0) {
+      result = String.fromCharCode(index % 26 + 65) + result;
+      index = (index ~/ 26) - 1;
+    }
+    return result;
+  }
+
+  @override
+  List<DataGridRow> get rows => _rows;
+
+  @override
+  DataGridRowAdapter buildRow(DataGridRow row) {
+    return DataGridRowAdapter(
+      cells: row.getCells().map((cell) {
+        final isHeader = cell.columnName == 'RowHeader';
+        return Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(8.0),
+          color: isHeader ? Colors.grey.shade100 : null,
+          child: Text(cell.value.toString()),
+        );
+      }).toList(),
+    );
+  }
+
+  @override
+  Widget? buildEditWidget(
+      DataGridRow row, RowColumnIndex rowColumnIndex, GridColumn column, CellSubmit submitCell) {
+    if (column.columnName == 'RowHeader') return null;
+
+    final oldValue = row
+        .getCells()
+        .firstWhere((c) => c.columnName == column.columnName)
+        .value
+        .toString();
+
+    final TextEditingController controller = TextEditingController(text: oldValue);
+
+    return Focus(
+      onFocusChange: (hasFocus) {
+        if (!hasFocus) {
+          setCellValue(row, column.columnName, controller.text);
+          submitCell();
+        }
+      },
+      child: TextField(
+        controller: controller,
+        autofocus: true,
+        onSubmitted: (newValue) {
+          setCellValue(row, column.columnName, newValue);
+          submitCell();
+        },
+      ),
+    );
+  }
+
+  @override
+  bool setCellValue(DataGridRow row, String columnName, dynamic value) {
+    if (columnName == 'RowHeader') return false;
+
+    final rowIndex = _rows.indexOf(row);
+    if (rowIndex == -1) return false;
+
+    final oldCells = _rows[rowIndex].getCells();
+    final cellIndex = oldCells.indexWhere((c) => c.columnName == columnName);
+    if (cellIndex == -1) return false;
+
+    final updatedCells = List<DataGridCell>.from(oldCells);
+    updatedCells[cellIndex] = DataGridCell(columnName: columnName, value: value);
+
+    _rows[rowIndex] = DataGridRow(cells: updatedCells);
+    notifyListeners();
+    return true;
   }
 }
 
@@ -209,104 +316,5 @@ class _DraggableFloatingPanelState extends State<DraggableFloatingPanel> {
         ),
       ),
     );
-  }
-}
-
-class SpreadsheetDataSource extends DataGridSource {
-  final List<DataGridRow> _rows = [];
-
-  SpreadsheetDataSource() {
-    for (int i = 0; i < 10; i++) {
-      _rows.add(_createRow(i + 1));
-    }
-  }
-
-  void addRow() {
-    _rows.add(_createRow(_rows.length + 1));
-    notifyListeners();
-  }
-
-  DataGridRow _createRow(int rowNumber) {
-    return DataGridRow(cells: [
-      DataGridCell(columnName: 'RowHeader', value: rowNumber),
-      ...List.generate(5, (j) => DataGridCell(columnName: columnLetter(j), value: '')),
-    ]);
-  }
-
-  static String columnLetter(int index) {
-    String result = '';
-    while (index >= 0) {
-      result = String.fromCharCode(index % 26 + 65) + result;
-      index = (index ~/ 26) - 1;
-    }
-    return result;
-  }
-
-  @override
-  List<DataGridRow> get rows => _rows;
-
-  @override
-  DataGridRowAdapter buildRow(DataGridRow row) {
-    return DataGridRowAdapter(
-      cells: row.getCells().map((cell) {
-        final isHeader = cell.columnName == 'RowHeader';
-        return Container(
-          alignment: Alignment.center,
-          padding: const EdgeInsets.all(8.0),
-          color: isHeader ? Colors.grey.shade100 : null,
-          child: Text(cell.value.toString()),
-        );
-      }).toList(),
-    );
-  }
-
-  @override
-  Widget? buildEditWidget(
-      DataGridRow row, RowColumnIndex rowColumnIndex, GridColumn column, CellSubmit submitCell) {
-    if (column.columnName == 'RowHeader') return null; // No editing for row headers
-
-    final oldValue = row
-        .getCells()
-        .firstWhere((c) => c.columnName == column.columnName)
-        .value
-        .toString();
-
-    final TextEditingController controller = TextEditingController(text: oldValue);
-
-    return Focus(
-      onFocusChange: (hasFocus) {
-        if (!hasFocus) {
-          setCellValue(row, column.columnName, controller.text);
-          submitCell();
-        }
-      },
-      child: TextField(
-        controller: controller,
-        autofocus: true,
-        onSubmitted: (newValue) {
-          setCellValue(row, column.columnName, newValue);
-          submitCell();
-        },
-      ),
-    );
-  }
-
-  @override
-  bool setCellValue(DataGridRow row, String columnName, dynamic value) {
-    if (columnName == 'RowHeader') return false;
-
-    final rowIndex = _rows.indexOf(row);
-    if (rowIndex == -1) return false;
-
-    final oldCells = _rows[rowIndex].getCells();
-    final cellIndex = oldCells.indexWhere((c) => c.columnName == columnName);
-    if (cellIndex == -1) return false;
-
-    final updatedCells = List<DataGridCell>.from(oldCells);
-    updatedCells[cellIndex] = DataGridCell(columnName: columnName, value: value);
-
-    _rows[rowIndex] = DataGridRow(cells: updatedCells);
-    notifyListeners();
-    return true;
   }
 }
