@@ -46,10 +46,11 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
     final workbook = xlsio.Workbook();
     final sheet = workbook.worksheets[0];
 
+    // Skip row header (column 0)
     for (int r = 0; r < _dataSource.rows.length; r++) {
       final row = _dataSource.rows[r].getCells();
-      for (int c = 0; c < row.length; c++) {
-        sheet.getRangeByIndex(r + 1, c + 1).setText(row[c].value.toString());
+      for (int c = 1; c < row.length; c++) {
+        sheet.getRangeByIndex(r + 1, c).setText(row[c].value.toString());
       }
     }
 
@@ -65,6 +66,33 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
 
   @override
   Widget build(BuildContext context) {
+    final columns = [
+      // Row header column
+      GridColumn(
+        columnName: 'RowHeader',
+        width: 60,
+        label: Container(
+          alignment: Alignment.center,
+          color: Colors.grey.shade200,
+          child: const Text('#', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      ),
+      // A, B, C, D, E columns
+      for (int i = 0; i < 5; i++)
+        GridColumn(
+          columnName: columnLetter(i),
+          label: Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.all(8.0),
+            color: Colors.grey.shade200,
+            child: Text(
+              columnLetter(i),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Flutter Spreadsheet'),
@@ -83,17 +111,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
         gridLinesVisibility: GridLinesVisibility.both,
         headerGridLinesVisibility: GridLinesVisibility.both,
         columnWidthMode: ColumnWidthMode.fill,
-        columns: List.generate(
-          5,
-          (index) => GridColumn(
-            columnName: 'Col$index',
-            label: Container(
-              alignment: Alignment.center,
-              padding: const EdgeInsets.all(8.0),
-              child: Text('Col $index', style: const TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ),
-        ),
+        columns: columns,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -105,6 +123,16 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
       ),
     );
   }
+
+  /// Converts 0 → A, 1 → B, … 25 → Z, 26 → AA, etc.
+  String columnLetter(int index) {
+    String result = '';
+    while (index >= 0) {
+      result = String.fromCharCode(index % 26 + 65) + result;
+      index = (index ~/ 26) - 1;
+    }
+    return result;
+  }
 }
 
 class SpreadsheetDataSource extends DataGridSource {
@@ -112,17 +140,29 @@ class SpreadsheetDataSource extends DataGridSource {
 
   SpreadsheetDataSource() {
     for (int i = 0; i < 10; i++) {
-      _rows.add(DataGridRow(
-        cells: List.generate(5, (j) => DataGridCell(columnName: 'Col$j', value: '')),
-      ));
+      _rows.add(_createRow(i + 1));
     }
   }
 
   void addRow() {
-    _rows.add(DataGridRow(
-      cells: List.generate(5, (j) => DataGridCell(columnName: 'Col$j', value: '')),
-    ));
+    _rows.add(_createRow(_rows.length + 1));
     notifyListeners();
+  }
+
+  DataGridRow _createRow(int rowNumber) {
+    return DataGridRow(cells: [
+      DataGridCell(columnName: 'RowHeader', value: rowNumber),
+      ...List.generate(5, (j) => DataGridCell(columnName: columnLetter(j), value: '')),
+    ]);
+  }
+
+  static String columnLetter(int index) {
+    String result = '';
+    while (index >= 0) {
+      result = String.fromCharCode(index % 26 + 65) + result;
+      index = (index ~/ 26) - 1;
+    }
+    return result;
   }
 
   @override
@@ -132,9 +172,11 @@ class SpreadsheetDataSource extends DataGridSource {
   DataGridRowAdapter buildRow(DataGridRow row) {
     return DataGridRowAdapter(
       cells: row.getCells().map((cell) {
+        final isHeader = cell.columnName == 'RowHeader';
         return Container(
           alignment: Alignment.center,
           padding: const EdgeInsets.all(8.0),
+          color: isHeader ? Colors.grey.shade100 : null,
           child: Text(cell.value.toString()),
         );
       }).toList(),
@@ -142,8 +184,10 @@ class SpreadsheetDataSource extends DataGridSource {
   }
 
   @override
-  Widget? buildEditWidget(DataGridRow row, RowColumnIndex rowColumnIndex,
-      GridColumn column, CellSubmit submitCell) {
+  Widget? buildEditWidget(
+      DataGridRow row, RowColumnIndex rowColumnIndex, GridColumn column, CellSubmit submitCell) {
+    if (column.columnName == 'RowHeader') return null; // No editing for row headers
+
     final oldValue = row
         .getCells()
         .firstWhere((c) => c.columnName == column.columnName)
@@ -172,6 +216,8 @@ class SpreadsheetDataSource extends DataGridSource {
 
   @override
   bool setCellValue(DataGridRow row, String columnName, dynamic value) {
+    if (columnName == 'RowHeader') return false;
+
     final rowIndex = _rows.indexOf(row);
     if (rowIndex == -1) return false;
 
