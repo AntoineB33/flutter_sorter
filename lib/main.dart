@@ -67,7 +67,6 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
   @override
   Widget build(BuildContext context) {
     final columns = [
-      // Row header column
       GridColumn(
         columnName: 'RowHeader',
         width: 60,
@@ -77,7 +76,6 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
           child: const Text('#', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       ),
-      // A, B, C, D, E columns
       for (int i = 0; i < 5; i++)
         GridColumn(
           columnName: columnLetter(i),
@@ -103,23 +101,29 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
           )
         ],
       ),
-      body: SfDataGrid(
-        source: _dataSource,
-        allowEditing: true,
-        selectionMode: SelectionMode.single,
-        navigationMode: GridNavigationMode.cell,
-        gridLinesVisibility: GridLinesVisibility.both,
-        headerGridLinesVisibility: GridLinesVisibility.both,
-        columnWidthMode: ColumnWidthMode.fill,
-        columns: columns,
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            _dataSource.addRow();
-          });
-        },
-        child: const Icon(Icons.add),
+      body: Stack(
+        children: [
+          SfDataGrid(
+            source: _dataSource,
+            allowEditing: true,
+            selectionMode: SelectionMode.single,
+            navigationMode: GridNavigationMode.cell,
+            gridLinesVisibility: GridLinesVisibility.both,
+            headerGridLinesVisibility: GridLinesVisibility.both,
+            columnWidthMode: ColumnWidthMode.fill,
+            columns: columns,
+          ),
+
+          // Floating draggable window
+          DraggableFloatingPanel(
+            onAddRow: () {
+              setState(() {
+                _dataSource.addRow();
+              });
+            },
+            onExport: _exportToExcel,
+          ),
+        ],
       ),
     );
   }
@@ -132,6 +136,79 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
       index = (index ~/ 26) - 1;
     }
     return result;
+  }
+}
+
+class DraggableFloatingPanel extends StatefulWidget {
+  final VoidCallback onAddRow;
+  final VoidCallback onExport;
+
+  const DraggableFloatingPanel({
+    super.key,
+    required this.onAddRow,
+    required this.onExport,
+  });
+
+  @override
+  State<DraggableFloatingPanel> createState() => _DraggableFloatingPanelState();
+}
+
+class _DraggableFloatingPanelState extends State<DraggableFloatingPanel> {
+  Offset position = const Offset(20, 80);
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: position.dx,
+      top: position.dy,
+      child: Draggable(
+        feedback: buildPanel(),
+        childWhenDragging: const SizedBox.shrink(),
+        onDragEnd: (details) {
+          setState(() {
+            position = details.offset;
+          });
+        },
+        child: buildPanel(),
+      ),
+    );
+  }
+
+  Widget buildPanel() {
+    return Card(
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Colors.white.withOpacity(0.95),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Quick Actions',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: widget.onAddRow,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Row'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: widget.onExport,
+                  icon: const Icon(Icons.file_download),
+                  label: const Text('Export'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
