@@ -35,13 +35,47 @@ class SpreadsheetPage extends StatefulWidget {
 
 class _SpreadsheetPageState extends State<SpreadsheetPage> {
   late SpreadsheetDataSource _dataSource;
-  final int _columnCount = 20; // more columns
-  final int _rowCount = 100; // more rows
+  final int _columnCount = 20;
+  final int _initialRowCount = 20;
+  final int _minRowCount = 20;
+
+  final ScrollController _verticalController = ScrollController();
+  bool _isAdding = false;
+
 
   @override
   void initState() {
     super.initState();
-    _dataSource = SpreadsheetDataSource(rowsCount: _rowCount, colsCount: _columnCount);
+    _dataSource = SpreadsheetDataSource(rowsCount: _initialRowCount, colsCount: _columnCount);
+
+    _verticalController.addListener(() {
+      final maxScroll = _verticalController.position.maxScrollExtent;
+      final current = _verticalController.offset;
+
+      // When reaching bottom, add new row
+      if (!_isAdding && current >= maxScroll - 50) {
+        _isAdding = true;
+        setState(() {
+          _dataSource.addRow();
+        });
+        Future.delayed(const Duration(milliseconds: 300), () {
+          _isAdding = false;
+        });
+      }
+
+      // When last row is no longer visible, remove it (respect min rows)
+      if (current < maxScroll - 200 && _dataSource.rows.length > _minRowCount) {
+        setState(() {
+          _dataSource.removeLastRow();
+        });
+      }
+    });
+  }
+  
+  @override
+  void dispose() {
+    _verticalController.dispose();
+    super.dispose();
   }
 
   Future<void> _exportToExcel() async {
@@ -116,6 +150,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
               gridLinesVisibility: GridLinesVisibility.both,
               headerGridLinesVisibility: GridLinesVisibility.both,
               columnWidthMode: ColumnWidthMode.none,
+              verticalScrollController: _verticalController,
               columns: columns,
             ),
           ),
@@ -158,6 +193,13 @@ class SpreadsheetDataSource extends DataGridSource {
   void addRow() {
     _rows.add(_createRow(_rows.length + 1));
     notifyListeners();
+  }
+
+  void removeLastRow() {
+    if (_rows.isNotEmpty) {
+      _rows.removeLast();
+      notifyListeners();
+    }
   }
 
   DataGridRow _createRow(int rowNumber) {
