@@ -50,12 +50,21 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
     final maxScroll = _verticalController.position.maxScrollExtent;
     final current = _verticalController.offset;
 
-    // Add rows when nearing the bottom
+    // Add rows when nearing the bottom - check for exact bottom position too
     if (!_isAdding && current >= maxScroll - 50) {
       _isAdding = true;
       setState(() => _dataSource!.addRow());
-      Future.delayed(const Duration(milliseconds: 300), () {
+      // Reduced delay and ensure we can add again quickly
+      Future.delayed(const Duration(milliseconds: 100), () {
         _isAdding = false;
+        // Check again immediately in case we're still at the bottom
+        if (_verticalController.hasClients) {
+          final newMaxScroll = _verticalController.position.maxScrollExtent;
+          final newCurrent = _verticalController.offset;
+          if (newCurrent >= newMaxScroll - 10) {
+            _onScroll(); // Recursive check
+          }
+        }
       });
     }
 
@@ -69,7 +78,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
       }
     }
   }
-
+  
   @override
   void dispose() {
     _verticalController.dispose();
