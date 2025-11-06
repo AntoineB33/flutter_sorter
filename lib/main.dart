@@ -32,48 +32,42 @@ class SpreadsheetPage extends StatefulWidget {
 }
 
 class _SpreadsheetPageState extends State<SpreadsheetPage> {
-  late SpreadsheetDataSource _dataSource;
+  SpreadsheetDataSource? _dataSource;
   final int _columnCount = 20;
-  final int _initialRowCount = 20;
   int _minRowCount = 0;
-
   final ScrollController _verticalController = ScrollController();
   bool _isAdding = false;
 
   @override
   void initState() {
     super.initState();
-    _dataSource = SpreadsheetDataSource(
-      rowsCount: _initialRowCount,
-      colsCount: _columnCount,
-    );
+    _verticalController.addListener(_onScroll);
+  }
 
-    _verticalController.addListener(() {
-      final maxScroll = _verticalController.position.maxScrollExtent;
-      final current = _verticalController.offset;
+  void _onScroll() {
+    if (_dataSource == null) return;
 
-      // When reaching bottom, add new row
-      if (!_isAdding && current >= maxScroll - 50) {
-        _isAdding = true;
-        setState(() {
-          _dataSource.addRow();
-        });
-        Future.delayed(const Duration(milliseconds: 300), () {
-          _isAdding = false;
-        });
+    final maxScroll = _verticalController.position.maxScrollExtent;
+    final current = _verticalController.offset;
+
+    // Add rows when nearing the bottom
+    if (!_isAdding && current >= maxScroll - 50) {
+      _isAdding = true;
+      setState(() => _dataSource!.addRow());
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _isAdding = false;
+      });
+    }
+
+    // Trim rows when scrolled up
+    if (current < maxScroll - 200) {
+      final lastUsedRow = _dataSource!.getLastNonEmptyRowIndex() + 1;
+      final desiredRowCount = math.max(_minRowCount, lastUsedRow);
+
+      if (_dataSource!.rows.length > desiredRowCount) {
+        setState(() => _dataSource!.trimRows(desiredRowCount));
       }
-
-
-      if (current < maxScroll - 200) {
-        final lastUsedRow = _dataSource.getLastNonEmptyRowIndex();
-        final minRows = math.max(_minRowCount, lastUsedRow + 1);
-        if (_dataSource.rows.length > minRows) {
-          setState(() {
-            _dataSource.trimRows(minRows);
-          });
-        }
-      }
-    });
+    }
   }
 
   @override
@@ -82,12 +76,88 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
     super.dispose();
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Flutter Spreadsheet'),
+        actions: [
+          IconButton(icon: const Icon(Icons.save), onPressed: _exportToExcel),
+        ],
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final visibleRowCount = (constraints.maxHeight / 49).floor();
+          _minRowCount = visibleRowCount;
+
+          // Initialize data source if not yet done
+          if (_dataSource == null) {
+            _dataSource = SpreadsheetDataSource(
+              rowsCount: _minRowCount,
+              colsCount: _columnCount,
+            );
+          }
+
+          return Stack(
+            children: [
+              ScrollConfiguration(
+                behavior: const ScrollBehavior().copyWith(scrollbars: true),
+                child: SfDataGrid(
+                  source: _dataSource!,
+                  allowEditing: true,
+                  selectionMode: SelectionMode.single,
+                  navigationMode: GridNavigationMode.cell,
+                  gridLinesVisibility: GridLinesVisibility.both,
+                  headerGridLinesVisibility: GridLinesVisibility.both,
+                  columnWidthMode: ColumnWidthMode.none,
+                  verticalScrollController: _verticalController,
+                  columns: [
+                    GridColumn(
+                      columnName: 'RowHeader',
+                      width: 60,
+                      label: Container(
+                        alignment: Alignment.center,
+                        color: Colors.grey.shade200,
+                        child: const Text('#', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    for (int i = 0; i < _columnCount; i++)
+                      GridColumn(
+                        columnName: columnLetter(i),
+                        width: 120,
+                        label: Container(
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(8.0),
+                          color: Colors.grey.shade200,
+                          child: Text(
+                            columnLetter(i),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (_dataSource != null)
+                DraggableFloatingPanel(
+                  onAddRow: () => setState(() => _dataSource!.addRow()),
+                  onExport: _exportToExcel,
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+  
   Future<void> _exportToExcel() async {
+    if (_dataSource == null) return; // Safety check
+
     final workbook = xlsio.Workbook();
     final sheet = workbook.worksheets[0];
 
-    for (int r = 0; r < _dataSource.rows.length; r++) {
-      final row = _dataSource.rows[r].getCells();
+    for (int r = 0; r < _dataSource!.rows.length; r++) {
+      final row = _dataSource!.rows[r].getCells();
       for (int c = 1; c < row.length; c++) {
         sheet.getRangeByIndex(r + 1, c).setText(row[c].value.toString());
       }
@@ -103,82 +173,6 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
     await OpenFile.open(path);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final columns = [
-      GridColumn(
-        columnName: 'RowHeader',
-        width: 60,
-        label: Container(
-          alignment: Alignment.center,
-          color: Colors.grey.shade200,
-          child: const Text('#', style: TextStyle(fontWeight: FontWeight.bold)),
-        ),
-      ),
-      for (int i = 0; i < _columnCount; i++)
-        GridColumn(
-          columnName: columnLetter(i),
-          width: 120,
-          label: Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.all(8.0),
-            color: Colors.grey.shade200,
-            child: Text(
-              columnLetter(i),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ),
-    ];
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Flutter Spreadsheet'),
-        actions: [
-          IconButton(icon: const Icon(Icons.save), onPressed: _exportToExcel),
-        ],
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          // Estimate how many rows fit based on height and row height
-          final visibleRowCount = (constraints.maxHeight / 49).floor();
-
-          // Update min row count dynamically
-          _minRowCount = visibleRowCount;
-
-          return Stack(
-            children: [
-              ScrollConfiguration(
-                behavior: const ScrollBehavior().copyWith(scrollbars: true),
-                child: SfDataGrid(
-                  source: _dataSource,
-                  allowEditing: true,
-                  selectionMode: SelectionMode.single,
-                  navigationMode: GridNavigationMode.cell,
-                  gridLinesVisibility: GridLinesVisibility.both,
-                  headerGridLinesVisibility: GridLinesVisibility.both,
-                  columnWidthMode: ColumnWidthMode.none,
-                  verticalScrollController: _verticalController,
-                  columns: columns,
-                ),
-              ),
-
-              DraggableFloatingPanel(
-                onAddRow: () {
-                  setState(() {
-                    _dataSource.addRow();
-                  });
-                },
-                onExport: _exportToExcel,
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  /// Converts 0 → A, 1 → B, … 25 → Z, 26 → AA, etc.
   String columnLetter(int index) {
     String result = '';
     while (index >= 0) {
