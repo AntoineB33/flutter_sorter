@@ -18,10 +18,7 @@ class SpreadsheetApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Spreadsheet',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       home: const SpreadsheetPage(),
     );
   }
@@ -43,11 +40,13 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
   final ScrollController _verticalController = ScrollController();
   bool _isAdding = false;
 
-
   @override
   void initState() {
     super.initState();
-    _dataSource = SpreadsheetDataSource(rowsCount: _initialRowCount, colsCount: _columnCount);
+    _dataSource = SpreadsheetDataSource(
+      rowsCount: _initialRowCount,
+      colsCount: _columnCount,
+    );
 
     _verticalController.addListener(() {
       final maxScroll = _verticalController.position.maxScrollExtent;
@@ -64,6 +63,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
         });
       }
 
+
       if (current < maxScroll - 200) {
         final lastUsedRow = _dataSource.getLastNonEmptyRowIndex();
         final minRows = math.max(_minRowCount, lastUsedRow + 1);
@@ -75,7 +75,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
       }
     });
   }
-  
+
   @override
   void dispose() {
     _verticalController.dispose();
@@ -135,10 +135,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
       appBar: AppBar(
         title: const Text('Flutter Spreadsheet'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _exportToExcel,
-          )
+          IconButton(icon: const Icon(Icons.save), onPressed: _exportToExcel),
         ],
       ),
       body: LayoutBuilder(
@@ -215,11 +212,15 @@ class SpreadsheetDataSource extends DataGridSource {
   }
 
   DataGridRow _createRow(int rowNumber) {
-    return DataGridRow(cells: [
-      DataGridCell(columnName: 'RowHeader', value: rowNumber),
-      ...List.generate(colsCount,
-          (j) => DataGridCell(columnName: columnLetter(j), value: '')),
-    ]);
+    return DataGridRow(
+      cells: [
+        DataGridCell(columnName: 'RowHeader', value: rowNumber),
+        ...List.generate(
+          colsCount,
+          (j) => DataGridCell(columnName: columnLetter(j), value: ''),
+        ),
+      ],
+    );
   }
 
   static String columnLetter(int index) {
@@ -251,7 +252,11 @@ class SpreadsheetDataSource extends DataGridSource {
 
   @override
   Widget? buildEditWidget(
-      DataGridRow row, RowColumnIndex rowColumnIndex, GridColumn column, CellSubmit submitCell) {
+    DataGridRow row,
+    RowColumnIndex rowColumnIndex,
+    GridColumn column,
+    CellSubmit submitCell,
+  ) {
     if (column.columnName == 'RowHeader') return null;
 
     final oldValue = row
@@ -260,7 +265,9 @@ class SpreadsheetDataSource extends DataGridSource {
         .value
         .toString();
 
-    final TextEditingController controller = TextEditingController(text: oldValue);
+    final TextEditingController controller = TextEditingController(
+      text: oldValue,
+    );
 
     return Focus(
       onFocusChange: (hasFocus) {
@@ -292,7 +299,10 @@ class SpreadsheetDataSource extends DataGridSource {
     if (cellIndex == -1) return false;
 
     final updatedCells = List<DataGridCell>.from(oldCells);
-    updatedCells[cellIndex] = DataGridCell(columnName: columnName, value: value);
+    updatedCells[cellIndex] = DataGridCell(
+      columnName: columnName,
+      value: value,
+    );
 
     _rows[rowIndex] = DataGridRow(cells: updatedCells);
     notifyListeners();
@@ -301,9 +311,11 @@ class SpreadsheetDataSource extends DataGridSource {
 
   int getLastNonEmptyRowIndex() {
     for (int i = _rows.length - 1; i >= 0; i--) {
-      final hasContent = _rows[i]
-          .getCells()
-          .any((c) => c.columnName != 'RowHeader' && (c.value?.toString().trim().isNotEmpty ?? false));
+      final hasContent = _rows[i].getCells().any(
+        (c) =>
+            c.columnName != 'RowHeader' &&
+            (c.value?.toString().trim().isNotEmpty ?? false),
+      );
       if (hasContent) return i;
     }
     return 0;
