@@ -5,8 +5,17 @@ import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'dart:math' as math;
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'firebase_options.dart';
+import 'dart:async';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  await FirebaseFirestore.instance.enableNetwork();
   runApp(const SpreadsheetApp());
 }
 
@@ -37,6 +46,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
   int _minRowCount = 0;
   final ScrollController _verticalController = ScrollController();
   bool _isAdding = false;
+  final String _spreadsheetId = 'default_spreadsheet'; // Change this to support multiple spreadsheets
 
   @override
   void initState() {
@@ -50,19 +60,17 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
     final maxScroll = _verticalController.position.maxScrollExtent;
     final current = _verticalController.offset;
 
-    // Add rows when nearing the bottom - check for exact bottom position too
+    // Add rows when nearing the bottom
     if (!_isAdding && current >= maxScroll - 50) {
       _isAdding = true;
       setState(() => _dataSource!.addRow());
-      // Reduced delay and ensure we can add again quickly
       Future.delayed(const Duration(milliseconds: 100), () {
         _isAdding = false;
-        // Check again immediately in case we're still at the bottom
         if (_verticalController.hasClients) {
           final newMaxScroll = _verticalController.position.maxScrollExtent;
           final newCurrent = _verticalController.offset;
           if (newCurrent >= newMaxScroll - 10) {
-            _onScroll(); // Recursive check
+            _onScroll();
           }
         }
       });
@@ -77,6 +85,12 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
         setState(() => _dataSource!.trimRows(desiredRowCount));
       }
     }
+
+    if (_dataSource != null) {
+      final start = startRowIndex;
+      final end = endRowIndex;
+      _dataSource!.updateListenerRange(start, end);
+    }
   }
   
   @override
@@ -89,10 +103,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Flutter Spreadsheet'),
-        actions: [
-          IconButton(icon: const Icon(Icons.save), onPressed: _exportToExcel),
-        ],
+        title: const Text('Synced Spreadsheet'),
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -100,12 +111,11 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
           _minRowCount = visibleRowCount;
 
           // Initialize data source if not yet done
-          if (_dataSource == null) {
-            _dataSource = SpreadsheetDataSource(
-              rowsCount: _minRowCount,
-              colsCount: _columnCount,
-            );
-          }
+          _dataSource ??= SpreadsheetDataSource(
+            rowsCount: _minRowCount,
+            colsCount: _columnCount,
+            spreadsheetId: _spreadsheetId,
+          );
 
           return Stack(
             children: [
@@ -160,7 +170,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
   }
   
   Future<void> _exportToExcel() async {
-    if (_dataSource == null) return; // Safety check
+    if (_dataSource == null) return;
 
     final workbook = xlsio.Workbook();
     final sheet = workbook.worksheets[0];
@@ -190,15 +200,87 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
     }
     return result;
   }
+
+  int get startRowIndex {
+    final offset = _verticalController.offset;
+    const rowHeight = 49.0;
+    return (offset / rowHeight).floor();
+  }
+
+  int get endRowIndex {
+    const rowHeight = 49.0;
+    final visibleCount = (MediaQuery.of(context).size.height / rowHeight).ceil();
+    return startRowIndex + visibleCount + 10; // add buffer
+  }
 }
 
 class SpreadsheetDataSource extends DataGridSource {
   final List<DataGridRow> _rows = [];
   final int colsCount;
+  final String spreadsheetId;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  Future<void>? _pendingNotify;
 
-  SpreadsheetDataSource({int rowsCount = 10, this.colsCount = 5}) {
+  final _pendingUpdates = <String, Map<String, dynamic>>{};
+  Timer? _debounceTimer;
+
+  void queueCellUpdate(int row, String col, String value) {
+    final id = '${row}_$col';
+    _pendingUpdates[id] = {
+      'row': row,
+      'column': col,
+      'value': value,
+      'timestamp': FieldValue.serverTimestamp(),
+    };
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 400), _flushPending);
+  }
+
+  Future<void> _flushPending() async {
+    if (_pendingUpdates.isEmpty) return;
+    final batch = _firestore.batch();
+    final cellsRef = _firestore.collection('spreadsheets').doc(spreadsheetId).collection('cells');
+
+    for (var entry in _pendingUpdates.entries) {
+      final id = entry.key;
+      final data = entry.value;
+      batch.set(cellsRef.doc(id), data);
+      FirestoreTelemetry().logWrite(data); // ✅ log write
+    }
+
+    await batch.commit();
+    _pendingUpdates.clear();
+  }
+
+
+
+  SpreadsheetDataSource({
+    int rowsCount = 10,
+    this.colsCount = 5,
+    required this.spreadsheetId,
+  }) {
     for (int i = 0; i < rowsCount; i++) {
       _rows.add(_createRow(i + 1));
+    }
+  }
+
+  void _updateCellFromFirebase(int rowIndex, String columnName, String value) {
+    // Ensure we have enough rows
+    while (_rows.length <= rowIndex) {
+      _rows.add(_createRow(_rows.length + 1));
+    }
+
+    final oldCells = _rows[rowIndex].getCells();
+    final cellIndex = oldCells.indexWhere((c) => c.columnName == columnName);
+    
+    if (cellIndex != -1) {
+      final updatedCells = List<DataGridCell>.from(oldCells);
+      updatedCells[cellIndex] = DataGridCell(
+        columnName: columnName,
+        value: value,
+      );
+      _rows[rowIndex] = DataGridRow(cells: updatedCells);
+      notifyListeners();
     }
   }
 
@@ -239,9 +321,9 @@ class SpreadsheetDataSource extends DataGridSource {
   List<DataGridRow> get rows => _rows;
 
   @override
-  DataGridRowAdapter buildRow(DataGridRow row) {
+  DataGridRowAdapter buildRow(DataGridRow dataGridRow) {
     return DataGridRowAdapter(
-      cells: row.getCells().map((cell) {
+      cells: dataGridRow.getCells().map((cell) {
         final isHeader = cell.columnName == 'RowHeader';
         return Container(
           alignment: Alignment.center,
@@ -255,14 +337,14 @@ class SpreadsheetDataSource extends DataGridSource {
 
   @override
   Widget? buildEditWidget(
-    DataGridRow row,
+    DataGridRow dataGridRow,
     RowColumnIndex rowColumnIndex,
     GridColumn column,
     CellSubmit submitCell,
   ) {
     if (column.columnName == 'RowHeader') return null;
 
-    final oldValue = row
+    final oldValue = dataGridRow
         .getCells()
         .firstWhere((c) => c.columnName == column.columnName)
         .value
@@ -275,7 +357,7 @@ class SpreadsheetDataSource extends DataGridSource {
     return Focus(
       onFocusChange: (hasFocus) {
         if (!hasFocus) {
-          setCellValue(row, column.columnName, controller.text);
+          setCellValue(dataGridRow, column.columnName, controller.text);
           submitCell();
         }
       },
@@ -283,18 +365,17 @@ class SpreadsheetDataSource extends DataGridSource {
         controller: controller,
         autofocus: true,
         onSubmitted: (newValue) {
-          setCellValue(row, column.columnName, newValue);
+          setCellValue(dataGridRow, column.columnName, newValue);
           submitCell();
         },
       ),
     );
   }
 
-  @override
-  bool setCellValue(DataGridRow row, String columnName, dynamic value) {
+  bool setCellValue(DataGridRow dataGridRow, String columnName, dynamic value) {
     if (columnName == 'RowHeader') return false;
 
-    final rowIndex = _rows.indexOf(row);
+    final rowIndex = _rows.indexOf(dataGridRow);
     if (rowIndex == -1) return false;
 
     final oldCells = _rows[rowIndex].getCells();
@@ -308,7 +389,15 @@ class SpreadsheetDataSource extends DataGridSource {
     );
 
     _rows[rowIndex] = DataGridRow(cells: updatedCells);
-    notifyListeners();
+    
+    _pendingNotify ??= Future.microtask(() {
+      notifyListeners();
+      _pendingNotify = null;
+    });
+    
+    // Sync to Firebase
+    queueCellUpdate(rowIndex, columnName, value.toString());
+
     return true;
   }
 
@@ -329,6 +418,33 @@ class SpreadsheetDataSource extends DataGridSource {
       _rows.removeRange(keepCount, _rows.length);
       notifyListeners();
     }
+  }
+
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _rangeSubscription;
+
+  void updateListenerRange(int startRow, int endRow) {
+    _rangeSubscription?.cancel();
+    _rangeSubscription = _firestore
+        .collection('spreadsheets')
+        .doc(spreadsheetId)
+        .collection('cells')
+        .where('row', isGreaterThanOrEqualTo: startRow)
+        .where('row', isLessThanOrEqualTo: endRow)
+        .snapshots()
+        .listen((snapshot) {
+      for (var change in snapshot.docChanges) {
+        final data = change.doc.data();
+        if (data != null) {
+          FirestoreTelemetry().logRead(data); // ✅ log read
+          _updateCellFromFirebase(
+            data['row'] as int,
+            data['column'] as String,
+            data['value'] as String,
+          );
+        }
+      }
+    });
+
   }
 }
 
@@ -371,7 +487,7 @@ class _DraggableFloatingPanelState extends State<DraggableFloatingPanel> {
     return Card(
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white.withOpacity(0.95),
+      color: Colors.white.withValues(alpha: 0.95),
       child: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -401,6 +517,37 @@ class _DraggableFloatingPanelState extends State<DraggableFloatingPanel> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class FirestoreTelemetry {
+  static final FirestoreTelemetry _instance = FirestoreTelemetry._internal();
+  factory FirestoreTelemetry() => _instance;
+  FirestoreTelemetry._internal();
+
+  int writes = 0;
+  int reads = 0;
+  int bytesUploaded = 0;
+  int bytesDownloaded = 0;
+
+  void logWrite(Map<String, dynamic> data) {
+    writes++;
+    bytesUploaded += data.toString().length;
+    debugPrint('[Firestore] Write #$writes (${data.length} fields)');
+  }
+
+  void logRead(Map<String, dynamic> data) {
+    reads++;
+    bytesDownloaded += data.toString().length;
+    debugPrint('[Firestore] Read #$reads (${data.length} fields)');
+  }
+
+  void printSummary() {
+    debugPrint(
+      'Firestore telemetry summary: '
+      '$writes writes, $reads reads, '
+      '${bytesUploaded}B uploaded, ${bytesDownloaded}B downloaded.',
     );
   }
 }

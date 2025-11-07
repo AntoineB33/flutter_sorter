@@ -20,7 +20,7 @@ samples, guidance on mobile development, and a full API reference.
 
 TODO
 
-
+optimize sync when paste group of cells
 
 
 Adding a 5-minute screen-free break each hour (optional)
@@ -48,7 +48,9 @@ This trains your eyes to blink more fully and frequently.
 flutter build apk --release
 build\app\outputs\flutter-apk\app-release.apk
 Ce PC\Redmi Note 10 5G\Espace de stockage interne partagé\FlutterApps
-C:\Users\antoi\AppData\Local\Android\Sdk\platform-tools adb kill-server
+
+cd C:\Users\antoi\AppData\Local\Android\Sdk\platform-tools
+adb kill-server
 
 flutter build windows
 build\windows\x64\runner\Release\trying_flutter.exe
