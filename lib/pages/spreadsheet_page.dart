@@ -16,7 +16,7 @@ class SpreadsheetPage extends StatefulWidget {
   State<SpreadsheetPage> createState() => _SpreadsheetPageState();
 }
 
-class _SpreadsheetPageState extends State<SpreadsheetPage> {
+class _SpreadsheetPageState extends State<SpreadsheetPage> with WidgetsBindingObserver {
   SpreadsheetDataSource? _dataSource;
   final int _columnCount = 20;
   int _minRowCount = 0;
@@ -27,23 +27,37 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _verticalController.addListener(_onScroll);
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _verticalController.dispose();
+    _dataSource?.stopEventSubscription();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _dataSource != null) {
+      // Pull fresh data for the currently visible window on refocus
+      _dataSource!.refreshRange(startRowIndex, endRowIndex);
+    }
+  }
+
+  // _onScroll: replace the old updateListenerRange calls with refreshRange debounced
   Timer? _rangeDebounce;
+
   void _onScroll() {
     if (_dataSource == null) return;
 
-    // Cancel any pending listener update
     _rangeDebounce?.cancel();
-
-    // Schedule a new one after scrolling pauses for 250 ms
     _rangeDebounce = Timer(const Duration(milliseconds: 250), () {
-      final start = startRowIndex;
-      final end = endRowIndex;
-      _dataSource!.updateListenerRange(start, end);
+      _dataSource!.refreshRange(startRowIndex, endRowIndex);
     });
-
+    
     final maxScroll = _verticalController.position.maxScrollExtent;
     final current = _verticalController.offset;
 
@@ -76,36 +90,32 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
     if (_dataSource != null) {
       final start = startRowIndex;
       final end = endRowIndex;
-      _dataSource!.updateListenerRange(start, end);
+      // Debounce frequent scroll changes — only pull after scrolling stops briefly
+      _rangeDebounce?.cancel();
+      _rangeDebounce = Timer(const Duration(milliseconds: 250), () {
+        _dataSource!.refreshRange(start, end);
+      });
     }
-  }
-  
-  @override
-  void dispose() {
-    _verticalController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Synced Spreadsheet'),
-      ),
+      appBar: AppBar(title: const Text('Synced Spreadsheet')),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final visibleRowCount = (constraints.maxHeight / 49).floor();
           _minRowCount = visibleRowCount;
 
-          // Initialize data source if not yet done
           _dataSource ??= SpreadsheetDataSource(
             rowsCount: _minRowCount,
             colsCount: _columnCount,
             spreadsheetId: _spreadsheetId,
           );
 
-          // 🔥 Start listening immediately
-          _dataSource!.updateListenerRange(0, _minRowCount + 20);
+          // Pull initial window and start event sub once
+          _dataSource!.refreshRange(0, _minRowCount + 20);
+          _dataSource!.startEventSubscription();
 
           return Stack(
             children: [
@@ -120,6 +130,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
                   headerGridLinesVisibility: GridLinesVisibility.both,
                   columnWidthMode: ColumnWidthMode.none,
                   verticalScrollController: _verticalController,
+                  onQueryRowHeight: (details) => 49.0,
                   columns: [
                     GridColumn(
                       columnName: 'RowHeader',
@@ -127,7 +138,10 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
                       label: Container(
                         alignment: Alignment.center,
                         color: Colors.grey.shade200,
-                        child: const Text('#', style: TextStyle(fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          '#',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                     for (int i = 0; i < _columnCount; i++)
