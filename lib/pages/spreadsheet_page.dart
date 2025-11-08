@@ -113,53 +113,49 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> with WidgetsBindingOb
             spreadsheetId: _spreadsheetId,
           );
 
-          // Pull initial window and start event sub once
-          _dataSource!.refreshRange(0, _minRowCount + 20);
-          _dataSource!.startEventSubscription();
+          // ✅ Load local data first, then pull from Firestore
+          _dataSource!.initializeFullSheet();
 
           return Stack(
             children: [
-              ScrollConfiguration(
-                behavior: const ScrollBehavior().copyWith(scrollbars: true),
-                child: SfDataGrid(
-                  source: _dataSource!,
-                  allowEditing: true,
-                  selectionMode: SelectionMode.single,
-                  navigationMode: GridNavigationMode.cell,
-                  gridLinesVisibility: GridLinesVisibility.both,
-                  headerGridLinesVisibility: GridLinesVisibility.both,
-                  columnWidthMode: ColumnWidthMode.none,
-                  verticalScrollController: _verticalController,
-                  onQueryRowHeight: (details) => 49.0,
-                  columns: [
+              SfDataGrid(
+                source: _dataSource!,
+                allowEditing: true,
+                selectionMode: SelectionMode.single,
+                navigationMode: GridNavigationMode.cell,
+                gridLinesVisibility: GridLinesVisibility.both,
+                headerGridLinesVisibility: GridLinesVisibility.both,
+                columnWidthMode: ColumnWidthMode.none,
+                verticalScrollController: _verticalController,
+                onQueryRowHeight: (details) => 49.0,
+                columns: [
+                  GridColumn(
+                    columnName: 'RowHeader',
+                    width: 60,
+                    label: Container(
+                      alignment: Alignment.center,
+                      color: Colors.grey.shade200,
+                      child: const Text(
+                        '#',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  for (int i = 0; i < _columnCount; i++)
                     GridColumn(
-                      columnName: 'RowHeader',
-                      width: 60,
+                      columnName: columnLetter(i),
+                      width: 120,
                       label: Container(
                         alignment: Alignment.center,
+                        padding: const EdgeInsets.all(8.0),
                         color: Colors.grey.shade200,
-                        child: const Text(
-                          '#',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                        child: Text(
+                          columnLetter(i),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
-                    for (int i = 0; i < _columnCount; i++)
-                      GridColumn(
-                        columnName: columnLetter(i),
-                        width: 120,
-                        label: Container(
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.all(8.0),
-                          color: Colors.grey.shade200,
-                          child: Text(
-                            columnLetter(i),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                ],
               ),
               if (_dataSource != null)
                 DraggableFloatingPanel(
@@ -172,6 +168,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> with WidgetsBindingOb
       ),
     );
   }
+
   
   Future<void> _exportToExcel() async {
     if (_dataSource == null) return;

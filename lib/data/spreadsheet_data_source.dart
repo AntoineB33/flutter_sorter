@@ -1,10 +1,11 @@
-import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:syncfusion_flutter_datagrid/datagrid.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../services/firestore_telemetry.dart';
+import '../services/sheet_cache.dart';
 import '../services/sheet_store.dart';
 import '../services/sheet_events.dart';
+import '../services/firestore_telemetry.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:syncfusion_flutter_datagrid/datagrid.dart';
+import 'dart:async';
 
 class SpreadsheetDataSource extends DataGridSource {
   final List<DataGridRow> _rows = [];
@@ -24,11 +25,14 @@ class SpreadsheetDataSource extends DataGridSource {
 
   // --- NEW: event sub
   StreamSubscription<CellEvent>? _eventSub;
+  final _cache = SheetCache();
+
+  bool _initialized = false;
 
   SpreadsheetDataSource({
-    int rowsCount = 10,
-    this.colsCount = 5,
     required this.spreadsheetId,
+    this.colsCount = 10,
+    int rowsCount = 20,
   }) {
     for (int i = 0; i < rowsCount; i++) {
       _rows.add(_createRow(i + 1));
@@ -260,4 +264,58 @@ class SpreadsheetDataSource extends DataGridSource {
     _eventSub?.cancel();
     _eventSub = null;
   }
+
+  /// Step 1️⃣ Load local cache first (fast startup)
+  Future<void> loadLocalData() async {
+    final cached = await _cache.loadSheet(spreadsheetId);
+    if (cached.isEmpty) return;
+
+    for (final entry in cached.entries) {
+      final parts = entry.key.split('_');
+      if (parts.length < 2) continue;
+      final row = int.tryParse(parts[0]) ?? 0;
+      final col = parts[1];
+      _applyLocal(row, col, entry.value);
+    }
+
+    notifyListeners();
+  }
+
+  /// Step 2️⃣ Pull full data from Firestore and update cache
+  Future<void> pullAllData() async {
+    final snap = await FirebaseFirestore.instance
+        .collection('spreadsheets')
+        .doc(spreadsheetId)
+        .collection('cells')
+        .get();
+
+    final map = <String, String>{};
+
+    for (final doc in snap.docs) {
+      final d = doc.data();
+      final row = d['row'] as int? ?? 0;
+      final col = d['column'] as String? ?? '';
+      final val = (d['value'] ?? '').toString();
+      map['${row}_$col'] = val;
+      _applyLocal(row, col, val);
+      FirestoreTelemetry().logRead(d);
+    }
+
+    // Save to local cache
+    await _cache.saveSheet(spreadsheetId, map);
+
+    notifyListeners();
+    _initialized = true;
+  }
+
+  /// Called at app start to populate grid (local + remote)
+  Future<void> initializeFullSheet() async {
+    if (_initialized) return;
+    await loadLocalData();  // quick local load
+    unawaited(pullAllData()); // fetch remote in background
+    startEventSubscription(); // real-time pings
+    _initialized = true;
+  }
+
+  // ... rest of your class remains identical ...
 }
