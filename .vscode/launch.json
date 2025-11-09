@@ -8,11 +8,15 @@
       "program": "${workspaceFolder}/assets/js/debug.js"
     },
     {
-      "name": "Flutter (Windows)",
+      "name": "Flutter (Windows, Verbose)",
       "request": "launch",
       "type": "dart",
-      "deviceId": "windows", 
-      "program": "lib/main.dart"
+      "deviceId": "windows",
+      "program": "lib/main.dart",
+      "args": [
+        "--verbose",
+        "--start-paused"
+      ]
     }
   ]
 }
