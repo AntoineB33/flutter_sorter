@@ -8,6 +8,18 @@
       "program": "${workspaceFolder}/assets/js/debug.js"
     },
     {
+      "name": "Flutter (Chrome, Verbose)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "chrome",
+      "program": "lib/main.dart",
+      "args": [
+        "--verbose",
+        "--start-paused",
+        "--release"
+      ]
+    },
+    {
       "name": "Flutter (Windows, Verbose)",
       "request": "launch",
       "type": "dart",
