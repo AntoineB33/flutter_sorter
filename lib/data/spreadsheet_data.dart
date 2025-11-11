@@ -5,6 +5,7 @@ class SpreadsheetData {
   int _rows;
   int _cols;
   late List<List<String>> _cells;
+  Map<int, String> _columnTypes = {}; // NEW: type mapping
 
   SpreadsheetData({int initialRows = 20, int initialCols = 10})
       : _rows = initialRows,
@@ -17,6 +18,16 @@ class SpreadsheetData {
 
   int get rowCount => _rows;
   int get colCount => _cols;
+
+  Map<int, String> get columnTypes => _columnTypes;
+
+  void setColumnType(int col, String type) {
+    if (col >= 1 && col <= _cols) {
+      _columnTypes[col] = type;
+    }
+  }
+
+  String getColumnType(int col) => _columnTypes[col] ?? 'Default';
 
   void _ensureSize(int row, int col) {
     if (row > _rows) {
@@ -70,7 +81,7 @@ class SpreadsheetData {
     int n = col;
     final buffer = StringBuffer();
     while (n > 0) {
-      n--; // 1-based to 0-based
+      n--;
       final charCode = 'A'.codeUnitAt(0) + (n % 26);
       buffer.writeCharCode(charCode);
       n ~/= 26;
@@ -78,12 +89,14 @@ class SpreadsheetData {
     return buffer.toString().split('').reversed.join();
   }
 
-  /// Converts the spreadsheet to a JSON string.
+  /// Converts the spreadsheet (including types) to a JSON string.
   String toJsonString() {
     return jsonEncode({
       'rows': _rows,
       'cols': _cols,
       'cells': _cells,
+      // Convert int keys to strings for JSON compatibility
+      'columnTypes': _columnTypes.map((k, v) => MapEntry(k.toString(), v)),
     });
   }
 
@@ -98,6 +111,15 @@ class SpreadsheetData {
         .map<List<String>>((row) => List<String>.from(row))
         .toList();
     data._cells = cells;
+
+    // Restore column types safely
+    if (map['columnTypes'] != null) {
+      final colTypeMap = Map<String, dynamic>.from(map['columnTypes']);
+      data._columnTypes = colTypeMap.map(
+        (k, v) => MapEntry(int.tryParse(k) ?? 0, v.toString()),
+      )..removeWhere((key, value) => key == 0); // remove invalid key if any
+    }
+
     return data;
   }
 

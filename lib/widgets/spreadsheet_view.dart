@@ -31,8 +31,94 @@ class _SpreadsheetViewState extends State<SpreadsheetView> {
     'Boolean': Colors.deepPurpleAccent,
   };
 
-  /// Keeps track of each column's type (default is "Default")
-  final Map<int, String> _columnType = {};
+  Future<void> _showTypeMenu(
+    BuildContext context,
+    Offset position,
+    int col,
+  ) async {
+    final currentType = widget.data.getColumnType(col);
+
+    final result = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx,
+        position.dy,
+      ),
+      items: columnTypes.entries.map((entry) {
+        return CheckedPopupMenuItem<String>(
+          value: entry.key,
+          checked: entry.key == currentType,
+          child: Row(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: entry.value == Colors.transparent
+                      ? Colors.grey.shade300
+                      : entry.value,
+                  borderRadius: BorderRadius.circular(3),
+                  border: Border.all(color: Colors.black26),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(entry.key),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+
+    if (result != null) {
+      setState(() {
+        widget.data.setColumnType(col, result);
+      });
+      await widget.data.save(); // persist immediately
+    }
+  }
+
+  void _showColumnContextMenu(BuildContext context, Offset position, int col) async {
+    final result = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx,
+        position.dy,
+      ),
+      items: [
+        const PopupMenuItem(
+          value: 'test1',
+          child: Text('Test Action 1'),
+        ),
+        const PopupMenuItem(
+          value: 'test2',
+          child: Text('Test Action 2'),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(
+          value: 'change_type',
+          child: Text('Change Type ▶'),
+        ),
+      ],
+    );
+
+    if (result != null) {
+      switch (result) {
+        case 'test1':
+          debugPrint('Test Action 1 clicked on column ${widget.data.columnLabel(col)}');
+          break;
+        case 'test2':
+          debugPrint('Test Action 2 clicked on column ${widget.data.columnLabel(col)}');
+          break;
+        case 'change_type':
+          await _showTypeMenu(context, position, col);
+          break;
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,99 +180,8 @@ class _SpreadsheetViewState extends State<SpreadsheetView> {
     );
   }
 
-  /// Show a secondary menu for selecting column type
-  Future<void> _showTypeMenu(
-    BuildContext context,
-    Offset position,
-    int col,
-  ) async {
-    final currentType = _columnType[col] ?? 'Default';
-
-    final result = await showMenu<String>(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        position.dx,
-        position.dy,
-        position.dx,
-        position.dy,
-      ),
-      items: columnTypes.entries.map((entry) {
-        return CheckedPopupMenuItem<String>(
-          value: entry.key,
-          checked: entry.key == currentType,
-          child: Row(
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: entry.value == Colors.transparent
-                      ? Colors.grey.shade300
-                      : entry.value,
-                  borderRadius: BorderRadius.circular(3),
-                  border: Border.all(color: Colors.black26),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(entry.key),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-
-    if (result != null) {
-      setState(() {
-        _columnType[col] = result;
-      });
-    }
-  }
-
-  /// Main right-click context menu for column headers
-  void _showColumnContextMenu(BuildContext context, Offset position, int col) async {
-    final result = await showMenu<String>(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        position.dx,
-        position.dy,
-        position.dx,
-        position.dy,
-      ),
-      items: [
-        const PopupMenuItem(
-          value: 'test1',
-          child: Text('Test Action 1'),
-        ),
-        const PopupMenuItem(
-          value: 'test2',
-          child: Text('Test Action 2'),
-        ),
-        const PopupMenuDivider(),
-        const PopupMenuItem(
-          value: 'change_type',
-          child: Text('Change Type ▶'),
-        ),
-      ],
-    );
-
-    if (result != null) {
-      switch (result) {
-        case 'test1':
-          debugPrint('Test Action 1 clicked on column ${widget.data.columnLabel(col)}');
-          break;
-        case 'test2':
-          debugPrint('Test Action 2 clicked on column ${widget.data.columnLabel(col)}');
-          break;
-        case 'change_type':
-          // Show the secondary type selection menu near the same position
-          await _showTypeMenu(context, position, col);
-          break;
-      }
-    }
-  }
-
   Widget _buildColumnHeader(BuildContext context, int col) {
-    final type = _columnType[col] ?? 'Default';
+    final type = widget.data.getColumnType(col);
     final color = columnTypes[type] ?? Colors.transparent;
 
     return GestureDetector(
