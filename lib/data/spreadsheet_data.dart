@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+
 class SpreadsheetData {
   int _rows;
   int _cols;
@@ -73,5 +76,42 @@ class SpreadsheetData {
       n ~/= 26;
     }
     return buffer.toString().split('').reversed.join();
+  }
+
+  /// Converts the spreadsheet to a JSON string.
+  String toJsonString() {
+    return jsonEncode({
+      'rows': _rows,
+      'cols': _cols,
+      'cells': _cells,
+    });
+  }
+
+  /// Reconstructs a spreadsheet from JSON.
+  static SpreadsheetData fromJsonString(String jsonString) {
+    final map = jsonDecode(jsonString);
+    final data = SpreadsheetData(
+      initialRows: map['rows'],
+      initialCols: map['cols'],
+    );
+    final cells = (map['cells'] as List)
+        .map<List<String>>((row) => List<String>.from(row))
+        .toList();
+    data._cells = cells;
+    return data;
+  }
+
+  /// Saves spreadsheet to local storage.
+  Future<void> save() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('spreadsheet_data', toJsonString());
+  }
+
+  /// Loads spreadsheet from local storage, or returns null if none saved.
+  static Future<SpreadsheetData?> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString('spreadsheet_data');
+    if (jsonString == null) return null;
+    return fromJsonString(jsonString);
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'screens/spreadsheet_page.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const SpreadsheetApp());
 }
 

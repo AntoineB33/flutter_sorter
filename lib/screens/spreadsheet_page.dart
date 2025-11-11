@@ -11,14 +11,25 @@ class SpreadsheetPage extends StatefulWidget {
 }
 
 class _SpreadsheetPageState extends State<SpreadsheetPage> {
-  late final SpreadsheetData _data;
+  SpreadsheetData? _data;
   final ScrollController _verticalController = ScrollController();
   final ScrollController _horizontalController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _data = SpreadsheetData(initialRows: 20, initialCols: 10);
+    _loadSpreadsheet();
+  }
+
+  Future<void> _loadSpreadsheet() async {
+    final loaded = await SpreadsheetData.load();
+    setState(() {
+      _data = loaded ?? SpreadsheetData(initialRows: 20, initialCols: 10);
+    });
+  }
+  
+  Future<void> _saveSpreadsheet() async {
+    await _data!.save();
   }
 
   @override
@@ -30,6 +41,12 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_data == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Flutter Spreadsheet'),
@@ -39,8 +56,9 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
             icon: const Icon(Icons.delete_outline),
             onPressed: () {
               setState(() {
-                _data.clearAll();
+                _data!.clearAll();
               });
+              _saveSpreadsheet();
             },
           ),
         ],
@@ -63,7 +81,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
                     controller: _verticalController,
                     scrollDirection: Axis.vertical,
                     child: SpreadsheetView(
-                      data: _data,
+                      data: _data!,
                       onCellTap: _editCell,
                     ),
                   ),
@@ -86,8 +104,9 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
             label: const Text('Row'),
             onPressed: () {
               setState(() {
-                _data.addRow();
+                _data!.addRow();
               });
+              _saveSpreadsheet();
             },
           ),
           const SizedBox(width: 8),
@@ -96,13 +115,14 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
             label: const Text('Column'),
             onPressed: () {
               setState(() {
-                _data.addColumn();
+                _data!.addColumn();
               });
+              _saveSpreadsheet();
             },
           ),
           const Spacer(),
           Text(
-            'Rows: ${_data.rowCount}  |  Columns: ${_data.colCount}',
+            'Rows: ${_data!.rowCount}  |  Columns: ${_data!.colCount}',
             style: Theme.of(context)
                 .textTheme
                 .labelMedium
@@ -114,14 +134,14 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
   }
 
   Future<void> _editCell(int row, int col) async {
-    final currentValue = _data.getCell(row, col);
+    final currentValue = _data!.getCell(row, col);
     final controller = TextEditingController(text: currentValue);
 
     final result = await showDialog<String>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Edit ${_data.columnLabel(col)}$row'),
+          title: Text('Edit ${_data!.columnLabel(col)}$row'),
           content: TextField(
             controller: controller,
             autofocus: true,
@@ -149,8 +169,9 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
 
     if (result != null) {
       setState(() {
-        _data.setCell(row, col, result);
+        _data!.setCell(row, col, result);
       });
+      _saveSpreadsheet();
     }
   }
 }
