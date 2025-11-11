@@ -76,20 +76,59 @@ class SpreadsheetView extends StatelessWidget {
     );
   }
 
+  void _showColumnContextMenu(BuildContext context, Offset position, int col) async {
+    final result = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx,
+        position.dy,
+      ),
+      items: [
+        PopupMenuItem(
+          value: 'test1',
+          child: const Text('Test Action 1'),
+        ),
+        PopupMenuItem(
+          value: 'test2',
+          child: const Text('Test Action 2'),
+        ),
+      ],
+    );
+
+    if (result != null) {
+      switch (result) {
+        case 'test1':
+          debugPrint('Test Action 1 clicked on column ${data.columnLabel(col)}');
+          break;
+        case 'test2':
+          debugPrint('Test Action 2 clicked on column ${data.columnLabel(col)}');
+          break;
+      }
+    }
+  }
+
   Widget _buildColumnHeader(BuildContext context, int col) {
-    return SizedBox(
-      width: cellWidth,
-      height: headerHeight,
-      child: Container(
-        alignment: Alignment.center,
-        color: Theme.of(context).colorScheme.surfaceVariant,
-        child: Text(
-          data.columnLabel(col),
-          style: const TextStyle(fontWeight: FontWeight.bold),
+    return GestureDetector(
+      onSecondaryTapDown: (details) {
+        _showColumnContextMenu(context, details.globalPosition, col);
+      },
+      child: SizedBox(
+        width: cellWidth,
+        height: headerHeight,
+        child: Container(
+          alignment: Alignment.center,
+          color: Theme.of(context).colorScheme.surfaceVariant,
+          child: Text(
+            data.columnLabel(col),
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
       ),
     );
   }
+
 
   Widget _buildRowHeader(BuildContext context, int row) {
     return SizedBox(
