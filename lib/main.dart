@@ -1,180 +1,382 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const MyApp());
+void main() {
+  runApp(const SpreadsheetApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class SpreadsheetApp extends StatelessWidget {
+  const SpreadsheetApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'Realtime Shared Table',
-      home: TablePage(),
+    return MaterialApp(
+      title: 'Flutter Spreadsheet',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.blue,
+      ),
+      home: const SpreadsheetPage(),
     );
   }
 }
 
-class TablePage extends StatefulWidget {
-  const TablePage({super.key});
+class SpreadsheetPage extends StatefulWidget {
+  const SpreadsheetPage({super.key});
 
   @override
-  State<TablePage> createState() => _TablePageState();
+  State<SpreadsheetPage> createState() => _SpreadsheetPageState();
 }
 
-class _TablePageState extends State<TablePage> {
-  final CollectionReference _deltas =
-      FirebaseFirestore.instance.collection('deltas');
-
-  final int rows = 5;
-  final int cols = 5;
-  late List<List<String>> _table;
+class _SpreadsheetPageState extends State<SpreadsheetPage> {
+  late final SpreadsheetData _data;
+  final ScrollController _verticalController = ScrollController();
+  final ScrollController _horizontalController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _table = List.generate(rows, (_) => List.generate(cols, (_) => ''));
-    _listenForDeltas();
+    _data = SpreadsheetData(initialRows: 20, initialCols: 10);
   }
 
-  /// Listen for delta messages from Firestore
-  void _listenForDeltas() {
-    print('🔄 [Cloud] Subscribing to Firestore delta stream...');
-    _deltas.orderBy('timestamp', descending: false).snapshots().listen(
-      (snapshot) {
-        for (var docChange in snapshot.docChanges) {
-          if (docChange.type == DocumentChangeType.added) {
-            final data = docChange.doc.data() as Map<String, dynamic>?;
-            if (data == null) continue;
-            final int row = data['row'];
-            final int col = data['col'];
-            final String value = data['value'] ?? '';
-
-            // 🪵 Log inbound data
-            print(
-                '⬇️ [Cloud -> Local] Received delta: row=$row, col=$col, value="$value" (doc: ${docChange.doc.id})');
-
-            if (row >= 0 && row < rows && col >= 0 && col < cols) {
-              setState(() {
-                _table[row][col] = value;
-              });
-            }
-          }
-        }
-      },
-      onError: (error) {
-        print('❌ [Cloud] Firestore stream error: $error');
-      },
-      onDone: () {
-        print('ℹ️ [Cloud] Firestore stream closed.');
-      },
-    );
-  }
-
-  /// Send a delta message to Firestore
-  Future<void> _sendDelta(int row, int col, String value) async {
-    final delta = {
-      'row': row,
-      'col': col,
-      'value': value,
-      'timestamp': FieldValue.serverTimestamp(),
-    };
-
-    try {
-      print('⬆️ [Local -> Cloud] Sending delta: $delta');
-      await _deltas.add(delta);
-      print('✅ [Cloud] Delta successfully sent.');
-    } catch (e) {
-      print('❌ [Cloud] Failed to send delta: $e');
-    }
-  }
-
-  /// Prompt the user to edit a cell
-  void _editCell(int row, int col) async {
-    final controller = TextEditingController(text: _table[row][col]);
-    final newValue = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit cell [$row, $col]'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Enter text',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-
-    if (newValue != null && newValue != _table[row][col]) {
-      setState(() => _table[row][col] = newValue);
-      await _sendDelta(row, col, newValue);
-    }
-  }
-
-  void _clearLocalTable() {
-    setState(() {
-      _table = List.generate(rows, (_) => List.generate(cols, (_) => ''));
-    });
-    print('🧹 [Local] Cleared local table (no cloud action).');
+  @override
+  void dispose() {
+    _verticalController.dispose();
+    _horizontalController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Realtime Shared Table')),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: cols,
-            mainAxisSpacing: 2,
-            crossAxisSpacing: 2,
+      appBar: AppBar(
+        title: const Text('Flutter Spreadsheet'),
+        actions: [
+          IconButton(
+            tooltip: 'Clear all cells',
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () {
+              setState(() {
+                _data.clearAll();
+              });
+            },
           ),
-          itemCount: rows * cols,
-          itemBuilder: (context, index) {
-            final row = index ~/ cols;
-            final col = index % cols;
-            return GestureDetector(
-              onTap: () => _editCell(row, col),
-              child: Container(
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  color: Colors.white,
-                ),
-                child: Text(
-                  _table[row][col],
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16),
+        ],
+      ),
+      body: Column(
+        children: [
+          _buildToolbar(context),
+          const Divider(height: 1),
+          Expanded(
+            child: Scrollbar(
+              controller: _horizontalController,
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                controller: _horizontalController,
+                scrollDirection: Axis.horizontal,
+                child: Scrollbar(
+                  controller: _verticalController,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: _verticalController,
+                    scrollDirection: Axis.vertical,
+                    child: _SpreadsheetView(
+                      data: _data,
+                      onCellTap: _editCell,
+                    ),
+                  ),
                 ),
               ),
-            );
-          },
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _clearLocalTable,
-        tooltip: 'Clear local table (does not affect others)',
-        child: const Icon(Icons.clear),
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  Widget _buildToolbar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Row(
+        children: [
+          FilledButton.icon(
+            icon: const Icon(Icons.add),
+            label: const Text('Row'),
+            onPressed: () {
+              setState(() {
+                _data.addRow();
+              });
+            },
+          ),
+          const SizedBox(width: 8),
+          FilledButton.icon(
+            icon: const Icon(Icons.add),
+            label: const Text('Column'),
+            onPressed: () {
+              setState(() {
+                _data.addColumn();
+              });
+            },
+          ),
+          const Spacer(),
+          Text(
+            'Rows: ${_data.rowCount}  |  Columns: ${_data.colCount}',
+            style: Theme.of(context)
+                .textTheme
+                .labelMedium
+                ?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _editCell(int row, int col) async {
+    final currentValue = _data.getCell(row, col);
+    final controller = TextEditingController(text: currentValue);
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Edit ${_data.columnLabel(col)}$row'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'Cell value',
+            ),
+            onSubmitted: (value) {
+              Navigator.of(context).pop(value);
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(null),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(controller.text),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        _data.setCell(row, col, result);
+      });
+    }
+  }
+}
+
+class _SpreadsheetView extends StatelessWidget {
+  final SpreadsheetData data;
+  final void Function(int row, int col) onCellTap;
+
+  const _SpreadsheetView({
+    required this.data,
+    required this.onCellTap,
+  });
+
+  static const double cellWidth = 100;
+  static const double cellHeight = 40;
+  static const double headerHeight = 44;
+  static const double headerWidth = 60;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = data.rowCount;
+    final cols = data.colCount;
+
+    final tableRows = <TableRow>[];
+
+    // Header row
+    tableRows.add(
+      TableRow(
+        children: [
+          _buildTopLeftHeader(context),
+          for (int c = 1; c <= cols; c++) _buildColumnHeader(context, c),
+        ],
+      ),
+    );
+
+    // Data rows
+    for (int r = 1; r <= rows; r++) {
+      tableRows.add(
+        TableRow(
+          children: [
+            _buildRowHeader(context, r),
+            for (int c = 1; c <= cols; c++)
+              _buildCell(
+                context,
+                row: r,
+                col: c,
+                value: data.getCell(r, c),
+              ),
+          ],
+        ),
+      );
+    }
+
+    return Table(
+      defaultColumnWidth: const FixedColumnWidth(cellWidth),
+      border: TableBorder.all(
+        color: Theme.of(context).dividerColor,
+        width: 0.5,
+      ),
+      children: tableRows,
+    );
+  }
+
+  Widget _buildTopLeftHeader(BuildContext context) {
+    return SizedBox(
+      width: headerWidth,
+      height: headerHeight,
+      child: Container(
+        alignment: Alignment.center,
+        color: Theme.of(context).colorScheme.surfaceVariant,
+        child: const Text(
+          '#',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColumnHeader(BuildContext context, int col) {
+    return SizedBox(
+      width: cellWidth,
+      height: headerHeight,
+      child: Container(
+        alignment: Alignment.center,
+        color: Theme.of(context).colorScheme.surfaceVariant,
+        child: Text(
+          data.columnLabel(col),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRowHeader(BuildContext context, int row) {
+    return SizedBox(
+      width: headerWidth,
+      height: cellHeight,
+      child: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        color: Theme.of(context).colorScheme.surfaceVariant,
+        child: Text(
+          '$row',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCell(
+    BuildContext context, {
+    required int row,
+    required int col,
+    required String value,
+  }) {
+    return SizedBox(
+      width: cellWidth,
+      height: cellHeight,
+      child: InkWell(
+        onTap: () => onCellTap(row, col),
+        child: Container(
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class SpreadsheetData {
+  int _rows;
+  int _cols;
+  late List<List<String>> _cells;
+
+  SpreadsheetData({int initialRows = 20, int initialCols = 10})
+      : _rows = initialRows,
+        _cols = initialCols {
+    _cells = List.generate(
+      _rows,
+      (_) => List.generate(_cols, (_) => ''),
+    );
+  }
+
+  int get rowCount => _rows;
+  int get colCount => _cols;
+
+  void _ensureSize(int row, int col) {
+    if (row > _rows) {
+      final rowsToAdd = row - _rows;
+      for (int i = 0; i < rowsToAdd; i++) {
+        _cells.add(List.generate(_cols, (_) => ''));
+      }
+      _rows = row;
+    }
+    if (col > _cols) {
+      final colsToAdd = col - _cols;
+      for (final rowList in _cells) {
+        rowList.addAll(List.generate(colsToAdd, (_) => ''));
+      }
+      _cols = col;
+    }
+  }
+
+  String getCell(int row, int col) {
+    if (row < 1 || col < 1 || row > _rows || col > _cols) return '';
+    return _cells[row - 1][col - 1];
+  }
+
+  void setCell(int row, int col, String value) {
+    _ensureSize(row, col);
+    _cells[row - 1][col - 1] = value;
+  }
+
+  void addRow() {
+    _rows += 1;
+    _cells.add(List.generate(_cols, (_) => ''));
+  }
+
+  void addColumn() {
+    _cols += 1;
+    for (final row in _cells) {
+      row.add('');
+    }
+  }
+
+  void clearAll() {
+    for (int r = 0; r < _rows; r++) {
+      for (int c = 0; c < _cols; c++) {
+        _cells[r][c] = '';
+      }
+    }
+  }
+
+  /// Returns Excel-style labels: A, B, ..., Z, AA, AB, ...
+  String columnLabel(int col) {
+    int n = col;
+    final buffer = StringBuffer();
+    while (n > 0) {
+      n--; // 1-based to 0-based
+      final charCode = 'A'.codeUnitAt(0) + (n % 26);
+      buffer.writeCharCode(charCode);
+      n ~/= 26;
+    }
+    return buffer.toString().split('').reversed.join();
   }
 }

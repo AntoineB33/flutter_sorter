@@ -16,7 +16,7 @@
       "args": [
         "--verbose",
         "--start-paused",
-        "--release"
+        // "--release"
       ]
     },
     {
