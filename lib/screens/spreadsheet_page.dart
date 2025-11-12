@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../data/spreadsheet_data.dart';
 import '../widgets/spreadsheet_view.dart';
+import 'package:flutter_js/flutter_js.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 class SpreadsheetPage extends StatefulWidget {
   const SpreadsheetPage({super.key});
@@ -14,11 +16,38 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
   SpreadsheetData? _data;
   final ScrollController _verticalController = ScrollController();
   final ScrollController _horizontalController = ScrollController();
+  late JavascriptRuntime _jsRuntime;
+  String? _jsCode;
+  String _jsOutput = '';
+  String _selectedValue = '';
 
   @override
   void initState() {
     super.initState();
     _loadSpreadsheet();
+    _initJs();
+  }
+
+  Future<void> _initJs() async {
+    _jsRuntime = getJavascriptRuntime();
+    _jsCode = await rootBundle.loadString('assets/js/cell_processor.js');
+    _jsRuntime.evaluate(_jsCode!);
+  }
+
+  void _processSelectedValue(String value) {
+    _selectedValue = value;
+    if (_jsCode == null) return;
+
+    try {
+      final result = _jsRuntime.evaluate('processCell("$value");');
+      setState(() {
+        _jsOutput = result.stringResult ?? '';
+      });
+    } catch (e) {
+      setState(() {
+        _jsOutput = 'Error: $e';
+      });
+    }
   }
 
   Future<void> _loadSpreadsheet() async {
@@ -83,7 +112,10 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
                     child: SpreadsheetView(
                       data: _data!,
                       onChanged: () async {
-                        await _saveSpreadsheet(); // Save automatically on edit
+                        await _saveSpreadsheet();
+                      },
+                      onCellSelected: (value) {
+                        _processSelectedValue(value);
                       },
                     ),
                   ),
@@ -124,11 +156,20 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
           ),
           const Spacer(),
           Text(
-            'Rows: ${_data!.rowCount}  |  Columns: ${_data!.colCount}',
-            style: Theme.of(context)
-                .textTheme
-                .labelMedium
-                ?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            'Rows: ${_data!.rowCount} | Columns: ${_data!.colCount}',
+            style: Theme.of(context).textTheme.labelMedium,
+          ),
+          const SizedBox(width: 24),
+          // 🧠 Show JS Output
+          Flexible(
+            child: Text(
+              'JS Output: $_jsOutput',
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.blueAccent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
