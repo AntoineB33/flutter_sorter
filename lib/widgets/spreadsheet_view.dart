@@ -36,6 +36,8 @@ class _SpreadsheetViewState extends State<SpreadsheetView> {
   int? _editingCol;
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  int? _selectedRow;
+  int? _selectedCol;
 
   @override
   void dispose() {
@@ -270,6 +272,10 @@ class _SpreadsheetViewState extends State<SpreadsheetView> {
     } else {
       return InkWell(
         onTap: () {
+          setState(() {
+            _selectedRow = row;
+            _selectedCol = col;
+          });
           _startEditing(row, col);
           widget.onCellSelected?.call(widget.data.getCell(row, col));
         },
@@ -278,6 +284,14 @@ class _SpreadsheetViewState extends State<SpreadsheetView> {
           height: cellHeight,
           alignment: Alignment.centerLeft,
           padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: (_selectedRow == row && _selectedCol == col)
+                  ? Colors.blueAccent
+                  : Theme.of(context).dividerColor,
+              width: (_selectedRow == row && _selectedCol == col) ? 2.0 : 0.5,
+            ),
+          ),
           child: Text(
             value,
             maxLines: 1,
