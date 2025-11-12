@@ -82,7 +82,9 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
                     scrollDirection: Axis.vertical,
                     child: SpreadsheetView(
                       data: _data!,
-                      onCellTap: _editCell,
+                      onChanged: () async {
+                        await _saveSpreadsheet(); // Save automatically on edit
+                      },
                     ),
                   ),
                 ),
@@ -131,47 +133,5 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
         ],
       ),
     );
-  }
-
-  Future<void> _editCell(int row, int col) async {
-    final currentValue = _data!.getCell(row, col);
-    final controller = TextEditingController(text: currentValue);
-
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Edit ${_data!.columnLabel(col)}$row'),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              labelText: 'Cell value',
-            ),
-            onSubmitted: (value) {
-              Navigator.of(context).pop(value);
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(null),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(controller.text),
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (result != null) {
-      setState(() {
-        _data!.setCell(row, col, result);
-      });
-      _saveSpreadsheet();
-    }
   }
 }
