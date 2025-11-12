@@ -64,13 +64,6 @@ class _SpreadsheetViewState extends State<SpreadsheetView> {
     });
   }
 
-  void _cancelEditing() {
-    setState(() {
-      _editingRow = null;
-      _editingCol = null;
-    });
-  }
-
   Future<void> _showTypeMenu(
     BuildContext context,
     Offset position,
@@ -140,6 +133,8 @@ class _SpreadsheetViewState extends State<SpreadsheetView> {
       ],
     );
 
+    if (!context.mounted) return;
+
     if (result != null) {
       switch (result) {
         case 'test1':
@@ -205,7 +200,7 @@ class _SpreadsheetViewState extends State<SpreadsheetView> {
       width: headerWidth,
       height: headerHeight,
       alignment: Alignment.center,
-      color: Theme.of(context).colorScheme.surfaceVariant,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: const Text('#', style: TextStyle(fontWeight: FontWeight.bold)),
     );
   }
@@ -223,8 +218,8 @@ class _SpreadsheetViewState extends State<SpreadsheetView> {
         height: headerHeight,
         alignment: Alignment.center,
         color: color == Colors.transparent
-            ? Theme.of(context).colorScheme.surfaceVariant
-            : color.withOpacity(0.5),
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : color.withAlpha(128),
         child: Text(
           widget.data.columnLabel(col),
           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -239,7 +234,7 @@ class _SpreadsheetViewState extends State<SpreadsheetView> {
       height: cellHeight,
       alignment: Alignment.centerRight,
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      color: Theme.of(context).colorScheme.surfaceVariant,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Text('$row', style: const TextStyle(fontWeight: FontWeight.bold)),
     );
   }

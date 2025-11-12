@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../data/spreadsheet_data.dart';
 import '../widgets/spreadsheet_view.dart';
@@ -19,7 +18,6 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
   late JavascriptRuntime _jsRuntime;
   String? _jsCode;
   String _jsOutput = '';
-  String _selectedValue = '';
 
   @override
   void initState() {
@@ -35,13 +33,12 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
   }
 
   void _processSelectedValue(String value) {
-    _selectedValue = value;
     if (_jsCode == null) return;
 
     try {
       final result = _jsRuntime.evaluate('processCell("$value");');
       setState(() {
-        _jsOutput = result.stringResult ?? '';
+        _jsOutput = result.stringResult;
       });
     } catch (e) {
       setState(() {
