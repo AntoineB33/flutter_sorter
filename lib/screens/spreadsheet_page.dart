@@ -3,6 +3,10 @@ import '../data/spreadsheet_data.dart';
 import '../widgets/spreadsheet_view.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'dart:convert';
+import '../data/js_node.dart';
+import '../widgets/js_tree_view.dart';
+
 
 class SpreadsheetPage extends StatefulWidget {
   const SpreadsheetPage({super.key});
@@ -18,6 +22,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
   late JavascriptRuntime _jsRuntime;
   String? _jsCode;
   String _jsOutput = '';
+  JsNode? _jsTree;
 
   @override
   void initState() {
@@ -37,15 +42,19 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
 
     try {
       final result = _jsRuntime.evaluate('processCell("$value");');
+      final decoded = jsonDecode(result.stringResult);
       setState(() {
-        _jsOutput = result.stringResult;
+        _jsTree = JsNode.fromJson(decoded);
+        _jsOutput = _jsTree!.text;
       });
     } catch (e) {
       setState(() {
         _jsOutput = 'Error: $e';
+        _jsTree = null;
       });
     }
   }
+
 
   Future<void> _loadSpreadsheet() async {
     final loaded = await SpreadsheetData.load();
@@ -120,6 +129,18 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
               ),
             ),
           ),
+          if (_jsTree != null)
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
+              ),
+              padding: const EdgeInsets.all(8),
+              height: 200,
+              child: SingleChildScrollView(
+                child: JsTreeView(node: _jsTree!),
+              ),
+            ),
         ],
       ),
     );
@@ -155,18 +176,6 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
           Text(
             'Rows: ${_data!.rowCount} | Columns: ${_data!.colCount}',
             style: Theme.of(context).textTheme.labelMedium,
-          ),
-          const SizedBox(width: 24),
-          // 🧠 Show JS Output
-          Flexible(
-            child: Text(
-              'JS Output: $_jsOutput',
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.blueAccent,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
           ),
         ],
       ),

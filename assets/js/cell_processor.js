@@ -1,8 +1,13 @@
 function processCell(value) {
-  if (!value) return "Empty";
-  if (!isNaN(value)) return "Number squared: " + (value * value);
-  return "Uppercase: " + value.toUpperCase();
+  return JSON.stringify({
+    text: value,
+    children: [
+      { text: "child1", children: [] },
+      { text: "child2", children: [{ text: "grandchild", children: [] }] }
+    ]
+  });
 }
+
 
 
 // For Node (debugging)
