@@ -1,56 +1,22 @@
-# trying_flutter
+## 📁 Folder Structure Overview
 
-A new Flutter project.
+```
+lib/
+│
+├── data/
+│   ├── spreadsheet_data.dart     # Core spreadsheet model, save/load, row/column logic
+│   └── js_node.dart              # Node model for JS tree output
+│
+├── screens/
+│   └── spreadsheet_page.dart     # Main UI screen + JS handling logic
+│
+├── widgets/
+│   ├── spreadsheet_view.dart     # Editable spreadsheet table component
+│   └── js_tree_view.dart         # Collapsible JS output tree
+│
+└── main.dart                     # App entry point
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-
-
-
-
-TODO
-
-optimize sync when paste group of cells
-
-
-Adding a 5-minute screen-free break each hour (optional)
-
-
-
-Try a 30-second “blink break”:
-
-Close your eyes gently for 2 seconds
-
-Open and blink normally 5 times
-
-Repeat twice
-This trains your eyes to blink more fully and frequently.
-
-
-
-
-
-
-
-
-
-
-flutter build apk --release
-build\app\outputs\flutter-apk\app-release.apk
-Ce PC\Redmi Note 10 5G\Espace de stockage interne partagé\FlutterApps
-
-cd C:\Users\antoi\AppData\Local\Android\Sdk\platform-tools
-adb kill-server
-
-flutter build windows
-build\windows\x64\runner\Release\trying_flutter.exe
+assets/
+└── js/
+    └── cell_processor.js         # JavaScript logic injected into runtime
+```
