@@ -1,24 +1,29 @@
 import 'package:flutter/material.dart';
-import 'screens/spreadsheet_page.dart';
+import 'package:provider/provider.dart';
+
+import 'logic/spreadsheet_state.dart';
+import 'presentation/pages/home_page.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const SpreadsheetApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => SpreadsheetState()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
-class SpreadsheetApp extends StatelessWidget {
-  const SpreadsheetApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Spreadsheet',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.blue,
-      ),
-      home: const SpreadsheetPage(),
+      title: 'Spreadsheet Example',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const HomePage(),
     );
   }
 }
