@@ -4,9 +4,9 @@ import '../widgets/spreadsheet_view.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'dart:convert';
-import '../data/js_node.dart';
-import '../widgets/js_tree_view.dart';
-
+import '../data/node_struct.dart';
+import '../widgets/tree_view.dart';
+import '../data/function_queue.dart';
 
 class SpreadsheetPage extends StatefulWidget {
   const SpreadsheetPage({super.key});
@@ -19,42 +19,16 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
   SpreadsheetData? _data;
   final ScrollController _verticalController = ScrollController();
   final ScrollController _horizontalController = ScrollController();
-  late JavascriptRuntime _jsRuntime;
-  String? _jsCode;
-  String _jsOutput = '';
-  JsNode? _jsTree;
 
   @override
   void initState() {
     super.initState();
     _loadSpreadsheet();
-    _initJs();
   }
 
-  Future<void> _initJs() async {
-    _jsRuntime = getJavascriptRuntime();
-    _jsCode = await rootBundle.loadString('assets/js/cell_processor.js');
-    _jsRuntime.evaluate(_jsCode!);
+  void _processSelectedValue(int row, int col) {
+    queue.enqueue(getCellElementsWithLinks(row, col));
   }
-
-  void _processSelectedValue(String value) {
-    if (_jsCode == null) return;
-
-    try {
-      final result = _jsRuntime.evaluate('processCell("$value");');
-      final decoded = jsonDecode(result.stringResult);
-      setState(() {
-        _jsTree = JsNode.fromJson(decoded);
-        _jsOutput = _jsTree!.text;
-      });
-    } catch (e) {
-      setState(() {
-        _jsOutput = 'Error: $e';
-        _jsTree = null;
-      });
-    }
-  }
-
 
   Future<void> _loadSpreadsheet() async {
     final loaded = await SpreadsheetData.load();
@@ -62,7 +36,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
       _data = loaded ?? SpreadsheetData(initialRows: 20, initialCols: 10);
     });
   }
-  
+
   Future<void> _saveSpreadsheet() async {
     await _data!.save();
   }
@@ -77,9 +51,7 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
   @override
   Widget build(BuildContext context) {
     if (_data == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -120,8 +92,8 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
                       onChanged: () async {
                         await _saveSpreadsheet();
                       },
-                      onCellSelected: (value) {
-                        _processSelectedValue(value);
+                      onCellSelected: (row, col) {
+                        _processSelectedValue(row, col);
                       },
                     ),
                   ),
@@ -129,17 +101,17 @@ class _SpreadsheetPageState extends State<SpreadsheetPage> {
               ),
             ),
           ),
-          if (_jsTree != null)
+          if (_tree != null)
             Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
+                border: Border(
+                  top: BorderSide(color: Theme.of(context).dividerColor),
+                ),
               ),
               padding: const EdgeInsets.all(8),
               height: 200,
-              child: SingleChildScrollView(
-                child: JsTreeView(node: _jsTree!),
-              ),
+              child: SingleChildScrollView(child: TreeView(node: _tree!)),
             ),
         ],
       ),

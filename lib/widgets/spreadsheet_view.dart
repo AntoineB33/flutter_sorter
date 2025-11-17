@@ -4,7 +4,7 @@ import '../data/spreadsheet_data.dart';
 class SpreadsheetView extends StatefulWidget {
   final SpreadsheetData data;
   final VoidCallback onChanged;
-  final void Function(String value)? onCellSelected;
+  final void Function(int row, int col)? onCellSelected;
 
   const SpreadsheetView({
     super.key,
@@ -277,7 +277,7 @@ class _SpreadsheetViewState extends State<SpreadsheetView> {
             _selectedCol = col;
           });
           _startEditing(row, col);
-          widget.onCellSelected?.call(widget.data.getCell(row, col));
+          widget.onCellSelected?.call(row, col);
         },
         child: Container(
           width: cellWidth,

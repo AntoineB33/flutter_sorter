@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
-import '../data/js_node.dart';
+import '../data/node_struct.dart';
 
-class JsTreeView extends StatefulWidget {
-  final JsNode node;
+class TreeView extends StatefulWidget {
+  final NodeStruct node;
   final double indent;
 
-  const JsTreeView({
-    super.key,
-    required this.node,
-    this.indent = 0,
-  });
+  const TreeView({super.key, required this.node, this.indent = 0});
 
   @override
-  State<JsTreeView> createState() => _JsTreeViewState();
+  State<TreeView> createState() => _treeViewState();
 }
 
-class _JsTreeViewState extends State<JsTreeView> {
+class _treeViewState extends State<TreeView> {
   bool _expanded = false;
 
   @override
@@ -40,7 +36,7 @@ class _JsTreeViewState extends State<JsTreeView> {
               const Text('  '), // spacer for alignment
             Expanded(
               child: Text(
-                widget.node.text,
+                widget.node.message ?? '',
                 style: const TextStyle(fontSize: 14),
               ),
             ),
@@ -51,10 +47,10 @@ class _JsTreeViewState extends State<JsTreeView> {
             padding: const EdgeInsets.only(left: 16),
             child: Column(
               children: widget.node.children
-                  .map((child) => JsTreeView(
-                        node: child,
-                        indent: widget.indent + 12,
-                      ))
+                  .map(
+                    (child) =>
+                        TreeView(node: child, indent: widget.indent + 12),
+                  )
                   .toList(),
             ),
           ),
