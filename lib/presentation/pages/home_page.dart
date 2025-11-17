@@ -11,14 +11,14 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(title: const Text("Spreadsheet Example")),
       body: Row(
         children: const [
-          Expanded(
-            flex: 3,
-            child: SpreadsheetWidget(),
-          ),
-          SizedBox(width: 2),
           SizedBox(
             width: 200,
             child: SideMenu(),
+          ),
+          SizedBox(width: 2),
+          Expanded(
+            flex: 3,
+            child: SpreadsheetWidget(),
           ),
         ],
       ),
