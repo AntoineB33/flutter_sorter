@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../data/models/cell.dart';
 import '../../logic/spreadsheet_state.dart';
+import '../../data/models/cell.dart';
 
 class SpreadsheetWidget extends StatefulWidget {
   final int rows;
@@ -17,31 +18,69 @@ class SpreadsheetWidget extends StatefulWidget {
 class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   final ScrollController _verticalController = ScrollController();
   final ScrollController _horizontalController = ScrollController();
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.requestFocus();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final grid = context.watch<SpreadsheetState>().grid;
+    final state = context.watch<SpreadsheetState>();
+
+    return KeyboardListener(
+      focusNode: _focusNode,
+      autofocus: true,
+      onKeyEvent: (KeyEvent event) async {
+        // Only react on key down
+        if (event is! KeyDownEvent) return;
+
+        final key = event.logicalKey.keyLabel.toLowerCase();
+
+        final isPaste = (event.logicalKey == LogicalKeyboardKey.keyV) &&
+            (event.logicalKey == LogicalKeyboardKey.keyV) &&
+            (event is KeyDownEvent) &&
+            (HardwareKeyboard.instance.isControlPressed ||
+                HardwareKeyboard.instance.isMetaPressed);
+
+        // Detect CTRL/CMD + V
+        if ((HardwareKeyboard.instance.isControlPressed ||
+                HardwareKeyboard.instance.isMetaPressed) &&
+            key == 'v') {
+          final data = await Clipboard.getData('text/plain');
+          if (data?.text != null) {
+            context.read<SpreadsheetState>().pasteText(data!.text!);
+          }
+        }
+
+        // You can add arrow key navigation here later
+      },
+      child: buildGrid(context, state),
+    );
+  }
+
+  Widget buildGrid(BuildContext context, SpreadsheetState state) {
+    final grid = state.grid;
+
     return Scrollbar(
       controller: _horizontalController,
       thumbVisibility: true,
-      trackVisibility: true,
-      notificationPredicate: (notif) => notif.metrics.axis == Axis.horizontal,
       child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
         controller: _horizontalController,
+        scrollDirection: Axis.horizontal,
         child: Scrollbar(
           controller: _verticalController,
           thumbVisibility: true,
-          trackVisibility: true,
-          notificationPredicate: (notif) => notif.metrics.axis == Axis.vertical,
           child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
             controller: _verticalController,
+            scrollDirection: Axis.vertical,
             child: SizedBox(
-              width: widget.cols * 120,  // Adjust cell widths if needed
-              height: widget.rows * 50,  // Adjust row heights if needed
+              width: widget.cols * 120,
+              height: widget.rows * 50,
               child: GridView.builder(
-                physics: const NeverScrollableScrollPhysics(), 
+                physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: widget.cols,
                   childAspectRatio: 2.2,
@@ -52,14 +91,13 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                   final col = index % widget.cols;
 
                   final cell = grid[row][col];
-
-                  final isSelected =
-                      context.watch<SpreadsheetState>().selectedCell?.row == row &&
-                      context.watch<SpreadsheetState>().selectedCell?.col == col;
+                  final isSelected = state.selectedCell?.row == row &&
+                      state.selectedCell?.col == col;
 
                   return InkWell(
                     onTap: () {
                       context.read<SpreadsheetState>().selectCell(row, col);
+                      _focusNode.requestFocus(); // keep keyboard focus
                     },
                     child: Container(
                       alignment: Alignment.center,

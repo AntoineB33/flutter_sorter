@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import '../data/models/cell.dart';
+import '../data/models/node_struct.dart';
 
 class SpreadsheetState extends ChangeNotifier {
   late final List<List<Cell>> _grid;
+  NodeStruct? errorRoot;
+  NodeStruct? warningRoot;
+  final NodeStruct mentionsRoot = NodeStruct(message: 'Current selection');
+  final NodeStruct searchRoot = NodeStruct(message: 'Search results');
+  final NodeStruct categoriesRoot = NodeStruct(message: 'Categories');
+  final NodeStruct distPairsRoot = NodeStruct(message: 'Distance Pairs');
 
   SpreadsheetState({int rows = 30, int cols = 10}) {
     _grid = List.generate(
@@ -63,7 +70,7 @@ class SpreadsheetState extends ChangeNotifier {
         updateCell(targetRow, targetCol, rows[r][c]);
       }
     }
-
+    
     notifyListeners();
   }
 }
