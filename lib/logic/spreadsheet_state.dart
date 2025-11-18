@@ -74,4 +74,15 @@ class SpreadsheetState extends ChangeNotifier {
     
     notifyListeners();
   }
+  
+  String columnName(int index) {
+    index++; 
+    String name = "";
+    while (index > 0) {
+      int rem = (index - 1) % 26;
+      name = String.fromCharCode(65 + rem) + name;
+      index = (index - 1) ~/ 26;
+    }
+    return name;
+  }
 }
