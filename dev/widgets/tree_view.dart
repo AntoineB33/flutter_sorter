@@ -8,10 +8,10 @@ class TreeView extends StatefulWidget {
   const TreeView({super.key, required this.node, this.indent = 0});
 
   @override
-  State<TreeView> createState() => _treeViewState();
+  State<TreeView> createState() => _TreeViewState();
 }
 
-class _treeViewState extends State<TreeView> {
+class _TreeViewState extends State<TreeView> {
   bool _expanded = false;
 
   @override

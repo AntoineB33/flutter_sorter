@@ -19,10 +19,11 @@ class SpreadsheetState extends ChangeNotifier {
         (c) => Cell(row: r, col: c, value: ''),
       ),
     );
-    _grid[0][0] = Cell(row: 0, col: 0, value: 'Hello');
   }
 
   List<List<Cell>> get grid => _grid;
+  int get rowCount => _grid.length;
+  int get colCount => _grid[0].length;
 
   Cell? _selectedCell;
   Cell? get selectedCell => _selectedCell;

@@ -3,19 +3,20 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../logic/spreadsheet_state.dart';
-import '../../data/models/cell.dart';
 
 class SpreadsheetWidget extends StatefulWidget {
-  final int rows;
-  final int cols;
 
-  const SpreadsheetWidget({super.key, this.rows = 30, this.cols = 10});
+  const SpreadsheetWidget({super.key});
 
   @override
   State<SpreadsheetWidget> createState() => _SpreadsheetWidgetState();
 }
 
 class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
+  static const double cellWidth = 100;
+  static const double cellHeight = 40;
+  static const double headerHeight = 44;
+  static const double headerWidth = 60;
   final ScrollController _verticalController = ScrollController();
   final ScrollController _horizontalController = ScrollController();
   final FocusNode _focusNode = FocusNode();
@@ -38,12 +39,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         if (event is! KeyDownEvent) return;
 
         final key = event.logicalKey.keyLabel.toLowerCase();
-
-        final isPaste = (event.logicalKey == LogicalKeyboardKey.keyV) &&
-            (event.logicalKey == LogicalKeyboardKey.keyV) &&
-            (event is KeyDownEvent) &&
-            (HardwareKeyboard.instance.isControlPressed ||
-                HardwareKeyboard.instance.isMetaPressed);
+        final state = context.read<SpreadsheetState>();
 
         // Detect CTRL/CMD + V
         if ((HardwareKeyboard.instance.isControlPressed ||
@@ -51,7 +47,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
             key == 'v') {
           final data = await Clipboard.getData('text/plain');
           if (data?.text != null) {
-            context.read<SpreadsheetState>().pasteText(data!.text!);
+            state.pasteText(data!.text!);
           }
         }
 
@@ -63,6 +59,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   Widget buildGrid(BuildContext context, SpreadsheetState state) {
     final grid = state.grid;
+    final rows = state.rowCount;
+    final cols = state.colCount;
 
     return Scrollbar(
       controller: _horizontalController,
@@ -77,18 +75,18 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
             controller: _verticalController,
             scrollDirection: Axis.vertical,
             child: SizedBox(
-              width: widget.cols * 120,
-              height: widget.rows * 50,
+              width: cols * cellWidth,
+              height: rows * cellHeight,
               child: GridView.builder(
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: widget.cols,
-                  childAspectRatio: 2.2,
+                  crossAxisCount: cols,
+                  childAspectRatio: cellWidth / cellHeight,
                 ),
-                itemCount: widget.rows * widget.cols,
+                itemCount: rows * cols,
                 itemBuilder: (context, index) {
-                  final row = index ~/ widget.cols;
-                  final col = index % widget.cols;
+                  final row = index ~/ cols;
+                  final col = index % cols;
 
                   final cell = grid[row][col];
                   final isSelected = state.selectedCell?.row == row &&
