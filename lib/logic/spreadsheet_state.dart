@@ -2,21 +2,68 @@ import 'package:flutter/material.dart';
 import '../data/models/cell.dart';
 
 class SpreadsheetState extends ChangeNotifier {
-  Cell? _selectedCell;
+  late final List<List<Cell>> _grid;
 
+  SpreadsheetState({int rows = 30, int cols = 10}) {
+    _grid = List.generate(
+      rows,
+      (r) => List.generate(
+        cols,
+        (c) => Cell(row: r, col: c, value: ''),
+      ),
+    );
+    _grid[0][0] = Cell(row: 0, col: 0, value: 'Hello');
+  }
+
+  List<List<Cell>> get grid => _grid;
+
+  Cell? _selectedCell;
   Cell? get selectedCell => _selectedCell;
 
-  void selectCell(Cell cell) {
-    _selectedCell = cell;
+  // Select a cell
+  void selectCell(int row, int col) {
+    _selectedCell = _grid[row][col];
     notifyListeners();
   }
 
-  String get cellInfo {
-    if (_selectedCell == null) return "No cell selected";
+  // Update the value of a cell
+  void updateCell(int row, int col, String newValue) {
+    _grid[row][col] = _grid[row][col].copyWith(value: newValue);
+    notifyListeners();
+  }
 
-    return "Selected Cell:\n"
-           "Row: ${_selectedCell!.row}\n"
-           "Column: ${_selectedCell!.col}\n"
+  // What to display in the side menu
+  String get selectedCellInfo {
+    if (_selectedCell == null) return "No cell selected";
+    return "Cell (${_selectedCell!.row}, ${_selectedCell!.col})\n"
            "Value: ${_selectedCell!.value}";
+  }
+
+  void pasteText(String rawText) {
+    if (_selectedCell == null) return;
+
+    final startRow = _selectedCell!.row;
+    final startCol = _selectedCell!.col;
+
+    // Parse TSV (tab-separated values)
+    final rows = rawText
+        .trimRight()
+        .split('\n')
+        .map((r) => r.split('\t'))
+        .toList();
+
+    for (int r = 0; r < rows.length; r++) {
+      for (int c = 0; c < rows[r].length; c++) {
+        final targetRow = startRow + r;
+        final targetCol = startCol + c;
+
+        // Prevent overflow
+        if (targetRow >= _grid.length || targetCol >= _grid[0].length) continue;
+
+        updateCell(targetRow, targetCol, rows[r][c]);
+      }
+    }
+
+    notifyListeners();
   }
 }

@@ -20,6 +20,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final grid = context.watch<SpreadsheetState>().grid;
     return Scrollbar(
       controller: _horizontalController,
       thumbVisibility: true,
@@ -50,11 +51,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                   final row = index ~/ widget.cols;
                   final col = index % widget.cols;
 
-                  final cell = Cell(
-                    row: row,
-                    col: col,
-                    value: "R$row C$col",
-                  );
+                  final cell = grid[row][col];
 
                   final isSelected =
                       context.watch<SpreadsheetState>().selectedCell?.row == row &&
@@ -62,7 +59,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
                   return InkWell(
                     onTap: () {
-                      context.read<SpreadsheetState>().selectCell(cell);
+                      context.read<SpreadsheetState>().selectCell(row, col);
                     },
                     child: Container(
                       alignment: Alignment.center,

@@ -7,7 +7,7 @@ class SideMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final info = context.watch<SpreadsheetState>().cellInfo;
+    final info = context.watch<SpreadsheetState>().selectedCellInfo;
 
     return Container(
       padding: const EdgeInsets.all(16),

@@ -8,4 +8,12 @@ class Cell {
     required this.col,
     required this.value,
   });
+
+  Cell copyWith({String? value}) {
+    return Cell(
+      row: row,
+      col: col,
+      value: value ?? this.value,
+    );
+  }
 }
