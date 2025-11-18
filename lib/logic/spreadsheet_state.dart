@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../data/models/cell.dart';
 import '../data/models/node_struct.dart';
 
 class SpreadsheetState extends ChangeNotifier {
   late final List<List<Cell>> _grid;
+  Map<int, String> _columnTypes = {};
   NodeStruct? errorRoot;
   NodeStruct? warningRoot;
   final NodeStruct mentionsRoot = NodeStruct(message: 'Current selection');
   final NodeStruct searchRoot = NodeStruct(message: 'Search results');
   final NodeStruct categoriesRoot = NodeStruct(message: 'Categories');
   final NodeStruct distPairsRoot = NodeStruct(message: 'Distance Pairs');
+
 
   SpreadsheetState({int rows = 30, int cols = 10}) {
     _grid = List.generate(
@@ -24,6 +28,8 @@ class SpreadsheetState extends ChangeNotifier {
   List<List<Cell>> get grid => _grid;
   int get rowCount => _grid.length;
   int get colCount => _grid[0].length;
+
+  String getColumnType(int col) => _columnTypes[col] ?? 'Default';
 
   Cell? _selectedCell;
   Cell? get selectedCell => _selectedCell;
@@ -84,5 +90,13 @@ class SpreadsheetState extends ChangeNotifier {
       index = (index - 1) ~/ 26;
     }
     return name;
+  }
+
+  Map<int, String> get columnTypes => _columnTypes;
+
+  void setColumnType(int col, String type) {
+    if (col >= 1 && col <= colCount) {
+      _columnTypes[col] = type;
+    }
   }
 }

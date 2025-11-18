@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:linked_scroll_controller/linked_scroll_controller.dart';
 
 import '../../logic/spreadsheet_state.dart';
-
+import '../../data/models/column_type.dart';
 
 class SpreadsheetWidget extends StatefulWidget {
 
@@ -75,6 +75,110 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     );
   }
 
+  Future<void> _showTypeMenu(
+    BuildContext context,
+    SpreadsheetState state,
+    Offset position,
+    int col,
+  ) async {
+    final currentType = state.getColumnType(col);
+    final result = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+      items: ColumnTypes.columnTypes.entries.map((entry) {
+        return CheckedPopupMenuItem<String>(
+          value: entry.key,
+          checked: entry.key == currentType,
+          child: Row(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: entry.value == Colors.transparent
+                      ? Colors.grey.shade300
+                      : entry.value,
+                  borderRadius: BorderRadius.circular(3),
+                  border: Border.all(color: Colors.black26),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(entry.key),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+
+    if (result != null) {
+      setState(() {
+        state.setColumnType(col, result);
+      });
+    }
+  }
+
+  void _showColumnContextMenu(BuildContext context, SpreadsheetState state, Offset position, int col) async {
+    final result = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx,
+        position.dy,
+      ),
+      items: [
+        const PopupMenuItem(
+          value: 'test1',
+          child: Text('Test Action 1'),
+        ),
+        const PopupMenuItem(
+          value: 'test2',
+          child: Text('Test Action 2'),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(
+          value: 'change_type',
+          child: Text('Change Type ▶'),
+        ),
+      ],
+    );
+
+    if (!context.mounted) return;
+
+    if (result != null) {
+      switch (result) {
+        case 'test1':
+          debugPrint('Test Action 1 clicked on column ${state.columnName(col)}');
+          break;
+        case 'test2':
+          debugPrint('Test Action 2 clicked on column ${state.columnName(col)}');
+          break;
+        case 'change_type':
+          await _showTypeMenu(context, state, position, col);
+          break;
+      }
+    }
+  }
+
+  Widget _buildColumnHeader(BuildContext context, SpreadsheetState state, int col) {
+    return GestureDetector(
+      onSecondaryTapDown: (details) {
+        _showColumnContextMenu(context, state, details.globalPosition, col);
+      },
+      child: Container(
+        width: cellWidth,
+        height: headerHeight,
+        alignment: Alignment.center,
+        margin: const EdgeInsets.only(right: 1),
+        color: Colors.grey.shade300,
+        child: Text(
+          state.columnName(col),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
   Widget buildGrid(BuildContext context, SpreadsheetState state) {
     final grid = state.grid;
     final rows = state.rowCount;
@@ -131,16 +235,10 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                   controller: _horizontalHeader,
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: List.generate(cols, (col) {
-                      return Container(
-                        width: cellWidth,
-                        height: headerHeight,
-                        alignment: Alignment.center,
-                        margin: const EdgeInsets.only(right: 1),
-                        color: Colors.grey.shade300,
-                        child: Text(state.columnName(col)),
-                      );
-                    }),
+                    children: List.generate(
+                      cols,
+                      (col) => _buildColumnHeader(context, state, col),
+                    ),
                   ),
                 ),
               ),
