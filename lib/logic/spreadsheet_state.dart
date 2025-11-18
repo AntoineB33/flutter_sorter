@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 import 'dart:convert';
 import '../data/models/cell.dart';
 import '../data/models/node_struct.dart';
@@ -139,5 +140,28 @@ class SpreadsheetState extends ChangeNotifier {
     if (col >= 1 && col <= colCount) {
       _columnTypes[col] = type;
     }
+  }
+
+  Future<String?> copySelectionToClipboard() async {
+    if (!hasSelectionRange) return null;
+
+    final r1 = selectionStart!.row;
+    final c1 = selectionStart!.col;
+    final r2 = selectionEnd!.row;
+    final c2 = selectionEnd!.col;
+
+    final buffer = StringBuffer();
+
+    for (int r = r1; r <= r2; r++) {
+      final rowValues = <String>[];
+      for (int c = c1; c <= c2; c++) {
+        rowValues.add(_grid[r][c].value);
+      }
+      buffer.writeln(rowValues.join('\t')); // TSV format
+    }
+
+    final text = buffer.toString().trimRight();
+    await Clipboard.setData(ClipboardData(text: text));
+    return text;
   }
 }

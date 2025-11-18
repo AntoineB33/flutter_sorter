@@ -59,6 +59,17 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         final key = event.logicalKey.keyLabel.toLowerCase();
         final state = context.read<SpreadsheetState>();
 
+        // Detect CTRL/CMD + C
+        if ((HardwareKeyboard.instance.isControlPressed ||
+            HardwareKeyboard.instance.isMetaPressed) &&
+            key == 'c') {
+          final copied = await state.copySelectionToClipboard();
+          if (copied != null) {
+            debugPrint("Copied:\n$copied");
+          }
+          return;
+        }
+
         // Detect CTRL/CMD + V
         if ((HardwareKeyboard.instance.isControlPressed ||
                 HardwareKeyboard.instance.isMetaPressed) &&
