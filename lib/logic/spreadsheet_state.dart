@@ -14,6 +14,16 @@ class SpreadsheetState extends ChangeNotifier {
   final NodeStruct categoriesRoot = NodeStruct(message: 'Categories');
   final NodeStruct distPairsRoot = NodeStruct(message: 'Distance Pairs');
 
+  Cell? _selectionStart;
+  Cell? _selectionEnd;
+
+  Cell? get selectionStart => _selectionStart;
+  Cell? get selectionEnd => _selectionEnd;
+
+  bool get hasSelectionRange =>
+      _selectionStart != null && _selectionEnd != null;
+
+
 
   SpreadsheetState({int rows = 30, int cols = 10}) {
     _grid = List.generate(
@@ -37,7 +47,30 @@ class SpreadsheetState extends ChangeNotifier {
   // Select a cell
   void selectCell(int row, int col) {
     _selectedCell = _grid[row][col];
+    _selectionStart = _selectedCell;
+    _selectionEnd = _selectedCell;
     notifyListeners();
+  }
+  
+  void selectRange(int startRow, int startCol, int endRow, int endCol) {
+    _selectionStart = _grid[startRow][startCol];
+    _selectionEnd = _grid[endRow][endCol];
+    _selectedCell = _selectionStart; // anchor
+    notifyListeners();
+  }
+  
+  bool isCellSelected(int row, int col) {
+    if (!hasSelectionRange) return false;
+
+    final r1 = _selectionStart!.row;
+    final c1 = _selectionStart!.col;
+    final r2 = _selectionEnd!.row;
+    final c2 = _selectionEnd!.col;
+
+    return row >= r1 &&
+          row <= r2 &&
+          col >= c1 &&
+          col <= c2;
   }
 
   // Update the value of a cell
@@ -48,10 +81,18 @@ class SpreadsheetState extends ChangeNotifier {
 
   // What to display in the side menu
   String get selectedCellInfo {
-    if (_selectedCell == null) return "No cell selected";
-    return "Cell (${_selectedCell!.row}, ${_selectedCell!.col})\n"
-           "Value: ${_selectedCell!.value}";
+    if (!hasSelectionRange) {
+      return "No selection";
+    }
+
+    final r1 = selectionStart!.row + 1;
+    final c1 = columnName(selectionStart!.col);
+    final r2 = selectionEnd!.row + 1;
+    final c2 = columnName(selectionEnd!.col);
+
+    return "Selected range: $c1$r1 → $c2$r2";
   }
+
 
   void pasteText(String rawText) {
     if (_selectedCell == null) return;

@@ -189,15 +189,23 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         // --- Row Header Column ---
         Column(
           children: [
-            // Empty corner
             Container(
               width: headerWidth,
               height: headerHeight,
               color: Colors.grey.shade300,
               alignment: Alignment.center,
-              child: const Text(""),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  context.read<SpreadsheetState>().selectRange(
+                    0, 0,
+                    state.rowCount - 1,
+                    state.colCount - 1,
+                  );
+                },
+                child: const Icon(Icons.select_all, size: 16),
+              ),
             ),
-
             // Row headers
             Expanded(
               child: Scrollbar(
@@ -274,9 +282,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                               final col = index % cols;
 
                               final cell = grid[row][col];
-                              final isSelected =
-                                  state.selectedCell?.row == row &&
-                                      state.selectedCell?.col == col;
+                              final isSelected = state.isCellSelected(row, col);
 
                               return InkWell(
                                 onTap: () {
