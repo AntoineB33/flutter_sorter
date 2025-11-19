@@ -54,21 +54,16 @@ class SpreadsheetState extends ChangeNotifier {
 
   String getColumnType(int col) => _columnTypes[col] ?? ColumnType.defaultType.name;
 
-  Cell? _selectedCell;
-  Cell? get selectedCell => _selectedCell;
-
   // Select a cell
   void selectCell(int row, int col) {
-    _selectedCell = _grid[row][col];
-    _selectionStart = _selectedCell;
-    _selectionEnd = _selectedCell;
+    _selectionStart = _grid[row][col];
+    _selectionEnd = _selectionStart;
     notifyListeners();
   }
   
   void selectRange(int startRow, int startCol, int endRow, int endCol) {
     _selectionStart = _grid[startRow][startCol];
     _selectionEnd = _grid[endRow][endCol];
-    _selectedCell = _selectionStart; // anchor
     notifyListeners();
   }
   
@@ -102,7 +97,7 @@ class SpreadsheetState extends ChangeNotifier {
 
   // ---- Load spreadsheet by name ----
   Future<void> loadSpreadsheet(String name) async {
-    spreadsheetName = name.trim();
+    spreadsheetName = name.trim().toLowerCase();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString("last_opened_sheet", spreadsheetName);   // <--- Add this
@@ -166,10 +161,10 @@ class SpreadsheetState extends ChangeNotifier {
 
 
   void pasteText(String rawText) {
-    if (_selectedCell == null) return;
+    if (_selectionStart == null) return;
 
-    final startRow = _selectedCell!.row;
-    final startCol = _selectedCell!.col;
+    final startRow = _selectionStart!.row;
+    final startCol = _selectionStart!.col;
 
     // Parse TSV (tab-separated values)
     final rows = rawText

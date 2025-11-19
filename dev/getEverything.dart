@@ -1,13 +1,7 @@
   void getEverything() {
     errorRoot = null;
     warningRoot = null;
-    if (result.name === "s") {
-      errorRoot.push(
-        `Error: Invalid role '${result.name}' - 's' is a reserved name`,
-      );
-      return;
-    }
-    result.table.forEach((row) =>
+    _grid.forEach((row) =>
       row.forEach((cell, idx) => {
         if (typeof cell !== "string") {
           row[idx] = String(cell);
