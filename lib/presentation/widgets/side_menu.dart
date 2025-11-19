@@ -13,9 +13,21 @@ class _SideMenuState extends State<SideMenu> {
   final TextEditingController _controller = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    final state = context.read<SpreadsheetState>();
+    _controller.text = state.spreadsheetName;   // <--- Add this
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = context.watch<SpreadsheetState>();
     final info = state.selectedCellInfo;
+
+    _controller.text = state.spreadsheetName;
+    _controller.selection = TextSelection.fromPosition(
+      TextPosition(offset: _controller.text.length),
+    );
 
     return Container(
       padding: const EdgeInsets.all(16),

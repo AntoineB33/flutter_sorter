@@ -36,6 +36,16 @@ class SpreadsheetState extends ChangeNotifier {
         (c) => Cell(row: r, col: c, value: ''),
       ),
     );
+    _loadLastOpenedSheet();   // <--- Add this
+  }
+
+  Future<void> _loadLastOpenedSheet() async {
+    final prefs = await SharedPreferences.getInstance();
+    final last = prefs.getString("last_opened_sheet");
+
+    if (last != null && last.trim().isNotEmpty) {
+      await loadSpreadsheet(last);
+    }
   }
 
   List<List<Cell>> get grid => _grid;
@@ -95,6 +105,8 @@ class SpreadsheetState extends ChangeNotifier {
     spreadsheetName = name.trim();
 
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("last_opened_sheet", spreadsheetName);   // <--- Add this
+
     final raw = prefs.getString("spreadsheet_$spreadsheetName");
 
     if (raw == null) {
