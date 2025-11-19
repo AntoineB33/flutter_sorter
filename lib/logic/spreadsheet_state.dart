@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 import 'dart:convert';
 import '../data/models/cell.dart';
 import '../data/models/node_struct.dart';
+import '../data/models/column_type.dart';
 
 class SpreadsheetState extends ChangeNotifier {
-  late final List<List<Cell>> _grid;
+  String spreadsheetName = "";
+  late List<List<Cell>> _grid;
   Map<int, String> _columnTypes = {};
   NodeStruct? errorRoot;
   NodeStruct? warningRoot;
@@ -40,7 +42,7 @@ class SpreadsheetState extends ChangeNotifier {
   int get rowCount => _grid.length;
   int get colCount => _grid[0].length;
 
-  String getColumnType(int col) => _columnTypes[col] ?? 'Default';
+  String getColumnType(int col) => _columnTypes[col] ?? ColumnType.defaultType.name;
 
   Cell? _selectedCell;
   Cell? get selectedCell => _selectedCell;
@@ -74,9 +76,65 @@ class SpreadsheetState extends ChangeNotifier {
           col <= c2;
   }
 
-  // Update the value of a cell
+  // ---- Save data for current spreadsheet ----
+  Future<void> saveSpreadsheet() async {
+    if (spreadsheetName.trim().isEmpty) return;
+
+    final prefs = await SharedPreferences.getInstance();
+
+    final data = {
+      "grid": _grid.map((row) => row.map((c) => c.value).toList()).toList(),
+      "types": _columnTypes,
+    };
+
+    await prefs.setString("spreadsheet_$spreadsheetName", jsonEncode(data));
+  }
+
+  // ---- Load spreadsheet by name ----
+  Future<void> loadSpreadsheet(String name) async {
+    spreadsheetName = name.trim();
+
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString("spreadsheet_$spreadsheetName");
+
+    if (raw == null) {
+      // No existing spreadsheet → create empty grid
+      _grid = List.generate(
+        rowCount,
+        (r) => List.generate(
+          colCount,
+          (c) => Cell(row: r, col: c, value: ''),
+        ),
+      );
+      _columnTypes = {};
+      notifyListeners();
+      return;
+    }
+
+    final decoded = jsonDecode(raw);
+
+    // Restore grid
+    final storedGrid = (decoded["grid"] as List)
+        .map((row) => (row as List).map((v) => v.toString()).toList())
+        .toList();
+
+    for (int r = 0; r < storedGrid.length; r++) {
+      for (int c = 0; c < storedGrid[r].length; c++) {
+        _grid[r][c] = _grid[r][c].copyWith(value: storedGrid[r][c]);
+      }
+    }
+
+    // Restore column types
+    _columnTypes = Map<int, String>.from(decoded["types"] ?? {});
+
+    notifyListeners();
+  }
+
+  // ---- Call save on each update ----
+  @override
   void updateCell(int row, int col, String newValue) {
     _grid[row][col] = _grid[row][col].copyWith(value: newValue);
+    saveSpreadsheet();     // <-- Auto-save
     notifyListeners();
   }
 
@@ -136,10 +194,14 @@ class SpreadsheetState extends ChangeNotifier {
 
   Map<int, String> get columnTypes => _columnTypes;
 
+  @override
   void setColumnType(int col, String type) {
-    if (col >= 1 && col <= colCount) {
-      _columnTypes[col] = type;
+    _columnTypes[col] = type;
+    if (type == ColumnType.defaultType.name) {
+      _columnTypes.remove(col);
     }
+    saveSpreadsheet();     // <-- Auto-save
+    notifyListeners();
   }
 
   Future<String?> copySelectionToClipboard() async {
@@ -164,4 +226,5 @@ class SpreadsheetState extends ChangeNotifier {
     await Clipboard.setData(ClipboardData(text: text));
     return text;
   }
+  
 }

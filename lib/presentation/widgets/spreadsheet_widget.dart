@@ -96,10 +96,10 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     final result = await showMenu<String>(
       context: context,
       position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
-      items: ColumnTypes.columnTypes.entries.map((entry) {
+      items: ColumnType.values.map((entry) {
         return CheckedPopupMenuItem<String>(
-          value: entry.key,
-          checked: entry.key == currentType,
+          value: entry.name,
+          checked: entry.name == currentType,
           child: Row(
             children: [
               Container(
@@ -114,7 +114,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(entry.key),
+              Text(entry.name),
             ],
           ),
         );
