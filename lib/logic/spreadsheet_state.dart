@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
+import 'dart:math';
 import 'dart:convert';
 import '../data/models/cell.dart';
 import '../data/models/node_struct.dart';
 import '../data/models/column_type.dart';
+
 
 class SpreadsheetState extends ChangeNotifier {
   String spreadsheetName = "";
@@ -233,5 +235,138 @@ class SpreadsheetState extends ChangeNotifier {
     await Clipboard.setData(ClipboardData(text: text));
     return text;
   }
-  
+
+  void crop() {
+    var cropLine = rowCount;
+    var cropColumn = colCount;
+    for (int r = cropLine - 1; r >= 0; r--) {
+      if (_grid[r].any((cell) => cell.value != "")) {
+        break;
+      }
+      cropLine--;
+    }
+    for (int c = cropColumn - 1; c >= 0; c--) {
+      if (_grid[1][c].value != "") {
+        break;
+      }
+      cropColumn--;
+    }
+    _grid = _grid.sublist(0, cropLine).map((row) => row.sublist(0, cropColumn)).toList();
+  }
+
+  List<String> generateUniqueStrings(int n) {
+    const charset = 'abcdefghijklmnopqrstuvwxyz';
+    List<String> result = [];
+    int length = 1;
+
+    // Dart version of the generator `product`
+    Iterable<String> product(String chars, int repeat) sync* {
+      if (repeat == 0) {
+        yield "";
+      } else {
+        for (var c in chars.split('')) {
+          for (var suffix in product(chars, repeat - 1)) {
+            yield c + suffix;
+          }
+        }
+      }
+    }
+
+    while (result.length < n) {
+      for (final combo in product(charset, length)) {
+        result.add(combo);
+        if (result.length == n) {
+          return result;
+        }
+      }
+      length++;
+    }
+
+    return result;
+  }
+
+  void getEverything() {
+    errorRoot = null;
+    warningRoot = null;
+    for (final row in _grid) {
+      for (int idx = 0; idx < row.length; idx++) {
+        row[idx] = row[idx].copyWith(value: row[idx].value.trim().toLowerCase());
+      }
+    }
+    crop();
+    var alph = generateUniqueStrings(colCount);
+    var nameIndexes = new Set();
+    var pathIndexes = new Set();
+    for (int index = 0; index < colCount; index++) {
+      final role = getColumnType(index);
+      if (role == ColumnType.names.name) {
+        nameIndexes.add(index);
+      } else if (role == ColumnType.path.name) {
+        pathIndexes.add(index);
+      }
+    }
+    final nameIndex = nameIndexes.first;
+    final pathIndex = pathIndexes.first;
+    final mentions = List.generate(rowCount, (_) =>
+      Array.from({ length: table[0].length }, () => []),
+    );
+    for (let i = 0; i < table.length; i++) {
+      for (let j of [nameIndex, pathIndex]) {
+        let cell_elements = table[i][j].split(";");
+        for (let k = 0; k < cell_elements.length; k++) {
+          cell_elements[k] = cell_elements[k].trim();
+          if (j === nameIndex) {
+            cell_elements[k] = cell_elements[k].toLowerCase();
+          }
+        }
+        result.mentions[i][j] = cell_elements.filter((s) => s);
+      }
+    }
+    for (let i = 1; i < table.length; i++) {
+      for (const name of result.mentions[i][nameIndex]) {
+        if (!isNaN(parseInt(name))) {
+          errorRoot.push(
+            `Error in row ${i}, column ${alph[nameIndex]}: ${JSON.stringify(name)} is not a valid name`,
+          );
+          return result;
+        }
+
+        const match = name.match(/ -(\w+)$/);
+        if (
+          name.includes("_") ||
+          name.includes(":") ||
+          name.includes("|") ||
+          (match && !["fst", "lst"].includes(match[1]))
+        ) {
+          errorRoot.push(
+            `Error in row ${i}, column ${alph[nameIndex]}: ${JSON.stringify(name)} contains invalid characters (_ : | -)`,
+          );
+        }
+
+        const parenMatch = name.match(/(\(\d+\))$/);
+        if (parenMatch) {
+          errorRoot.push(
+            `Error in row ${i}, column ${alph[nameIndex]}: ${JSON.stringify(name)} contains invalid parentheses`,
+          );
+        }
+
+        if (["fst", "lst"].includes(name)) {
+          errorRoot.push(
+            `Error in row ${i}, column ${alph[nameIndex]}: ${JSON.stringify(name)} is a reserved name`,
+          );
+        }
+
+        if (name in result.names) {
+          errorRoot.push(
+            `Error in row ${i}, column ${alph[nameIndex]}: name ${JSON.stringify(name)} already exists in row ${result.names[name]}`,
+          );
+        }
+        result.names[name] = i;
+      }
+    }
+    result.table = table;
+    result.nameIndex = nameIndex;
+    result.pathIndex = pathIndex;
+    getCategories(result);
+  }
 }

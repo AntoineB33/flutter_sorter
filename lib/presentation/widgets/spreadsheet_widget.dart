@@ -210,8 +210,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                 onTap: () {
                   context.read<SpreadsheetState>().selectRange(
                     0, 0,
-                    state.rowCount - 1,
-                    state.colCount - 1,
+                    rows - 1,
+                    cols - 1,
                   );
                 },
                 child: const Icon(Icons.select_all, size: 16),

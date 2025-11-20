@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 enum ColumnType {
   defaultType(Colors.transparent),
-  green(Colors.green),
-  blue(Colors.blue);
+  names(Colors.green),
+  path(Colors.blue);
 
   final Color value;
   const ColumnType(this.value);
