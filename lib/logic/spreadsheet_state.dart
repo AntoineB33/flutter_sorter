@@ -70,7 +70,7 @@ class SpreadsheetState extends ChangeNotifier {
   /// mentioned in each cell.
   List<List<dynamic>> mentions = [];
   Map<String, Cell> names = {};
-  var att_to_col;
+  Map<String, List<dynamic>> att_to_col = {};
   var rolesOptions;
   var newSelectedRoleList;
   List<int> nameIndexes = [];
@@ -79,9 +79,12 @@ class SpreadsheetState extends ChangeNotifier {
   var selectedCol;
   var wasEdited;
   /// Maps attribute identifiers (row index or name)
-  /// to a map of mentioners (row index) to the column index,
+  /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
   Map<dynamic, Map<int, int>> attributes = {};
+  /// Maps attribute identifiers (row index or name)
+  /// to a map of mentioners (row index) to the column index
+  Map<dynamic, Map<int, int>> toMentioners = {};
   var instrTable;
   Cell? _selectionStart;
   Cell? _selectionEnd;
@@ -378,65 +381,36 @@ class SpreadsheetState extends ChangeNotifier {
   void dfsIterative() {
     final visited = <int>{};
     final completed = <int>{};
-    List<int> path = [];
+    List<dynamic> path = [];
 
     final List<NodeStruct> redundantRef = [];
     for (final start in attributes.keys) {
       if (visited.contains(start)) continue;
       final stack = [start];
 
-      while (stack.length > 0) {
+      while (stack.isNotEmpty) {
         final node = stack[stack.length - 1]; // peek
         if (path[path.length - 1] == node) {
           // Merge descendants from each child into current node
           Map nodeChildren = attributes[node] ?? {};
 
-          // final directChildren = {...nodeChildren};
           for (final child in nodeChildren.keys) {
             Map<int, int>? childMap = attributes[child];
             if (childMap != null) {
               for (final grandChild in childMap.keys) {
-                if (nodeChildren.containsKey(grandChild)) {
-                  // if (directChildren.containsKey(grandChild)) continue;
-                  var existingPath = findPath(node, grandChild);
-                  var newPath = [...findPath(child, grandChild), Cell(row: node, col: attributes[child]![node]!)];
-                  var longerPath = newPath;
-                  var shorterPath = existingPath;
-                  if (newPath.length < existingPath.length) {
-                    longerPath = existingPath;
-                    shorterPath = newPath;
-                  }
-                  List<NodeStruct> twoPaths = [];
-                  var pathNodes = shorterPath
+                if (!nodeChildren.containsKey(grandChild)) {
+                  nodeChildren[grandChild] = -1;
+                } else if (nodeChildren[grandChild] != -1) {
+                  var newPath = [...findPath(child, grandChild),
+                   Cell(row: node, col: attributes[child]![node]!)]
                     .map((k) => NodeStruct(id: k.row, col: k.col))
                     .toList();
-                  twoPaths.add(
-                    NodeStruct(
-                      message: "shorter path",
-                      newChildren: pathNodes,
-                      startOpen: true,
-                    ),
-                  );
-
-                  pathNodes = longerPath
-                    .map((k) => NodeStruct(id: k.row, col: k.col))
-                    .toList();
-                  twoPaths.add(
-                    NodeStruct(
-                      message: "longer path",
-                      newChildren: pathNodes,
-                      startOpen: true,
-                    ),
-                  );
-
                   redundantRef.add(
                     NodeStruct(
-                      message: "Multiple paths from ${grandChild} to ${node}",
-                      newChildren: twoPaths,
+                      message: "attribute \"${getRowName(grandChild)}\" ",
+                      newChildren: newPath,
                     ),
                   );
-                } else {
-                  nodeChildren[grandChild] = -1;
                 }
               }
             }
@@ -490,89 +464,85 @@ class SpreadsheetState extends ChangeNotifier {
   }
 
   String getRowName(row) {
-    return mentions[row][nameIndexes.first][0] + " (${row})";
+    return mentions[row][nameIndexes.first][0] + " (row $row)";
   }
 
-  Map getIntervals(intervalStr, row, col) {
+  List<List<int>> getIntervals(String intervalStr, int row, int col) {
     // First, parse the positions of intervals
-    const intervals = [[], []];
-    const negPos = intervalStr.split("|");
-    let positive = 0;
+    var intervals = [[], []];
+    var negPos = intervalStr.split("|");
+    var positive = 0;
 
-    for (const negPosPart of [negPos[0], negPos[2]]) {
-      const parts = negPosPart.split("_");
-      for (const part of parts) {
-        if (!part) {
-          intervals[positive].push([null, null]);
-        } else if (part.includes(":")) {
-          const [startStr, endStr] = part.split(":");
+    for (var negPosPart in [negPos[0], negPos[2]]) {
+      var parts = negPosPart.split("_");
+      for (var part in parts) {
+        if (part.isEmpty) {
+          intervals[positive].add([null, null]);
+        } else if (part.contains(":")) {
+          var [startStr, endStr] = part.split(":");
 
-          let start = parseInt(startStr);
-          if (isNaN(start)) {
-            start = Infinity;
-          }
+          var start = int.tryParse(startStr);
+          start ??= double.infinity.toInt();
 
-          let end = parseInt(endStr);
-          if (isNaN(end)) {
-            end = Infinity;
-          }
+          var end = int.tryParse(endStr);
+          end ??= double.infinity.toInt();
 
-          if (!positive) {
+          if (positive == 0) {
             start = -start;
             end = -end;
           }
-          intervals[positive].push([start, end]);
+          intervals[positive].add([start, end]);
         } else {
-          const num = parseInt(part);
-          intervals[positive].push([num, num]);
+          var num = int.parse(part);
+          intervals[positive].add([num, num]);
         }
       }
       positive = 1;
     }
 
     // Now calculate underscore intervals
-    const resultList = [];
+    List<List<int>> resultList = [];
     positive = 0;
 
-    for (const negPosPart of intervals) {
-      for (let i = 0; i < negPosPart.length - 1; i++) {
-        let endOfCurrent = negPosPart[i][1];
-        let startOfNext = negPosPart[i + 1][0];
+    for (var negPosPart in intervals) {
+      for (var i = 0; i < negPosPart.length - 1; i++) {
+        var endOfCurrent = negPosPart[i][1];
+        var startOfNext = negPosPart[i + 1][0];
 
-        if (endOfCurrent === null) {
-          if (!positive) {
-            endOfCurrent = -Infinity;
+        if (endOfCurrent == null) {
+          if (positive == 0) {
+            endOfCurrent = -double.infinity.toInt();
           } else if (
             resultList.length > 0 &&
-            resultList[resultList.length - 1][1] === -1
+            resultList[resultList.length - 1][1] == -1
           ) {
             endOfCurrent = resultList[resultList.length - 1][0] - 1;
-            resultList.pop();
+            resultList.removeLast();
           } else {
             endOfCurrent = 0;
           }
         }
 
-        if (startOfNext === null) {
-          if (!positive) {
+        if (startOfNext == null) {
+          if (positive == 0) {
             startOfNext = 0;
           } else {
-            startOfNext = Infinity;
+            startOfNext = double.infinity.toInt();
           }
         }
 
         if (startOfNext - endOfCurrent <= 1) {
-          result.errorRoot.push(
-            new NodeStruct({
-              message: `Invalid interval: overlapping or adjacent intervals found.`,
+          errorRoot.newChildren.add(
+            NodeStruct(
+              message: "Invalid interval: overlapping or adjacent intervals found.",
               id: row,
               col: col,
-            }),
+            ),
           );
-          return;
+          return [];
         }
 
-        resultList.push([endOfCurrent + 1, startOfNext - 1]);
+        resultList.add([endOfCurrent + 1, startOfNext - 1]);
       }
       positive = 1;
     }
@@ -596,13 +566,13 @@ class SpreadsheetState extends ChangeNotifier {
         }
       }
     }
-    if (children.length > 0) {
+    if (children.isNotEmpty) {
       warningRoot.newChildren.add(
         NodeStruct(message: "invalid URLs found", newChildren: children),
       );
     }
 
-    if (errorRoot.newChildren.length > 0) {
+    if (errorRoot.newChildren.isNotEmpty) {
       return;
     }
 
@@ -612,9 +582,8 @@ class SpreadsheetState extends ChangeNotifier {
     int lastElement = -1;
     final Map fstCat = {};
     final Map lstCat = {};
-    final colNb = colCount;
     final col_name_to_index = new Map();
-    for (int j = 0; j < colNb; j++) {
+    for (int j = 0; j < colCount; j++) {
       if ([
         ColumnType.attributes.name,
         ColumnType.sprawl.name,
@@ -637,6 +606,49 @@ class SpreadsheetState extends ChangeNotifier {
     attributes = {};
     att_to_col = {};
     names = {};
+    var colNames = List.generate(colCount, (j) => "");
+    List<NodeStruct> emptyNamesChildren = [];
+    for (int j = 0; j < colCount; j++) {
+      if ([ColumnType.attributes.name, ColumnType.sprawl.name]
+          .contains(columnTypes[j])) {
+        if (table[0][j].isEmpty) {
+          emptyNamesChildren.add(
+            NodeStruct(
+              id: 0,
+              col: j,
+            ),
+          );
+        } else if (colNames.contains(table[0][j])) {
+          errorRoot.newChildren.add(
+            NodeStruct(
+              message:
+                  "duplicate column name \"${table[0][j]}\"",
+              startOpen: true,
+              newChildren: [
+                NodeStruct(
+                  id: 0,
+                  col: j,
+                ),
+                NodeStruct(
+                  id: 0,
+                  col: colNames.indexOf(table[0][j]),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
+      }
+    }
+    if (emptyNamesChildren.isNotEmpty) {
+      errorRoot.newChildren.add(
+        NodeStruct(
+          message: "empty attribute column names",
+          newChildren: emptyNamesChildren
+        ),
+      );
+      return;
+    }
     for (int i = 1; i < rowCount; i++) {
       final row = table[i];
       for (int j = 0; j < row.length; j++) {
@@ -698,12 +710,18 @@ class SpreadsheetState extends ChangeNotifier {
             } else {
               att = "${table[0][j]}.$instr";
               col = rows;
+              if (!att_to_col.containsKey(instr)) {
+                att_to_col[instr] = [];
+              }
+              if (att_to_col[instr]!.contains(col) == false) {
+                att_to_col[instr]!.add(col);
+              }
             }
             mentions[i][j].push(att);
             col_to_att[col].push(att);
 
             if (!attributes.containsKey(att)) {
-              attributes[att] = <int, int>{};
+              attributes[att] = {};
               if (isSprawl) {
                 att_to_dist[att] = [];
               }
@@ -799,14 +817,12 @@ class SpreadsheetState extends ChangeNotifier {
     }
 
     final validRowIndexes = [];
-    final isValid = List.filled(rowCount, false);
     final newIndexes = List.generate(rowCount, (i) => i);
     final toOldIndexes = [];
     final catRows = [];
     int newIndex = 0;
     for (int i = 1; i < rowCount; i++) {
       if (urls[i].isNotEmpty) {
-        isValid[i] = true;
         validRowIndexes.add(i);
         newIndexes[i] = newIndex;
         newIndex++;
@@ -840,7 +856,7 @@ class SpreadsheetState extends ChangeNotifier {
         for (var i = 0; i < rowsList.length - 1; i++) {
           var d = (rowsList[i] - rowsList[i + 1]).abs();
           for (var k = rowsList[i] + 1; k < rowsList[i + 1]; k++) {
-            if (!isValid[k]) {
+            if (urls[k].isEmpty) {
               d--;
             }
           }
@@ -888,7 +904,7 @@ class SpreadsheetState extends ChangeNotifier {
           (catego_children_list, categories_children),
           (sprawl_children_list, sprawl_children),
         ]) {
-      for (int j = 0; j < colNb; j++) {
+      for (int j = 0; j < colCount; j++) {
         final isSprawl = columnTypes[j] == ColumnType.sprawl.name;
         if (columnTypes[j] == ColumnType.attributes.name || isSprawl) {
           children_list.add(children[j]!);
@@ -904,7 +920,7 @@ class SpreadsheetState extends ChangeNotifier {
     instrTable = List.generate(rowCount, (_) => []);
 
     for (final MapEntry(key: k, value: v) in fstCat.entries) {
-      if (isValid[k]) {
+      if (urls[k].isNotEmpty) {
         var t = v;
         while (fstCat.containsKey(t)) {
           t = fstCat[t]!;
@@ -930,7 +946,7 @@ class SpreadsheetState extends ChangeNotifier {
     for (final cat in attributes.keys) {
       Map filtered = {};
       for (final MapEntry(key: k, value: v) in attributes[cat]!.entries) {
-        if (isValid[k]) {
+        if (urls[k].isNotEmpty) {
           filtered[k] = v;
         }
       }
@@ -941,7 +957,7 @@ class SpreadsheetState extends ChangeNotifier {
     }
 
     for (final MapEntry(key: k, value: v) in lstCat.entries) {
-      if (isValid[k]) {
+      if (urls[k].isNotEmpty) {
         var t = v;
         while (lstCat.containsKey(t)) {
           t = lstCat[t]!;
@@ -989,7 +1005,7 @@ class SpreadsheetState extends ChangeNotifier {
     final depPattern = table[0].map((cell) => cell.split(".")).toList();
 
     for (int i = 1; i < rowCount; i++) {
-      if (urls[i].isEmpty && !(attributes[colNb]!.containsKey(i))) {
+      if (urls[i].isEmpty && !(attributes[colCount]!.containsKey(i))) {
         continue;
       }
 
@@ -1025,13 +1041,13 @@ class SpreadsheetState extends ChangeNotifier {
                     .join("");
               }
 
-              var match = RegExp(PATTERN_DISTANCE).hasMatch(instr);
-              var intervals = [];
-              var isConstraint = !match;
+              var match = RegExp(PATTERN_DISTANCE).firstMatch(instr);
+              List<List<int>> intervals = [];
+              var isConstraint = match == null;
 
               if (isConstraint) {
-                match = RegExp(PATTERN_AREAS).hasMatch(instr);
-                if (!match) {
+                match = RegExp(PATTERN_AREAS).firstMatch(instr);
+                if (match == null) {
                   errorRoot.newChildren.add(NodeStruct(
                       message: "$instr does not match expected format",
                       id: i,
@@ -1040,120 +1056,114 @@ class SpreadsheetState extends ChangeNotifier {
                   );
                   return;
                 }
-                intervals = getIntervals(result, instr, i, j);
-                if (result.errorRoot.length > 0) {
+                intervals = getIntervals(instr, i, j);
+                if (errorRoot.newChildren.isNotEmpty) {
                   return;
                 }
               }
 
               final numbers = [];
-              let name;
-              let col;
+              var name;
+              var col;
 
-              if (match.groups && match.groups.number) {
-                final number = parseInt(match.groups.number);
-                if (number === 0 || number > rowCount) {
-                  errorRoot.push(
-                    new NodeStruct({ message: "invalid number.", id: i, col: j }),
+              if (match.namedGroup('number') != null) {
+                final number = int.parse(match.namedGroup('number')!);
+                if (number == 0 || number > rowCount) {
+                  errorRoot.newChildren.add(
+                    NodeStruct(message: "invalid number.", id: i, col: j),
                   );
                   return;
                 }
-                if (table[number][pathIndex]) {
-                  numbers.push(number);
+                if (urls[number].isNotEmpty) {
+                  numbers.add(number);
                 }
                 name = number;
               } else {
-                name = match.groups && match.groups.name;
+                name = match.namedGroup('name');
                 if (!name) {
-                  errorRoot.push(
-                    new NodeStruct({
-                      message: "${JSON.stringify(instr)} does not match expected format",
+                  errorRoot.newChildren.add(
+                    NodeStruct(
+                      message: "$instr does not match expected format",
                       id: i,
                       col: j,
-                    }),
+                    ),
                   );
                   return;
                 }
-                if (name in names) {
-                  numbers.push(names[name]!.row);
+                if (names.containsKey(name)) {
+                  numbers.add(names[name]!.row);
                 } else {
-                  if (match.groups.column) {
-                    col = col_name_to_index[match.groups.column];
-                    if (!(name in attributes[col])) {
-                      errorRoot.push(
-                        new NodeStruct({
-                          message: "attribute ${match.groups.column}.${name} does not exist",
+                  if (match.namedGroup('column') != null) {
+                    col = col_name_to_index[match.namedGroup('column')!];
+                    if (!attributes[col]!.containsKey(name)) {
+                      errorRoot.newChildren.add(NodeStruct(
+                          message: "attribute ${match.namedGroup('column')}.$name does not exist",
                           id: i,
                           col: j,
-                        }),
+                        ),
                       );
                       return;
                     }
-                  } else if (name in att_to_col) {
-                    if (att_to_col[name].length > 1) {
-                      final newChildren = [];
-                      for (final col of att_to_col[name]) {
-                        final mentio = Object.keys(attributes[col][name]).forEach(
-                          (r) =>
-                            new NodeStruct({
-                              id: r,
-                              col: col,
-                            }),
-                        );
-                        newChildren.push(
-                          new NodeStruct({
+                  } else if (att_to_col.containsKey(name)) {
+                    if (att_to_col[name]!.length > 1) {
+                      List<NodeStruct> newChildren = [];
+                      for (final col in att_to_col[name]!) {
+                        final matchingAtts = attributes[name]!.keys.map((r) {
+                          return NodeStruct(id: r, col: col);
+                        }).toList();
+                        newChildren.add(
+                          NodeStruct(
                             col: j,
-                            newChildren: mentio,
-                          }),
+                            newChildren: matchingAtts,
+                          ),
                         );
                       }
-                      errorRoot.push(
-                        new NodeStruct({
-                          message: "attribute ${JSON.stringify(name)} is ambiguous",
+                      errorRoot.newChildren.add(
+                        NodeStruct(
+                          message: "attribute \"$name\" is ambiguous",
                           id: i,
                           col: j,
-                          newChildren,
-                        }),
+                          newChildren: newChildren,
+                        ),
                       );
                     }
                   }
-                  for (final r of Object.keys(attributes[col][name])) {
-                    numbers.push(r);
+                  for (final r in attributes[name]!.keys) {
+                    numbers.add(r);
                   }
                 }
               }
 
-              if (attributes.has(name)) {
-                for (final r of attributes.get(name).keys()) {
-                  numbers.push(parseInt(r));
+              if (attributes.containsKey(name)) {
+                for (final r in attributes[name]!.keys) {
+                  numbers.add(r);
                 }
-              } else if (match.groups && match.groups.name) {
-                if (!(name in names)) {
-                  errorRoot.push(
-                    new NodeStruct({
-                      message: "attribute ${JSON.stringify(name)} does not exist",
+              } else if (match.namedGroup('name') != null) {
+                if (!(names.containsKey(name))) {
+                  errorRoot.newChildren.add(
+                    NodeStruct(
+                      message: "attribute \"$name\" does not exist",
                       id: i,
                       col: j,
-                    }),
+                    ),
                   );
                   return;
                 }
-                if (table[names[name]][pathIndex]) {
-                  numbers.push(names[name]);
+                if (urls[names[name]!.row].isNotEmpty) {
+                  numbers.add(names[name]);
                 }
-                if (attributes.has(names[name])) {
-                  for (final r of attributes.get(names[name]).keys()) {
-                    numbers.push(parseInt(r));
+                if (attributes.containsKey(names[name])) {
+                  for (final r in attributes[names[name]]!.keys) {
+                    numbers.add(r);
                   }
                 }
               }
 
-              result.mentions[i][j] = numbers;
-              final mappedNumbers = numbers.map((x) => newIndexes[x]);
-              instrTable[i].push(
-                new InstrStruct(
+              mentions[i][j] = numbers;
+              final mappedNumbers = numbers.map((x) => newIndexes[x]).toList();
+              instrTable[i].push(InstrStruct(
                   isConstraint,
-                  match.groups && match.groups.any,
+                  match.namedGroup('any') != null,
                   mappedNumbers,
                   intervals,
                 ),
@@ -1164,23 +1174,21 @@ class SpreadsheetState extends ChangeNotifier {
       }
     }
 
-    final toMentioners = {};
-    result.toMentioners = toMentioners;
-
-    for (let i = 1; i < rowCount; i++) {
-      for (let j = 0; j < table[i].length; j++) {
-        if (columnTypes[j] === Roles.DEPENDENCIES) {
-          result.mentions[i][j].forEach((n) => {
-            if (!(n in toMentioners)) {
+    toMentioners = {};
+    for (var i = 1; i < rowCount; i++) {
+      for (var j = 0; j < table[i].length; j++) {
+        if (columnTypes[j] == ColumnType.dependencies.name) {
+          mentions[i][j].forEach((n) {
+            if (!toMentioners.containsKey(n)) {
               toMentioners[n] = {};
-              final num = parseInt(n);
-              if (isNaN(num) && !(n in names) && !(n in att_to_col)) {
+              final num = int.tryParse(n);
+              if (num != null && !(names.containsKey(n)) && !(att_to_col.containsKey(n))) {
                 att_to_col[n] = [notUsed];
-                attributes.set("${notUsed}.${n}", {});
+                attributes["$notUsed.$n"] = {};
               }
             }
-            if (!(i in toMentioners[n])) {
-              toMentioners[n][i] = j;
+            if (!toMentioners[n]!.containsKey(i)) {
+              toMentioners[n]![i] = j;
             }
           });
         }
@@ -1190,9 +1198,12 @@ class SpreadsheetState extends ChangeNotifier {
     final instrTableExt = instrTable.map((x) => [...x]);
 
     children = [];
-    for (final i of validRowIndexes) {
-      for (final att of Object.entries(row_to_att[i][rows])) {
-        for (final x2 of instrTable[att]) {
+    for (final att in attributes.keys) {
+      for (final i in attributes[att]!.keys) {
+        if (urls[i].isEmpty) {
+          continue;
+        }
+        for (final x2 in instrTable[att]) {
           final x = JSON.parse(JSON.stringify(x2)); // deep copy
           x.added = true;
           if (
@@ -1286,10 +1297,10 @@ class SpreadsheetState extends ChangeNotifier {
       return false;
     }
 
-    for (let p = 0; p <= 1; p++) {
+    for (var p = 0; p <= 1; p++) {
       final visited = new Set();
       final stack = [];
-      for (let i = 0; i < instrTableInt.length; i++) {
+      for (var i = 0; i < instrTableInt.length; i++) {
         if (hasCycle(instrTableInt, visited, stack, i, p === 1)) {
           children = stack.map((path) => {
             if (path.length === 1) {
