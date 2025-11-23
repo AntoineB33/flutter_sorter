@@ -3,6 +3,8 @@ class NodeStruct {
   final int? id;
   final int? col;
   final int? att;
+  final int? dist;
+  final int? minDist;
   final List<NodeStruct> children;
   List<NodeStruct> newChildren;
   final bool hideIfEmpty;
@@ -14,9 +16,12 @@ class NodeStruct {
     this.id,
     this.col,
     this.att,
-    this.newChildren = const [],
+    this.dist,
+    this.minDist,
+    List<NodeStruct>? newChildren,
     this.hideIfEmpty = false,
     this.startOpen = false,
   })  : children = [],
-        depth = startOpen ? 0 : 1;
+        depth = startOpen ? 0 : 1,
+        newChildren = newChildren ?? [];
 }

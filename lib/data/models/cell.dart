@@ -6,14 +6,6 @@ class Cell {
   Cell({
     required this.row,
     required this.col,
-    required this.value,
+    this.value = '',
   });
-
-  Cell copyWith({String? value}) {
-    return Cell(
-      row: row,
-      col: col,
-      value: value ?? this.value,
-    );
-  }
 }

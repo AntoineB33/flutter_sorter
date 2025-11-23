@@ -191,7 +191,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 
   Widget buildGrid(BuildContext context, SpreadsheetState state) {
-    final grid = state.grid;
+    final table = state.table;
     final rows = state.rowCount;
     final cols = state.colCount;
 
@@ -292,7 +292,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                               final row = index ~/ cols;
                               final col = index % cols;
 
-                              final cell = grid[row][col];
+                              final text = table[row][col] ?? '';
                               final isSelected = state.isCellSelected(row, col);
 
                               return InkWell(
@@ -308,7 +308,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                                   color: isSelected
                                       ? Colors.blue.shade300
                                       : Colors.grey.shade200,
-                                  child: Text(cell.value),
+                                  child: Text(text),
                                 ),
                               );
                             },
