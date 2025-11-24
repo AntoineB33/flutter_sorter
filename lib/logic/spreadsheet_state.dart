@@ -7,6 +7,8 @@ import 'dart:convert';
 import '../data/models/cell.dart';
 import '../data/models/node_struct.dart';
 import '../data/models/column_type.dart';
+import '../logger.dart';
+import '../logic/async_utils.dart';
 
 class DynAndInt {
   dynamic dyn;
@@ -60,14 +62,14 @@ class SpreadsheetState extends ChangeNotifier {
   static const rows = "rows";
   static const notUsed = "notUsed";
   String spreadsheetName = "";
-  Map<int, String> columnTypes = {};
   final NodeStruct errorRoot = NodeStruct(message: 'Error Log');
   final NodeStruct warningRoot = NodeStruct(message: 'Warning Log');
   final NodeStruct mentionsRoot = NodeStruct(message: 'Current selection');
   final NodeStruct searchRoot = NodeStruct(message: 'Search results');
   final NodeStruct categoriesRoot = NodeStruct(message: 'Categories');
   final NodeStruct distPairsRoot = NodeStruct(message: 'Distance Pairs');
-  late List<List<String>> table;
+  late List<List<String>> table = [];
+  List<String> columnTypes = [];
 
   /// 2D table of attribute identifiers (row index or name)
   /// mentioned in each cell.
@@ -99,8 +101,9 @@ class SpreadsheetState extends ChangeNotifier {
   bool get hasSelectionRange =>
       _selectionStart != null && _selectionEnd != null;
 
+  final _saveExecutor = OneSlotExecutor();
+
   SpreadsheetState({int rows = 30, int cols = 10}) {
-    table = List.generate(rows, (r) => List.generate(cols, (c) => ''));
     _loadLastOpenedSheet(); // <--- Add this
   }
 
@@ -114,14 +117,16 @@ class SpreadsheetState extends ChangeNotifier {
   }
 
   int get rowCount => table.length;
-  int get colCount => table[0].length;
+  int get colCount => rowCount > 0 ? table[0].length : 0;
 
-  String getColumnType(int col) =>
-      columnTypes[col] ?? ColumnType.defaultType.name;
+  String getColumnType(int col) {
+    if (col >= colCount) return ColumnType.defaultType.name;
+    return columnTypes[col];
+  }
 
   // Select a cell
   void selectCell(int row, int col) {
-    _selectionStart = Cell(row: row, col: col, value: table[row][col]);
+    _selectionStart = Cell(row: row, col: col);
     _selectionEnd = _selectionStart;
     notifyListeners();
   }
@@ -129,13 +134,11 @@ class SpreadsheetState extends ChangeNotifier {
   void selectRange(int startRow, int startCol, int endRow, int endCol) {
     _selectionStart = Cell(
       row: startRow,
-      col: startCol,
-      value: table[startRow][startCol],
+      col: startCol
     );
     _selectionEnd = Cell(
       row: endRow,
-      col: endCol,
-      value: table[endRow][endCol],
+      col: endCol
     );
     notifyListeners();
   }
@@ -157,30 +160,30 @@ class SpreadsheetState extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
 
-    final data = {"table": table, "types": columnTypes};
+    final data = {"table": table, "columnTypes": columnTypes};
 
     await prefs.setString("spreadsheet_$spreadsheetName", jsonEncode(data));
   }
 
+  Future<void> clearAllPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+  }
+
   // ---- Load spreadsheet by name ----
   Future<void> loadSpreadsheet(String name) async {
+    await clearAllPrefs();
     spreadsheetName = name.trim().toLowerCase();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       "last_opened_sheet",
       spreadsheetName,
-    ); // <--- Add this
+    );
 
     final raw = prefs.getString("spreadsheet_$spreadsheetName");
 
     if (raw == null) {
-      // No existing spreadsheet → create empty table
-      table = List.generate(
-        rowCount,
-        (r) => List.generate(colCount, (c) => ''),
-      );
-      columnTypes = {};
       notifyListeners();
       return;
     }
@@ -192,45 +195,56 @@ class SpreadsheetState extends ChangeNotifier {
         .map((row) => (row as List).map((v) => v.toString()).toList())
         .toList();
 
+    table = List<List<String>>.generate(
+      storedGrid.length,
+      (r) => List<String>.filled(
+        storedGrid[r].length,
+        '',
+        growable: true,
+      ),
+      growable: true,
+    );
     for (int r = 0; r < storedGrid.length; r++) {
       for (int c = 0; c < storedGrid[r].length; c++) {
         table[r][c] = storedGrid[r][c];
       }
     }
+    decreaseRowCount(rowCount - 1);
+    decreaseColumnCount(colCount - 1);
 
     // Restore column types
-    columnTypes = Map<int, String>.from(decoded["types"] ?? {});
+    columnTypes = List<String>.from(decoded["columnTypes"] ?? []);
 
     notifyListeners();
   }
 
-  // ---- Call save on each update ----
-  @override
-  void updateCell(int row, int col, String newValue) {
-    if (newValue.isNotEmpty || (row < rowCount && col < colCount)) {
-      if (row >= rowCount) {
-        final needed = row + 1 - rowCount;
-        table.addAll(List.generate(needed, (_) => List.filled(colCount, '')));
-      }
-      if (col >= colCount) {
-        final needed = col + 1 - colCount;
-        for (var r = 0; r < rowCount; r++) {
-          table[r].addAll(List.filled(needed, ''));
-        }
-      }
-      table[row][col] = newValue;
-    }
-    if (newValue.isEmpty &&
-        row == rowCount - 1 &&
-        newValue != table[row][col]) {
+  void decreaseRowCount(int row) {
+    if (row == rowCount - 1) {
       while (!table[row].any((cell) => cell.isNotEmpty) && row > 0) {
         table.removeLast();
         row--;
       }
     }
-    getEverything();
-    saveSpreadsheet(); // <-- Auto-save
-    notifyListeners();
+  }
+
+  @override
+  void updateCell(int row, int col, String newValue) {
+    if (newValue.isNotEmpty || (row < rowCount && col < colCount)) {
+      if (row >= rowCount) {
+        final needed = row + 1 - rowCount;
+        table.addAll(List.generate(needed, (_) => List.filled(colCount, '', growable: true)));
+      }
+      increaseColumnCount(col);
+      table[row][col] = newValue;
+    }
+    if (newValue.isEmpty && row < rowCount && col < colCount && (row == rowCount - 1 || col == colCount - 1) && table[row][col].isNotEmpty) {
+      decreaseRowCount(row);
+      decreaseColumnCount(col);
+    }
+    
+    _saveExecutor.run(() async {
+      getEverything();
+    });
   }
 
   // What to display in the side menu
@@ -255,7 +269,7 @@ class SpreadsheetState extends ChangeNotifier {
 
     // Parse TSV (tab-separated values)
     final rows = rawText
-        .trimRight()
+        .replaceAll("\r", "")
         .split('\n')
         .map((r) => r.split('\t'))
         .toList();
@@ -265,14 +279,12 @@ class SpreadsheetState extends ChangeNotifier {
         final targetRow = startRow + r;
         final targetCol = startCol + c;
 
-        // Prevent overflow
-        if (targetRow >= rowCount || targetCol >= colCount) continue;
-
         updateCell(targetRow, targetCol, rows[r][c]);
       }
     }
 
     notifyListeners();
+    log.info("Pasted text at $startRow, $startCol");
   }
 
   String columnName(int index) {
@@ -286,11 +298,47 @@ class SpreadsheetState extends ChangeNotifier {
     return name;
   }
 
+  void increaseColumnCount(int col) {
+    if (col >= colCount) {
+      final needed = col + 1 - colCount;
+      for (var r = 0; r < rowCount; r++) {
+        table[r].addAll(List.filled(needed, '', growable: true));
+      }
+      columnTypes.addAll(List.filled(needed, ColumnType.defaultType.name));
+    }
+  }
+
+  void decreaseColumnCount(col) {
+    if (col == columnTypes.length - 1) {
+      bool canRemove = true;
+      while (canRemove && col > 0) {
+        for (var r = 0; r < rowCount; r++) {
+          if (table[r][col].isNotEmpty) {
+            canRemove = false;
+            break;
+          }
+        }
+        if (canRemove) {
+          for (var r = 0; r < rowCount; r++) {
+            table[r].removeLast();
+          }
+          col--;
+        }
+      }
+      columnTypes = columnTypes.sublist(0, col + 1);
+    }
+  }
+
   @override
   void setColumnType(int col, String type) {
-    columnTypes[col] = type;
     if (type == ColumnType.defaultType.name) {
-      columnTypes.remove(col);
+      if (col < colCount) {
+        columnTypes[col] = type;
+        decreaseColumnCount(col);
+      }
+    } else {
+      increaseColumnCount(col);
+      columnTypes[col] = type;
     }
     saveSpreadsheet(); // <-- Auto-save
     notifyListeners();
@@ -309,7 +357,7 @@ class SpreadsheetState extends ChangeNotifier {
     for (int r = r1; r <= r2; r++) {
       final rowValues = <String>[];
       for (int c = c1; c <= c2; c++) {
-        rowValues.add(table[r][c]);
+        rowValues.add(r < rowCount && c < colCount ? table[r][c] : '');
       }
       buffer.writeln(rowValues.join('\t')); // TSV format
     }
@@ -767,7 +815,7 @@ class SpreadsheetState extends ChangeNotifier {
       return;
     }
 
-    final urls = List.generate(
+    List<List<String>> urls = List.generate(
       rowCount,
       (i) => List.generate(
         pathIndexes.length,
@@ -1214,108 +1262,104 @@ class SpreadsheetState extends ChangeNotifier {
 
     dfsIterative(rowToAtt, instrTable, "instruction");
 
-    // Detect cycles in instrTable
-    bool hasCycle(instrTable, visited, List<DynAndInt> stack, node, {bool after = true}) {
-      stack.add(DynAndInt(node, id));
-      visited.add(node);
+    // // Detect cycles in instrTable
+    // bool hasCycle(instrTable, visited, List<DynAndInt> stack, node, {bool after = true}) {
+    //   stack.add(DynAndInt(node, id));
+    //   visited.add(node);
 
-      for (final neighbor in instrTable[node]) {
-        if (
-          neighbor.any ||
-          !neighbor.isConstraint ||
-          (after
-            ? neighbor.intervals[0][0] != -double.infinity.toInt() ||
-              neighbor.intervals[0][1] != -1
-            : neighbor.intervals[neighbor.intervals.length - 1][0] != 1 ||
-              neighbor.intervals[neighbor.intervals.length - 1][1] != double.infinity.toInt())
-        ) {
-          continue;
-        }
+    //   for (final neighbor in instrTable[node]) {
+    //     if (
+    //       neighbor.any ||
+    //       !neighbor.isConstraint ||
+    //       (after
+    //         ? neighbor.intervals[0][0] != -double.infinity.toInt() ||
+    //           neighbor.intervals[0][1] != -1
+    //         : neighbor.intervals[neighbor.intervals.length - 1][0] != 1 ||
+    //           neighbor.intervals[neighbor.intervals.length - 1][1] != double.infinity.toInt())
+    //     ) {
+    //       continue;
+    //     }
 
-        for (final target in neighbor.numbers) {
-          if (!visited.has(target)) {
-            if (hasCycle(instrTable, visited, stack, target, after: after)) {
-              return true;
-            }
-          } else {
-            final idx = stack.indexOf(target);
-            if (idx != -1) {
-              stack.removeRange(0, idx);
-              stack.add(target);
-              return true;
-            }
-          }
-        }
-      }
-      stack.removeLast();
-      return false;
-    }
+    //     for (final target in neighbor.numbers) {
+    //       if (!visited.has(target)) {
+    //         if (hasCycle(instrTable, visited, stack, target, after: after)) {
+    //           return true;
+    //         }
+    //       } else {
+    //         final idx = stack.indexOf(target);
+    //         if (idx != -1) {
+    //           stack.removeRange(0, idx);
+    //           stack.add(target);
+    //           return true;
+    //         }
+    //       }
+    //     }
+    //   }
+    //   stack.removeLast();
+    //   return false;
+    // }
 
-    for (var p = 0; p <= 1; p++) {
-      Set<int> visited = {};
-      List<int> stack = [];
-      for (var i = 0; i < instrTable.length; i++) {
-        if (hasCycle(instrTable, visited, stack, i, after: p == 1)) {
-          children = stack.asMap().entries.map((entry) {
-            var path = entry.value;
-            if (path.length === 1) {
-              return new NodeStruct({ id: path[0] });
-            } else {
-              return new NodeStruct({
-                id: path[0],
-                newChildren: path.sublist(1).map((p) => new NodeStruct({ id: p })),
-              });
-            }
-          });
-          errorRoot.newChildren.add(NodeStruct(
-              message: "Cycle detected in ${p == 1 ? "after" : "before"} constraints",
-              newChildren: children,
-            ),
-          );
-          return;
-        }
-      }
-    }
+    // for (var p = 0; p <= 1; p++) {
+    //   Set<int> visited = {};
+    //   List<int> stack = [];
+    //   for (var i = 0; i < instrTable.length; i++) {
+    //     if (hasCycle(instrTable, visited, stack, i, after: p == 1)) {
+    //       children = stack.asMap().entries.map((entry) {
+    //         var path = entry.value;
+    //         if (path.length === 1) {
+    //           return new NodeStruct({ id: path[0] });
+    //         } else {
+    //           return new NodeStruct({
+    //             id: path[0],
+    //             newChildren: path.sublist(1).map((p) => new NodeStruct({ id: p })),
+    //           });
+    //         }
+    //       });
+    //       errorRoot.newChildren.add(NodeStruct(
+    //           message: "Cycle detected in ${p == 1 ? "after" : "before"} constraints",
+    //           newChildren: children,
+    //         ),
+    //       );
+    //       return;
+    //     }
+    //   }
+    // }
 
-    urls = validRowIndexes.map((i) => urls[i].url);
-
-    // Note: fstRow is not defined in the original code, assuming it should be firstElement
-    if (firstElement != -1) {
-      saved.musics = musics;
-      saved.musicCol = music_col;
-    }
+    urls = validRowIndexes.asMap().entries.map((i) { return urls[i.value]; }).toList();
 
     // TODO: solve sorting pb
 
-    if (notUsed in attributes) {
-      final atts = Object.keys(attributes[notUsed]);
-      children = atts.map((a) => {
-        if (Object.keys(toMentioners[a]).length == 1) {
-          return new NodeStruct({
-            message: a,
-            rows: Object.keys(toMentioners[a])[0],
-            col: toMentioners[a][Object.keys(toMentioners[a])[0]],
-          });
+    if (attributes.containsKey(notUsed)) {
+      final atts = attributes[notUsed]!.keys.toList();
+      children = atts.asMap().entries.map((entry) {
+        var a = entry.value;
+        if (toMentioners[a]!.keys.length == 1) {
+          return NodeStruct(
+            message: "$a",
+            id: toMentioners[a]!.keys.first,
+            col: toMentioners[a]![toMentioners[a]!.keys.first],
+          );
         } else {
-          return new NodeStruct({
-            message: a,
-            newChildren: Object.keys(toMentioners[a]).map(
-              (k) => new NodeStruct({ id: k, col: toMentioners[a][k] }),
-            ),
-          });
+          return NodeStruct(
+            message: "$a",
+            newChildren: toMentioners[a]!.keys.map(
+              (k) => NodeStruct(id: k, col: toMentioners[a]![k]),
+            ).toList(),
+          );
         }
-      });
-      warningRoot.push(
-        new NodeStruct({
+      }).toList();
+      warningRoot.newChildren.add(
+        NodeStruct(
           message: "unused attributes found",
           newChildren: children,
-        }),
+        ),
       );
     }
     return;
   }
 
   void getEverything() {
+    log.info("Processing spreadsheet data...");
     errorRoot.newChildren.clear();
     warningRoot.newChildren.clear();
     for (final row in table) {
@@ -1407,5 +1451,7 @@ class SpreadsheetState extends ChangeNotifier {
       }
     }
     getCategories();
+    saveSpreadsheet();
+    notifyListeners();
   }
 }

@@ -3,8 +3,16 @@ import 'package:provider/provider.dart';
 
 import 'logic/spreadsheet_state.dart';
 import 'presentation/pages/home_page.dart';
+import 'package:logging/logging.dart';
+import 'logger.dart';
 
 void main() {
+  Logger.root.level = Level.ALL;
+  Logger.root.onRecord.listen((record) {
+    print('${record.level.name}: ${record.time}: ${record.message}');
+  });
+  log.info("Logger initialized");
+  
   runApp(
     MultiProvider(
       providers: [
