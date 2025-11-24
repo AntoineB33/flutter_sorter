@@ -8,11 +8,11 @@ import '../data/models/cell.dart';
 import '../data/models/node_struct.dart';
 import '../data/models/column_type.dart';
 
-class AttCol {
-  dynamic att;
-  int col;
+class DynAndInt {
+  dynamic dyn;
+  int id;
 
-  AttCol(this.att, this.col);
+  DynAndInt(this.dyn, this.id);
 }
 
 class InstrStruct {
@@ -583,8 +583,8 @@ class SpreadsheetState extends ChangeNotifier {
 
     Map col_to_att = {};
     Map att_to_dist = {};
-    AttCol firstElement = AttCol(-1, -1);
-    AttCol lastElement = AttCol(-1, -1);
+    DynAndInt firstElement = DynAndInt(-1, -1);
+    DynAndInt lastElement = DynAndInt(-1, -1);
     final Map fstCat = {};
     final Map lstCat = {};
     final col_name_to_index = new Map();
@@ -678,12 +678,12 @@ class SpreadsheetState extends ChangeNotifier {
             if (isFst) {
               instr = instr.substring(0, instr.length - 4).trim();
             } else if (instr == "fst") {
-              firstElement = AttCol(i, j);
+              firstElement = DynAndInt(i, j);
               continue;
             } else if ((isLst = instr.endsWith("-lst"))) {
               instr = instr.substring(0, instr.length - 4).trim();
             } else if (instr == "lst") {
-              lastElement = AttCol(i, j);
+              lastElement = DynAndInt(i, j);
               continue;
             } else if (instr.contains("-fst")) {
               errorRoot.newChildren.add(
@@ -744,9 +744,9 @@ class SpreadsheetState extends ChangeNotifier {
             }
 
             if (isFst) {
-              fstCat[i] = AttCol(att, j);
+              fstCat[i] = DynAndInt(att, j);
             } else if (isLst) {
-              lstCat[i] = AttCol(att, j);
+              lstCat[i] = DynAndInt(att, j);
             }
           }
         }
@@ -979,32 +979,32 @@ class SpreadsheetState extends ChangeNotifier {
       }
     }
 
-    if (firstElement.att != -1) {
+    if (firstElement.dyn != -1) {
       for (final i in validRowIndexes) {
-        if (i != firstElement.att) {
+        if (i != firstElement.dyn) {
           instrTable[i][
             InstrStruct(
               true,
               false,
-              [newIndexes[firstElement.att]],
+              [newIndexes[firstElement.dyn]],
               [[-double.infinity.toInt(), -1]],
             )
-          ] = firstElement.col;
+          ] = firstElement.id;
         }
       }
     }
 
-    if (lastElement.att != -1) {
+    if (lastElement.dyn != -1) {
       for (final i in validRowIndexes) {
-        if (i != lastElement.att) {
+        if (i != lastElement.dyn) {
           instrTable[i][
             InstrStruct(
               true,
               false,
-              [newIndexes[lastElement.att]],
+              [newIndexes[lastElement.dyn]],
               [[1, double.infinity.toInt()]],
             )
-          ] = lastElement.col;
+          ] = lastElement.id;
         }
       }
     }
@@ -1214,79 +1214,63 @@ class SpreadsheetState extends ChangeNotifier {
 
     dfsIterative(rowToAtt, instrTable, "instruction");
 
-    final instrTableInt = [];
-    for (final i of validRowIndexes) {
-      // Remove duplicates by converting to Set (approximate)
-      final unique = [];
-      final seen = new Set();
-      for (final item of instrTableExt[i]) {
-        final key = JSON.stringify(item);
-        if (!seen.has(key)) {
-          seen.add(key);
-          unique.push(item);
-        }
-      }
-      instrTableInt.push(unique);
-    }
-
     // Detect cycles in instrTable
-    function hasCycle(instrTable, visited, stack, node, after = true) {
-      stack.push([toOldIndexes[node]]);
+    bool hasCycle(instrTable, visited, List<DynAndInt> stack, node, {bool after = true}) {
+      stack.add(DynAndInt(node, id));
       visited.add(node);
 
-      for (final neighbor of instrTable[node]) {
+      for (final neighbor in instrTable[node]) {
         if (
           neighbor.any ||
           !neighbor.isConstraint ||
           (after
-            ? neighbor.intervals[0][0] !== -double.infinity.toInt() ||
-              neighbor.intervals[0][1] !== -1
-            : neighbor.intervals[neighbor.intervals.length - 1][0] !== 1 ||
-              neighbor.intervals[neighbor.intervals.length - 1][1] !== double.infinity.toInt())
+            ? neighbor.intervals[0][0] != -double.infinity.toInt() ||
+              neighbor.intervals[0][1] != -1
+            : neighbor.intervals[neighbor.intervals.length - 1][0] != 1 ||
+              neighbor.intervals[neighbor.intervals.length - 1][1] != double.infinity.toInt())
         ) {
           continue;
         }
 
-        for (final target of neighbor.numbers) {
-          stack[stack.length - 1].splice(1, double.infinity.toInt(), ...neighbor.path);
+        for (final target in neighbor.numbers) {
           if (!visited.has(target)) {
-            if (hasCycle(instrTable, visited, stack, target, after)) {
+            if (hasCycle(instrTable, visited, stack, target, after: after)) {
               return true;
             }
           } else {
-            final idx = stack.findIndex((k) => k[0] === toOldIndexes[target]);
-            if (idx !== -1) {
-              stack.splice(0, idx);
-              stack.push([toOldIndexes[target]]);
+            final idx = stack.indexOf(target);
+            if (idx != -1) {
+              stack.removeRange(0, idx);
+              stack.add(target);
               return true;
             }
           }
         }
       }
-      stack.pop();
+      stack.removeLast();
       return false;
     }
 
     for (var p = 0; p <= 1; p++) {
-      final visited = new Set();
-      final stack = [];
-      for (var i = 0; i < instrTableInt.length; i++) {
-        if (hasCycle(instrTableInt, visited, stack, i, p === 1)) {
-          children = stack.map((path) => {
+      Set<int> visited = {};
+      List<int> stack = [];
+      for (var i = 0; i < instrTable.length; i++) {
+        if (hasCycle(instrTable, visited, stack, i, after: p == 1)) {
+          children = stack.asMap().entries.map((entry) {
+            var path = entry.value;
             if (path.length === 1) {
               return new NodeStruct({ id: path[0] });
             } else {
               return new NodeStruct({
                 id: path[0],
-                newChildren: path.slice(1).map((p) => new NodeStruct({ id: p })),
+                newChildren: path.sublist(1).map((p) => new NodeStruct({ id: p })),
               });
             }
           });
-          errorRoot.push(
-            new NodeStruct({
-              message: "Cycle detected in ${p === 1 ? "after" : "before"} constraints",
+          errorRoot.newChildren.add(NodeStruct(
+              message: "Cycle detected in ${p == 1 ? "after" : "before"} constraints",
               newChildren: children,
-            }),
+            ),
           );
           return;
         }
@@ -1294,20 +1278,6 @@ class SpreadsheetState extends ChangeNotifier {
     }
 
     urls = validRowIndexes.map((i) => urls[i].url);
-
-    saved.data = {
-      elements: alph.slice(0, validRowIndexes.length),
-      instructions: instrTableInt,
-      urls: urls,
-      toOldIndexes: toOldIndexes,
-      catRows: catRows,
-      attributesTable: row_to_att,
-      columnTypes: columnTypes,
-      depPattern: depPattern,
-      pathIndex: pathIndex,
-      attributes: attributes,
-      newIndexes: newIndexes,
-    };
 
     // Note: fstRow is not defined in the original code, assuming it should be firstElement
     if (firstElement != -1) {
