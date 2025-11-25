@@ -10,6 +10,124 @@ import '../data/models/column_type.dart';
 import '../logger.dart';
 import '../logic/async_utils.dart';
 
+class HungarianAlgorithm {
+  final List<List<int>> costMatrix;
+  late int dim;
+  late List<int> labelX;
+  late List<int> labelY;
+  late List<int> matchY; // matchY[j] = i means j is matched with i
+  late List<int> matchX; // matchX[i] = j means i is matched with j
+  late List<int> slack;
+  late List<bool> visX;
+  late List<bool> visY;
+
+  HungarianAlgorithm(this.costMatrix);
+
+  /// Solves the assignment problem and returns the Result object
+  AssignmentResult compute() {
+    int n = costMatrix.length;
+    int m = costMatrix[0].length;
+    
+    // The algorithm requires a square matrix. 
+    // If A and B have different sizes, we pad with 0s.
+    dim = max(n, m);
+    
+    // Initialize mapping arrays
+    labelX = List.filled(dim, 0);
+    labelY = List.filled(dim, 0);
+    matchY = List.filled(dim, -1);
+    matchX = List.filled(dim, -1);
+    slack = List.filled(dim, 0);
+    visX = List.filled(dim, false);
+    visY = List.filled(dim, false);
+
+    // Initialize labels for X with max weight in each row
+    for (int i = 0; i < n; i++) {
+      int maxVal = -1 >>> 1; // Very small number
+      for (int j = 0; j < m; j++) {
+         if (costMatrix[i][j] > maxVal) maxVal = costMatrix[i][j];
+      }
+      // Handle case where row might be empty or all negative
+      labelX[i] = maxVal == (-1 >>> 1) ? 0 : maxVal;
+    }
+
+    // Main algorithm loop
+    for (int i = 0; i < dim; i++) {
+      // Reset slack
+      slack.fillRange(0, dim, 999999999); // Infinity
+      
+      while (true) {
+        visX.fillRange(0, dim, false);
+        visY.fillRange(0, dim, false);
+        
+        if (dfs(i, n, m)) break; // Found a path
+
+        // If no path, update labels (re-weighting)
+        int d = 999999999;
+        for (int j = 0; j < dim; j++) {
+          if (!visY[j]) d = min(d, slack[j]);
+        }
+
+        if (d == 999999999) break; // Should not happen if solvable
+
+        for (int k = 0; k < dim; k++) {
+          if (visX[k]) labelX[k] -= d;
+          if (visY[k]) labelY[k] += d;
+          else slack[k] -= d;
+        }
+      }
+    }
+
+    // Compile results
+    int totalWeight = 0;
+    List<int> assignment = [];
+    
+    for (int i = 0; i < n; i++) {
+      int matchedJ = matchX[i];
+      // Only count valid matches within original bounds
+      if (matchedJ != -1 && matchedJ < m) {
+        totalWeight += costMatrix[i][matchedJ];
+        assignment.add(matchedJ);
+      } else {
+        // Should not happen if n <= m, but handles edge cases
+        assignment.add(-1); 
+      }
+    }
+
+    return AssignmentResult(totalWeight, assignment);
+  }
+
+  bool dfs(int x, int n, int m) {
+    visX[x] = true;
+    for (int y = 0; y < dim; y++) {
+      if (visY[y]) continue;
+      
+      int weight = (x < n && y < m) ? costMatrix[x][y] : 0;
+      int gap = labelX[x] + labelY[y] - weight;
+
+      if (gap == 0) {
+        visY[y] = true;
+        if (matchY[y] == -1 || dfs(matchY[y], n, m)) {
+          matchY[y] = x;
+          matchX[x] = y;
+          return true;
+        }
+      } else {
+        slack[y] = min(slack[y], gap);
+      }
+    }
+    return false;
+  }
+}
+
+class AssignmentResult {
+  final int maxWeight;
+  /// assign[i] = j means row i is assigned to column j
+  final List<int> assignments; 
+
+  AssignmentResult(this.maxWeight, this.assignments);
+}
+
 class DynAndInt {
   dynamic dyn;
   int id;
@@ -62,12 +180,12 @@ class SpreadsheetState extends ChangeNotifier {
   static const rows = "rows";
   static const notUsed = "notUsed";
   String spreadsheetName = "";
-  final NodeStruct errorRoot = NodeStruct(message: 'Error Log');
-  final NodeStruct warningRoot = NodeStruct(message: 'Warning Log');
-  final NodeStruct mentionsRoot = NodeStruct(message: 'Current selection');
-  final NodeStruct searchRoot = NodeStruct(message: 'Search results');
-  final NodeStruct categoriesRoot = NodeStruct(message: 'Categories');
-  final NodeStruct distPairsRoot = NodeStruct(message: 'Distance Pairs');
+  final NodeStruct errorRoot = NodeStruct(message: 'Error Log', newChildren: []);
+  final NodeStruct warningRoot = NodeStruct(message: 'Warning Log', newChildren: []);
+  final NodeStruct mentionsRoot = NodeStruct(message: 'Current selection', newChildren: []);
+  final NodeStruct searchRoot = NodeStruct(message: 'Search results', newChildren: []);
+  final NodeStruct categoriesRoot = NodeStruct(message: 'Categories', newChildren: []);
+  final NodeStruct distPairsRoot = NodeStruct(message: 'Distance Pairs', newChildren: []);
   late List<List<String>> table = [];
   List<String> columnTypes = [];
 
@@ -172,7 +290,7 @@ class SpreadsheetState extends ChangeNotifier {
 
   // ---- Load spreadsheet by name ----
   Future<void> loadSpreadsheet(String name) async {
-    await clearAllPrefs();
+    // await clearAllPrefs();
     spreadsheetName = name.trim().toLowerCase();
 
     final prefs = await SharedPreferences.getInstance();
@@ -184,7 +302,9 @@ class SpreadsheetState extends ChangeNotifier {
     final raw = prefs.getString("spreadsheet_$spreadsheetName");
 
     if (raw == null) {
-      notifyListeners();
+      _saveExecutor.run(() async {
+        getEverything();
+      });
       return;
     }
 
@@ -215,7 +335,9 @@ class SpreadsheetState extends ChangeNotifier {
     // Restore column types
     columnTypes = List<String>.from(decoded["columnTypes"] ?? []);
 
-    notifyListeners();
+    _saveExecutor.run(() async {
+      getEverything();
+    });
   }
 
   void decreaseRowCount(int row) {
@@ -282,8 +404,6 @@ class SpreadsheetState extends ChangeNotifier {
         updateCell(targetRow, targetCol, rows[r][c]);
       }
     }
-
-    notifyListeners();
     log.info("Pasted text at $startRow, $startCol");
   }
 
@@ -340,8 +460,9 @@ class SpreadsheetState extends ChangeNotifier {
       increaseColumnCount(col);
       columnTypes[col] = type;
     }
-    saveSpreadsheet(); // <-- Auto-save
-    notifyListeners();
+    _saveExecutor.run(() async {
+      getEverything();
+    });
   }
 
   Future<String?> copySelectionToClipboard() async {
@@ -493,7 +614,7 @@ class SpreadsheetState extends ChangeNotifier {
           } else if (!completed.contains(child)) {
             final cycle = path.sublist(path.indexOf(child));
             final cyclePathNodes = cycle.map((k) => NodeStruct(id: k)).toList();
-            errorRoot.newChildren.add(
+            errorRoot.newChildren!.add(
               NodeStruct(
                 message: "cycle detected",
                 newChildren: cyclePathNodes,
@@ -507,7 +628,7 @@ class SpreadsheetState extends ChangeNotifier {
 
     // Add redundant reference warningRoot
     if (redundantRef.length > 0) {
-      warningRoot.newChildren.add(
+      warningRoot.newChildren!.add(
         NodeStruct(
           message: "redundant references found",
           newChildren: redundantRef,
@@ -585,7 +706,7 @@ class SpreadsheetState extends ChangeNotifier {
         }
 
         if (startOfNext - endOfCurrent <= 1) {
-          errorRoot.newChildren.add(
+          errorRoot.newChildren!.add(
             NodeStruct(
               message: "Invalid interval: overlapping or adjacent intervals found.",
               id: row,
@@ -620,12 +741,12 @@ class SpreadsheetState extends ChangeNotifier {
       }
     }
     if (children.isNotEmpty) {
-      warningRoot.newChildren.add(
+      warningRoot.newChildren!.add(
         NodeStruct(message: "invalid URLs found", newChildren: children),
       );
     }
 
-    if (errorRoot.newChildren.isNotEmpty) {
+    if (errorRoot.newChildren!.isNotEmpty) {
       return;
     }
 
@@ -644,7 +765,7 @@ class SpreadsheetState extends ChangeNotifier {
         col_to_att[j] = [];
       }
       if (col_name_to_index.containsKey(table[0][j])) {
-        errorRoot.newChildren.add(
+        errorRoot.newChildren!.add(
           NodeStruct(
             message:
                 "duplicate column name ${table[0][j]} in ${getColumnLabel(j)} and ${getColumnLabel(col_name_to_index[table[0][j]])}",
@@ -672,7 +793,7 @@ class SpreadsheetState extends ChangeNotifier {
             ),
           );
         } else if (colNames.contains(table[0][j])) {
-          errorRoot.newChildren.add(
+          errorRoot.newChildren!.add(
             NodeStruct(
               message:
                   "duplicate column name \"${table[0][j]}\"",
@@ -694,7 +815,7 @@ class SpreadsheetState extends ChangeNotifier {
       }
     }
     if (emptyNamesChildren.isNotEmpty) {
-      errorRoot.newChildren.add(
+      errorRoot.newChildren!.add(
         NodeStruct(
           message: "empty attribute column names",
           newChildren: emptyNamesChildren
@@ -714,7 +835,7 @@ class SpreadsheetState extends ChangeNotifier {
           final cellList = row[j].split("; ");
           for (String instr in cellList) {
             if (instr.isEmpty) {
-              errorRoot.newChildren.add(
+              errorRoot.newChildren!.add(
                 NodeStruct(message: "empty attribute name", id: i, col: j),
               );
               return;
@@ -734,7 +855,7 @@ class SpreadsheetState extends ChangeNotifier {
               lastElement = DynAndInt(i, j);
               continue;
             } else if (instr.contains("-fst")) {
-              errorRoot.newChildren.add(
+              errorRoot.newChildren!.add(
                 NodeStruct(
                   message: "'-fst' is not at the end of ${instr}",
                   id: i,
@@ -749,7 +870,7 @@ class SpreadsheetState extends ChangeNotifier {
             final numK = int.tryParse(instr);
             if (numK != null) {
               if (numK < 1 || numK > rowCount - 1) {
-                errorRoot.newChildren.add(
+                errorRoot.newChildren!.add(
                   NodeStruct(
                     message: "${instr} points to an invalid row ${numK}",
                     id: i,
@@ -801,7 +922,7 @@ class SpreadsheetState extends ChangeNotifier {
       }
     }
     if (children.isNotEmpty) {
-      warningRoot.newChildren.add(
+      warningRoot.newChildren!.add(
         NodeStruct(
           message: "redundant attributes found",
           newChildren: children,
@@ -811,7 +932,7 @@ class SpreadsheetState extends ChangeNotifier {
 
     dfsIterative(attributes, attributes, "attribute");
 
-    if (errorRoot.newChildren.isNotEmpty) {
+    if (errorRoot.newChildren!.isNotEmpty) {
       return;
     }
 
@@ -829,7 +950,7 @@ class SpreadsheetState extends ChangeNotifier {
       if (urls[i].isNotEmpty && attributes.containsKey(i)) {
         for (final k in attributes[i]!.keys) {
           if (urls[k].isNotEmpty) {
-            errorRoot.newChildren.add(
+            errorRoot.newChildren!.add(
               NodeStruct(
                 message:
                     "URL conflict",
@@ -888,7 +1009,7 @@ class SpreadsheetState extends ChangeNotifier {
     }
 
     if (validRowIndexes.isEmpty) {
-      errorRoot.newChildren.add(
+      errorRoot.newChildren!.add(
         NodeStruct(message: "No valid rows found in the table!"),
       );
       return;
@@ -1075,7 +1196,7 @@ class SpreadsheetState extends ChangeNotifier {
                 instrSplit.length != depPattern[j].length - 1 &&
                 depPattern[j].length > 1
               ) {
-                errorRoot.newChildren.add(NodeStruct(
+                errorRoot.newChildren!.add(NodeStruct(
                     message: "$instr does not match dependencies pattern ${depPattern[j]}",
                     id: i,
                     col: j,
@@ -1103,7 +1224,7 @@ class SpreadsheetState extends ChangeNotifier {
               if (isConstraint) {
                 match = RegExp(PATTERN_AREAS).firstMatch(instr);
                 if (match == null) {
-                  errorRoot.newChildren.add(NodeStruct(
+                  errorRoot.newChildren!.add(NodeStruct(
                       message: "$instr does not match expected format",
                       id: i,
                       col: j,
@@ -1112,7 +1233,7 @@ class SpreadsheetState extends ChangeNotifier {
                   return;
                 }
                 intervals = getIntervals(instr, i, j);
-                if (errorRoot.newChildren.isNotEmpty) {
+                if (errorRoot.newChildren!.isNotEmpty) {
                   return;
                 }
               }
@@ -1124,7 +1245,7 @@ class SpreadsheetState extends ChangeNotifier {
               if (match.namedGroup('number') != null) {
                 final number = int.parse(match.namedGroup('number')!);
                 if (number == 0 || number > rowCount) {
-                  errorRoot.newChildren.add(
+                  errorRoot.newChildren!.add(
                     NodeStruct(message: "invalid number.", id: i, col: j),
                   );
                   return;
@@ -1136,7 +1257,7 @@ class SpreadsheetState extends ChangeNotifier {
               } else {
                 name = match.namedGroup('name');
                 if (!name) {
-                  errorRoot.newChildren.add(
+                  errorRoot.newChildren!.add(
                     NodeStruct(
                       message: "$instr does not match expected format",
                       id: i,
@@ -1151,7 +1272,7 @@ class SpreadsheetState extends ChangeNotifier {
                   if (match.namedGroup('column') != null) {
                     col = col_name_to_index[match.namedGroup('column')!];
                     if (!attributes[col]!.containsKey(name)) {
-                      errorRoot.newChildren.add(NodeStruct(
+                      errorRoot.newChildren!.add(NodeStruct(
                           message: "attribute ${match.namedGroup('column')}.$name does not exist",
                           id: i,
                           col: j,
@@ -1159,29 +1280,27 @@ class SpreadsheetState extends ChangeNotifier {
                       );
                       return;
                     }
-                  } else if (att_to_col.containsKey(name)) {
-                    if (att_to_col[name]!.length > 1) {
-                      List<NodeStruct> newChildren = [];
-                      for (final col in att_to_col[name]!) {
-                        final matchingAtts = attributes[name]!.keys.map((r) {
-                          return NodeStruct(id: r, col: col);
-                        }).toList();
-                        newChildren.add(
-                          NodeStruct(
-                            col: j,
-                            newChildren: matchingAtts,
-                          ),
-                        );
-                      }
-                      errorRoot.newChildren.add(
+                  } else if (att_to_col.containsKey(name) && att_to_col[name]!.length > 1) {
+                    List<NodeStruct> newChildren = [];
+                    for (final col in att_to_col[name]!) {
+                      final matchingAtts = attributes[name]!.keys.map((r) {
+                        return NodeStruct(id: r, col: col);
+                      }).toList();
+                      newChildren.add(
                         NodeStruct(
-                          message: "attribute \"$name\" is ambiguous",
-                          id: i,
                           col: j,
-                          newChildren: newChildren,
+                          newChildren: matchingAtts,
                         ),
                       );
                     }
+                    errorRoot.newChildren!.add(
+                      NodeStruct(
+                        message: "attribute \"$name\" is ambiguous",
+                        id: i,
+                        col: j,
+                        newChildren: newChildren,
+                      ),
+                    );
                   }
                   for (final r in attributes[name]!.keys) {
                     numbers.add(r);
@@ -1195,7 +1314,7 @@ class SpreadsheetState extends ChangeNotifier {
                 }
               } else if (match.namedGroup('name') != null) {
                 if (!(names.containsKey(name))) {
-                  errorRoot.newChildren.add(
+                  errorRoot.newChildren!.add(
                     NodeStruct(
                       message: "attribute \"$name\" does not exist",
                       id: i,
@@ -1223,7 +1342,7 @@ class SpreadsheetState extends ChangeNotifier {
                 intervals,
               );
               if (instrTable[i].containsKey(instruction)) {
-                errorRoot.newChildren.add(
+                errorRoot.newChildren!.add(
                   NodeStruct(
                     message: "duplicate instruction \"$instr\"",
                     id: i,
@@ -1315,7 +1434,7 @@ class SpreadsheetState extends ChangeNotifier {
     //           });
     //         }
     //       });
-    //       errorRoot.newChildren.add(NodeStruct(
+    //       errorRoot.newChildren!.add(NodeStruct(
     //           message: "Cycle detected in ${p == 1 ? "after" : "before"} constraints",
     //           newChildren: children,
     //         ),
@@ -1348,7 +1467,7 @@ class SpreadsheetState extends ChangeNotifier {
           );
         }
       }).toList();
-      warningRoot.newChildren.add(
+      warningRoot.newChildren!.add(
         NodeStruct(
           message: "unused attributes found",
           newChildren: children,
@@ -1360,8 +1479,8 @@ class SpreadsheetState extends ChangeNotifier {
 
   void getEverything() {
     log.info("Processing spreadsheet data...");
-    errorRoot.newChildren.clear();
-    warningRoot.newChildren.clear();
+    errorRoot.newChildren!.clear();
+    warningRoot.newChildren!.clear();
     for (final row in table) {
       for (int idx = 0; idx < row.length; idx++) {
         row[idx] = row[idx].trim().toLowerCase();
@@ -1398,7 +1517,7 @@ class SpreadsheetState extends ChangeNotifier {
       for (int j in nameIndexes) {
         for (final name in mentions[i][j]) {
           if (int.tryParse(name) != null) {
-            errorRoot.newChildren.add(
+            errorRoot.newChildren!.add(
               NodeStruct(message: "$name is not a valid name", id: i, col: j),
             );
             return;
@@ -1409,7 +1528,7 @@ class SpreadsheetState extends ChangeNotifier {
               name.contains(":") ||
               name.contains("|") ||
               (match != null && !["fst", "lst"].contains(match.group(1)))) {
-            errorRoot.newChildren.add(
+            errorRoot.newChildren!.add(
               NodeStruct(
                 message: "$name contains invalid characters (_ : | -)",
                 id: i,
@@ -1420,7 +1539,7 @@ class SpreadsheetState extends ChangeNotifier {
 
           final parenMatch = RegExp(r'(\(\d+\))$').firstMatch(name);
           if (parenMatch != null) {
-            errorRoot.newChildren.add(
+            errorRoot.newChildren!.add(
               NodeStruct(
                 message: "$name contains invalid parentheses",
                 id: i,
@@ -1430,13 +1549,13 @@ class SpreadsheetState extends ChangeNotifier {
           }
 
           if (["fst", "lst"].contains(name)) {
-            errorRoot.newChildren.add(
+            errorRoot.newChildren!.add(
               NodeStruct(message: "$name is a reserved name", id: i, col: j),
             );
           }
 
           if (names.containsKey(name)) {
-            errorRoot.newChildren.add(
+            errorRoot.newChildren!.add(
               NodeStruct(
                 message: "name $name used two times",
                 newChildren: [
@@ -1453,5 +1572,139 @@ class SpreadsheetState extends ChangeNotifier {
     getCategories();
     saveSpreadsheet();
     notifyListeners();
+  }
+
+  void getCellElementsWithLinks() {
+    mentionsRoot.newChildren = [];
+    var row = selectedRow;
+    var col = selectedCol;
+    mentions[row][col].forEach((el) {
+      var text = el;
+      var nb = -1;
+      if (el is int) {
+        text = mentions[el][nameIndexes.first][0] ?? ""; // TODO: better handle row names
+        nb = el;
+      }
+
+      mentionsRoot.newChildren!.add(
+        NodeStruct(
+          message: text,
+          id: row,
+          col: col,
+          newChildren: [],
+        ),
+      );
+    });
+  }
+
+  void dfsDepthUpdate(NodeStruct node, int increase, bool newChildren) {
+    final stack = [DynAndInt(node, increase)];
+    while (stack.isNotEmpty) {
+      DynAndInt curr = stack.removeLast();
+      NodeStruct currNode = curr.dyn;
+      final parentDepth = curr.id;
+      for (final child in (newChildren ? currNode.newChildren! : currNode.children)) {
+        child.depth = parentDepth + ((child.startOpen && parentDepth == 0) ? 0 : 1);
+        if (child.depth < 2 + increase) {
+          stack.add(DynAndInt(child, child.depth));
+        }
+      }
+    }
+  }
+
+  void populateTree(NodeStruct root, container, {bool keep_prev = false}) {
+    var stack = [root];
+    while (stack.isNotEmpty) {
+      var node = stack.removeLast();
+      if (keep_prev) {
+        node.newChildren = node.children;
+      }
+      if (node.newChildren == null) {
+        if (node.id != null) {
+          // if (typeof node.id === "number") {
+          var obj = attributes[node.id];
+          for (final entry in obj!.entries) {
+            node.newChildren!.add(NodeStruct(
+                id: entry.key,
+                col: entry.value,
+                newChildren: [],
+              ),
+            );
+          }
+        }
+      }
+      dfsDepthUpdate(node, 1, true);
+      if (node.depth == 0) {
+        var similarity = {};
+        for (int j = 0; j < node.children.length; j++) {
+          var obj = node.children[j];
+          similarity[j] = [];
+          if (obj.depth != 0) continue;
+          for (int i = 0; i < node.newChildren!.length; i++) {
+            var newObj = node.newChildren![i];
+            if (newObj.depth != 0) continue;
+            if (isEqualExcept(obj, newObj, ["newChildren", "depth"])) {
+              newObj.depth = 0;
+              newObj.children = obj.children;
+              similarity[j] = [];
+              break;
+            }
+            let sim = 0;
+            if (obj.message !== undefined) {
+              if (obj.message === newObj.message) sim++;
+            }
+            if (obj.att !== undefined) {
+              if (obj.att === newObj.att) sim++;
+            }
+            if (obj.row !== undefined) {
+              if (obj.row === newObj.row) sim++;
+            }
+            if (obj.col !== undefined) {
+              if (obj.col === newObj.col) sim++;
+            }
+            if (
+              JSON.stringify(obj.newChildren!) ===
+              JSON.stringify(newObj.newChildren!)
+            )
+              sim++;
+            if (obj.startOpen === newObj.startOpen) sim++;
+            if (obj.hideIfEmpty === newObj.hideIfEmpty) sim++;
+            if (sim > 0) similarity[j].push({i: i, sim: sim});
+          }
+          similarity[j].sort((a, b) => b.sim - a.sim);
+        }
+        let maxSim;
+        while (maxSim !== -1) {
+          maxSim = -1;
+          for (let j = 0; j < node.children.length; j++) {
+            var obj = node.children[j];
+            for (var h = 0; h < similarity[j].length; h++) {
+              var newObj = node.newChildren![similarity[j][h].i];
+              if (!newObj.depth) continue;
+              maxSim = Math.max(maxSim, similarity[j][h].sim);
+            }
+          }
+          for (int j = 0; j < node.children.length; j++) {
+            var obj = node.children[j];
+            for (var h = 0; h < similarity[j].length; h++) {
+              var newObj = node.newChildren![similarity[j][h].i];
+              if (!newObj.depth) continue;
+              if (similarity[j][h].sim === maxSim) {
+                newObj.depth = 0;
+                newObj.children = obj.children;
+                break;
+              }
+            }
+          }
+        }
+      }
+      node.children = node.newChildren!;
+      if (node.depth < 2) {
+        for (final child in node.children) {
+          stack.add(child);
+        }
+      }
+    }
+    // renderTree(root, container);
   }
 }

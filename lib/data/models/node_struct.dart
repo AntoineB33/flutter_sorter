@@ -5,8 +5,8 @@ class NodeStruct {
   final int? att;
   final int? dist;
   final int? minDist;
-  final List<NodeStruct> children;
-  List<NodeStruct> newChildren;
+  List<NodeStruct> children;
+  List<NodeStruct>? newChildren;
   final bool hideIfEmpty;
   final bool startOpen;
   int depth;
@@ -22,6 +22,5 @@ class NodeStruct {
     this.hideIfEmpty = false,
     this.startOpen = false,
   })  : children = [],
-        depth = startOpen ? 0 : 1,
-        newChildren = newChildren ?? [];
+        depth = startOpen ? 0 : 1;
 }
