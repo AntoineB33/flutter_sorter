@@ -1,5 +1,6 @@
 // logic/async_utils.dart
 import 'dart:async';
+import 'dart:isolate';
 import '../logger.dart';
 
 class OneSlotExecutor {

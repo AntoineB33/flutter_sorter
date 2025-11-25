@@ -9,131 +9,9 @@ import '../data/models/node_struct.dart';
 import '../data/models/column_type.dart';
 import '../logger.dart';
 import '../logic/async_utils.dart';
+import '../logic/hungarian_algorithm.dart';
+import '../data/models/dyn_and_int.dart';
 
-class HungarianAlgorithm {
-  final List<List<int>> costMatrix;
-  late int dim;
-  late List<int> labelX;
-  late List<int> labelY;
-  late List<int> matchY; // matchY[j] = i means j is matched with i
-  late List<int> matchX; // matchX[i] = j means i is matched with j
-  late List<int> slack;
-  late List<bool> visX;
-  late List<bool> visY;
-
-  HungarianAlgorithm(this.costMatrix);
-
-  /// Solves the assignment problem and returns the Result object
-  AssignmentResult compute() {
-    int n = costMatrix.length;
-    int m = costMatrix[0].length;
-    
-    // The algorithm requires a square matrix. 
-    // If A and B have different sizes, we pad with 0s.
-    dim = max(n, m);
-    
-    // Initialize mapping arrays
-    labelX = List.filled(dim, 0);
-    labelY = List.filled(dim, 0);
-    matchY = List.filled(dim, -1);
-    matchX = List.filled(dim, -1);
-    slack = List.filled(dim, 0);
-    visX = List.filled(dim, false);
-    visY = List.filled(dim, false);
-
-    // Initialize labels for X with max weight in each row
-    for (int i = 0; i < n; i++) {
-      int maxVal = -1 >>> 1; // Very small number
-      for (int j = 0; j < m; j++) {
-         if (costMatrix[i][j] > maxVal) maxVal = costMatrix[i][j];
-      }
-      // Handle case where row might be empty or all negative
-      labelX[i] = maxVal == (-1 >>> 1) ? 0 : maxVal;
-    }
-
-    // Main algorithm loop
-    for (int i = 0; i < dim; i++) {
-      // Reset slack
-      slack.fillRange(0, dim, 999999999); // Infinity
-      
-      while (true) {
-        visX.fillRange(0, dim, false);
-        visY.fillRange(0, dim, false);
-        
-        if (dfs(i, n, m)) break; // Found a path
-
-        // If no path, update labels (re-weighting)
-        int d = 999999999;
-        for (int j = 0; j < dim; j++) {
-          if (!visY[j]) d = min(d, slack[j]);
-        }
-
-        if (d == 999999999) break; // Should not happen if solvable
-
-        for (int k = 0; k < dim; k++) {
-          if (visX[k]) labelX[k] -= d;
-          if (visY[k]) labelY[k] += d;
-          else slack[k] -= d;
-        }
-      }
-    }
-
-    // Compile results
-    int totalWeight = 0;
-    List<int> assignment = [];
-    
-    for (int i = 0; i < n; i++) {
-      int matchedJ = matchX[i];
-      // Only count valid matches within original bounds
-      if (matchedJ != -1 && matchedJ < m) {
-        totalWeight += costMatrix[i][matchedJ];
-        assignment.add(matchedJ);
-      } else {
-        // Should not happen if n <= m, but handles edge cases
-        assignment.add(-1); 
-      }
-    }
-
-    return AssignmentResult(totalWeight, assignment);
-  }
-
-  bool dfs(int x, int n, int m) {
-    visX[x] = true;
-    for (int y = 0; y < dim; y++) {
-      if (visY[y]) continue;
-      
-      int weight = (x < n && y < m) ? costMatrix[x][y] : 0;
-      int gap = labelX[x] + labelY[y] - weight;
-
-      if (gap == 0) {
-        visY[y] = true;
-        if (matchY[y] == -1 || dfs(matchY[y], n, m)) {
-          matchY[y] = x;
-          matchX[x] = y;
-          return true;
-        }
-      } else {
-        slack[y] = min(slack[y], gap);
-      }
-    }
-    return false;
-  }
-}
-
-class AssignmentResult {
-  final int maxWeight;
-  /// assign[i] = j means row i is assigned to column j
-  final List<int> assignments; 
-
-  AssignmentResult(this.maxWeight, this.assignments);
-}
-
-class DynAndInt {
-  dynamic dyn;
-  int id;
-
-  DynAndInt(this.dyn, this.id);
-}
 
 class InstrStruct {
   bool isConstraint;
@@ -177,11 +55,11 @@ class SpreadsheetState extends ChangeNotifier {
     r'^(?<prefix>as far as possible from )(?<any>any)?((?<number>\d+)|(((?<column>.+)\.)?(?<name>.+)))$/';
   static const PATTERN_AREAS =
     r'^(?<prefix>.*\|)(?<any>any)?((?<number>\d+)|(((?<column>.+)\.)?(?<name>.+)))(?<suffix>\|.*)$/';
-  static const rows = "rows";
+  static const rowCst = "rows";
   static const notUsed = "notUsed";
   String spreadsheetName = "";
-  final NodeStruct errorRoot = NodeStruct(message: 'Error Log', newChildren: []);
-  final NodeStruct warningRoot = NodeStruct(message: 'Warning Log', newChildren: []);
+  final NodeStruct errorRoot = NodeStruct(message: 'Error Log', newChildren: [], hideIfEmpty: true);
+  final NodeStruct warningRoot = NodeStruct(message: 'Warning Log', newChildren: [], hideIfEmpty: true);
   final NodeStruct mentionsRoot = NodeStruct(message: 'Current selection', newChildren: []);
   final NodeStruct searchRoot = NodeStruct(message: 'Search results', newChildren: []);
   final NodeStruct categoriesRoot = NodeStruct(message: 'Categories', newChildren: []);
@@ -191,9 +69,9 @@ class SpreadsheetState extends ChangeNotifier {
 
   /// 2D table of attribute identifiers (row index or name)
   /// mentioned in each cell.
-  List<List<dynamic>> mentions = [];
+  List<List<List<AttAndCol>>> mentions = [];
   Map<String, Cell> names = {};
-  Map<String, List<dynamic>> att_to_col = {};
+  Map<String, List<dynamic>> attToCol = {};
   var rolesOptions;
   var newSelectedRoleList;
   List<int> nameIndexes = [];
@@ -204,12 +82,13 @@ class SpreadsheetState extends ChangeNotifier {
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
-  Map<dynamic, Map<int, int>> attributes = {};
-  Map<int, Map<dynamic, int>> rowToAtt = {};
+  Map<AttAndCol, Map<int, int>> attributes = {};
+  Map<int, Map<AttAndCol, int>> rowToAtt = {};
   /// Maps attribute identifiers (row index or name)
   /// to a map of mentioners (row index) to the column index
-  Map<dynamic, Map<int, int>> toMentioners = {};
-  List<Map<dynamic, int>> instrTable = [];
+  Map<AttAndCol, Map<int, int>> toMentioners = {};
+  List<Map<InstrStruct, int>> instrTable = [];
+  Map<dynamic, List<AttAndCol>> colToAtt = {};
   Cell? _selectionStart;
   Cell? _selectionEnd;
 
@@ -519,6 +398,19 @@ class SpreadsheetState extends ChangeNotifier {
     return result;
   }
 
+  int getIndexFromString(String s) {
+    int result = 0;
+    for (int i = 0; i < s.length; i++) {
+      // Get ASCII code of current char. 'a' is 97, so we subtract 97 to get 0.
+      // 'a' -> 0, 'b' -> 1, etc.
+      int value = s.codeUnitAt(i) - 97;
+      
+      // Accumulate the result
+      result = result * 26 + value;
+    }
+    return result;
+  }
+
   String getColumnLabel(int col) {
     String columnLabel = "";
     int tempCol = col + 1; // Excel columns start at 1, not 0
@@ -627,7 +519,7 @@ class SpreadsheetState extends ChangeNotifier {
     }
 
     // Add redundant reference warningRoot
-    if (redundantRef.length > 0) {
+    if (redundantRef.isNotEmpty) {
       warningRoot.newChildren!.add(
         NodeStruct(
           message: "redundant references found",
@@ -637,8 +529,17 @@ class SpreadsheetState extends ChangeNotifier {
     }
   }
 
-  String getRowName(row) {
-    return mentions[row][nameIndexes.first][0] + " (row $row)";
+  String getRowName(row) { // TODO: adapt to width available
+    String names = "";
+    for (int colId in nameIndexes) {
+      for (String name in mentions[row][colId].map((e) => e.name)) {
+        if (names.isNotEmpty) {
+          names += ", ";
+        }
+        names += '"${name.toString()}"';
+      }
+    }
+    return "row $row: $names";
   }
 
   List<List<int>> getIntervals(String intervalStr, int row, int col) {
@@ -724,198 +625,149 @@ class SpreadsheetState extends ChangeNotifier {
     return resultList;
   }
 
+  AttAndCol getAttAndCol(String attWritten, int rowId, int colId) {
+    AttAndCol att;
+    List<String> splitStr = attWritten.split(".");
+    String name = attWritten;
+    int colIdStr = -1;
+    if (splitStr.length == 2) {
+      name = splitStr[1];
+      colIdStr = getIndexFromString(splitStr[0]);
+      if (colIdStr < 0 || colIdStr >= colCount) {
+        errorRoot.newChildren!.add(
+          NodeStruct(
+            message: "Column ${splitStr[0]} does not exist",
+            id: rowId,
+            col: colId,
+          ),
+        );
+      }
+    }
+    final numK = int.tryParse(name);
+    if (numK != null) {
+      if (colIdStr != -1) {
+        errorRoot.newChildren!.add(
+          NodeStruct(
+            message: "Cannot use both column and row index for attribute reference",
+            id: rowId,
+            col: colId,
+          ),
+        );
+      }
+      if (numK < 1 || numK > rowCount - 1) {
+        warningRoot.newChildren!.add(
+          NodeStruct(
+            message: "$name points to an empty row $numK",
+            id: rowId,
+            col: colId,
+          ),
+        );
+      }
+      att = AttAndCol(numK, rowCst);
+    } else {
+      // TODO: validate attribute name
+      att = AttAndCol(name, colIdStr);
+    }
+    mentions[rowId][colId].add(att);
+    rowToAtt[rowId]![att] = colId;
+    colToAtt[colId]!.add(att);
+    return att;
+  }
+
   void getCategories() {
     // final saved = {
     //   input: { name: name, table: table, columnTypes: columnTypes },
     //   output: { errorRoot: errorRoot },
     // };
 
-    List<NodeStruct> children = [];
-    for (int i = 1; i < rowCount; i++) {
-      for (int j in pathIndexes) {
-        for (final url in mentions[i][j]) {
-          if (!RegExp(r'^(https?:\/\/|file:\/\/)').hasMatch(url)) {
-            children.add(NodeStruct(message: url, id: i, col: j));
-          }
-        }
-      }
-    }
-    if (children.isNotEmpty) {
-      warningRoot.newChildren!.add(
-        NodeStruct(message: "invalid URLs found", newChildren: children),
-      );
-    }
-
     if (errorRoot.newChildren!.isNotEmpty) {
       return;
     }
 
-    Map col_to_att = {};
-    Map att_to_dist = {};
+    colToAtt = {};
+    Map<AttAndCol, List<int>> attToDist = {};
     DynAndInt firstElement = DynAndInt(-1, -1);
     DynAndInt lastElement = DynAndInt(-1, -1);
     final Map fstCat = {};
     final Map lstCat = {};
-    final col_name_to_index = new Map();
-    for (int j = 0; j < colCount; j++) {
-      if ([
-        ColumnType.attributes.name,
-        ColumnType.sprawl.name,
-      ].contains(columnTypes[j])) {
-        col_to_att[j] = [];
-      }
-      if (col_name_to_index.containsKey(table[0][j])) {
-        errorRoot.newChildren!.add(
-          NodeStruct(
-            message:
-                "duplicate column name ${table[0][j]} in ${getColumnLabel(j)} and ${getColumnLabel(col_name_to_index[table[0][j]])}",
-          ),
-        );
-      }
-      col_name_to_index[table[0][j]] = j;
-    }
-    col_to_att[rows] = [];
-    col_to_att[notUsed] = [];
-    children = [];
+    colToAtt[rowCst] = [];
+    colToAtt[notUsed] = [];
+    List<NodeStruct> children = [];
     attributes = {};
-    att_to_col = {};
+    attToCol = {};
     names = {};
-    var colNames = List.generate(colCount, (j) => "");
-    List<NodeStruct> emptyNamesChildren = [];
-    for (int j = 0; j < colCount; j++) {
-      if ([ColumnType.attributes.name, ColumnType.sprawl.name]
-          .contains(columnTypes[j])) {
-        if (table[0][j].isEmpty) {
-          emptyNamesChildren.add(
-            NodeStruct(
-              id: 0,
-              col: j,
-            ),
-          );
-        } else if (colNames.contains(table[0][j])) {
-          errorRoot.newChildren!.add(
-            NodeStruct(
-              message:
-                  "duplicate column name \"${table[0][j]}\"",
-              startOpen: true,
-              newChildren: [
-                NodeStruct(
-                  id: 0,
-                  col: j,
-                ),
-                NodeStruct(
-                  id: 0,
-                  col: colNames.indexOf(table[0][j]),
-                ),
-              ],
-            ),
-          );
-          return;
-        }
-      }
-    }
-    if (emptyNamesChildren.isNotEmpty) {
-      errorRoot.newChildren!.add(
-        NodeStruct(
-          message: "empty attribute column names",
-          newChildren: emptyNamesChildren
-        ),
-      );
-      return;
-    }
     rowToAtt = { for (var i = 0; i < rowCount; i++) i: {} };
-    for (int i = 1; i < rowCount; i++) {
-      final row = table[i];
-      for (int j = 0; j < row.length; j++) {
-        final isSprawl = columnTypes[j] == ColumnType.sprawl.name;
-        if (columnTypes[j] == ColumnType.attributes.name || isSprawl) {
-          if (row[j].isEmpty) {
+    for (int rowId = 1; rowId < rowCount; rowId++) {
+      final row = table[rowId];
+      for (int colId = 0; colId < row.length; colId++) {
+        final isSprawl = columnTypes[colId] == ColumnType.sprawl.name;
+        if (columnTypes[colId] == ColumnType.attributes.name || isSprawl) {
+          if (row[colId].isEmpty) {
             continue;
           }
-          final cellList = row[j].split("; ");
-          for (String instr in cellList) {
-            if (instr.isEmpty) {
+          final cellList = row[colId].split("; ");
+          for (String attWritten in cellList) {
+            if (attWritten.isEmpty) {
               errorRoot.newChildren!.add(
-                NodeStruct(message: "empty attribute name", id: i, col: j),
+                NodeStruct(message: "empty attribute name", id: rowId, col: colId),
               );
               return;
             }
 
-            bool isFst = instr.endsWith("-fst");
+            bool isFst = attWritten.endsWith("-fst");
             bool isLst = false;
 
             if (isFst) {
-              instr = instr.substring(0, instr.length - 4).trim();
-            } else if (instr == "fst") {
-              firstElement = DynAndInt(i, j);
+              attWritten = attWritten.substring(0, attWritten.length - 4).trim();
+            } else if (attWritten == "fst") {
+              firstElement = DynAndInt(rowId, colId);
               continue;
-            } else if ((isLst = instr.endsWith("-lst"))) {
-              instr = instr.substring(0, instr.length - 4).trim();
-            } else if (instr == "lst") {
-              lastElement = DynAndInt(i, j);
+            } else if ((isLst = attWritten.endsWith("-lst"))) {
+              attWritten = attWritten.substring(0, attWritten.length - 4).trim();
+            } else if (attWritten == "lst") {
+              lastElement = DynAndInt(rowId, colId);
               continue;
-            } else if (instr.contains("-fst")) {
+            } else if (attWritten.contains("-fst")) {
               errorRoot.newChildren!.add(
                 NodeStruct(
-                  message: "'-fst' is not at the end of ${instr}",
-                  id: i,
-                  col: j,
+                  message: "'-fst' is not at the end of ${attWritten}",
+                  id: rowId,
+                  col: colId,
                 ),
               );
               return;
             }
 
-            dynamic att = -1;
-            dynamic col = j;
-            final numK = int.tryParse(instr);
-            if (numK != null) {
-              if (numK < 1 || numK > rowCount - 1) {
-                errorRoot.newChildren!.add(
-                  NodeStruct(
-                    message: "${instr} points to an invalid row ${numK}",
-                    id: i,
-                    col: j,
-                  ),
-                );
-                return;
+            AttAndCol att = getAttAndCol(attWritten, rowId, colId);
+            if (att.col == rowCst) {
+              if (!attToCol.containsKey(attWritten)) {
+                attToCol[attWritten] = [];
               }
-              att = numK;
-            } else if (names.containsKey(instr)) {
-              att = names[instr]!.row;
-            } else {
-              att = "${table[0][j]}.$instr";
-              col = rows;
-              if (!att_to_col.containsKey(instr)) {
-                att_to_col[instr] = [];
-              }
-              if (att_to_col[instr]!.contains(col) == false) {
-                att_to_col[instr]!.add(col);
+              if (attToCol[attWritten]!.contains(colId) == false) {
+                attToCol[attWritten]!.add(colId);
               }
             }
-            mentions[i][j].push(att);
-            rowToAtt[i]![att] = j;
-            col_to_att[col].push(att);
 
             if (!attributes.containsKey(att)) {
               attributes[att] = {};
               if (isSprawl) {
-                att_to_dist[att] = [];
+                attToDist[att] = [];
               }
             }
 
-            if (attributes[att]!.containsKey(i)) {
-              attributes[att]![i] = j;
+            if (attributes[att]!.containsKey(rowId)) {
+              attributes[att]![rowId] = colId;
               if (isSprawl) {
-                att_to_dist[att].add(i);
+                attToDist[att]!.add(rowId);
               }
             } else {
-              children.add(NodeStruct(id: i, col: j));
+              children.add(NodeStruct(id: rowId, col: colId));
             }
 
             if (isFst) {
-              fstCat[i] = DynAndInt(att, j);
+              fstCat[rowId] = DynAndInt(att, colId);
             } else if (isLst) {
-              lstCat[i] = DynAndInt(att, j);
+              lstCat[rowId] = DynAndInt(att, colId);
             }
           }
         }
@@ -1015,18 +867,18 @@ class SpreadsheetState extends ChangeNotifier {
       return;
     }
 
-    final Map<dynamic, NodeStruct> categories_children = new Map();
-    final Map<dynamic, NodeStruct> sprawl_children = new Map();
-    for (final MapEntry(key: col, value: attrs) in col_to_att.entries) {
+    final Map<dynamic, NodeStruct> categoriesChildren = {};
+    final Map<dynamic, NodeStruct> sprawlChildren = {};
+    for (final MapEntry(key: col, value: attrs) in colToAtt.entries) {
       if (col == notUsed) continue;
-      List<NodeStruct> cat_col_children = [];
-      List<NodeStruct> sp_col_children = [];
+      List<NodeStruct> catColChildren = [];
+      List<NodeStruct> spColChildren = [];
       for (final attr in attrs) {
-        cat_col_children.add(NodeStruct(id: attr));
+        catColChildren.add(NodeStruct(id: attr.name));
 
-        var rowsList = att_to_dist[attr];
+        var rowsList = attToDist[attr]!;
         if (rowsList.length < 2) return;
-        rowsList = rowsList.sort();
+        rowsList = rowsList..sort();
         final distPairs = List.filled(rowsList.length - 1, 0);
         int minDist = double.infinity.toInt();
         for (var i = 0; i < rowsList.length - 1; i++) {
@@ -1041,15 +893,15 @@ class SpreadsheetState extends ChangeNotifier {
             minDist = d;
           }
         }
-        sp_col_children.add(
+        spColChildren.add(
           NodeStruct(
-            id: attr,
+            id: attr.name,
             newChildren: distPairs.asMap().entries.map((entry) {
               final idx = entry.key;
               final d = entry.value;
               return NodeStruct(
                 message:
-                    "(${d}) ${getRowName(rowsList[idx])} - ${getRowName(rowsList[idx + 1])}",
+                    "($d) ${getRowName(rowsList[idx])} - ${getRowName(rowsList[idx + 1])}",
                 newChildren: [
                   NodeStruct(id: rowsList[idx]),
                   NodeStruct(id: rowsList[idx + 1]),
@@ -1061,37 +913,37 @@ class SpreadsheetState extends ChangeNotifier {
           ),
         );
       }
-      categories_children[col] = new NodeStruct(
+      categoriesChildren[col] = NodeStruct(
         col: col,
-        newChildren: cat_col_children..sort((a, b) => a.id! - b.id!),
+        newChildren: catColChildren..sort((a, b) => a.id! - b.id!),
       );
-      sprawl_children[col] = new NodeStruct(
+      sprawlChildren[col] = NodeStruct(
         col: col,
-        newChildren: sp_col_children..sort((a, b) => a.minDist! - b.minDist!),
+        newChildren: spColChildren..sort((a, b) => a.minDist! - b.minDist!),
       );
     }
-    final List<NodeStruct> catego_children_list = [];
-    final List<NodeStruct> sprawl_children_list = [];
+    final List<NodeStruct> categoChildrenList = [];
+    final List<NodeStruct> sprawlChildrenList = [];
     for (final (
-          List<NodeStruct> children_list,
+          List<NodeStruct> childrenList,
           Map<dynamic, NodeStruct> children,
         )
         in [
-          (catego_children_list, categories_children),
-          (sprawl_children_list, sprawl_children),
+          (categoChildrenList, categoriesChildren),
+          (sprawlChildrenList, sprawlChildren),
         ]) {
       for (int j = 0; j < colCount; j++) {
         final isSprawl = columnTypes[j] == ColumnType.sprawl.name;
         if (columnTypes[j] == ColumnType.attributes.name || isSprawl) {
-          children_list.add(children[j]!);
+          childrenList.add(children[j]!);
         }
       }
-      if (children.containsKey(rows)) {
-        children_list.add(children[rows]!);
+      if (children.containsKey(rowCst)) {
+        childrenList.add(children[rowCst]!);
       }
     }
-    categoriesRoot.newChildren = catego_children_list;
-    distPairsRoot.newChildren = sprawl_children_list;
+    categoriesRoot.newChildren = categoChildrenList;
+    distPairsRoot.newChildren = sprawlChildrenList;
 
     instrTable = List.generate(rowCount, (_) => {});
 
@@ -1118,7 +970,7 @@ class SpreadsheetState extends ChangeNotifier {
       }
     }
 
-    final filtered_attributes = {};
+    final filteredAttributes = {};
     for (final cat in attributes.keys) {
       Map filtered = {};
       for (final MapEntry(key: k, value: v) in attributes[cat]!.entries) {
@@ -1126,9 +978,9 @@ class SpreadsheetState extends ChangeNotifier {
           filtered[k] = v;
         }
       }
-      filtered_attributes[cat] = filtered;
+      filteredAttributes[cat] = filtered;
       if (filtered.isEmpty) {
-        filtered_attributes.remove(cat);
+        filteredAttributes.remove(cat);
       }
     }
 
@@ -1188,171 +1040,168 @@ class SpreadsheetState extends ChangeNotifier {
       final row = table[i];
       for (int j = 0; j < row.length; j++) {
         if (columnTypes[j] == ColumnType.dependencies.name && row[j].isNotEmpty) {
-          final cellList = row[j].split("; ");
-          for (String instr in cellList) {
-            if (instr.isNotEmpty) {
-              final instrSplit = instr.split(".");
-              if (
-                instrSplit.length != depPattern[j].length - 1 &&
-                depPattern[j].length > 1
-              ) {
-                errorRoot.newChildren!.add(NodeStruct(
-                    message: "$instr does not match dependencies pattern ${depPattern[j]}",
-                    id: i,
-                    col: j,
-                  ),
-                );
-                return;
-              }
+          String instr = row[j];
+          if (instr.isEmpty) continue;
+          final instrSplit = instr.split("_");
+          if (
+            instrSplit.length != depPattern[j].length - 1 &&
+            depPattern[j].length > 1
+          ) {
+            errorRoot.newChildren!.add(NodeStruct(
+                message: "$instr does not match dependencies pattern ${depPattern[j]}",
+                id: i,
+                col: j,
+              ),
+            );
+            return;
+          }
 
-              if (depPattern[j].length > 1) {
-                instr =
-                  depPattern[j][0] +
-                  instrSplit
-                    .asMap().entries.map((entry) {
-                      final idx = entry.key;
-                      final split = entry.value;
-                      return split + depPattern[j][idx + 1];
-                    })
-                    .join("");
-              }
+          if (depPattern[j].length > 1) {
+            instr =
+              depPattern[j][0] +
+              instrSplit
+                .asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final split = entry.value;
+                  return split + depPattern[j][idx + 1];
+                })
+                .join("");
+          }
 
-              var match = RegExp(PATTERN_DISTANCE).firstMatch(instr);
-              List<List<int>> intervals = [];
-              var isConstraint = match == null;
+          var match = RegExp(PATTERN_DISTANCE).firstMatch(instr);
+          List<List<int>> intervals = [];
+          var isConstraint = match == null;
 
-              if (isConstraint) {
-                match = RegExp(PATTERN_AREAS).firstMatch(instr);
-                if (match == null) {
-                  errorRoot.newChildren!.add(NodeStruct(
-                      message: "$instr does not match expected format",
-                      id: i,
-                      col: j,
-                    ),
-                  );
-                  return;
-                }
-                intervals = getIntervals(instr, i, j);
-                if (errorRoot.newChildren!.isNotEmpty) {
-                  return;
-                }
-              }
-
-              final numbers = [];
-              var name;
-              var col;
-
-              if (match.namedGroup('number') != null) {
-                final number = int.parse(match.namedGroup('number')!);
-                if (number == 0 || number > rowCount) {
-                  errorRoot.newChildren!.add(
-                    NodeStruct(message: "invalid number.", id: i, col: j),
-                  );
-                  return;
-                }
-                if (urls[number].isNotEmpty) {
-                  numbers.add(number);
-                }
-                name = number;
-              } else {
-                name = match.namedGroup('name');
-                if (!name) {
-                  errorRoot.newChildren!.add(
-                    NodeStruct(
-                      message: "$instr does not match expected format",
-                      id: i,
-                      col: j,
-                    ),
-                  );
-                  return;
-                }
-                if (names.containsKey(name)) {
-                  numbers.add(names[name]!.row);
-                } else {
-                  if (match.namedGroup('column') != null) {
-                    col = col_name_to_index[match.namedGroup('column')!];
-                    if (!attributes[col]!.containsKey(name)) {
-                      errorRoot.newChildren!.add(NodeStruct(
-                          message: "attribute ${match.namedGroup('column')}.$name does not exist",
-                          id: i,
-                          col: j,
-                        ),
-                      );
-                      return;
-                    }
-                  } else if (att_to_col.containsKey(name) && att_to_col[name]!.length > 1) {
-                    List<NodeStruct> newChildren = [];
-                    for (final col in att_to_col[name]!) {
-                      final matchingAtts = attributes[name]!.keys.map((r) {
-                        return NodeStruct(id: r, col: col);
-                      }).toList();
-                      newChildren.add(
-                        NodeStruct(
-                          col: j,
-                          newChildren: matchingAtts,
-                        ),
-                      );
-                    }
-                    errorRoot.newChildren!.add(
-                      NodeStruct(
-                        message: "attribute \"$name\" is ambiguous",
-                        id: i,
-                        col: j,
-                        newChildren: newChildren,
-                      ),
-                    );
-                  }
-                  for (final r in attributes[name]!.keys) {
-                    numbers.add(r);
-                  }
-                }
-              }
-
-              if (attributes.containsKey(name)) {
-                for (final r in attributes[name]!.keys) {
-                  numbers.add(r);
-                }
-              } else if (match.namedGroup('name') != null) {
-                if (!(names.containsKey(name))) {
-                  errorRoot.newChildren!.add(
-                    NodeStruct(
-                      message: "attribute \"$name\" does not exist",
-                      id: i,
-                      col: j,
-                    ),
-                  );
-                  return;
-                }
-                if (urls[names[name]!.row].isNotEmpty) {
-                  numbers.add(names[name]);
-                }
-                if (attributes.containsKey(names[name])) {
-                  for (final r in attributes[names[name]]!.keys) {
-                    numbers.add(r);
-                  }
-                }
-              }
-
-              mentions[i][j] = numbers;
-              final mappedNumbers = numbers.map((x) => newIndexes[x]).toList();
-              var instruction = InstrStruct(
-                isConstraint,
-                match.namedGroup('any') != null,
-                mappedNumbers,
-                intervals,
+          if (isConstraint) {
+            match = RegExp(PATTERN_AREAS).firstMatch(instr);
+            if (match == null) {
+              errorRoot.newChildren!.add(NodeStruct(
+                  message: "$instr does not match expected format",
+                  id: i,
+                  col: j,
+                ),
               );
-              if (instrTable[i].containsKey(instruction)) {
+              return;
+            }
+            intervals = getIntervals(instr, i, j);
+            if (errorRoot.newChildren!.isNotEmpty) {
+              return;
+            }
+          }
+
+          final numbers = [];
+          var name;
+          var col;
+
+          if (match.namedGroup('number') != null) {
+            final number = int.parse(match.namedGroup('number')!);
+            if (number == 0 || number > rowCount) {
+              errorRoot.newChildren!.add(
+                NodeStruct(message: "invalid number.", id: i, col: j),
+              );
+              return;
+            }
+            if (urls[number].isNotEmpty) {
+              numbers.add(number);
+            }
+            name = number;
+          } else {
+            name = match.namedGroup('name');
+            if (!name) {
+              errorRoot.newChildren!.add(
+                NodeStruct(
+                  message: "$instr does not match expected format",
+                  id: i,
+                  col: j,
+                ),
+              );
+              return;
+            }
+            if (names.containsKey(name)) {
+              numbers.add(names[name]!.row);
+            } else {
+              if (match.namedGroup('column') != null) {
+                col = getIndexFromString(match.namedGroup('column')!);
+                if (!attributes[col]!.containsKey(name)) {
+                  errorRoot.newChildren!.add(NodeStruct(
+                      message: "attribute ${match.namedGroup('column')}.$name does not exist",
+                      id: i,
+                      col: j,
+                    ),
+                  );
+                  return;
+                }
+              } else if (attToCol.containsKey(name) && attToCol[name]!.length > 1) {
+                List<NodeStruct> newChildren = [];
+                for (final col in attToCol[name]!) {
+                  final matchingAtts = attributes[name]!.keys.map((r) {
+                    return NodeStruct(id: r, col: col);
+                  }).toList();
+                  newChildren.add(
+                    NodeStruct(
+                      col: j,
+                      newChildren: matchingAtts,
+                    ),
+                  );
+                }
                 errorRoot.newChildren!.add(
                   NodeStruct(
-                    message: "duplicate instruction \"$instr\"",
+                    message: "attribute \"$name\" is ambiguous",
                     id: i,
                     col: j,
+                    newChildren: newChildren,
                   ),
                 );
-              } else {
-                instrTable[i][instruction] = j;
+              }
+              for (final r in attributes[name]!.keys) {
+                numbers.add(r);
               }
             }
+          }
+
+          if (attributes.containsKey(name)) {
+            for (final r in attributes[name]!.keys) {
+              numbers.add(r);
+            }
+          } else if (match.namedGroup('name') != null) {
+            if (!(names.containsKey(name))) {
+              errorRoot.newChildren!.add(
+                NodeStruct(
+                  message: "attribute \"$name\" does not exist",
+                  id: i,
+                  col: j,
+                ),
+              );
+              return;
+            }
+            if (urls[names[name]!.row].isNotEmpty) {
+              numbers.add(names[name]);
+            }
+            if (attributes.containsKey(names[name])) {
+              for (final r in attributes[names[name]]!.keys) {
+                numbers.add(r);
+              }
+            }
+          }
+
+          mentions[i][j] = numbers;
+          final mappedNumbers = numbers.map((x) => newIndexes[x]).toList();
+          var instruction = InstrStruct(
+            isConstraint,
+            match.namedGroup('any') != null,
+            mappedNumbers,
+            intervals,
+          );
+          if (instrTable[i].containsKey(instruction)) {
+            errorRoot.newChildren!.add(
+              NodeStruct(
+                message: "duplicate instruction \"$instr\"",
+                id: i,
+                col: j,
+              ),
+            );
+          } else {
+            instrTable[i][instruction] = j;
           }
         }
       }
@@ -1366,8 +1215,8 @@ class SpreadsheetState extends ChangeNotifier {
             if (!toMentioners.containsKey(n)) {
               toMentioners[n] = {};
               final num = int.tryParse(n);
-              if (num != null && !(names.containsKey(n)) && !(att_to_col.containsKey(n))) {
-                att_to_col[n] = [notUsed];
+              if (num != null && !(names.containsKey(n)) && !(attToCol.containsKey(n))) {
+                attToCol[n] = [notUsed];
                 attributes["$notUsed.$n"] = {};
               }
             }
@@ -1498,18 +1347,17 @@ class SpreadsheetState extends ChangeNotifier {
     }
     mentions = List.generate(
       rowCount,
-      (_) => List.generate(colCount, (_) => <String>[]),
+      (_) => List.generate(colCount, (_) => <AttAndCol>[]),
     );
     for (int i = 0; i < rowCount; i++) {
-      for (int j in {...nameIndexes, ...pathIndexes}) {
+      for (int j in nameIndexes) {
         var cellElements = table[i][j].split(";");
         for (int k = 0; k < cellElements.length; k++) {
-          cellElements[k] = cellElements[k].trim();
-          if (nameIndexes.contains(j)) {
-            cellElements[k] = cellElements[k].toLowerCase();
+          cellElements[k] = cellElements[k].trim().toLowerCase();
+          if (cellElements[k].isNotEmpty) {
+            mentions[i][j].add(AttAndCol(cellElements[k], j));
           }
         }
-        mentions[i][j] = cellElements.where((s) => s.isNotEmpty).toList();
       }
     }
     names = {};
@@ -1612,11 +1460,96 @@ class SpreadsheetState extends ChangeNotifier {
     }
   }
 
-  void populateTree(NodeStruct root, container, {bool keep_prev = false}) {
+  // TODO : non recursive version
+  function renderTree(root, container) {
+    container.innerHTML = ""; // clear old content
+
+    function createNode(node, container) {
+      const li = document.createElement("li");
+      li.style.display = node.hideIfEmpty && (!node.children || node.children.length === 0) ? "none" : "block";
+      li.classList.add("expandable");
+
+      // arrow (▶ / ▼)
+      const arrow = document.createElement("span");
+
+      arrow.classList.add("arrow");
+      arrow.textContent = node.depth ? "▶" : "▼";
+
+      // label text
+      const label = document.createElement("span");
+      if (node.id !== undefined) {
+        if (node.col === undefined) {
+          label.textContent += node.id + " ";
+        } else if (result.nameIndexes.has(node.col)) {
+          label.textContent += `row:${node.id} `;
+        } else {
+          label.textContent += getCellPosition(node.id, node.col) + " ";
+        }
+      } else if (node.col !== undefined) {
+        label.textContent +=
+          getColumnLabel(node.col) + " " + result.table[0][node.col] + " ";
+      }
+      if (node.message !== undefined) {
+        label.textContent += node.message;
+      }
+      if (node.children) {
+        label.textContent += " (" + node.children.length + ")";
+      }
+      label.style.marginLeft = "4px";
+      label.classList.add("node-label");
+
+      // nested children list
+      const ul = document.createElement("ul");
+      ul.classList.add("nested");
+      if (!node.depth) {
+        ul.style.display = "block";
+      }
+      if (node.depth < 2 && Array.isArray(node.children)) {
+        node.children.forEach((child) => ul.appendChild(createNode(child, ul)));
+      }
+
+      // toggle expand/collapse
+      function toggleNodeVisibility() {
+        const increase = Number(!node.depth);
+        node.depth = increase;
+        arrow.textContent = increase ? "▶" : "▼";
+        ul.style.display = increase ? "none" : "block";
+        dfsDepthUpdate(node, increase, "children");
+        populateTree(node, container, true);
+      }
+
+      // arrow click → toggle expand/collapse
+      arrow.addEventListener("click", (event) => {
+        event.stopPropagation();
+        toggleNodeVisibility();
+      });
+
+      // label click → goToCell if node.row defined, else toggle
+      label.addEventListener("click", (event) => {
+        event.stopPropagation();
+        if (node.row !== undefined && node.col !== undefined) {
+          goToCell(node.row, node.col);
+          // TODO: mentions
+        } else {
+          toggleNodeVisibility();
+        }
+      });
+
+      // assemble
+      li.appendChild(arrow);
+      li.appendChild(label);
+      li.appendChild(ul);
+
+      return li;
+    }
+    container.appendChild(createNode(root, container));
+  }
+
+  void populateTree(NodeStruct root, container, {bool keepPrev = false}) {
     var stack = [root];
     while (stack.isNotEmpty) {
       var node = stack.removeLast();
-      if (keep_prev) {
+      if (keepPrev) {
         node.newChildren = node.children;
       }
       if (node.newChildren == null) {
@@ -1634,8 +1567,37 @@ class SpreadsheetState extends ChangeNotifier {
         }
       }
       dfsDepthUpdate(node, 1, true);
+
+      // TODO: find a faster process for bigger input
       if (node.depth == 0) {
-        var similarity = {};
+        List<List<int>> similarity = List.generate(node.children.length, (_) => List.generate(0, (_) => 0));
+        for (int i = 0; i < node.children.length; i++) {
+          var obj = node.children[i];
+          for (int j = 0; j < node.newChildren!.length; j++) {
+            var newObj = node.newChildren![j];
+            int sim = 0;
+            sim << 1;
+            if (obj.message != null && obj.message == newObj.message) sim | 1;
+            sim << 1;
+            if (obj.id != null && obj.id == newObj.id) sim | 1;
+            sim << 1;
+            if (obj.col != null && obj.col == newObj.col) sim | 1;
+            sim << 1;
+            if (obj.startOpen == newObj.startOpen) sim | 1;
+            sim << 1;
+            if (obj.newChildren != null && newObj.newChildren != null) {
+              if (jsonEncode(obj.newChildren) == jsonEncode(newObj.newChildren)) {
+                sim | 1;
+              }
+            }
+            sim << 1;
+            if (obj.newChildren != null && newObj.newChildren != null) {
+              if (obj.newChildren!.length == newObj.newChildren!.length) {
+                sim | 1;
+              }
+            }
+          }
+        }
         for (int j = 0; j < node.children.length; j++) {
           var obj = node.children[j];
           similarity[j] = [];
@@ -1707,4 +1669,5 @@ class SpreadsheetState extends ChangeNotifier {
     }
     // renderTree(root, container);
   }
+
 }

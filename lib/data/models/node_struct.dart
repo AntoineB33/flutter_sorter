@@ -2,14 +2,14 @@ class NodeStruct {
   final String? message;
   final int? id;
   final int? col;
-  final int? att;
+  final String? att;
   final int? dist;
   final int? minDist;
   List<NodeStruct> children;
   List<NodeStruct>? newChildren;
   final bool hideIfEmpty;
   final bool startOpen;
-  int depth;
+  int depth; // 0 if expanded, 1 if shown but not expanded, 2 if hidden but parent is shown, 3 otherwise
 
   NodeStruct({
     this.message,
