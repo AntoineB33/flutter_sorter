@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 enum ColumnType {
   defaultType(Colors.transparent),
   names(Colors.green),
-  path(Colors.blue),
-  attributes(Colors.orange),
+  dependencies(Colors.red),
   sprawl(Colors.purple),
-  dependencies(Colors.red);
+  attributes(Colors.orange),
+  filePath(Colors.blue),
+  url(Colors.cyan);
 
   final Color value;
   const ColumnType(this.value);

@@ -52,11 +52,11 @@ class InstrStruct {
 
 class SpreadsheetState extends ChangeNotifier {
   static const PATTERN_DISTANCE =
-    r'^(?<prefix>as far as possible from )(?<any>any)?((?<number>\d+)|(((?<column>.+)\.)?(?<name>.+)))$/';
+    r'^(?<prefix>as far as possible from )(?<any>any)?(?<att>.+)$/';
   static const PATTERN_AREAS =
-    r'^(?<prefix>.*\|)(?<any>any)?((?<number>\d+)|(((?<column>.+)\.)?(?<name>.+)))(?<suffix>\|.*)$/';
+    r'^(?<prefix>.*\|)(?<any>any)?(?<att>.+)(?<suffix>\|.*)$/';
   static const rowCst = "rows";
-  static const notUsed = "notUsed";
+  static const notUsedCst = "notUsed";
   String spreadsheetName = "";
   final NodeStruct errorRoot = NodeStruct(message: 'Error Log', newChildren: [], hideIfEmpty: true);
   final NodeStruct warningRoot = NodeStruct(message: 'Warning Log', newChildren: [], hideIfEmpty: true);
@@ -72,13 +72,8 @@ class SpreadsheetState extends ChangeNotifier {
   List<List<List<AttAndCol>>> mentions = [];
   Map<String, Cell> names = {};
   Map<String, List<dynamic>> attToCol = {};
-  var rolesOptions;
-  var newSelectedRoleList;
   List<int> nameIndexes = [];
   List<int> pathIndexes = [];
-  var selectedRow;
-  var selectedCol;
-  var wasEdited;
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
@@ -89,14 +84,11 @@ class SpreadsheetState extends ChangeNotifier {
   Map<AttAndCol, Map<int, int>> toMentioners = {};
   List<Map<InstrStruct, int>> instrTable = [];
   Map<dynamic, List<AttAndCol>> colToAtt = {};
-  Cell? _selectionStart;
-  Cell? _selectionEnd;
-
-  Cell? get selectionStart => _selectionStart;
-  Cell? get selectionEnd => _selectionEnd;
+  Cell? selectionStart;
+  Cell? selectionEnd;
 
   bool get hasSelectionRange =>
-      _selectionStart != null && _selectionEnd != null;
+      selectionStart != null && selectionEnd != null;
 
   final _saveExecutor = OneSlotExecutor();
 
@@ -123,30 +115,34 @@ class SpreadsheetState extends ChangeNotifier {
 
   // Select a cell
   void selectCell(int row, int col) {
-    _selectionStart = Cell(row: row, col: col);
-    _selectionEnd = _selectionStart;
+    selectionStart = Cell(row: row, col: col);
+    selectionEnd = selectionStart;
+    populateCellNode(mentionsRoot, selectionStart!.row, selectionStart!.col);
+    renderTree(mentionsRoot, container);
     notifyListeners();
   }
 
   void selectRange(int startRow, int startCol, int endRow, int endCol) {
-    _selectionStart = Cell(
+    selectionStart = Cell(
       row: startRow,
       col: startCol
     );
-    _selectionEnd = Cell(
+    selectionEnd = Cell(
       row: endRow,
       col: endCol
     );
+    populateCellNode(mentionsRoot, selectionStart!.row, selectionStart!.col);
+    renderTree(mentionsRoot, container);
     notifyListeners();
   }
 
   bool isCellSelected(int row, int col) {
     if (!hasSelectionRange) return false;
 
-    final r1 = _selectionStart!.row;
-    final c1 = _selectionStart!.col;
-    final r2 = _selectionEnd!.row;
-    final c2 = _selectionEnd!.col;
+    final r1 = selectionStart!.row;
+    final c1 = selectionStart!.col;
+    final r2 = selectionEnd!.row;
+    final c2 = selectionEnd!.col;
 
     return row >= r1 && row <= r2 && col >= c1 && col <= c2;
   }
@@ -263,10 +259,10 @@ class SpreadsheetState extends ChangeNotifier {
   }
 
   void pasteText(String rawText) {
-    if (_selectionStart == null) return;
+    if (selectionStart == null) return;
 
-    final startRow = _selectionStart!.row;
-    final startCol = _selectionStart!.col;
+    final startRow = selectionStart!.row;
+    final startCol = selectionStart!.col;
 
     // Parse TSV (tab-separated values)
     final rows = rawText
@@ -401,11 +397,18 @@ class SpreadsheetState extends ChangeNotifier {
   int getIndexFromString(String s) {
     int result = 0;
     for (int i = 0; i < s.length; i++) {
-      // Get ASCII code of current char. 'a' is 97, so we subtract 97 to get 0.
-      // 'a' -> 0, 'b' -> 1, etc.
-      int value = s.codeUnitAt(i) - 97;
-      
-      // Accumulate the result
+      int codeUnit = s.codeUnitAt(i);
+
+      // Validate: ASCII for 'a' is 97, 'z' is 122.
+      // If it's outside this range, it's not a lowercase letter.
+      if (codeUnit < 97 || codeUnit > 122) {
+        throw FormatException(
+          "Invalid character '${s[i]}' at index $i. Input must only contain lowercase letters (a-z)."
+        );
+      }
+
+      // 'a' (97) becomes 0, 'b' (98) becomes 1, etc.
+      int value = codeUnit - 97;
       result = result * 26 + value;
     }
     return result;
@@ -467,12 +470,12 @@ class SpreadsheetState extends ChangeNotifier {
                 } else if (nodeChildren[grandChild] != -1) {
                   var newPath = [...findPath(graph, child, grandChild),
                    Cell(row: node, col: graph[child]![node]!)]
-                    .map((k) => NodeStruct(id: k.row, col: k.col))
+                    .map((k) => NodeStruct(row: k.row, col: k.col))
                     .toList();
                   redundantRef.add(
                     NodeStruct(
                       message: "$warningMsgPrefix \"$grandChild\" already pointed",
-                      id: node,
+                      row: node,
                       col: nodeChildren[grandChild],
                       newChildren: newPath,
                     ),
@@ -505,7 +508,7 @@ class SpreadsheetState extends ChangeNotifier {
             stack.add(child);
           } else if (!completed.contains(child)) {
             final cycle = path.sublist(path.indexOf(child));
-            final cyclePathNodes = cycle.map((k) => NodeStruct(id: k)).toList();
+            final cyclePathNodes = cycle.map((k) => NodeStruct(row: k)).toList();
             errorRoot.newChildren!.add(
               NodeStruct(
                 message: "cycle detected",
@@ -610,7 +613,7 @@ class SpreadsheetState extends ChangeNotifier {
           errorRoot.newChildren!.add(
             NodeStruct(
               message: "Invalid interval: overlapping or adjacent intervals found.",
-              id: row,
+              row: row,
               col: col,
             ),
           );
@@ -626,10 +629,10 @@ class SpreadsheetState extends ChangeNotifier {
   }
 
   AttAndCol getAttAndCol(String attWritten, int rowId, int colId) {
-    AttAndCol att;
+    AttAndCol att = AttAndCol("", -1);
     List<String> splitStr = attWritten.split(".");
     String name = attWritten;
-    int colIdStr = -1;
+    dynamic colIdStr = notUsedCst;
     if (splitStr.length == 2) {
       name = splitStr[1];
       colIdStr = getIndexFromString(splitStr[0]);
@@ -637,28 +640,39 @@ class SpreadsheetState extends ChangeNotifier {
         errorRoot.newChildren!.add(
           NodeStruct(
             message: "Column ${splitStr[0]} does not exist",
-            id: rowId,
+            row: rowId,
             col: colId,
           ),
         );
+        return att;
       }
+    } else if (splitStr.length > 2) {
+      errorRoot.newChildren!.add(
+        NodeStruct(
+          message: "Invalid attribute format: too many '.' characters",
+          row: rowId,
+          col: colId,
+        ),
+      );
+      return att;
     }
     final numK = int.tryParse(name);
     if (numK != null) {
-      if (colIdStr != -1) {
+      if (colIdStr != notUsedCst) {
         errorRoot.newChildren!.add(
           NodeStruct(
             message: "Cannot use both column and row index for attribute reference",
-            id: rowId,
+            row: rowId,
             col: colId,
           ),
         );
+        return att;
       }
       if (numK < 1 || numK > rowCount - 1) {
         warningRoot.newChildren!.add(
           NodeStruct(
             message: "$name points to an empty row $numK",
-            id: rowId,
+            row: rowId,
             col: colId,
           ),
         );
@@ -666,6 +680,10 @@ class SpreadsheetState extends ChangeNotifier {
       att = AttAndCol(numK, rowCst);
     } else {
       // TODO: validate attribute name
+      if (columnTypes[colId] != ColumnType.attributes.name &&
+          columnTypes[colId] != ColumnType.sprawl.name) {
+        colIdStr = colId;
+      }
       att = AttAndCol(name, colIdStr);
     }
     mentions[rowId][colId].add(att);
@@ -691,7 +709,7 @@ class SpreadsheetState extends ChangeNotifier {
     final Map fstCat = {};
     final Map lstCat = {};
     colToAtt[rowCst] = [];
-    colToAtt[notUsed] = [];
+    colToAtt[notUsedCst] = [];
     List<NodeStruct> children = [];
     attributes = {};
     attToCol = {};
@@ -709,7 +727,7 @@ class SpreadsheetState extends ChangeNotifier {
           for (String attWritten in cellList) {
             if (attWritten.isEmpty) {
               errorRoot.newChildren!.add(
-                NodeStruct(message: "empty attribute name", id: rowId, col: colId),
+                NodeStruct(message: "empty attribute name", row: rowId, col: colId),
               );
               return;
             }
@@ -731,7 +749,7 @@ class SpreadsheetState extends ChangeNotifier {
               errorRoot.newChildren!.add(
                 NodeStruct(
                   message: "'-fst' is not at the end of ${attWritten}",
-                  id: rowId,
+                  row: rowId,
                   col: colId,
                 ),
               );
@@ -739,6 +757,9 @@ class SpreadsheetState extends ChangeNotifier {
             }
 
             AttAndCol att = getAttAndCol(attWritten, rowId, colId);
+            if (errorRoot.newChildren!.isNotEmpty) {
+              return;
+            }
             if (att.col == rowCst) {
               if (!attToCol.containsKey(attWritten)) {
                 attToCol[attWritten] = [];
@@ -761,7 +782,7 @@ class SpreadsheetState extends ChangeNotifier {
                 attToDist[att]!.add(rowId);
               }
             } else {
-              children.add(NodeStruct(id: rowId, col: colId));
+              children.add(NodeStruct(row: rowId, col: colId));
             }
 
             if (isFst) {
@@ -813,7 +834,7 @@ class SpreadsheetState extends ChangeNotifier {
                     startOpen: true,
                     newChildren: findPath(attributes, urlFrom[k], k)
                         .map((x) => NodeStruct(
-                          id: x.row,
+                          row: x.row,
                           col: x.col,
                         ))
                         .toList(),
@@ -823,7 +844,7 @@ class SpreadsheetState extends ChangeNotifier {
                     startOpen: true,
                     newChildren: findPath(attributes, i, k)
                         .map((x) => NodeStruct(
-                          id: x.row,
+                          row: x.row,
                           col: x.col,
                         ))
                         .toList(),
@@ -870,14 +891,23 @@ class SpreadsheetState extends ChangeNotifier {
     final Map<dynamic, NodeStruct> categoriesChildren = {};
     final Map<dynamic, NodeStruct> sprawlChildren = {};
     for (final MapEntry(key: col, value: attrs) in colToAtt.entries) {
-      if (col == notUsed) continue;
+      if (col == notUsedCst) continue;
       List<NodeStruct> catColChildren = [];
       List<NodeStruct> spColChildren = [];
       for (final attr in attrs) {
-        catColChildren.add(NodeStruct(id: attr.name));
+        catColChildren.add(NodeStruct(row: attr.name));
 
         var rowsList = attToDist[attr]!;
-        if (rowsList.length < 2) return;
+        if (rowsList.length < 2) {
+          warningRoot.newChildren!.add(
+            NodeStruct(
+              message:
+                  "Only one row for sprawl attribute \"${attr.name}\"",
+              att: attr
+            ),
+          );
+          continue;
+        }
         rowsList = rowsList..sort();
         final distPairs = List.filled(rowsList.length - 1, 0);
         int minDist = double.infinity.toInt();
@@ -895,7 +925,7 @@ class SpreadsheetState extends ChangeNotifier {
         }
         spColChildren.add(
           NodeStruct(
-            id: attr.name,
+            row: attr.name,
             newChildren: distPairs.asMap().entries.map((entry) {
               final idx = entry.key;
               final d = entry.value;
@@ -903,19 +933,19 @@ class SpreadsheetState extends ChangeNotifier {
                 message:
                     "($d) ${getRowName(rowsList[idx])} - ${getRowName(rowsList[idx + 1])}",
                 newChildren: [
-                  NodeStruct(id: rowsList[idx]),
-                  NodeStruct(id: rowsList[idx + 1]),
+                  NodeStruct(row: rowsList[idx]),
+                  NodeStruct(row: rowsList[idx + 1]),
                 ],
                 dist: d,
               );
-            }).toList()..sort((a, b) => a.id! - b.id!),
+            }).toList()..sort((a, b) => a.row! - b.row!),
             minDist: minDist,
           ),
         );
       }
       categoriesChildren[col] = NodeStruct(
         col: col,
-        newChildren: catColChildren..sort((a, b) => a.id! - b.id!),
+        newChildren: catColChildren..sort((a, b) => a.row! - b.row!),
       );
       sprawlChildren[col] = NodeStruct(
         col: col,
@@ -970,20 +1000,6 @@ class SpreadsheetState extends ChangeNotifier {
       }
     }
 
-    final filteredAttributes = {};
-    for (final cat in attributes.keys) {
-      Map filtered = {};
-      for (final MapEntry(key: k, value: v) in attributes[cat]!.entries) {
-        if (urls[k].isNotEmpty) {
-          filtered[k] = v;
-        }
-      }
-      filteredAttributes[cat] = filtered;
-      if (filtered.isEmpty) {
-        filteredAttributes.remove(cat);
-      }
-    }
-
     for (final MapEntry(key: k, value: v) in lstCat.entries) {
       if (urls[k].isNotEmpty) {
         var t = v.att;
@@ -1032,38 +1048,39 @@ class SpreadsheetState extends ChangeNotifier {
 
     final depPattern = table[0].map((cell) => cell.split(".")).toList();
 
-    for (int i = 1; i < rowCount; i++) {
-      if (urls[i].isEmpty && !(attributes[colCount]!.containsKey(i))) {
+    for (int rowId = 1; rowId < rowCount; rowId++) {
+      if (urls[rowId].isEmpty && !(attributes[colCount]!.containsKey(rowId))) {
         continue;
       }
 
-      final row = table[i];
-      for (int j = 0; j < row.length; j++) {
-        if (columnTypes[j] == ColumnType.dependencies.name && row[j].isNotEmpty) {
-          String instr = row[j];
+      final row = table[rowId];
+      for (int colId = 0; colId < row.length; colId++) {
+        if (columnTypes[colId] == ColumnType.dependencies.name && row[colId].isNotEmpty) {
+          // TODO: OR and AND
+          String instr = row[colId];
           if (instr.isEmpty) continue;
           final instrSplit = instr.split("_");
           if (
-            instrSplit.length != depPattern[j].length - 1 &&
-            depPattern[j].length > 1
+            instrSplit.length != depPattern[colId].length - 1 &&
+            depPattern[colId].length > 1
           ) {
             errorRoot.newChildren!.add(NodeStruct(
-                message: "$instr does not match dependencies pattern ${depPattern[j]}",
-                id: i,
-                col: j,
+                message: "$instr does not match dependencies pattern ${depPattern[colId]}",
+                row: rowId,
+                col: colId,
               ),
             );
             return;
           }
 
-          if (depPattern[j].length > 1) {
+          if (depPattern[colId].length > 1) {
             instr =
-              depPattern[j][0] +
+              depPattern[colId][0] +
               instrSplit
                 .asMap().entries.map((entry) {
                   final idx = entry.key;
                   final split = entry.value;
-                  return split + depPattern[j][idx + 1];
+                  return split + depPattern[colId][idx + 1];
                 })
                 .join("");
           }
@@ -1077,114 +1094,30 @@ class SpreadsheetState extends ChangeNotifier {
             if (match == null) {
               errorRoot.newChildren!.add(NodeStruct(
                   message: "$instr does not match expected format",
-                  id: i,
-                  col: j,
+                  row: rowId,
+                  col: colId,
                 ),
               );
               return;
             }
-            intervals = getIntervals(instr, i, j);
+            intervals = getIntervals(instr, rowId, colId);
             if (errorRoot.newChildren!.isNotEmpty) {
               return;
             }
           }
 
           final numbers = [];
-          var name;
-          var col;
 
-          if (match.namedGroup('number') != null) {
-            final number = int.parse(match.namedGroup('number')!);
-            if (number == 0 || number > rowCount) {
-              errorRoot.newChildren!.add(
-                NodeStruct(message: "invalid number.", id: i, col: j),
-              );
-              return;
-            }
-            if (urls[number].isNotEmpty) {
-              numbers.add(number);
-            }
-            name = number;
-          } else {
-            name = match.namedGroup('name');
-            if (!name) {
-              errorRoot.newChildren!.add(
-                NodeStruct(
-                  message: "$instr does not match expected format",
-                  id: i,
-                  col: j,
-                ),
-              );
-              return;
-            }
-            if (names.containsKey(name)) {
-              numbers.add(names[name]!.row);
-            } else {
-              if (match.namedGroup('column') != null) {
-                col = getIndexFromString(match.namedGroup('column')!);
-                if (!attributes[col]!.containsKey(name)) {
-                  errorRoot.newChildren!.add(NodeStruct(
-                      message: "attribute ${match.namedGroup('column')}.$name does not exist",
-                      id: i,
-                      col: j,
-                    ),
-                  );
-                  return;
-                }
-              } else if (attToCol.containsKey(name) && attToCol[name]!.length > 1) {
-                List<NodeStruct> newChildren = [];
-                for (final col in attToCol[name]!) {
-                  final matchingAtts = attributes[name]!.keys.map((r) {
-                    return NodeStruct(id: r, col: col);
-                  }).toList();
-                  newChildren.add(
-                    NodeStruct(
-                      col: j,
-                      newChildren: matchingAtts,
-                    ),
-                  );
-                }
-                errorRoot.newChildren!.add(
-                  NodeStruct(
-                    message: "attribute \"$name\" is ambiguous",
-                    id: i,
-                    col: j,
-                    newChildren: newChildren,
-                  ),
-                );
-              }
-              for (final r in attributes[name]!.keys) {
-                numbers.add(r);
-              }
-            }
+          AttAndCol att = getAttAndCol(match.namedGroup('att')!, rowId, colId);
+          if (errorRoot.newChildren!.isNotEmpty) {
+            return;
           }
-
-          if (attributes.containsKey(name)) {
-            for (final r in attributes[name]!.keys) {
+          mentions[rowId][colId].add(att);
+          for (final r in attributes[att]!.keys) {
+            if (urls[r].isNotEmpty) {
               numbers.add(r);
             }
-          } else if (match.namedGroup('name') != null) {
-            if (!(names.containsKey(name))) {
-              errorRoot.newChildren!.add(
-                NodeStruct(
-                  message: "attribute \"$name\" does not exist",
-                  id: i,
-                  col: j,
-                ),
-              );
-              return;
-            }
-            if (urls[names[name]!.row].isNotEmpty) {
-              numbers.add(names[name]);
-            }
-            if (attributes.containsKey(names[name])) {
-              for (final r in attributes[names[name]]!.keys) {
-                numbers.add(r);
-              }
-            }
           }
-
-          mentions[i][j] = numbers;
           final mappedNumbers = numbers.map((x) => newIndexes[x]).toList();
           var instruction = InstrStruct(
             isConstraint,
@@ -1192,16 +1125,16 @@ class SpreadsheetState extends ChangeNotifier {
             mappedNumbers,
             intervals,
           );
-          if (instrTable[i].containsKey(instruction)) {
+          if (instrTable[rowId].containsKey(instruction)) {
             errorRoot.newChildren!.add(
               NodeStruct(
                 message: "duplicate instruction \"$instr\"",
-                id: i,
-                col: j,
+                row: rowId,
+                col: colId,
               ),
             );
           } else {
-            instrTable[i][instruction] = j;
+            instrTable[rowId][instruction] = colId;
           }
         }
       }
@@ -1211,19 +1144,14 @@ class SpreadsheetState extends ChangeNotifier {
     for (var i = 1; i < rowCount; i++) {
       for (var j = 0; j < table[i].length; j++) {
         if (columnTypes[j] == ColumnType.dependencies.name) {
-          mentions[i][j].forEach((n) {
+          for (final n in mentions[i][j]) {
             if (!toMentioners.containsKey(n)) {
               toMentioners[n] = {};
-              final num = int.tryParse(n);
-              if (num != null && !(names.containsKey(n)) && !(attToCol.containsKey(n))) {
-                attToCol[n] = [notUsed];
-                attributes["$notUsed.$n"] = {};
-              }
             }
             if (!toMentioners[n]!.containsKey(i)) {
               toMentioners[n]![i] = j;
             }
-          });
+          }
         }
       }
     }
@@ -1297,21 +1225,21 @@ class SpreadsheetState extends ChangeNotifier {
 
     // TODO: solve sorting pb
 
-    if (attributes.containsKey(notUsed)) {
-      final atts = attributes[notUsed]!.keys.toList();
+    if (attributes.containsKey(notUsedCst)) {
+      final atts = attributes[notUsedCst]!.keys.toList();
       children = atts.asMap().entries.map((entry) {
         var a = entry.value;
         if (toMentioners[a]!.keys.length == 1) {
           return NodeStruct(
             message: "$a",
-            id: toMentioners[a]!.keys.first,
+            row: toMentioners[a]!.keys.first,
             col: toMentioners[a]![toMentioners[a]!.keys.first],
           );
         } else {
           return NodeStruct(
             message: "$a",
             newChildren: toMentioners[a]!.keys.map(
-              (k) => NodeStruct(id: k, col: toMentioners[a]![k]),
+              (k) => NodeStruct(row: k, col: toMentioners[a]![k]),
             ).toList(),
           );
         }
@@ -1341,7 +1269,7 @@ class SpreadsheetState extends ChangeNotifier {
       final role = getColumnType(index);
       if (role == ColumnType.names.name) {
         nameIndexes.add(index);
-      } else if (role == ColumnType.path.name) {
+      } else if (role == ColumnType.filePath.name) {
         pathIndexes.add(index);
       }
     }
@@ -1363,57 +1291,57 @@ class SpreadsheetState extends ChangeNotifier {
     names = {};
     for (int i = 1; i < rowCount; i++) {
       for (int j in nameIndexes) {
-        for (final name in mentions[i][j]) {
-          if (int.tryParse(name) != null) {
+        for (final att in mentions[i][j]) {
+          if (int.tryParse(att.name) != null) {
             errorRoot.newChildren!.add(
-              NodeStruct(message: "$name is not a valid name", id: i, col: j),
+              NodeStruct(message: "$att is not a valid name", row: i, col: j),
             );
             return;
           }
 
-          final match = RegExp(r' -(\w+)$').firstMatch(name);
-          if (name.contains("_") ||
-              name.contains(":") ||
-              name.contains("|") ||
+          final match = RegExp(r' -(\w+)$').firstMatch(att.name);
+          if (att.name.contains("_") ||
+              att.name.contains(":") ||
+              att.name.contains("|") ||
               (match != null && !["fst", "lst"].contains(match.group(1)))) {
             errorRoot.newChildren!.add(
               NodeStruct(
-                message: "$name contains invalid characters (_ : | -)",
-                id: i,
+                message: "$att contains invalid characters (_ : | -)",
+                row: i,
                 col: j,
               ),
             );
           }
 
-          final parenMatch = RegExp(r'(\(\d+\))$').firstMatch(name);
+          final parenMatch = RegExp(r'(\(\d+\))$').firstMatch(att.name);
           if (parenMatch != null) {
             errorRoot.newChildren!.add(
               NodeStruct(
-                message: "$name contains invalid parentheses",
-                id: i,
+                message: "$att contains invalid parentheses",
+                row: i,
                 col: j,
               ),
             );
           }
 
-          if (["fst", "lst"].contains(name)) {
+          if (["fst", "lst"].contains(att)) {
             errorRoot.newChildren!.add(
-              NodeStruct(message: "$name is a reserved name", id: i, col: j),
+              NodeStruct(message: "$att is a reserved name", row: i, col: j),
             );
           }
 
-          if (names.containsKey(name)) {
+          if (names.containsKey(att)) {
             errorRoot.newChildren!.add(
               NodeStruct(
-                message: "name $name used two times",
+                message: "name $att used two times",
                 newChildren: [
-                  NodeStruct(id: i, col: j),
-                  NodeStruct(id: names[name]!.row, col: j),
+                  NodeStruct(row: i, col: j),
+                  NodeStruct(row: names[att]!.row, col: j),
                 ],
               ),
             );
           }
-          names[name] = Cell(row: i, col: j);
+          names[att.name] = Cell(row: i, col: j);
         }
       }
     }
@@ -1422,27 +1350,26 @@ class SpreadsheetState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void getCellElementsWithLinks() {
-    mentionsRoot.newChildren = [];
-    var row = selectedRow;
-    var col = selectedCol;
-    mentions[row][col].forEach((el) {
-      var text = el;
-      var nb = -1;
-      if (el is int) {
-        text = mentions[el][nameIndexes.first][0] ?? ""; // TODO: better handle row names
-        nb = el;
-      }
-
-      mentionsRoot.newChildren!.add(
+  void populateCellNode(NodeStruct root, int rowId, int colId) {
+    root.newChildren = [];
+    if (columnTypes[colId] == ColumnType.names.name ||
+        columnTypes[colId] == ColumnType.filePath.name ||
+        columnTypes[colId] == ColumnType.url.name) {
+      root.newChildren!.add(
         NodeStruct(
-          message: text,
-          id: row,
-          col: col,
-          newChildren: [],
+          message: table[rowId][colId],
+          att: AttAndCol(rowId, rowCst),
         ),
       );
-    });
+      return;
+    }
+    for (AttAndCol att in mentions[rowId][colId]) {
+      root.newChildren!.add(
+        NodeStruct(
+          att: att,
+        ),
+      );
+    }
   }
 
   void dfsDepthUpdate(NodeStruct node, int increase, bool newChildren) {
@@ -1456,12 +1383,13 @@ class SpreadsheetState extends ChangeNotifier {
         if (child.depth < 2 + increase) {
           stack.add(DynAndInt(child, child.depth));
         }
+
       }
     }
   }
 
   // TODO : non recursive version
-  function renderTree(root, container) {
+  void renderTree(root, container) {
     container.innerHTML = ""; // clear old content
 
     function createNode(node, container) {
@@ -1553,17 +1481,37 @@ class SpreadsheetState extends ChangeNotifier {
         node.newChildren = node.children;
       }
       if (node.newChildren == null) {
-        if (node.id != null) {
-          // if (typeof node.id === "number") {
-          var obj = attributes[node.id];
-          for (final entry in obj!.entries) {
-            node.newChildren!.add(NodeStruct(
-                id: entry.key,
-                col: entry.value,
-                newChildren: [],
+        if (node.row != null) {
+          populateCellNode(node, node.row!, node.col!);
+        } else if (node.att != null) {
+          int rowId = node.att!.name;
+          if (node.att!.col == rowCst) {
+            int colNb = 0;
+            for (int colId = 0; colId < colCount; colId++) {
+              if (table[rowId][colId].isNotEmpty) {
+                colNb = colId;
+              }
+              node.newChildren!.add(
+                NodeStruct(
+                  row: rowId,
+                  col: colId,
+                ),
+              );
+            }
+            node.newChildren = node.newChildren!
+                .sublist(0, colNb + 1);
+          }
+          for (int pointerRowId in attributes[node.att]!.keys) {
+            node.newChildren!.add(
+              NodeStruct(
+                message: table[pointerRowId][node.att!.col ?? 0],
+                row: pointerRowId,
+                col: node.att!.col,
               ),
             );
           }
+        } else {
+          node.newChildren = [];
         }
       }
       dfsDepthUpdate(node, 1, true);
@@ -1579,7 +1527,7 @@ class SpreadsheetState extends ChangeNotifier {
             sim << 1;
             if (obj.message != null && obj.message == newObj.message) sim | 1;
             sim << 1;
-            if (obj.id != null && obj.id == newObj.id) sim | 1;
+            if (obj.row != null && obj.row == newObj.row) sim | 1;
             sim << 1;
             if (obj.col != null && obj.col == newObj.col) sim | 1;
             sim << 1;
@@ -1667,7 +1615,7 @@ class SpreadsheetState extends ChangeNotifier {
         }
       }
     }
-    // renderTree(root, container);
+    renderTree(root, container);
   }
 
 }
