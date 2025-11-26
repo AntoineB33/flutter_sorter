@@ -1473,6 +1473,23 @@ class SpreadsheetState extends ChangeNotifier {
     container.appendChild(createNode(root, container));
   }
 
+  void populateRowNode(NodeStruct root, int rowId) {
+    int colNb = 0;
+    for (int colId = 0; colId < colCount; colId++) {
+      if (table[rowId][colId].isNotEmpty) {
+        colNb = colId;
+      }
+      root.newChildren!.add(
+        NodeStruct(
+          row: rowId,
+          col: colId,
+        ),
+      );
+    }
+    root.newChildren = root.newChildren!
+          .sublist(0, colNb + 1);
+  }
+
   void populateTree(NodeStruct root, container, {bool keepPrev = false}) {
     var stack = [root];
     while (stack.isNotEmpty) {
@@ -1481,37 +1498,34 @@ class SpreadsheetState extends ChangeNotifier {
         node.newChildren = node.children;
       }
       if (node.newChildren == null) {
+        node.newChildren = [];
         if (node.row != null) {
-          populateCellNode(node, node.row!, node.col!);
+          if (node.col != null) {
+            populateCellNode(node, node.row!, node.col!);
+          } else {
+            populateRowNode(node, node.row!);
+          }
+        } else if (node.col != null) {
+          int colId = node.col!;
+          for (final att in colToAtt[colId]!) {
+            node.newChildren!.add(
+              NodeStruct(
+                att: att,
+              ),
+            );
+          }
         } else if (node.att != null) {
           int rowId = node.att!.name;
           if (node.att!.col == rowCst) {
-            int colNb = 0;
-            for (int colId = 0; colId < colCount; colId++) {
-              if (table[rowId][colId].isNotEmpty) {
-                colNb = colId;
-              }
-              node.newChildren!.add(
-                NodeStruct(
-                  row: rowId,
-                  col: colId,
-                ),
-              );
-            }
-            node.newChildren = node.newChildren!
-                .sublist(0, colNb + 1);
+            populateRowNode(node, rowId);
           }
           for (int pointerRowId in attributes[node.att]!.keys) {
             node.newChildren!.add(
               NodeStruct(
-                message: table[pointerRowId][node.att!.col ?? 0],
-                row: pointerRowId,
-                col: node.att!.col,
+                att: AttAndCol(pointerRowId, rowCst),
               ),
             );
           }
-        } else {
-          node.newChildren = [];
         }
       }
       dfsDepthUpdate(node, 1, true);
@@ -1544,68 +1558,21 @@ class SpreadsheetState extends ChangeNotifier {
                 sim | 1;
               }
             }
+            similarity[i][j] = sim;
           }
         }
-        for (int j = 0; j < node.children.length; j++) {
-          var obj = node.children[j];
-          similarity[j] = [];
-          if (obj.depth != 0) continue;
-          for (int i = 0; i < node.newChildren!.length; i++) {
-            var newObj = node.newChildren![i];
-            if (newObj.depth != 0) continue;
-            if (isEqualExcept(obj, newObj, ["newChildren", "depth"])) {
-              newObj.depth = 0;
-              newObj.children = obj.children;
-              similarity[j] = [];
-              break;
-            }
-            let sim = 0;
-            if (obj.message !== undefined) {
-              if (obj.message === newObj.message) sim++;
-            }
-            if (obj.att !== undefined) {
-              if (obj.att === newObj.att) sim++;
-            }
-            if (obj.row !== undefined) {
-              if (obj.row === newObj.row) sim++;
-            }
-            if (obj.col !== undefined) {
-              if (obj.col === newObj.col) sim++;
-            }
-            if (
-              JSON.stringify(obj.newChildren!) ===
-              JSON.stringify(newObj.newChildren!)
-            )
-              sim++;
-            if (obj.startOpen === newObj.startOpen) sim++;
-            if (obj.hideIfEmpty === newObj.hideIfEmpty) sim++;
-            if (sim > 0) similarity[j].push({i: i, sim: sim});
-          }
-          similarity[j].sort((a, b) => b.sim - a.sim);
-        }
-        let maxSim;
-        while (maxSim !== -1) {
-          maxSim = -1;
-          for (let j = 0; j < node.children.length; j++) {
-            var obj = node.children[j];
-            for (var h = 0; h < similarity[j].length; h++) {
-              var newObj = node.newChildren![similarity[j][h].i];
-              if (!newObj.depth) continue;
-              maxSim = Math.max(maxSim, similarity[j][h].sim);
-            }
-          }
-          for (int j = 0; j < node.children.length; j++) {
-            var obj = node.children[j];
-            for (var h = 0; h < similarity[j].length; h++) {
-              var newObj = node.newChildren![similarity[j][h].i];
-              if (!newObj.depth) continue;
-              if (similarity[j][h].sim === maxSim) {
-                newObj.depth = 0;
-                newObj.children = obj.children;
-                break;
-              }
-            }
-          }
+        // 1. Instantiate the solver
+        final solver = HungarianAlgorithm(similarity);
+        
+        // 2. Compute result
+        final result = solver.compute();
+
+        print("Maximum Total Weight: ${result.maxWeight}");
+        
+        // 3. See who matches with whom
+        for (int i = 0; i < result.assignments.length; i++) {
+          int elementB_Index = result.assignments[i];
+          print("Element A[$i] is paired with Element B[$elementB_Index]");
         }
       }
       node.children = node.newChildren!;
