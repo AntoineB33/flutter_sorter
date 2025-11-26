@@ -1392,7 +1392,7 @@ class SpreadsheetState extends ChangeNotifier {
   void renderTree(root, container) {
     container.innerHTML = ""; // clear old content
 
-    function createNode(node, container) {
+    void createNode(NodeStruct node, container) {
       const li = document.createElement("li");
       li.style.display = node.hideIfEmpty && (!node.children || node.children.length === 0) ? "none" : "block";
       li.classList.add("expandable");
@@ -1405,23 +1405,19 @@ class SpreadsheetState extends ChangeNotifier {
 
       // label text
       const label = document.createElement("span");
-      if (node.id !== undefined) {
-        if (node.col === undefined) {
-          label.textContent += node.id + " ";
-        } else if (result.nameIndexes.has(node.col)) {
-          label.textContent += `row:${node.id} `;
-        } else {
-          label.textContent += getCellPosition(node.id, node.col) + " ";
+      if (node.message == null) {
+        if (node.row != null && node.col == null || node.att != null && node.att!.col == rowCst) {
+          label.textContent = getRowName(node.row!);
+        } else if (node.row != null) {
+          label.textContent = "${getColumnLabel(node.col!)}${node.row}: ${table[node.row!][node.col!]}";
+        } else if (node.col != null) {
+          label.textContent = "column ${getColumnLabel(node.col!)}: ${table[0][node.col!]}";
+        } else if (node.att != null) {
+          label.textContent = "attribute column ${getColumnLabel(node.col!)}: ${node.att}";
         }
-      } else if (node.col !== undefined) {
-        label.textContent +=
-          getColumnLabel(node.col) + " " + result.table[0][node.col] + " ";
       }
-      if (node.message !== undefined) {
-        label.textContent += node.message;
-      }
-      if (node.children) {
-        label.textContent += " (" + node.children.length + ")";
+      if (node.children.isNotEmpty) {
+        label.textContent += " (${node.children.length})";
       }
       label.style.marginLeft = "4px";
       label.classList.add("node-label");
@@ -1429,33 +1425,33 @@ class SpreadsheetState extends ChangeNotifier {
       // nested children list
       const ul = document.createElement("ul");
       ul.classList.add("nested");
-      if (!node.depth) {
+      if (node.depth == 0) {
         ul.style.display = "block";
       }
-      if (node.depth < 2 && Array.isArray(node.children)) {
+      if (node.depth < 2 && node.children.isNotEmpty) {
         node.children.forEach((child) => ul.appendChild(createNode(child, ul)));
       }
 
       // toggle expand/collapse
-      function toggleNodeVisibility() {
-        const increase = Number(!node.depth);
+      void toggleNodeVisibility() {
+        final increase = (node.depth == 0) ? 1 : 0;
         node.depth = increase;
-        arrow.textContent = increase ? "▶" : "▼";
-        ul.style.display = increase ? "none" : "block";
-        dfsDepthUpdate(node, increase, "children");
-        populateTree(node, container, true);
+        arrow.textContent = increase == 1 ? "▶" : "▼";
+        ul.style.display = increase == 1 ? "none" : "block";
+        dfsDepthUpdate(node, increase, false);
+        populateTree(node, container, keepPrev: true);
       }
 
       // arrow click → toggle expand/collapse
-      arrow.addEventListener("click", (event) => {
+      arrow.addEventListener("click", (event) {
         event.stopPropagation();
         toggleNodeVisibility();
       });
 
       // label click → goToCell if node.row defined, else toggle
-      label.addEventListener("click", (event) => {
+      label.addEventListener("click", (event) {
         event.stopPropagation();
-        if (node.row !== undefined && node.col !== undefined) {
+        if (node.row != null && node.col != null) {
           goToCell(node.row, node.col);
           // TODO: mentions
         } else {
@@ -1561,18 +1557,12 @@ class SpreadsheetState extends ChangeNotifier {
             similarity[i][j] = sim;
           }
         }
-        // 1. Instantiate the solver
         final solver = HungarianAlgorithm(similarity);
-        
-        // 2. Compute result
         final result = solver.compute();
-
-        print("Maximum Total Weight: ${result.maxWeight}");
-        
-        // 3. See who matches with whom
         for (int i = 0; i < result.assignments.length; i++) {
-          int elementB_Index = result.assignments[i];
-          print("Element A[$i] is paired with Element B[$elementB_Index]");
+          if (node.children[i].depth == 0) {
+            node.newChildren![result.assignments[i]].depth = 0;
+          }
         }
       }
       node.children = node.newChildren!;
