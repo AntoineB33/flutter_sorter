@@ -2,97 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import 'package:collection/collection.dart';
-import 'dart:math';
 import 'dart:convert';
-import '../data/models/cell.dart';
-import '../data/models/node_struct.dart';
-import '../data/models/column_type.dart';
-import '../logger.dart';
-import '../logic/async_utils.dart';
-import '../logic/hungarian_algorithm.dart';
-import '../data/models/dyn_and_int.dart';
+import 'package:trying_flutter/data/models/cell.dart';
+import 'package:trying_flutter/data/models/node_struct.dart';
+import 'package:trying_flutter/data/models/column_type.dart';
+import 'package:trying_flutter/logger.dart';
+import 'package:trying_flutter/logic/async_utils.dart';
+import 'package:trying_flutter/logic/hungarian_algorithm.dart';
+import 'package:trying_flutter/data/models/dyn_and_int.dart';
+import 'package:trying_flutter/data/models/instr_struct.dart';
+import 'package:trying_flutter/data/repositories/spreadsheet_repository.dart';
+import 'package:trying_flutter/data/models/spreadsheet_data.dart';
 
-
-class InstrStruct {
-  bool isConstraint;
-  bool any;
-  List<int> numbers;
-  List<List<int>> intervals;
-
-  static const _equality = DeepCollectionEquality();
-
-  InstrStruct(
-    this.isConstraint,
-    this.any,
-    this.numbers,
-    this.intervals
-  );
-  
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-  
-    return other is InstrStruct &&
-        isConstraint == other.isConstraint &&
-        any == other.any &&
-        // 2. Use .equals to compare the contents of the lists
-        _equality.equals(other.numbers, numbers) &&
-        _equality.equals(other.intervals, intervals);
-  }
-
-  @override
-  int get hashCode => Object.hash(
-        isConstraint,
-        any,
-        // 3. Use .hash separately for the lists
-        _equality.hash(numbers),
-        _equality.hash(intervals),
-      );
-}
 
 class SpreadsheetState extends ChangeNotifier {
-  static const PATTERN_DISTANCE =
-    r'^(?<prefix>as far as possible from )(?<any>any)?(?<att>.+)$/';
-  static const PATTERN_AREAS =
-    r'^(?<prefix>.*\|)(?<any>any)?(?<att>.+)(?<suffix>\|.*)$/';
-  static const rowCst = "rows";
-  static const notUsedCst = "notUsed";
-  String spreadsheetName = "";
-  final NodeStruct errorRoot = NodeStruct(message: 'Error Log', newChildren: [], hideIfEmpty: true);
-  final NodeStruct warningRoot = NodeStruct(message: 'Warning Log', newChildren: [], hideIfEmpty: true);
-  final NodeStruct mentionsRoot = NodeStruct(message: 'Current selection', newChildren: []);
-  final NodeStruct searchRoot = NodeStruct(message: 'Search results', newChildren: []);
-  final NodeStruct categoriesRoot = NodeStruct(message: 'Categories', newChildren: []);
-  final NodeStruct distPairsRoot = NodeStruct(message: 'Distance Pairs', newChildren: []);
-  late List<List<String>> table = [];
-  List<String> columnTypes = [];
-
-  /// 2D table of attribute identifiers (row index or name)
-  /// mentioned in each cell.
-  List<List<List<AttAndCol>>> mentions = [];
-  Map<String, Cell> names = {};
-  Map<String, List<dynamic>> attToCol = {};
-  List<int> nameIndexes = [];
-  List<int> pathIndexes = [];
-  /// Maps attribute identifiers (row index or name)
-  /// to a map of pointers (row index) to the column index,
-  /// in this direction so it is easy to diffuse characteristics to pointers.
-  Map<AttAndCol, Map<int, int>> attributes = {};
-  Map<int, Map<AttAndCol, int>> rowToAtt = {};
-  /// Maps attribute identifiers (row index or name)
-  /// to a map of mentioners (row index) to the column index
-  Map<AttAndCol, Map<int, int>> toMentioners = {};
-  List<Map<InstrStruct, int>> instrTable = [];
-  Map<dynamic, List<AttAndCol>> colToAtt = {};
-  Cell? selectionStart;
-  Cell? selectionEnd;
+  final SpreadsheetRepository _repository;
 
   bool get hasSelectionRange =>
       selectionStart != null && selectionEnd != null;
 
   final _saveExecutor = OneSlotExecutor();
 
-  SpreadsheetState({int rows = 30, int cols = 10}) {
+  SpreadsheetState(this._repository) {
     _loadLastOpenedSheet(); // <--- Add this
   }
 
@@ -118,7 +49,6 @@ class SpreadsheetState extends ChangeNotifier {
     selectionStart = Cell(row: row, col: col);
     selectionEnd = selectionStart;
     populateCellNode(mentionsRoot, selectionStart!.row, selectionStart!.col);
-    renderTree(mentionsRoot, container);
     notifyListeners();
   }
 
@@ -132,7 +62,6 @@ class SpreadsheetState extends ChangeNotifier {
       col: endCol
     );
     populateCellNode(mentionsRoot, selectionStart!.row, selectionStart!.col);
-    renderTree(mentionsRoot, container);
     notifyListeners();
   }
 
@@ -241,6 +170,7 @@ class SpreadsheetState extends ChangeNotifier {
     
     _saveExecutor.run(() async {
       getEverything();
+      saveSpreadsheet();
     });
   }
 
@@ -337,6 +267,7 @@ class SpreadsheetState extends ChangeNotifier {
     }
     _saveExecutor.run(() async {
       getEverything();
+      saveSpreadsheet();
     });
   }
 
@@ -1085,12 +1016,12 @@ class SpreadsheetState extends ChangeNotifier {
                 .join("");
           }
 
-          var match = RegExp(PATTERN_DISTANCE).firstMatch(instr);
+          var match = RegExp(patternDistance).firstMatch(instr);
           List<List<int>> intervals = [];
           var isConstraint = match == null;
 
           if (isConstraint) {
-            match = RegExp(PATTERN_AREAS).firstMatch(instr);
+            match = RegExp(patternAreas).firstMatch(instr);
             if (match == null) {
               errorRoot.newChildren!.add(NodeStruct(
                   message: "$instr does not match expected format",
@@ -1346,7 +1277,6 @@ class SpreadsheetState extends ChangeNotifier {
       }
     }
     getCategories();
-    saveSpreadsheet();
     notifyListeners();
   }
 
@@ -1386,87 +1316,6 @@ class SpreadsheetState extends ChangeNotifier {
 
       }
     }
-  }
-
-  // TODO : non recursive version
-  void renderTree(root, container) {
-    container.innerHTML = ""; // clear old content
-
-    void createNode(NodeStruct node, container) {
-      const li = document.createElement("li");
-      li.style.display = node.hideIfEmpty && (!node.children || node.children.length === 0) ? "none" : "block";
-      li.classList.add("expandable");
-
-      // arrow (▶ / ▼)
-      const arrow = document.createElement("span");
-
-      arrow.classList.add("arrow");
-      arrow.textContent = node.depth ? "▶" : "▼";
-
-      // label text
-      const label = document.createElement("span");
-      if (node.message == null) {
-        if (node.row != null && node.col == null || node.att != null && node.att!.col == rowCst) {
-          label.textContent = getRowName(node.row!);
-        } else if (node.row != null) {
-          label.textContent = "${getColumnLabel(node.col!)}${node.row}: ${table[node.row!][node.col!]}";
-        } else if (node.col != null) {
-          label.textContent = "column ${getColumnLabel(node.col!)}: ${table[0][node.col!]}";
-        } else if (node.att != null) {
-          label.textContent = "attribute column ${getColumnLabel(node.col!)}: ${node.att}";
-        }
-      }
-      if (node.children.isNotEmpty) {
-        label.textContent += " (${node.children.length})";
-      }
-      label.style.marginLeft = "4px";
-      label.classList.add("node-label");
-
-      // nested children list
-      const ul = document.createElement("ul");
-      ul.classList.add("nested");
-      if (node.depth == 0) {
-        ul.style.display = "block";
-      }
-      if (node.depth < 2 && node.children.isNotEmpty) {
-        node.children.forEach((child) => ul.appendChild(createNode(child, ul)));
-      }
-
-      // toggle expand/collapse
-      void toggleNodeVisibility() {
-        final increase = (node.depth == 0) ? 1 : 0;
-        node.depth = increase;
-        arrow.textContent = increase == 1 ? "▶" : "▼";
-        ul.style.display = increase == 1 ? "none" : "block";
-        dfsDepthUpdate(node, increase, false);
-        populateTree(node, container, keepPrev: true);
-      }
-
-      // arrow click → toggle expand/collapse
-      arrow.addEventListener("click", (event) {
-        event.stopPropagation();
-        toggleNodeVisibility();
-      });
-
-      // label click → goToCell if node.row defined, else toggle
-      label.addEventListener("click", (event) {
-        event.stopPropagation();
-        if (node.row != null && node.col != null) {
-          goToCell(node.row, node.col);
-          // TODO: mentions
-        } else {
-          toggleNodeVisibility();
-        }
-      });
-
-      // assemble
-      li.appendChild(arrow);
-      li.appendChild(label);
-      li.appendChild(ul);
-
-      return li;
-    }
-    container.appendChild(createNode(root, container));
   }
 
   void populateRowNode(NodeStruct root, int rowId) {
@@ -1572,7 +1421,5 @@ class SpreadsheetState extends ChangeNotifier {
         }
       }
     }
-    renderTree(root, container);
   }
-
 }

@@ -1,37 +1,43 @@
-// logic/async_utils.dart
 import 'dart:async';
 import 'dart:isolate';
 import '../logger.dart';
 
-class OneSlotExecutor {
+class OneSlotExecutor<T> {
   bool _isRunning = false;
-  Future<void> Function()? _nextTask;
+  
+  // We need to store the input data and the static function, not a closure
+  _TaskDefinition<T>? _nextTask;
 
-  void run(Future<void> Function() task) {
+  void run(FutureOr<void> Function(T) function, T message) {
     if (!_isRunning) {
-      _execute(task);
+      _execute(function, message);
       return;
     }
-    
-    // If busy, queue this task (replacing any previously queued task)
-    _nextTask = task;
+    _nextTask = _TaskDefinition(function, message);
   }
 
-  Future<void> _execute(Future<void> Function() task) async {
+  Future<void> _execute(FutureOr<void> Function(T) function, T message) async {
     _isRunning = true;
     try {
-      await task();
+      // Isolate.run will work because we are passing a function pointer
+      // and a specific data object, not a closure with captured state.
+      await Isolate.run(() => function(message));
     } catch (e) {
-      // Depending on your logger setup, you might import it here
       log.warning('Executor Error: $e');
     } finally {
       if (_nextTask != null) {
         final next = _nextTask!;
         _nextTask = null;
-        scheduleMicrotask(() => _execute(next));
+        scheduleMicrotask(() => _execute(next.function, next.message));
       } else {
         _isRunning = false;
       }
     }
   }
+}
+
+class _TaskDefinition<T> {
+  final FutureOr<void> Function(T) function;
+  final T message;
+  _TaskDefinition(this.function, this.message);
 }
