@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import 'logic/spreadsheet_state.dart';
-import 'presentation/pages/home_page.dart';
 import 'package:logging/logging.dart';
-import 'logger.dart';
 
+import 'app.dart'; // Import the new App file
+import 'logger.dart'; // Assuming this is your custom logger helper
+// Update import to match your structure
+import 'src/features/spreadsheet/presentation/logic/spreadsheet_state.dart'; 
 
 void main() {
-  Logger.root.level = Level.ALL;
-  Logger.root.onRecord.listen((record) {
-    print('${record.level.name}: ${record.time}: ${record.message}');
-  });
-  log.info("Logger initialized");
+  _setupLogging();
 
   runApp(
+    // We wrap the app in the Providers here so the whole App has access
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => SpreadsheetState()),
@@ -24,15 +21,13 @@ void main() {
   );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Spreadsheet Example',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const HomePage(),
-    );
-  }
+// Helper function to keep main() clean
+void _setupLogging() {
+  Logger.root.level = Level.ALL;
+  Logger.root.onRecord.listen((record) {
+    print('${record.level.name}: ${record.time}: ${record.message}');
+  });
+  // You might need to make 'log' accessible or create a local instance
+  final log = Logger('Main'); 
+  log.info("Logger initialized");
 }
