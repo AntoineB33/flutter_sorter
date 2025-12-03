@@ -36,6 +36,13 @@ dependencies:
   collection: ^1.19.1
   logging: ^1.2.0
 
+  # State management
+  flutter_riverpod: ^2.5.1
+  # Core riverpod (optional strictly speaking as flutter_riverpod exports it, but good practice)
+  riverpod: ^2.5.1
+  # Comparison utilities (useful for value equality in classes)
+  equatable: ^2.0.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

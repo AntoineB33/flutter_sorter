@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
-// If you adopted the folder structure, update imports to use 'src':
-import 'src/features/spreadsheet/presentation/pages/home_page.dart';
+import 'src/features/media_sorter2/presentation/pages/spreadsheet_page.dart';
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class SpreadsheetApp extends StatelessWidget {
+  const SpreadsheetApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Spreadsheet Example',
-      // Move theme data to a separate file later, but this is fine for now
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const HomePage(),
+      title: 'Flutter Riverpod Spreadsheet',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+        inputDecorationTheme: const InputDecorationTheme(
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.all(8),
+        ),
+      ),
+      home: const SpreadsheetPage(),
     );
   }
 }

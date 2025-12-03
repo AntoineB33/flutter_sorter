@@ -1,8 +1,11 @@
-import 'dart:io';
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math';
+import '../../../../core/services/clipboard_service.dart'; // The service we defined previously
+import '../repositories/i_load_sheet_repository.dart';
 
-class LocalFileDataSource {
+class LoadSheetUsecase {
+  final ILoadSheetRepository _repository;
+
+  LoadSheetUsecase(this._repository);
 
   // ---- Save data for current spreadsheet ----
   Future<void> saveSpreadsheet(List<List<String>> table, List<String> columnTypes, String spreadsheetName) async {
@@ -21,17 +24,8 @@ class LocalFileDataSource {
   }
 
   // ---- Load spreadsheet by name ----
-  Future<void> loadSpreadsheet(String name) async {
-    // await clearAllPrefs();
-    spreadsheetName = name.trim().toLowerCase();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      "last_opened_sheet",
-      spreadsheetName,
-    );
-
-    final raw = prefs.getString("spreadsheet_$spreadsheetName");
+  Future<void> loadSpreadsheet(String spreadsheetName) async {
+    final raw = await _repository.loadSpreadsheet(spreadsheetName);
 
     if (raw == null) {
       _saveExecutor.run(() async {
