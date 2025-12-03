@@ -7,8 +7,13 @@ class SpreadsheetPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final spreadsheetState = ref.watch(spreadsheetControllerProvider);
-    final controller = ref.read(spreadsheetControllerProvider.notifier);
+    // PERFORMANCE OPTIMIZATION: 
+    // We strictly use `select` here. We only want to rebuild the main Scaffold 
+    // if the loading state changes. We do NOT want to rebuild the Scaffold
+    // when a cell value changes.
+    final isLoading = ref.watch(
+      spreadsheetControllerProvider.select((s) => s.isLoading),
+    );
 
     // Grid Configuration
     const int totalRows = 20;
@@ -20,11 +25,14 @@ class SpreadsheetPage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Riverpod Spreadsheet'),
         actions: [
-           if(spreadsheetState.isLoading)
-             const Padding(
-               padding: EdgeInsets.all(16.0),
-               child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-             )
+          if (isLoading)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2)),
+            )
         ],
       ),
       body: SingleChildScrollView(
@@ -49,22 +57,19 @@ class SpreadsheetPage extends ConsumerWidget {
                 ),
               );
             }),
-            // Generate Rows (1, 2, 3...)
+            // Generate Rows
             rows: List.generate(totalRows, (rowIndex) {
               return DataRow(
                 cells: List.generate(totalCols, (colIndex) {
-                  final key = '$rowIndex:$colIndex';
-                  final cellData = spreadsheetState.cells[key];
-                  
                   return DataCell(
                     SizedBox(
                       width: cellWidth,
                       height: cellHeight,
-                      child: _EditableCell(
-                        initialValue: cellData?.value ?? '',
-                        onChanged: (val) {
-                          controller.onCellChanged(rowIndex, colIndex, val);
-                        },
+                      // PERFORMANCE: We pass the indices to a const widget.
+                      // The widget itself handles the connection to Riverpod.
+                      child: SmartCell(
+                        rowIndex: rowIndex,
+                        colIndex: colIndex,
                       ),
                     ),
                   );
@@ -78,7 +83,42 @@ class SpreadsheetPage extends ConsumerWidget {
   }
 }
 
-// A simple widget to handle text input focus and submission
+/// A "Smart" ConsumerWidget that listens only to its specific cell data.
+class SmartCell extends ConsumerWidget {
+  final int rowIndex;
+  final int colIndex;
+
+  const SmartCell({
+    super.key,
+    required this.rowIndex,
+    required this.colIndex,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final key = '$rowIndex:$colIndex';
+
+    // PERFORMANCE MAGIC:
+    // We use .select() to listen ONLY to the specific key in the map.
+    // This widget will ONLY rebuild if THIS specific cell's value changes.
+    final cellValue = ref.watch(
+      spreadsheetControllerProvider.select(
+        (state) => state.valueOrNull?[key]?.value ?? '',
+      ),
+    );
+
+    return _EditableCell(
+      initialValue: cellValue,
+      onChanged: (val) {
+        ref
+            .read(spreadsheetControllerProvider.notifier)
+            .onCellChanged(rowIndex, colIndex, val);
+      },
+    );
+  }
+}
+
+// Low-level text handling widget
 class _EditableCell extends StatefulWidget {
   final String initialValue;
   final Function(String) onChanged;
@@ -94,6 +134,7 @@ class _EditableCell extends StatefulWidget {
 
 class _EditableCellState extends State<_EditableCell> {
   late TextEditingController _controller;
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
@@ -104,15 +145,21 @@ class _EditableCellState extends State<_EditableCell> {
   @override
   void didUpdateWidget(covariant _EditableCell oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Only update if the cursor is not focused (prevents jumping while typing)
-    if (widget.initialValue != _controller.text && !FocusScope.of(context).hasFocus) {
-       _controller.text = widget.initialValue;
+    // Sync logic:
+    // If the value coming from the provider is different from what is in the text box...
+    if (widget.initialValue != _controller.text) {
+      // AND we don't have focus (meaning we aren't the one typing currently)...
+      if (!_focusNode.hasFocus) {
+         // Then update the text.
+        _controller.text = widget.initialValue;
+      }
     }
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -120,12 +167,14 @@ class _EditableCellState extends State<_EditableCell> {
   Widget build(BuildContext context) {
     return TextField(
       controller: _controller,
+      focusNode: _focusNode,
       onChanged: widget.onChanged,
       textAlign: TextAlign.center,
       style: const TextStyle(fontSize: 14),
       decoration: const InputDecoration(
         border: InputBorder.none,
         isDense: true,
+        contentPadding: EdgeInsets.all(14), // Vertically center text
       ),
     );
   }

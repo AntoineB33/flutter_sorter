@@ -19,8 +19,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   static const double cellHeight = 40;
   static const double headerHeight = 44;
   static const double headerWidth = 60;
-  final ScrollController _verticalController = ScrollController();
-  final ScrollController _horizontalController = ScrollController();
   final FocusNode _focusNode = FocusNode();
   late LinkedScrollControllerGroup _verticalGroup;
   late ScrollController _verticalBody;
