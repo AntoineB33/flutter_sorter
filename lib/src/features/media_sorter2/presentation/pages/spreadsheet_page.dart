@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 import '../controllers/spreadsheet_controller.dart';
 import '../controllers/spreadsheet_selection_controller.dart';
-import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 
 class HighPerfSpreadsheet extends ConsumerWidget {
   final String sheetId;
@@ -11,41 +10,108 @@ class HighPerfSpreadsheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const rowCount = 10000;
-    const colCount = 20;
+    // Increase count by 1 to accommodate headers
+    const rowCount = 10000 + 1; 
+    const colCount = 20 + 1;
 
-    // --- FIX: Add a Scaffold to provide the white background canvas ---
-    return Scaffold( 
+    return Scaffold(
       body: TableView.builder(
         verticalDetails: ScrollableDetails.vertical(controller: ScrollController()),
         horizontalDetails: ScrollableDetails.horizontal(controller: ScrollController()),
+        
+        // 1. PIN THE HEADERS
+        pinnedRowCount: 1,
+        pinnedColumnCount: 1,
+        
         rowCount: rowCount,
         columnCount: colCount,
-        
+
         columnBuilder: (index) => TableSpan(
-          extent: const FixedTableSpanExtent(100),
+          // First column (Row Headers) is smaller, others are 100
+          extent: FixedTableSpanExtent(index == 0 ? 50 : 100),
           backgroundDecoration: TableSpanDecoration(
-            // Optional: You can also color specific columns here
-            border: TableSpanBorder(trailing: BorderSide(color: Colors.grey)),
+            // Vertical Lines
+            border: TableSpanBorder(trailing: BorderSide(color: Colors.grey.shade300)),
           ),
         ),
+        
         rowBuilder: (index) => TableSpan(
           extent: const FixedTableSpanExtent(50),
+          backgroundDecoration: TableSpanDecoration(
+            // 2. ADD HORIZONTAL LINES HERE
+            border: TableSpanBorder(trailing: BorderSide(color: Colors.grey.shade300)),
+          ),
         ),
-        
+
         cellBuilder: (context, vicinity) {
+          final r = vicinity.row;
+          final c = vicinity.column;
+
+          // --- CASE 1: The Top-Left "Joint" Button ---
+          if (r == 0 && c == 0) {
+            return Container(
+              color: Colors.grey.shade200,
+              child: InkWell(
+                onTap: () {
+                   ref
+                      .read(spreadsheetSelectionProvider.notifier)
+                      .selectAll(rowCount - 1, colCount - 1);
+                },
+                child: const Icon(Icons.change_history, size: 16, color: Colors.grey),
+              ),
+            );
+          }
+
+          // --- CASE 2: Column Headers (A, B, C...) ---
+          if (r == 0) {
+            return Container(
+              alignment: Alignment.center,
+              color: Colors.grey.shade200,
+              child: Text(
+                _getExcelColumnLabel(c - 1), // 0-based index for logic
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+              ),
+            );
+          }
+
+          // --- CASE 3: Row Headers (1, 2, 3...) ---
+          if (c == 0) {
+            return Container(
+              alignment: Alignment.center,
+              color: Colors.grey.shade200,
+              child: Text(
+                '$r', // Direct row index matches standard spreadsheet numbering (1-based)
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+              ),
+            );
+          }
+
+          // --- CASE 4: The Actual Data Cell ---
+          // We assume the data source (Riverpod) is 0-indexed.
+          // Since the view has 1 row/col of headers, we shift indices by -1.
           return SmartCell(
             sheetId: sheetId,
-            rowIndex: vicinity.row,
-            colIndex: vicinity.column,
+            rowIndex: r - 1,
+            colIndex: c - 1,
           );
         },
       ),
     );
   }
+
+  // Helper to convert 0 -> A, 1 -> B, 26 -> AA
+  String _getExcelColumnLabel(int index) {
+    String label = "";
+    int i = index;
+    while (i >= 0) {
+      label = String.fromCharCode((i % 26) + 65) + label;
+      i = (i / 26).floor() - 1;
+    }
+    return label;
+  }
 }
 
-/// A "Smart" ConsumerWidget that listens only to its specific cell data AND selection state.
+// ... Keep your existing SmartCell and _EditableCell classes exactly as they were ...
 class SmartCell extends ConsumerWidget {
   final String sheetId;
   final int rowIndex;
@@ -62,29 +128,25 @@ class SmartCell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final key = '$rowIndex:$colIndex';
 
-    // 1. Listen to Data
     final cellValue = ref.watch(
       spreadsheetControllerProvider(sheetId).select(
         (state) => state.valueOrNull?[key]?.value ?? '',
       ),
     );
 
-    // 2. Listen to Selection (Optimized)
-    // Only rebuilds if THIS specific cell's selection status changes
     final isSelected = ref.watch(
       spreadsheetSelectionProvider.select((selectedSet) => selectedSet.contains(key)),
     );
 
     return _EditableCell(
       initialValue: cellValue,
-      isSelected: isSelected, // Pass down visual state
+      isSelected: isSelected, 
       onChanged: (val) {
         ref
             .read(spreadsheetControllerProvider(sheetId).notifier)
             .onCellChanged(rowIndex, colIndex, val);
       },
       onTap: () {
-        // Trigger selection when tapped
         ref
             .read(spreadsheetSelectionProvider.notifier)
             .selectCell(rowIndex, colIndex);
@@ -92,10 +154,11 @@ class SmartCell extends ConsumerWidget {
     );
   }
 }
+
 class _EditableCell extends StatefulWidget {
   final String initialValue;
-  final bool isSelected; // New Property
-  final VoidCallback onTap; // New Property
+  final bool isSelected;
+  final VoidCallback onTap; 
   final Function(String) onChanged;
 
   const _EditableCell({
@@ -117,9 +180,6 @@ class _EditableCellState extends State<_EditableCell> {
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialValue);
-    
-    // Optional: Synchronize Focus with Selection
-    // If the keyboard focuses this input, we ensure it's selected in the store
     _focusNode.addListener(() {
       if (_focusNode.hasFocus) {
         widget.onTap();
@@ -146,26 +206,19 @@ class _EditableCellState extends State<_EditableCell> {
 
   @override
   Widget build(BuildContext context) {
-    // We wrap the TextField in a Container to handle the "Selected" border visual
     return Container(
       decoration: BoxDecoration(
-        // If selected, show a Blue border, otherwise transparent (or none)
         border: widget.isSelected
             ? Border.all(color: Colors.blue, width: 2.0)
             : null,
-        // Optional: Slight background tint when selected
-        color: widget.isSelected ? Colors.blue.withValues(alpha: .05) : null,
+        color: widget.isSelected ? Colors.blue.withValues(alpha: 0.05) : null,
       ),
-      // --- FIX STARTS HERE ---
-      // The TextField needs a Material ancestor to paint on. 
-      // We use MaterialType.transparency so it doesn't hide the Container's decoration.
       child: Material(
         type: MaterialType.transparency,
         child: TextField(
           controller: _controller,
           focusNode: _focusNode,
           onChanged: widget.onChanged,
-          // Crucial: We use onTap inside TextField to ensure the click is caught
           onTap: widget.onTap, 
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 14),
@@ -176,7 +229,6 @@ class _EditableCellState extends State<_EditableCell> {
           ),
         ),
       ),
-      // --- FIX ENDS HERE ---
     );
   }
 }
