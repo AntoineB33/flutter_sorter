@@ -11,35 +11,36 @@ class HighPerfSpreadsheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Determine dynamic size based on data or infinite scrolling logic
-    const rowCount = 10000; 
+    const rowCount = 10000;
     const colCount = 20;
 
-    return TableView.builder(
-      // Both vertical and horizontal scrolling with virtualization
-      verticalDetails: ScrollableDetails.vertical(controller: ScrollController()),
-      horizontalDetails: ScrollableDetails.horizontal(controller: ScrollController()),
-      rowCount: rowCount,
-      columnCount: colCount,
-      
-      columnBuilder: (index) => TableSpan(
-        extent: const FixedTableSpanExtent(100), // Width
-        backgroundDecoration: TableSpanDecoration(
-          border: TableSpanBorder(trailing: BorderSide(color: Colors.grey)),
+    // --- FIX: Add a Scaffold to provide the white background canvas ---
+    return Scaffold( 
+      body: TableView.builder(
+        verticalDetails: ScrollableDetails.vertical(controller: ScrollController()),
+        horizontalDetails: ScrollableDetails.horizontal(controller: ScrollController()),
+        rowCount: rowCount,
+        columnCount: colCount,
+        
+        columnBuilder: (index) => TableSpan(
+          extent: const FixedTableSpanExtent(100),
+          backgroundDecoration: TableSpanDecoration(
+            // Optional: You can also color specific columns here
+            border: TableSpanBorder(trailing: BorderSide(color: Colors.grey)),
+          ),
         ),
+        rowBuilder: (index) => TableSpan(
+          extent: const FixedTableSpanExtent(50),
+        ),
+        
+        cellBuilder: (context, vicinity) {
+          return SmartCell(
+            sheetId: sheetId,
+            rowIndex: vicinity.row,
+            colIndex: vicinity.column,
+          );
+        },
       ),
-      rowBuilder: (index) => TableSpan(
-        extent: const FixedTableSpanExtent(50), // Height
-      ),
-      
-      // Only builds cells that are visible!
-      cellBuilder: (context, vicinity) {
-        return SmartCell(
-          sheetId: sheetId, // Pass sheet ID down
-          rowIndex: vicinity.row,
-          colIndex: vicinity.column,
-        );
-      },
     );
   }
 }
@@ -63,7 +64,7 @@ class SmartCell extends ConsumerWidget {
 
     // 1. Listen to Data
     final cellValue = ref.watch(
-      spreadsheetControllerProvider.select(
+      spreadsheetControllerProvider(sheetId).select(
         (state) => state.valueOrNull?[key]?.value ?? '',
       ),
     );
@@ -79,7 +80,7 @@ class SmartCell extends ConsumerWidget {
       isSelected: isSelected, // Pass down visual state
       onChanged: (val) {
         ref
-            .read(spreadsheetControllerProvider.notifier)
+            .read(spreadsheetControllerProvider(sheetId).notifier)
             .onCellChanged(rowIndex, colIndex, val);
       },
       onTap: () {
@@ -153,22 +154,29 @@ class _EditableCellState extends State<_EditableCell> {
             ? Border.all(color: Colors.blue, width: 2.0)
             : null,
         // Optional: Slight background tint when selected
-        color: widget.isSelected ? Colors.blue.withOpacity(0.05) : null,
+        color: widget.isSelected ? Colors.blue.withValues(alpha: .05) : null,
       ),
-      child: TextField(
-        controller: _controller,
-        focusNode: _focusNode,
-        onChanged: widget.onChanged,
-        // Crucial: We use onTap inside TextField to ensure the click is caught
-        onTap: widget.onTap, 
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 14),
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          isDense: true,
-          contentPadding: EdgeInsets.all(14),
+      // --- FIX STARTS HERE ---
+      // The TextField needs a Material ancestor to paint on. 
+      // We use MaterialType.transparency so it doesn't hide the Container's decoration.
+      child: Material(
+        type: MaterialType.transparency,
+        child: TextField(
+          controller: _controller,
+          focusNode: _focusNode,
+          onChanged: widget.onChanged,
+          // Crucial: We use onTap inside TextField to ensure the click is caught
+          onTap: widget.onTap, 
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 14),
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            isDense: true,
+            contentPadding: EdgeInsets.all(14),
+          ),
         ),
       ),
+      // --- FIX ENDS HERE ---
     );
   }
 }

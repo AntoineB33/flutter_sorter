@@ -1,21 +1,20 @@
 import '../../domain/entities/cell.dart';
-import '../datasources/spreadsheet_datasource.dart';
 import '../../domain/repositories/spreadsheet_repository.dart';
+import '../datasources/spreadsheet_datasource.dart';
 
-
-// 2. The Implementation (Belongs in Data layer)
+// Coordinates data access between the Domain and Data layers
 class SpreadsheetRepositoryImpl implements SpreadsheetRepository {
-  final SpreadsheetDataSource dataSource;
+  final SpreadsheetDataSource _dataSource;
 
-  SpreadsheetRepositoryImpl(this.dataSource);
+  SpreadsheetRepositoryImpl(this._dataSource);
 
   @override
-  Future<Map<String, Cell>> loadSheet() async {
-    return await dataSource.fetchSheet();
+  Future<Map<String, Cell>> getSheet(String sheetId) async {
+    return await _dataSource.fetchSheetData(sheetId);
   }
 
   @override
-  Future<Cell> saveCell(int row, int col, String value) async {
-    return await dataSource.updateCell(row, col, value);
+  Future<void> updateCell(String sheetId, int row, int col, String value) async {
+    await _dataSource.saveCellData(sheetId, row, col, value);
   }
 }

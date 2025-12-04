@@ -1,32 +1,39 @@
 import '../../domain/entities/cell.dart';
 
+// Abstract definition of the data source
 abstract class SpreadsheetDataSource {
-  Future<Map<String, Cell>> fetchSheet();
-  Future<Cell> updateCell(int row, int col, String value);
+  Future<Map<String, Cell>> fetchSheetData(String sheetId);
+  Future<void> saveCellData(String sheetId, int row, int col, String value);
 }
 
+// Implementation: In-Memory Storage
+// This mocks a database by holding data in a static variable so it persists 
+// even if the provider creates a new instance of the class.
 class InMemorySpreadsheetDataSource implements SpreadsheetDataSource {
-  // Simulating a DB using a Map with "row:col" keys
-  final Map<String, Cell> _cache = {};
+  // Key: sheetId, Value: Map of "row:col" -> Cell
+  static final Map<String, Map<String, Cell>> _mockDatabase = {};
 
   @override
-  Future<Map<String, Cell>> fetchSheet() async {
-    // Simulate network delay
-    // await Future.delayed(const Duration(milliseconds: 500));
+  Future<Map<String, Cell>> fetchSheetData(String sheetId) async {
     
-    // Return empty map or existing cache
-    return _cache;
+    if (!_mockDatabase.containsKey(sheetId)) {
+      _mockDatabase[sheetId] = {};
+    }
+    
+    // Return a copy to prevent direct reference manipulation issues
+    return Map<String, Cell>.from(_mockDatabase[sheetId]!);
   }
 
   @override
-  Future<Cell> updateCell(int row, int col, String value) async {
-    // Simulate network delay
-    // await Future.delayed(const Duration(milliseconds: 100));
+  Future<void> saveCellData(String sheetId, int row, int col, String value) async {
 
-    final cell = Cell(row: row, col: col, value: value);
+    if (!_mockDatabase.containsKey(sheetId)) {
+      _mockDatabase[sheetId] = {};
+    }
+
     final key = '$row:$col';
-    _cache[key] = cell;
+    _mockDatabase[sheetId]![key] = Cell(row: row, col: col, value: value);
     
-    return cell;
+    print('Saved to DB: Sheet $sheetId [$row,$col] = $value');
   }
 }

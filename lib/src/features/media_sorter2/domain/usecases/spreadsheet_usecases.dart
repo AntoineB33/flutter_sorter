@@ -1,21 +1,24 @@
 import '../entities/cell.dart';
-import '../../domain/repositories/spreadsheet_repository.dart';
+import '../repositories/spreadsheet_repository.dart';
 
+// UseCase 1: Fetching the sheet data
 class GetSheetUseCase {
-  final SpreadsheetRepository repository;
-  GetSheetUseCase(this.repository);
+  final SpreadsheetRepository _repository;
 
-  Future<Map<String, Cell>> call() {
-    return repository.loadSheet();
+  GetSheetUseCase(this._repository);
+
+  Future<Map<String, Cell>> execute(String sheetId) {
+    return _repository.getSheet(sheetId);
   }
 }
 
+// UseCase 2: Updating a single cell
 class UpdateCellUseCase {
-  final SpreadsheetRepository repository;
-  UpdateCellUseCase(this.repository);
+  final SpreadsheetRepository _repository;
 
-  Future<Cell> call(int row, int col, String value) {
-    // Add business logic here (e.g., validate formulas)
-    return repository.saveCell(row, col, value);
+  UpdateCellUseCase(this._repository);
+
+  Future<void> execute(String sheetId, int row, int col, String value) {
+    return _repository.updateCell(sheetId, row, col, value);
   }
 }

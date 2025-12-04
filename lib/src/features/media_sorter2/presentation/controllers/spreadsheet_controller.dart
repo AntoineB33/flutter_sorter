@@ -48,7 +48,7 @@ class SpreadsheetController extends FamilyAsyncNotifier<Map<String, Cell>, Strin
   }
 }
 
-// 3. The Provider
+// Access it like: ref.watch(spreadsheetControllerProvider('sheet_1'))
 final spreadsheetControllerProvider =
-    AsyncNotifierProvider<SpreadsheetController, Map<String, Cell>>(
+    AsyncNotifierProviderFamily<SpreadsheetController, Map<String, Cell>, String>(
         SpreadsheetController.new);

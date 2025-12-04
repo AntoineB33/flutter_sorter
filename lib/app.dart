@@ -17,7 +17,7 @@ class SpreadsheetApp extends StatelessWidget {
           contentPadding: EdgeInsets.all(8),
         ),
       ),
-      home: const SpreadsheetPage(),
+      home: const HighPerfSpreadsheet(sheetId: 'defaultSheet'),
     );
   }
 }
