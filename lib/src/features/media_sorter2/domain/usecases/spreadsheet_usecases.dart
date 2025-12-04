@@ -1,5 +1,5 @@
 import '../entities/cell.dart';
-import '../../data/repositories/spreadsheet_repository_impl.dart';
+import '../../domain/repositories/spreadsheet_repository.dart';
 
 class GetSheetUseCase {
   final SpreadsheetRepository repository;

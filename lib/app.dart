@@ -7,7 +7,7 @@ class SpreadsheetApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Riverpod Spreadsheet',
+      title: 'Media Sorter',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,

@@ -1,134 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 import '../controllers/spreadsheet_controller.dart';
+import '../controllers/spreadsheet_selection_controller.dart';
+import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 
-class SpreadsheetPage extends ConsumerWidget {
-  const SpreadsheetPage({super.key});
+class HighPerfSpreadsheet extends ConsumerWidget {
+  final String sheetId;
+  const HighPerfSpreadsheet({super.key, required this.sheetId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isLoading = ref.watch(
-      spreadsheetControllerProvider.select((s) => s.isLoading),
-    );
+    // Determine dynamic size based on data or infinite scrolling logic
+    const rowCount = 10000; 
+    const colCount = 20;
 
-    // Grid Configuration
-    const int totalRows = 20;
-    const int totalCols = 10;
-    const double cellWidth = 100.0;
-    const double cellHeight = 50.0;
-    const double rowHeaderWidth = 60.0; // New width for the row index column
-
-    void onCornerButtonPressed() {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Corner Button Pressed!')),
-      );
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Riverpod Spreadsheet'),
-        actions: [
-          if (isLoading)
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2)),
-            )
-        ],
-      ),
-      body: SingleChildScrollView(
-        scrollDirection: Axis.vertical,
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            border: TableBorder.all(color: Colors.grey.shade300),
-            columnSpacing: 0,
-            horizontalMargin: 0,
-            headingRowHeight: cellHeight,
-            // 1. GENERATE COLUMNS
-            columns: [
-              // --- THE CORNER BUTTON (Top-Left) ---
-              DataColumn(
-                label: SizedBox(
-                  width: rowHeaderWidth,
-                  height: cellHeight,
-                  child: Material(
-                    color: Colors.grey.shade200, // Header color
-                    child: InkWell(
-                      onTap: onCornerButtonPressed,
-                      child: const Center(
-                        child: Icon(Icons.apps, size: 20, color: Colors.black54),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              // --- THE COLUMN HEADERS (A, B, C...) ---
-              ...List.generate(totalCols, (index) {
-                return DataColumn(
-                  label: Container(
-                    width: cellWidth,
-                    alignment: Alignment.center,
-                    child: Text(
-                      String.fromCharCode(65 + index), // A, B, C...
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                );
-              }),
-            ],
-            // 2. GENERATE ROWS
-            rows: List.generate(totalRows, (rowIndex) {
-              return DataRow(
-                cells: [
-                  // --- THE ROW HEADER (1, 2, 3...) ---
-                  DataCell(
-                    Container(
-                      width: rowHeaderWidth,
-                      height: cellHeight,
-                      alignment: Alignment.center,
-                      color: Colors.grey.shade100, // Visual distinction
-                      child: Text(
-                        '${rowIndex + 1}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    ),
-                  ),
-                  // --- THE EDITABLE CONTENT CELLS ---
-                  ...List.generate(totalCols, (colIndex) {
-                    return DataCell(
-                      SizedBox(
-                        width: cellWidth,
-                        height: cellHeight,
-                        child: SmartCell(
-                          rowIndex: rowIndex,
-                          colIndex: colIndex,
-                        ),
-                      ),
-                    );
-                  }),
-                ],
-              );
-            }),
-          ),
+    return TableView.builder(
+      // Both vertical and horizontal scrolling with virtualization
+      verticalDetails: ScrollableDetails.vertical(controller: ScrollController()),
+      horizontalDetails: ScrollableDetails.horizontal(controller: ScrollController()),
+      rowCount: rowCount,
+      columnCount: colCount,
+      
+      columnBuilder: (index) => TableSpan(
+        extent: const FixedTableSpanExtent(100), // Width
+        backgroundDecoration: TableSpanDecoration(
+          border: TableSpanBorder(trailing: BorderSide(color: Colors.grey)),
         ),
       ),
+      rowBuilder: (index) => TableSpan(
+        extent: const FixedTableSpanExtent(50), // Height
+      ),
+      
+      // Only builds cells that are visible!
+      cellBuilder: (context, vicinity) {
+        return SmartCell(
+          sheetId: sheetId, // Pass sheet ID down
+          rowIndex: vicinity.row,
+          colIndex: vicinity.column,
+        );
+      },
     );
   }
 }
 
-/// A "Smart" ConsumerWidget that listens only to its specific cell data.
+/// A "Smart" ConsumerWidget that listens only to its specific cell data AND selection state.
 class SmartCell extends ConsumerWidget {
+  final String sheetId;
   final int rowIndex;
   final int colIndex;
 
   const SmartCell({
     super.key,
+    required this.sheetId,
     required this.rowIndex,
     required this.colIndex,
   });
@@ -137,30 +61,46 @@ class SmartCell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final key = '$rowIndex:$colIndex';
 
+    // 1. Listen to Data
     final cellValue = ref.watch(
       spreadsheetControllerProvider.select(
         (state) => state.valueOrNull?[key]?.value ?? '',
       ),
     );
 
+    // 2. Listen to Selection (Optimized)
+    // Only rebuilds if THIS specific cell's selection status changes
+    final isSelected = ref.watch(
+      spreadsheetSelectionProvider.select((selectedSet) => selectedSet.contains(key)),
+    );
+
     return _EditableCell(
       initialValue: cellValue,
+      isSelected: isSelected, // Pass down visual state
       onChanged: (val) {
         ref
             .read(spreadsheetControllerProvider.notifier)
             .onCellChanged(rowIndex, colIndex, val);
       },
+      onTap: () {
+        // Trigger selection when tapped
+        ref
+            .read(spreadsheetSelectionProvider.notifier)
+            .selectCell(rowIndex, colIndex);
+      },
     );
   }
 }
-
-// Low-level text handling widget
 class _EditableCell extends StatefulWidget {
   final String initialValue;
+  final bool isSelected; // New Property
+  final VoidCallback onTap; // New Property
   final Function(String) onChanged;
 
   const _EditableCell({
     required this.initialValue,
+    required this.isSelected,
+    required this.onTap,
     required this.onChanged,
   });
 
@@ -176,6 +116,14 @@ class _EditableCellState extends State<_EditableCell> {
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialValue);
+    
+    // Optional: Synchronize Focus with Selection
+    // If the keyboard focuses this input, we ensure it's selected in the store
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) {
+        widget.onTap();
+      }
+    });
   }
 
   @override
@@ -197,16 +145,29 @@ class _EditableCellState extends State<_EditableCell> {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: _controller,
-      focusNode: _focusNode,
-      onChanged: widget.onChanged,
-      textAlign: TextAlign.center,
-      style: const TextStyle(fontSize: 14),
-      decoration: const InputDecoration(
-        border: InputBorder.none,
-        isDense: true,
-        contentPadding: EdgeInsets.all(14),
+    // We wrap the TextField in a Container to handle the "Selected" border visual
+    return Container(
+      decoration: BoxDecoration(
+        // If selected, show a Blue border, otherwise transparent (or none)
+        border: widget.isSelected
+            ? Border.all(color: Colors.blue, width: 2.0)
+            : null,
+        // Optional: Slight background tint when selected
+        color: widget.isSelected ? Colors.blue.withOpacity(0.05) : null,
+      ),
+      child: TextField(
+        controller: _controller,
+        focusNode: _focusNode,
+        onChanged: widget.onChanged,
+        // Crucial: We use onTap inside TextField to ensure the click is caught
+        onTap: widget.onTap, 
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 14),
+        decoration: const InputDecoration(
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: EdgeInsets.all(14),
+        ),
       ),
     );
   }

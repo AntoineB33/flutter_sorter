@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/cell.dart';
 import '../../data/datasources/spreadsheet_datasource.dart';
 import '../../data/repositories/spreadsheet_repository_impl.dart';
+import '../../domain/repositories/spreadsheet_repository.dart';
 import '../../domain/usecases/spreadsheet_usecases.dart';
 
 // --- Dependency Injection (Unchanged) ---
@@ -24,39 +25,26 @@ final updateCellUseCaseProvider = Provider<UpdateCellUseCase>((ref) {
 
 // --- Controller Layer ---
 
-// We replace StateNotifier with AsyncNotifier.
-// The state is simply the Map of cells.
-class SpreadsheetController extends AsyncNotifier<Map<String, Cell>> {
-  
-  // 1. Initialize State
+class SpreadsheetController extends FamilyAsyncNotifier<Map<String, Cell>, String> {
+  late String _sheetId;
+
   @override
-  FutureOr<Map<String, Cell>> build() async {
-    final getSheet = ref.read(getSheetUseCaseProvider);
-    return await getSheet();
+  FutureOr<Map<String, Cell>> build(String arg) async {
+    _sheetId = arg;
+    // Load specific sheet data from DB
+    return await ref.read(getSheetUseCaseProvider).execute(_sheetId);
   }
 
-  // 2. Update Logic
   Future<void> onCellChanged(int row, int col, String value) async {
-    final updateCell = ref.read(updateCellUseCaseProvider);
     final key = '$row:$col';
-
-    // Current state check to avoid null issues
     final currentMap = state.valueOrNull ?? {};
 
-    // Optimistic Update: Create a new map with the updated value immediately
-    final updatedMap = Map<String, Cell>.from(currentMap);
-    updatedMap[key] = Cell(row: row, col: col, value: value);
-
-    // Update the local state immediately so the UI reflects the change
-    state = AsyncData(updatedMap);
-
-    // Perform API call in background
-    try {
-      await updateCell(row, col, value);
-    } catch (e, stack) {
-      // If API fails, revert state (optional, or show error)
-      state = AsyncError<Map<String, Cell>>(e, stack).copyWithPrevious(state);
-    }
+    // PERFORMANCE FIX: Use an immutable map library or a row-based structure here
+    // For now, standard optimization:
+    state = AsyncData({...currentMap, key: Cell(row: row, col: col, value: value)}); 
+    
+    // Save to DB
+    ref.read(updateCellUseCaseProvider).execute(_sheetId, row, col, value);
   }
 }
 

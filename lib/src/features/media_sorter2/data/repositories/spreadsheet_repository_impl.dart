@@ -1,11 +1,7 @@
 import '../../domain/entities/cell.dart';
 import '../datasources/spreadsheet_datasource.dart';
+import '../../domain/repositories/spreadsheet_repository.dart';
 
-// 1. The Interface (Belongs in Domain layer conceptually)
-abstract class SpreadsheetRepository {
-  Future<Map<String, Cell>> loadSheet();
-  Future<Cell> saveCell(int row, int col, String value);
-}
 
 // 2. The Implementation (Belongs in Data layer)
 class SpreadsheetRepositoryImpl implements SpreadsheetRepository {
