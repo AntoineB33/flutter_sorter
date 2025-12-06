@@ -5,7 +5,7 @@ class GetSheetDataUseCase {
   final SpreadsheetRepository repository;
   GetSheetDataUseCase(this.repository);
 
-  Future<List<SpreadsheetCell>> execute() {
-    return repository.loadSheet();
+  Future<Map<(int, int), String>> call(int startRow, int endRow) {
+    return repository.getRegion(startRow, endRow);
   }
 }

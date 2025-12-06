@@ -1,34 +1,33 @@
 import '../../domain/entities/spreadsheet_cell.dart';
 import '../../domain/repositories/spreadsheet_repository.dart';
+import '../datasources/local_spreadsheet_service.dart';
 
 class SpreadsheetRepositoryImpl implements SpreadsheetRepository {
-  // In a real app, inject a Database instance (Drift/Isar) here.
+  final TableLocalDataSource dataSource;
   
-  // Simulating "millions" capability by generating on fly or mocking
-  // because SharedPreferences will crash with >10k items.
-  final Map<String, String> _inMemoryStore = {}; 
-
+  SpreadsheetRepositoryImpl(this.dataSource);
+  
   @override
-  Future<List<SpreadsheetCell>> loadSheet() async {
-    // Simulate network/db delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    // Return empty or mocked initial data
-    return []; 
-  }
+  Future<Map<(int, int), String>> getRegion(int startRow, int endRow) async {
+    // We assume a standard viewport width (e.g., columns 0 to 20) 
+    // or fetch all columns for these rows if needed.
+    final rawData = await dataSource.fetchCellChunk(
+      minRow: startRow,
+      maxRow: endRow,
+      minCol: 0,   // Assuming we want all cols or a specific visible range
+      maxCol: 50,  // Tuning this prevents fetching columns off-screen
+    );
 
-  @override
-  Future<void> saveSheet(List<SpreadsheetCell> cells) async {
-    // THIS is where you would normally write to DB
-    // For now, we update our memory cache
-    for(var cell in cells) {
-      _inMemoryStore['${cell.row}_${cell.col}'] = cell.content;
+    // Transform List to Map for O(1) lookup in the Controller
+    final Map<(int, int), String> map = {};
+    for (var cell in rawData) {
+      map[(cell.row, cell.col)] = cell.value;
     }
+    return map;
   }
 
   @override
   Future<void> updateCell(int row, int col, String value) async {
-    _inMemoryStore['${row}_${col}'] = value;
-    // Persist to actual storage here
+    await dataSource.saveCell(row: row, col: col, value: value);
   }
 }

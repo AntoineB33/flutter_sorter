@@ -7,6 +7,13 @@ import '../../domain/entities/column_type.dart';
 
 class SpreadsheetController extends ChangeNotifier {
   final GetSheetDataUseCase _getDataUseCase;
+  final SaveCellUseCase _saveCellUseCase;
+  
+  final Map<(int, int), String> _activeCache = {};
+
+  final Set<int> _loadingPages = {};
+  
+  static const int _pageSize = 100; // Fetch 100 rows at a time
 
   // Data Storage
   final Map<String, String> _data = {};
@@ -21,41 +28,84 @@ class SpreadsheetController extends ChangeNotifier {
   Point<int>? _selectionStart;
   Point<int>? _selectionEnd;
 
-  SpreadsheetController({required GetSheetDataUseCase getDataUseCase}) 
-      : _getDataUseCase = getDataUseCase;
+  SpreadsheetController({required GetSheetDataUseCase getDataUseCase, required SaveCellUseCase saveCellUseCase}) 
+      : _getDataUseCase = getDataUseCase,
+        _saveCellUseCase = saveCellUseCase;
 
   // Getters
   int get rowCount => _rowCount;
   int get colCount => _colCount;
   bool get isLoading => _isLoading;
 
-  // --- Data Loading ---
-  Future<void> loadData() async {
-    _isLoading = true;
-    notifyListeners();
+  // --- Content Access ---
+  String getContent(int row, int col) {
+    final key = (row, col);
+
+    // Hit: Return data immediately
+    if (_activeCache.containsKey(key)) {
+      return _activeCache[key]!;
+    }
+
+    // Miss: Trigger fetch if not already loading
+    _requestPageLoad(row);
+
+    // Return placeholder
+    return "Loading...";
+  }
+
+  /// 3. Determines which "Page" (chunk) allows us to fetch data in bulk
+  void _requestPageLoad(int row) {
+    final pageIndex = row ~/ _pageSize; // e.g., row 150 is page 1
+
+    if (_loadingPages.contains(pageIndex)) return;
+
+    _loadingPages.add(pageIndex);
+    
+    // Fetch asynchronously
+    _fetchPage(pageIndex);
+  }
+
+  Future<void> _fetchPage(int pageIndex) async {
+    final startRow = pageIndex * _pageSize;
+    final endRow = startRow + _pageSize;
 
     try {
-      final cells = await _getDataUseCase.execute();
-      for (var cell in cells) {
-        _data['${cell.row}_${cell.col}'] = cell.content;
-      }
+      // 4. Call the UseCase
+      final newChunk = await _getDataUseCase(startRow, endRow);
+      
+      // 5. Update the Cache
+      _activeCache.addAll(newChunk);
+      
+      // Optional: Pruning strategy. 
+      // If _activeCache > 5000 entries, remove pages far from current viewport.
+      
     } catch (e) {
-      debugPrint("Error loading data: $e");
+      print("Error loading page $pageIndex: $e");
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _loadingPages.remove(pageIndex);
+      notifyListeners(); // Updates the UI to replace "Loading..." with text
     }
   }
 
-  // --- Content Access ---
-  String getContent(int row, int col) {
-    return _data['${row}_${col}'] ?? ''; // Return empty string by default
-  }
-
   void updateCell(int row, int col, String value) {
-    _data['${row}_${col}'] = value;
-    // TODO: Add debounce save logic here
+    final key = (row, col);
+
+    // 1. Optimistic Update (Instant Feedback)
+    _activeCache[key] = value;
+    
+    // 2. Refresh UI
     notifyListeners();
+
+    // 3. Persist to Database (Fire and Forget)
+    _saveCellUseCase(row, col, value).catchError((e) {
+      // Error Handling:
+      // If the save fails, we should probably revert the UI or show a toast.
+      print("Failed to save cell ($row, $col): $e");
+      
+      // Optional: Revert logic if needed
+      // _activeCache[key] = "Error"; 
+      // notifyListeners();
+    });
   }
 
   // --- Column Logic ---

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/local_spreadsheet_service.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 
 // Domain/Data imports
@@ -9,6 +10,7 @@ import '../../domain/entities/column_type.dart';
 import '../utils/column_type_extensions.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/spreadsheet_repository_impl.dart';
+import 'package:trying_flutter/injection_container.dart';
 
 class MediaSorterPage extends StatelessWidget {
   const MediaSorterPage({super.key});
@@ -16,9 +18,7 @@ class MediaSorterPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => SpreadsheetController(
-        getDataUseCase: GetSheetDataUseCase(SpreadsheetRepositoryImpl()),
-      ),
+      create: (context) => sl<SpreadsheetController>(),
       child: Scaffold(
         appBar: AppBar(title: const Text("Media Sorter (Optimized)")),
         body: const SpreadsheetWidget(),

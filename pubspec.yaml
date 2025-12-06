@@ -36,6 +36,10 @@ dependencies:
   collection: ^1.19.1
   logging: ^1.2.0
   two_dimensional_scrollables: ^0.0.2
+  isar: ^3.1.0 # Or latest version
+  isar_flutter_libs: ^3.1.0
+  path_provider: ^2.0.0
+  get_it: ^7.6.0
 
   # State management
   flutter_riverpod: ^2.5.1
@@ -47,6 +51,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  build_runner: any
+  isar_generator: ^3.1.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
