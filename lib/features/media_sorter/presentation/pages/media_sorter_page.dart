@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:linked_scroll_controller/linked_scroll_controller.dart';
-import '../controllers/spreadsheet_controller.dart'; // Ensure correct import path
+import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
+
+// Domain/Data imports
+import '../controllers/spreadsheet_controller.dart';
 import '../../domain/entities/column_type.dart';
 import '../utils/column_type_extensions.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
@@ -13,17 +15,12 @@ class MediaSorterPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Wrap the Scaffold in ChangeNotifierProvider
     return ChangeNotifierProvider(
       create: (context) => SpreadsheetController(
         getDataUseCase: GetSheetDataUseCase(SpreadsheetRepositoryImpl()),
       ),
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Media Sorter"),
-        ),
-        // The SpreadsheetWidget is now a child of the Provider, 
-        // so it can find the controller.
+        appBar: AppBar(title: const Text("Media Sorter (Optimized)")),
         body: const SpreadsheetWidget(),
       ),
     );
@@ -38,43 +35,37 @@ class SpreadsheetWidget extends StatefulWidget {
 }
 
 class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
-  static const double cellWidth = 100;
-  static const double cellHeight = 40;
-  static const double headerHeight = 44;
-  static const double headerWidth = 60;
   final FocusNode _focusNode = FocusNode();
   
-  late LinkedScrollControllerGroup _verticalGroup;
-  late ScrollController _verticalBody;
-  late ScrollController _verticalHeader;
+  // We utilize ScrollControllers provided by the TwoDimensionalScrollView 
+  // if we need programmatic scrolling, otherwise TableView handles it.
+  final ScrollController _verticalController = ScrollController();
+  final ScrollController _horizontalController = ScrollController();
 
-  late LinkedScrollControllerGroup _horizontalGroup;
-  late ScrollController _horizontalBody;
-  late ScrollController _horizontalHeader;
+  static const double _defaultCellWidth = 100;
+  static const double _defaultCellHeight = 40;
+  static const double _headerHeight = 44;
+  static const double _headerWidth = 60;
 
   @override
   void initState() {
     super.initState();
+    // Ensure the grid can receive keyboard events immediately
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNode.requestFocus();
+    });
+  }
 
-    _verticalGroup = LinkedScrollControllerGroup();
-    _verticalBody = _verticalGroup.addAndGet();
-    _verticalHeader = _verticalGroup.addAndGet();
-
-    _horizontalGroup = LinkedScrollControllerGroup();
-    _horizontalBody = _horizontalGroup.addAndGet();
-    _horizontalHeader = _horizontalGroup.addAndGet();
-
-    // Optionally load data on init
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   context.read<SpreadsheetController>().loadData();
-    // });
-    
-    _focusNode.requestFocus();
+  @override
+  void dispose() {
+    _verticalController.dispose();
+    _horizontalController.dispose();
+    _focusNode.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Watch the Controller instead of SpreadsheetState
     final controller = context.watch<SpreadsheetController>();
 
     if (controller.isLoading) {
@@ -84,36 +75,157 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     return KeyboardListener(
       focusNode: _focusNode,
       autofocus: true,
-      onKeyEvent: (KeyEvent event) async {
-        if (event is! KeyDownEvent) return;
+      onKeyEvent: (KeyEvent event) => _handleKeyboard(event, controller),
+      child: TableView.builder(
+        verticalDetails: ScrollableDetails.vertical(controller: _verticalController),
+        horizontalDetails: ScrollableDetails.horizontal(controller: _horizontalController),
+        
+        // 1. PINNED HEADERS: This replaces LinkedScrollControllerGroup
+        pinnedRowCount: 1, 
+        pinnedColumnCount: 1,
+        
+        // 2. TOTAL COUNTS: +1 to account for the header row/column
+        rowCount: controller.rowCount + 1,
+        columnCount: controller.colCount + 1,
 
-        final key = event.logicalKey.keyLabel.toLowerCase();
-        // Use read to avoid rebuilding on every key press
-        final ctrl = context.read<SpreadsheetController>(); 
+        // 3. SIZE BUILDERS
+        columnBuilder: (index) => _buildColumnSpan(index),
+        rowBuilder: (index) => _buildRowSpan(index),
 
-        // Detect CTRL/CMD + C
-        if ((HardwareKeyboard.instance.isControlPressed ||
-            HardwareKeyboard.instance.isMetaPressed) &&
-            key == 'c') {
-          final copied = await ctrl.copySelectionToClipboard();
-          if (copied != null) {
-            debugPrint("Copied:\n$copied");
-          }
-          return;
-        }
-
-        // Detect CTRL/CMD + V
-        if ((HardwareKeyboard.instance.isControlPressed ||
-                HardwareKeyboard.instance.isMetaPressed) &&
-            key == 'v') {
-          final data = await Clipboard.getData('text/plain');
-          if (data?.text != null) {
-            ctrl.pasteText(data!.text!);
-          }
-        }
-      },
-      child: buildGrid(context, controller),
+        // 4. CELL BUILDER (The core logic)
+        cellBuilder: (context, vicinity) {
+          return _buildCell(context, vicinity, controller);
+        },
+      ),
     );
+  }
+
+  // --- Span Builders (Size definitions) ---
+
+  TableSpan _buildColumnSpan(int index) {
+    // Column 0 is the Row Header (1, 2, 3...)
+    if (index == 0) {
+      return const TableSpan(extent: FixedTableSpanExtent(_headerWidth));
+    }
+    return const TableSpan(extent: FixedTableSpanExtent(_defaultCellWidth));
+  }
+
+  TableSpan _buildRowSpan(int index) {
+    // Row 0 is the Column Header (A, B, C...)
+    if (index == 0) {
+      return const TableSpan(extent: FixedTableSpanExtent(_headerHeight));
+    }
+    return const TableSpan(extent: FixedTableSpanExtent(_defaultCellHeight));
+  }
+
+  // --- Cell Builder (Content definitions) ---
+
+  Widget _buildCell(
+      BuildContext context, TableVicinity vicinity, SpreadsheetController controller) {
+    
+    final int renderRow = vicinity.row;
+    final int renderCol = vicinity.column;
+
+    // A. Top-Left Corner (Select All)
+    if (renderRow == 0 && renderCol == 0) {
+      return GestureDetector(
+        onTap: () => controller.selectRange(0, 0, controller.rowCount - 1, controller.colCount - 1),
+        child: Container(
+          color: Colors.grey.shade300,
+          alignment: Alignment.center,
+          child: const Icon(Icons.select_all, size: 16),
+        ),
+      );
+    }
+
+    // B. Column Headers (A, B, C...) - Row 0
+    if (renderRow == 0) {
+      final int dataColIndex = renderCol - 1; // Adjust for pinned column
+      return GestureDetector(
+        onSecondaryTapDown: (details) {
+          _showColumnContextMenu(context, controller, details.globalPosition, dataColIndex);
+        },
+        child: Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            border: Border(
+              right: BorderSide(color: Colors.grey.shade400),
+              bottom: BorderSide(color: Colors.grey.shade400),
+            ),
+          ),
+          child: Text(
+            controller.columnName(dataColIndex),
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+      );
+    }
+
+    // C. Row Headers (1, 2, 3...) - Column 0
+    if (renderCol == 0) {
+      final int dataRowIndex = renderRow - 1; // Adjust for pinned row
+      return Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300,
+          border: Border(
+            right: BorderSide(color: Colors.grey.shade400),
+            bottom: BorderSide(color: Colors.grey.shade400),
+          ),
+        ),
+        child: Text("${dataRowIndex + 1}"),
+      );
+    }
+
+    // D. Actual Data Cells
+    final int dataRow = renderRow - 1;
+    final int dataCol = renderCol - 1;
+    
+    final bool isSelected = controller.isCellSelected(dataRow, dataCol);
+    final String text = controller.getContent(dataRow, dataCol);
+
+    return InkWell(
+      onTap: () {
+        controller.selectCell(dataRow, dataCol);
+        _focusNode.requestFocus();
+      },
+      child: Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blue.shade100 : Colors.white,
+          border: Border(
+            right: BorderSide(color: Colors.grey.shade200),
+            bottom: BorderSide(color: Colors.grey.shade200),
+          ),
+        ),
+        child: Text(text),
+      ),
+    );
+  }
+  
+  // --- Logic & Menus ---
+
+  Future<void> _handleKeyboard(KeyEvent event, SpreadsheetController ctrl) async {
+    if (event is! KeyDownEvent) return;
+
+    final key = event.logicalKey.keyLabel.toLowerCase();
+    final isControl = HardwareKeyboard.instance.isControlPressed ||
+        HardwareKeyboard.instance.isMetaPressed;
+
+    if (isControl && key == 'c') {
+      final copied = await ctrl.copySelectionToClipboard();
+      if (copied != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(content: Text('Copied ${copied.split('\n').length} rows'), duration: const Duration(milliseconds: 500)),
+        );
+      }
+    } else if (isControl && key == 'v') {
+      final data = await Clipboard.getData('text/plain');
+      if (data?.text != null) {
+        ctrl.pasteText(data!.text!);
+      }
+    }
   }
 
   Future<void> _showTypeMenu(
@@ -132,19 +244,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           checked: entry.name == currentType,
           child: Row(
             children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: ColumnTypeX(entry).color == Colors.transparent
-                      ? Colors.grey.shade300
-                      : ColumnTypeX(entry).color,
-                  borderRadius: BorderRadius.circular(3),
-                  border: Border.all(color: Colors.black26),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(entry.name),
+               Icon(Icons.circle, color: ColumnTypeX(entry).color, size: 12),
+               const SizedBox(width: 8),
+               Text(entry.name),
             ],
           ),
         );
@@ -160,198 +262,21 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       BuildContext context, SpreadsheetController controller, Offset position, int col) async {
     final result = await showMenu<String>(
       context: context,
-      position: RelativeRect.fromLTRB(
-        position.dx,
-        position.dy,
-        position.dx,
-        position.dy,
-      ),
+      position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
       items: [
-        const PopupMenuItem(
-          value: 'test1',
-          child: Text('Test Action 1'),
-        ),
-        const PopupMenuItem(
-          value: 'test2',
-          child: Text('Test Action 2'),
-        ),
+        const PopupMenuItem(value: 'sort_asc', child: Text('Sort A-Z')),
+        const PopupMenuItem(value: 'sort_desc', child: Text('Sort Z-A')),
         const PopupMenuDivider(),
-        const PopupMenuItem(
-          value: 'change_type',
-          child: Text('Change Type ▶'),
-        ),
+        const PopupMenuItem(value: 'change_type', child: Text('Change Type ▶')),
       ],
     );
 
     if (!context.mounted) return;
 
-    if (result != null) {
-      switch (result) {
-        case 'test1':
-          debugPrint('Test Action 1 clicked on column ${controller.columnName(col)}');
-          break;
-        case 'test2':
-          debugPrint('Test Action 2 clicked on column ${controller.columnName(col)}');
-          break;
-        case 'change_type':
-          await _showTypeMenu(context, controller, position, col);
-          break;
-      }
+    if (result == 'change_type') {
+      await _showTypeMenu(context, controller, position, col);
+    } else if (result != null) {
+      debugPrint("Action $result on column $col");
     }
-  }
-
-  Widget _buildColumnHeader(BuildContext context, SpreadsheetController controller, int col) {
-    return GestureDetector(
-      onSecondaryTapDown: (details) {
-        _showColumnContextMenu(context, controller, details.globalPosition, col);
-      },
-      child: Container(
-        width: cellWidth,
-        height: headerHeight,
-        alignment: Alignment.center,
-        margin: const EdgeInsets.only(right: 1),
-        color: Colors.grey.shade300,
-        child: Text(
-          controller.columnName(col),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-
-  Widget buildGrid(BuildContext context, SpreadsheetController controller) {
-    // Dynamic size from controller
-    final rows = controller.rowCount;
-    final cols = controller.colCount;
-
-    return Row(
-      children: [
-        // --- Row Header Column ---
-        Column(
-          children: [
-            Container(
-              width: headerWidth,
-              height: headerHeight,
-              color: Colors.grey.shade300,
-              alignment: Alignment.center,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  context.read<SpreadsheetController>().selectRange(
-                    0, 0,
-                    rows - 1,
-                    cols - 1,
-                  );
-                },
-                child: const Icon(Icons.select_all, size: 16),
-              ),
-            ),
-            // Row headers
-            Expanded(
-              child: Scrollbar(
-                controller: _verticalHeader,
-                thumbVisibility: true,
-                child: SingleChildScrollView(
-                  controller: _verticalHeader,
-                  child: Column(
-                    children: List.generate(rows, (row) {
-                      return Container(
-                        width: headerWidth,
-                        height: cellHeight,
-                        alignment: Alignment.center,
-                        margin: const EdgeInsets.only(bottom: 1),
-                        color: Colors.grey.shade300,
-                        child: Text("${row + 1}"),
-                      );
-                    }),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-
-        // --- Main Scrollable Area ----
-        Expanded(
-          child: Column(
-            children: [
-              // Column header row
-              Scrollbar(
-                controller: _horizontalHeader,
-                thumbVisibility: true,
-                child: SingleChildScrollView(
-                  controller: _horizontalHeader,
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: List.generate(
-                      cols,
-                      (col) => _buildColumnHeader(context, controller, col),
-                    ),
-                  ),
-                ),
-              ),
-
-              // Main grid scrollable in both directions
-              Expanded(
-                child: Scrollbar(
-                  controller: _verticalBody,
-                  thumbVisibility: true,
-                  child: Scrollbar(
-                    controller: _horizontalBody,
-                    thumbVisibility: true,
-                    notificationPredicate: (notif) => notif.depth == 1,
-                    child: SingleChildScrollView(
-                      controller: _verticalBody,
-                      scrollDirection: Axis.vertical,
-                      child: SingleChildScrollView(
-                        controller: _horizontalBody,
-                        scrollDirection: Axis.horizontal,
-                        child: SizedBox(
-                          width: cols * cellWidth,
-                          height: rows * cellHeight,
-                          child: GridView.builder(
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: cols,
-                              childAspectRatio: cellWidth / cellHeight,
-                            ),
-                            itemCount: rows * cols,
-                            itemBuilder: (context, index) {
-                              final row = index ~/ cols;
-                              final col = index % cols;
-
-                              final text = controller.getContent(row, col);
-                              final isSelected = controller.isCellSelected(row, col);
-
-                              return InkWell(
-                                onTap: () {
-                                  context
-                                      .read<SpreadsheetController>()
-                                      .selectCell(row, col);
-                                  _focusNode.requestFocus();
-                                },
-                                child: Container(
-                                  alignment: Alignment.center,
-                                  margin: const EdgeInsets.all(1),
-                                  color: isSelected
-                                      ? Colors.blue.shade300
-                                      : Colors.grey.shade200,
-                                  child: Text(text),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
   }
 }
