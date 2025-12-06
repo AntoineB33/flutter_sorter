@@ -31,11 +31,11 @@ dependencies:
   flutter:
     sdk: flutter
   shared_preferences: ^2.3.3
-  # provider: ^6.0.5
-  # linked_scroll_controller: ^0.2.0
-  # collection: ^1.19.1
-  # logging: ^1.2.0
-  # two_dimensional_scrollables: ^0.0.2
+  provider: ^6.0.5
+  linked_scroll_controller: ^0.2.0
+  collection: ^1.19.1
+  logging: ^1.2.0
+  two_dimensional_scrollables: ^0.0.2
 
   # State management
   flutter_riverpod: ^2.5.1
