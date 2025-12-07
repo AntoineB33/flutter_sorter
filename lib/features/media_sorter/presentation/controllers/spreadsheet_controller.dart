@@ -205,4 +205,17 @@ class SpreadsheetController extends ChangeNotifier {
     _colCount += count;
     notifyListeners();
   }
+
+  Future<void> pasteSelection() async {
+    final data = await Clipboard.getData('text/plain');
+    if (data?.text != null) {
+      // Process text and update state
+      pasteText(data!.text!); 
+      notifyListeners();
+    }
+  }
+
+  void selectAll() {
+    selectRange(0, 0, _rowCount - 1, _colCount - 1);
+  }
 }
