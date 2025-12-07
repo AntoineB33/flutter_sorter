@@ -1,5 +1,5 @@
 class ParsePasteDataUseCase {
-  List<CellUpdate> call(String rawText, int startRow, int startCol) {
+  List<CellUpdate> execute(String rawText, int startRow, int startCol) {
     final List<CellUpdate> updates = [];
     final rows = rawText.split('\n');
     

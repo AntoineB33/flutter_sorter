@@ -1,11 +1,16 @@
 import '../entities/spreadsheet_cell.dart';
-import '../repositories/spreadsheet_repository.dart';
+import '../repositories/sheet_repository.dart';
 
 class GetSheetDataUseCase {
-  final SpreadsheetRepository repository;
+  final SheetRepository repository;
+
   GetSheetDataUseCase(this.repository);
 
-  Future<Map<(int, int), String>> call(int startRow, int endRow) {
-    return repository.getRegion(startRow, endRow);
+  Future<String> getLastOpenedSheetName() {
+    return repository.getLastOpenedSheetName();
+  }
+
+  Future<(List<List<String>>, List<String>)> execute(String sheetName) {
+    return repository.loadSheet(sheetName);
   }
 }

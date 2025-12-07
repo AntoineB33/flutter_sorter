@@ -1,11 +1,11 @@
-import '../repositories/spreadsheet_repository.dart';
+import '../repositories/sheet_repository.dart';
 
-class SaveCellUseCase {
-  final SpreadsheetRepository repository;
+class SaveSheetDataUseCase {
+  final SheetRepository repository;
 
-  SaveCellUseCase(this.repository);
+  SaveSheetDataUseCase(this.repository);
 
-  Future<void> call(int row, int col, String value) {
-    return repository.updateCell(row, col, value);
+  Future<void> execute(String sheetName, List<List<String>> data) {
+    return repository.updateSheet(sheetName, data);
   }
 }

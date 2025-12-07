@@ -5,6 +5,7 @@ import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 import '../controllers/spreadsheet_controller.dart';
 import 'package:trying_flutter/injection_container.dart';
 import '../../../../shared/widgets/navigation_dropdown.dart';
+import 'side_menu.dart';
 
 class MediaSorterPage extends StatelessWidget {
   const MediaSorterPage({super.key});
@@ -15,7 +16,25 @@ class MediaSorterPage extends StatelessWidget {
       create: (context) => sl<SpreadsheetController>(),
       child: Scaffold(
         appBar: const NavigationDropdown(),
-        body: const SpreadsheetWidget(),
+        // 1. Change Body to a Row to support Sidebar + Content
+        body: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 2. The Sidebar
+            // const SizedBox(
+            //   width: 250, // Set your desired sidebar width
+            //   child: SideMenu(),
+            // ),
+            
+            // Optional: A vertical divider for visual separation
+            const VerticalDivider(width: 1, thickness: 1),
+
+            // 3. The Spreadsheet (Wrapped in Expanded)
+            const Expanded(
+              child: SpreadsheetWidget(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -79,8 +98,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         pinnedColumnCount: 1,
         
         // 2. TOTAL COUNTS: +1 to account for the header row/column
-        rowCount: controller.rowCount + 1,
-        columnCount: controller.colCount + 1,
+        rowCount: controller.tableViewRows + 1,
+        columnCount: controller.tableViewCols + 1,
 
         // 3. SIZE BUILDERS
         columnBuilder: (index) => _buildColumnSpan(index),
