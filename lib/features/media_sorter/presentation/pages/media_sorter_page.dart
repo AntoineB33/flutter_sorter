@@ -3,9 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 import '../controllers/spreadsheet_controller.dart';
-import '../../domain/entities/column_type.dart';
-import '../utils/column_type_extensions.dart';
 import 'package:trying_flutter/injection_container.dart';
+import '../../../../shared/widgets/navigation_dropdown.dart';
 
 class MediaSorterPage extends StatelessWidget {
   const MediaSorterPage({super.key});
@@ -15,7 +14,7 @@ class MediaSorterPage extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => sl<SpreadsheetController>(),
       child: Scaffold(
-        appBar: AppBar(title: const Text("Media Sorter (Optimized)")),
+        appBar: const NavigationDropdown(),
         body: const SpreadsheetWidget(),
       ),
     );

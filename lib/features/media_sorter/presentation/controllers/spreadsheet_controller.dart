@@ -4,10 +4,12 @@ import 'package:flutter/services.dart';
 import '../../domain/usecases/get_sheet_data_usecase.dart';
 import '../../domain/usecases/save_sheet_data_usecase.dart'; // Assume created
 import '../../domain/entities/column_type.dart';
+import '../../domain/usecases/parse_paste_data_usecase.dart';
 
 class SpreadsheetController extends ChangeNotifier {
   final GetSheetDataUseCase _getDataUseCase;
   final SaveCellUseCase _saveCellUseCase;
+  final ParsePasteDataUseCase _parsePasteDataUseCase;
   
   final Map<(int, int), String> _activeCache = {};
 
@@ -28,9 +30,10 @@ class SpreadsheetController extends ChangeNotifier {
   Point<int>? _selectionStart;
   Point<int>? _selectionEnd;
 
-  SpreadsheetController({required GetSheetDataUseCase getDataUseCase, required SaveCellUseCase saveCellUseCase}) 
+  SpreadsheetController({required GetSheetDataUseCase getDataUseCase, required SaveCellUseCase saveCellUseCase, required ParsePasteDataUseCase parsePasteDataUseCase}) 
       : _getDataUseCase = getDataUseCase,
-        _saveCellUseCase = saveCellUseCase;
+        _saveCellUseCase = saveCellUseCase,
+        _parsePasteDataUseCase = parsePasteDataUseCase;
 
   // Getters
   int get rowCount => _rowCount;
@@ -178,24 +181,6 @@ class SpreadsheetController extends ChangeNotifier {
     return text;
   }
 
-  void pasteText(String text) {
-    if (_selectionStart == null) return;
-    
-    // Start pasting from the top-left of the current selection
-    int startRow = min(_selectionStart!.x, _selectionEnd?.x ?? _selectionStart!.x);
-    int startCol = min(_selectionStart!.y, _selectionEnd?.y ?? _selectionStart!.y);
-
-    final rows = text.split('\n');
-    for (int r = 0; r < rows.length; r++) {
-      final columns = rows[r].split('\t');
-      for (int c = 0; c < columns.length; c++) {
-        // Remove \r if present from Windows clipboards
-        String val = columns[c].replaceAll('\r', '');
-        updateCell(startRow + r, startCol + c, val);
-      }
-    }
-  }
-
   void addRows(int count) {
     _rowCount += count;
     notifyListeners();
@@ -208,11 +193,22 @@ class SpreadsheetController extends ChangeNotifier {
 
   Future<void> pasteSelection() async {
     final data = await Clipboard.getData('text/plain');
-    if (data?.text != null) {
-      // Process text and update state
-      pasteText(data!.text!); 
-      notifyListeners();
+    if (data?.text == null || _selectionStart == null) return;
+
+    // 1. Delegate Logic to UseCase
+    // We normalize selection to ensure we paste from top-left
+    int startRow = min(_selectionStart!.x, _selectionEnd?.x ?? _selectionStart!.x);
+    int startCol = min(_selectionStart!.y, _selectionEnd?.y ?? _selectionStart!.y);
+
+    final List<CellUpdate> updates = _parsePasteDataUseCase(data!.text!, startRow, startCol);
+
+    // 2. Update UI & Persist
+    for (var update in updates) {
+      updateCell(update.row, update.col, update.value);
     }
+    
+    // Batch notification is better for performance than notifying inside the loop
+    notifyListeners();
   }
 
   void selectAll() {

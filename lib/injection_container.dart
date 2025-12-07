@@ -8,6 +8,7 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_d
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_controller.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/spreadsheet_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/parse_paste_data_usecase.dart';
 
 final sl = GetIt.instance; // sl = Service Locator
 
@@ -26,8 +27,9 @@ Future<void> init() async {
   // --- Domain Layer ---
   sl.registerLazySingleton(() => GetSheetDataUseCase(sl()));
   sl.registerLazySingleton(() => SaveCellUseCase(sl()));
+  sl.registerLazySingleton(() => ParsePasteDataUseCase());
 
   // --- Presentation Layer ---
   // Factory means "create a new instance every time I ask"
-  sl.registerFactory(() => SpreadsheetController(getDataUseCase: sl(), saveCellUseCase: sl()));
+  sl.registerFactory(() => SpreadsheetController(getDataUseCase: sl(), saveCellUseCase: sl(), parsePasteDataUseCase: sl()));
 }
