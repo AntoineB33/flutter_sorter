@@ -19,7 +19,7 @@ class SpreadsheetController extends ChangeNotifier {
   String sheetName = "";
   int tableViewRows = 50;
   int tableViewCols = 50;
-  
+
   final NodeStruct mentionsRoot = NodeStruct(message: "Root");
 
   // Dimensions
@@ -35,11 +35,11 @@ class SpreadsheetController extends ChangeNotifier {
     required ParsePasteDataUseCase parsePasteDataUseCase,
   }) : _getDataUseCase = getDataUseCase,
        _saveSheetDataUseCase = saveSheetDataUseCase,
-       _parsePasteDataUseCase = parsePasteDataUseCase{
+       _parsePasteDataUseCase = parsePasteDataUseCase {
     // Start loading immediately upon controller creation
     init();
   }
-  
+
   // --- Initialization Logic ---
   Future<void> init() async {
     _isLoading = true;
@@ -50,26 +50,16 @@ class SpreadsheetController extends ChangeNotifier {
       sheetName = await _getDataUseCase.getLastOpenedSheetName();
 
       // 2. Load the actual data
-      table = await _getDataUseCase.execute(sheetName);
-
-      // 3. Update the table state
-      table.clear();
-      columnTypes.clear();
+      Map<String, dynamic> mapData = await _getDataUseCase.loadSheet(sheetName);
+      table = List<List<String>>.from(mapData["table"] ?? []);
+      columnTypes = List<String>.from(mapData["columnTypes"] ?? []);
     } catch (e) {
       debugPrint("Error loading sheet: $e");
       // Optionally handle error state here
-      _initializeEmptyTable();
     } finally {
       _isLoading = false;
       notifyListeners();
     }
-  }
-
-  void _initializeEmptyTable() {
-    // Helper to reset to a blank state if loading fails or file is new
-    table.clear();
-    columnTypes.clear();
-    // Logic to create a default blank grid (optional)
   }
 
   // Getters
@@ -149,7 +139,7 @@ class SpreadsheetController extends ChangeNotifier {
     }
     notifyListeners();
     _saveExecutor.execute(() async {
-      await _saveSheetDataUseCase.execute(sheetName, table);
+      await _saveSheetDataUseCase.saveSheet(sheetName, table, columnTypes);
       await Future.delayed(Duration(milliseconds: 100)); // Debounce
     });
   }

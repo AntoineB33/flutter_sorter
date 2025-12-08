@@ -12,12 +12,16 @@ class SheetRepositoryImpl implements SheetRepository {
   }
 
   @override
-  Future<(List<List<String>>, List<String>)> loadSheet(String sheetName) async {
+  Future<Map<String, dynamic>> loadSheet(String sheetName) async {
     return await dataSource.getSheet(sheetName);
   }
 
   @override
-  Future<void> updateSheet(String sheetName, List<List<String>> data) async {
+  Future<void> updateSheet(String sheetName, List<List<String>> table, List<String> columnTypes) async {
+    final data = {
+      "table": table,
+      "columnTypes": columnTypes,
+    };
     return await dataSource.saveSheet(sheetName, data);
   }
 }

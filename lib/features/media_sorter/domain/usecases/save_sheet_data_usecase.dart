@@ -5,7 +5,11 @@ class SaveSheetDataUseCase {
 
   SaveSheetDataUseCase(this.repository);
 
-  Future<void> execute(String sheetName, List<List<String>> data) {
-    return repository.updateSheet(sheetName, data);
+  Future<void> saveSheet(
+    String sheetName,
+    List<List<String>> table,
+    List<String> columnTypes,
+  ) {
+    return repository.updateSheet(sheetName, table, columnTypes);
   }
 }

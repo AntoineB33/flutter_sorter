@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:trying_flutter/features/media_sorter/domain/datasources/sheet_local_datasource.dart';
+import 'package:trying_flutter/features/media_sorter/domain/datasources/i_file_sheet_local_datasource.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class FileSheetLocalDataSource implements SheetLocalDataSource {
+class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   Future<String> getLastOpenedSheetName() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('lastOpenedSheetName') ?? "";
@@ -18,25 +18,25 @@ class FileSheetLocalDataSource implements SheetLocalDataSource {
   }
 
   @override
-  Future<(List<List<String>>, List<String>)> getSheet(String sheetName) async {
-    try {
-      final file = await _getFile(sheetName);
-      List<List<String>> emptyData = [];
-      List<String> emptyColumnTypes = [];
-      if (!await file.exists()) {
-        return (emptyData, emptyColumnTypes);
-      }
-
-      final jsonString = await file.readAsString();
-      final List<dynamic> decoded = jsonDecode(jsonString);
-      return (data, columnTypes);
-    } catch (e) {
-      throw Exception("Error loading sheet: $e");
+  Future<Map<String, dynamic>> getSheet(String sheetName) async {
+    final file = await _getFile(sheetName);
+    Map<String, dynamic> emptyData = {};
+    if (!await file.exists()) {
+      return emptyData;
     }
+
+    final jsonString = await file.readAsString();
+    Map<String, dynamic> decoded = {};
+    try {
+      decoded = jsonDecode(jsonString);
+    } catch (e) {
+      print("Error decoding JSON for sheet $sheetName: $e");
+    }
+    return decoded;
   }
 
   @override
-  Future<void> saveSheet(String sheetName, (List<List<String>>, List<String>) data) async {
+  Future<void> saveSheet(String sheetName, Map<String, dynamic> data) async {
     try {
       final file = await _getFile(sheetName);
       final jsonString = jsonEncode(data);
