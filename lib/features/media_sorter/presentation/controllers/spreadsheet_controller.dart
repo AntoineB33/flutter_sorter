@@ -1,6 +1,5 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
@@ -14,11 +13,14 @@ import 'package:logging/logging.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_messages.dart';
 
 class SpreadsheetController extends ChangeNotifier {
+  int saveDelayMs = 500;
+
   final GetSheetDataUseCase _getDataUseCase;
   final SaveSheetDataUseCase _saveSheetDataUseCase;
   final ParsePasteDataUseCase _parsePasteDataUseCase;
   final Map<String, ManageWaitingTasks> _saveExecutors = {};
   final ManageWaitingTasks _calculateExecutor = ManageWaitingTasks();
+  AnalysisResult result = AnalysisResult();
 
   List<List<String>> table = [];
   List<String> columnTypes = [];
@@ -110,12 +112,15 @@ class SpreadsheetController extends ChangeNotifier {
       if (availableSheetsChanged) {
         await _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
       }
-      await Future.delayed(Duration(milliseconds: 100)); // Debounce
+      await Future.delayed(Duration(milliseconds: saveDelayMs)); // Debounce
     });
     final calculateUsecase = CalculateUsecase(table, columnTypes);
+    
     _calculateExecutor.execute(() async {
-      AnalysisResult result = await compute(runCalculator,
-      calculateUsecase.getMessage(table, columnTypes));
+      result = await compute(
+        SpreadsheetController.runCalculator,
+        calculateUsecase.getMessage(table, columnTypes)
+      );
     });
   }
 
@@ -199,25 +204,40 @@ class SpreadsheetController extends ChangeNotifier {
       decreaseColumnCount(col);
     }
     notifyListeners();
-    _saveExecutors[sheetName]!.execute(() async {
-      await _saveSheetDataUseCase.saveSheet(sheetName, table, columnTypes);
-      await Future.delayed(Duration(milliseconds: 100)); // Debounce
-    });
-    final calculateUsecase = CalculateUsecase(table, columnTypes);
-    _calculateExecutor.execute(() async {
-      AnalysisResult result = await compute(runCalculator,
-      calculateUsecase.getMessage(table, columnTypes));
-    });
+    saveAndCalculate();
   }
 
   // --- Column Logic ---
   String getColumnType(int col) {
+    if (col >= colCount) return ColumnType.defaultType.name;
     return columnTypes[col];
   }
 
-  void setColumnType(int col, String typeName) {
-    columnTypes[col] = typeName;
-    notifyListeners();
+  Future<void> saveAndCalculate() async {
+    _saveExecutors[sheetName]!.execute(() async {
+      await _saveSheetDataUseCase.saveSheet(sheetName, table, columnTypes);
+      await Future.delayed(Duration(milliseconds: saveDelayMs));
+    });
+    _calculateExecutor.execute(() async {
+      final calculateUsecase = CalculateUsecase(table, columnTypes);
+      result = await compute(
+        runCalculator,
+        calculateUsecase.getMessage(table, columnTypes),
+      );
+    });
+  }
+
+  void setColumnType(int col, String type) {
+    if (type == ColumnType.defaultType.name) {
+      if (col < colCount) {
+        columnTypes[col] = type;
+        decreaseColumnCount(col);
+      }
+    } else {
+      increaseColumnCount(col);
+      columnTypes[col] = type;
+    }
+    saveAndCalculate();
   }
 
   /// Generates Excel-like column names (A, B, ... Z, AA, AB)

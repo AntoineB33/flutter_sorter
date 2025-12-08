@@ -21,7 +21,7 @@ class NodeStruct {
     this.att,
     this.dist,
     this.minDist,
-    List<NodeStruct>? newChildren,
+    this.newChildren,
     this.hideIfEmpty = false,
     this.startOpen = false,
   }) : children = [],

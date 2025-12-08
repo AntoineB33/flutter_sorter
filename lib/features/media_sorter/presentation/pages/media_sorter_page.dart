@@ -6,6 +6,8 @@ import '../controllers/spreadsheet_controller.dart';
 import 'package:trying_flutter/injection_container.dart';
 import '../../../../shared/widgets/navigation_dropdown.dart';
 import 'side_menu.dart';
+import '../../domain/entities/column_type.dart';
+import '../utils/column_type_extensions.dart';
 
 class MediaSorterPage extends StatelessWidget {
   const MediaSorterPage({super.key});
@@ -155,7 +157,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return _ColumnHeader(
         label: controller.columnName(c - 1),
         colIndex: c - 1,
-        onContextMenu: (details) => _showColumnContextMenu(context, controller, details, c - 1),
+        onContextMenu: (details) => _showColumnContextMenu(context, controller, details.globalPosition, c - 1),
       );
     }
     if (c == 0) {
@@ -176,12 +178,58 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 
   // --- Menus (View Logic) ---
-  // Kept here because it requires BuildContext and UI overlays
+  
+  
+  Future<void> _showTypeMenu(
+    BuildContext context,
+    SpreadsheetController controller,
+    Offset position,
+    int col,
+  ) async {
+    final currentType = controller.getColumnType(col);
+    final result = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+      items: ColumnType.values.map((entry) {
+        return CheckedPopupMenuItem<String>(
+          value: entry.name,
+          checked: entry.name == currentType,
+          child: Row(
+            children: [
+               Icon(Icons.circle, color: ColumnTypeX(entry).color, size: 12),
+               const SizedBox(width: 8),
+               Text(entry.name),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+
+    if (result != null) {
+      controller.setColumnType(col, result);
+    }
+  }
+
   void _showColumnContextMenu(BuildContext context, SpreadsheetController controller, 
-      TapDownDetails details, int col) async {
-      
-    // ... (Same implementation as before)
-    // When "Change Type" is selected, call controller.setColumnType(col, type)
+      Offset position, int col) async {
+    final result = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+      items: [
+        const PopupMenuItem(value: 'sort_asc', child: Text('Sort A-Z')),
+        const PopupMenuItem(value: 'sort_desc', child: Text('Sort Z-A')),
+        const PopupMenuDivider(),
+        const PopupMenuItem(value: 'change_type', child: Text('Change Type ▶')),
+      ],
+    );
+
+    if (!context.mounted) return;
+
+    if (result == 'change_type') {
+      await _showTypeMenu(context, controller, position, col);
+    } else if (result != null) {
+      debugPrint("Action $result on column $col");
+    }
   }
 }
 
