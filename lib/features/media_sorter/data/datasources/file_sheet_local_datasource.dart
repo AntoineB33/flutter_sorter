@@ -9,6 +9,30 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('lastOpenedSheetName') ?? "";
   }
+
+  Future<void> saveLastOpenedSheetName(String sheetName) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('lastOpenedSheetName', sheetName);
+  }
+
+  Future<List<String>> getAllSheetNames() async {
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/sheets_index.json');
+    if (!await file.exists()) {
+      return [];
+    }
+    final jsonString = await file.readAsString();
+    final List<dynamic> jsonList = jsonDecode(jsonString);
+    final List<String> sheetNames = jsonList.cast<String>();
+    return sheetNames;
+  }
+
+  Future<void> saveAllSheetNames(List<String> sheetNames) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/sheets_index.json');
+    final jsonString = jsonEncode(sheetNames);
+    await file.writeAsString(jsonString);
+  }
   
   Future<File> _getFile(String sheetName) async {
     final directory = await getApplicationDocumentsDirectory();

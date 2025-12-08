@@ -21,10 +21,10 @@ class MediaSorterPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 2. The Sidebar
-            // const SizedBox(
-            //   width: 250, // Set your desired sidebar width
-            //   child: SideMenu(),
-            // ),
+            const SizedBox(
+              width: 250, // Set your desired sidebar width
+              child: SideMenu(),
+            ),
             
             // Optional: A vertical divider for visual separation
             const VerticalDivider(width: 1, thickness: 1),

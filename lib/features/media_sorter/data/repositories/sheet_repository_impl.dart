@@ -12,6 +12,21 @@ class SheetRepositoryImpl implements SheetRepository {
   }
 
   @override
+  Future<void> saveLastOpenedSheetName(String sheetName) async {
+    await dataSource.saveLastOpenedSheetName(sheetName);
+  }
+
+  @override
+  Future<List<String>> getAllSheetNames() async {
+    return await dataSource.getAllSheetNames();
+  }
+
+  @override
+  Future<void> saveAllSheetNames(List<String> sheetNames) async {
+    await dataSource.saveAllSheetNames(sheetNames);
+  }
+
+  @override
   Future<Map<String, dynamic>> loadSheet(String sheetName) async {
     return await dataSource.getSheet(sheetName);
   }

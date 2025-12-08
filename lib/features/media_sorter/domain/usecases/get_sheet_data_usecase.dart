@@ -10,6 +10,10 @@ class GetSheetDataUseCase {
     return repository.getLastOpenedSheetName();
   }
 
+  Future<List<String>> getAllSheetNames() {
+    return repository.getAllSheetNames();
+  }
+
   Future<Map<String, dynamic>> loadSheet(String sheetName) {
     return repository.loadSheet(sheetName);
   }

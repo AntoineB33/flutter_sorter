@@ -1,24 +1,32 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
 import '../../domain/usecases/get_sheet_data_usecase.dart';
 import '../../domain/usecases/save_sheet_data_usecase.dart'; // Assume created
 import '../../domain/entities/column_type.dart';
 import '../../domain/usecases/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import '../../domain/usecases/manage_waiting_tasks.dart';
+import 'package:logging/logging.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_messages.dart';
 
 class SpreadsheetController extends ChangeNotifier {
   final GetSheetDataUseCase _getDataUseCase;
   final SaveSheetDataUseCase _saveSheetDataUseCase;
   final ParsePasteDataUseCase _parsePasteDataUseCase;
-  final ManageWaitingTasks _saveExecutor = ManageWaitingTasks();
+  final Map<String, ManageWaitingTasks> _saveExecutors = {};
+  final ManageWaitingTasks _calculateExecutor = ManageWaitingTasks();
 
   List<List<String>> table = [];
   List<String> columnTypes = [];
   String sheetName = "";
   int tableViewRows = 50;
   int tableViewCols = 50;
+  List<String> availableSheets = [];
+  Map<String, Map<String, dynamic>> loadedSheetsData = {};
 
   final NodeStruct mentionsRoot = NodeStruct(message: "Root");
 
@@ -46,13 +54,10 @@ class SpreadsheetController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 1. Get the last opened sheet name
+      availableSheets = await _getDataUseCase.getAllSheetNames();
       sheetName = await _getDataUseCase.getLastOpenedSheetName();
 
-      // 2. Load the actual data
-      Map<String, dynamic> mapData = await _getDataUseCase.loadSheet(sheetName);
-      table = List<List<String>>.from(mapData["table"] ?? []);
-      columnTypes = List<String>.from(mapData["columnTypes"] ?? []);
+      await loadSheetByName(sheetName);
     } catch (e) {
       debugPrint("Error loading sheet: $e");
       // Optionally handle error state here
@@ -66,6 +71,53 @@ class SpreadsheetController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   int get rowCount => table.length;
   int get colCount => rowCount > 0 ? table[0].length : 0;
+
+  Future<void> loadSheetByName(String name) async {
+    _isLoading = true;
+    notifyListeners();
+
+    bool availableSheetsChanged = false;
+    if (availableSheets.contains(name)) {
+      if (loadedSheetsData.containsKey(name)) {
+        table = loadedSheetsData[name]!["table"] as List<List<String>>;
+        columnTypes = loadedSheetsData[name]!["columnTypes"] as List<String>;
+      } else {
+        _saveExecutors[name] = ManageWaitingTasks();
+        Map<String, dynamic> mapData = await _getDataUseCase.loadSheet(name);
+        try {
+          final rawTable = mapData["table"] as List?;
+          final rawColumnTypes = mapData["columnTypes"] as List?;
+          table = rawTable?.map((row) {
+            // Convert each row (which is a List) into a List<String>
+            return (row as List).map((cell) => cell.toString()).toList();
+          }).toList() ?? [];
+          columnTypes = rawColumnTypes?.map((type) => type.toString()).toList() ?? [];
+        } catch (e) {
+          print("Error parsing sheet data for $name: $e");
+        }
+      }
+    } else {
+      table = [];
+      columnTypes = [];
+      availableSheets.add(name);
+      availableSheetsChanged = true;
+    }
+    _isLoading = false;
+    notifyListeners();
+    sheetName = name;
+    _saveExecutors[sheetName]!.execute(() async {
+      await _saveSheetDataUseCase.saveLastOpenedSheetName(name);
+      if (availableSheetsChanged) {
+        await _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
+      }
+      await Future.delayed(Duration(milliseconds: 100)); // Debounce
+    });
+    final calculateUsecase = CalculateUsecase(table, columnTypes);
+    _calculateExecutor.execute(() async {
+      AnalysisResult result = await compute(runCalculator,
+      calculateUsecase.getMessage(table, columnTypes));
+    });
+  }
 
   // --- Content Access ---
   String getContent(int row, int col) {
@@ -115,6 +167,15 @@ class SpreadsheetController extends ChangeNotifier {
     }
   }
 
+  static AnalysisResult runCalculator(IsolateMessage message) {
+    final Object dataPackage = switch (message) {
+      RawDataMessage m => m.table,
+      TransferableDataMessage m => m.dataPackage,
+    };
+    final worker = CalculateUsecase(dataPackage, message.columnTypes);
+    return worker.run();
+  }
+
   void updateCell(int row, int col, String newValue) {
     if (newValue.isNotEmpty || (row < rowCount && col < colCount)) {
       if (row >= rowCount) {
@@ -138,9 +199,14 @@ class SpreadsheetController extends ChangeNotifier {
       decreaseColumnCount(col);
     }
     notifyListeners();
-    _saveExecutor.execute(() async {
+    _saveExecutors[sheetName]!.execute(() async {
       await _saveSheetDataUseCase.saveSheet(sheetName, table, columnTypes);
       await Future.delayed(Duration(milliseconds: 100)); // Debounce
+    });
+    final calculateUsecase = CalculateUsecase(table, columnTypes);
+    _calculateExecutor.execute(() async {
+      AnalysisResult result = await compute(runCalculator,
+      calculateUsecase.getMessage(table, columnTypes));
     });
   }
 
