@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/spreadsheet_controller.dart';
+// Import your entity classes so we can type check or use them
+import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 
 class SideMenu extends StatefulWidget {
   const SideMenu({super.key});
@@ -10,7 +12,6 @@ class SideMenu extends StatefulWidget {
 }
 
 class _SideMenuState extends State<SideMenu> {
-  // Controller for the text input to sync with current sheet name
   late TextEditingController _textEditingController;
 
   @override
@@ -25,14 +26,46 @@ class _SideMenuState extends State<SideMenu> {
     super.dispose();
   }
 
+  /// Recursive helper to build the tree UI
+  Widget _buildNodeTree(NodeStruct node) {
+    // 1. Check strict visibility rule
+    if (node.hideIfEmpty && node.newChildren!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // 2. Leaf Node (No children) -> Simple List Tile
+    if (node.newChildren!.isEmpty) {
+      return ListTile(
+        title: Text(node.message!, style: const TextStyle(fontSize: 13)),
+        dense: true,
+        visualDensity: VisualDensity.compact,
+        contentPadding: const EdgeInsets.only(left: 16.0), // Indent leaves slightly
+      );
+    }
+
+    // 3. Branch Node (Has children) -> Expansion Tile
+    return ExpansionTile(
+      title: Text(node.message!, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+      dense: true,
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: const EdgeInsets.only(left: 12.0), // Indent children
+      expandedCrossAxisAlignment: CrossAxisAlignment.start,
+      children: node.newChildren!.map((child) => _buildNodeTree(child)).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Watch controller for changes
     final controller = context.watch<SpreadsheetController>();
 
-    // Keep text field in sync if the sheet name changes externally
+    // Sync text field logic...
     if (_textEditingController.text != controller.sheetName && !controller.isLoading) {
       _textEditingController.text = controller.sheetName;
     }
+
+    // Access the analysis result (Safe navigation in case it's null initially)
+    final analysis = controller.result;
 
     return Container(
       color: Colors.grey[50],
@@ -45,26 +78,21 @@ class _SideMenuState extends State<SideMenu> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          
-          // --- Autocomplete Input Field ---
+
+          // --- Autocomplete Input Field (Your existing code) ---
           LayoutBuilder(
             builder: (context, constraints) {
               return Autocomplete<String>(
                 optionsBuilder: (TextEditingValue textEditingValue) {
                   final query = textEditingValue.text.toLowerCase();
                   final allSheets = controller.availableSheets;
-
-                  // If input is empty, just return everything sorted alphabetically
                   if (query.isEmpty) {
                     final sorted = List<String>.from(allSheets);
                     sorted.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
                     return sorted;
                   }
-
-                  // Filter: Split into "Contains" and "Does Not Contain"
                   final matches = <String>[];
                   final others = <String>[];
-
                   for (var sheet in allSheets) {
                     if (sheet.toLowerCase().contains(query)) {
                       matches.add(sheet);
@@ -72,21 +100,15 @@ class _SideMenuState extends State<SideMenu> {
                       others.add(sheet);
                     }
                   }
-
-                  // Sort the 'others' list alphabetically
                   others.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-
-                  // Return combined list: Matches first, then Others
                   return [...matches, ...others];
                 },
-
-                // 2. Visuals: Custom Dropdown with Divider
                 optionsViewBuilder: (context, onSelected, options) {
+                  print("Building options view with ${options.length} options");
                   return Align(
                     alignment: Alignment.topLeft,
                     child: Material(
                       elevation: 4.0,
-                      // Use the width from LayoutBuilder constraints
                       child: SizedBox(
                         width: constraints.maxWidth,
                         child: ListView.builder(
@@ -95,20 +117,14 @@ class _SideMenuState extends State<SideMenu> {
                           itemCount: options.length,
                           itemBuilder: (context, index) {
                             final String option = options.elementAt(index);
-                            
-                            // Re-check logic to see if we need a divider
                             final query = _textEditingController.text.toLowerCase();
                             final isMatch = option.toLowerCase().contains(query);
-                            
-                            // Check if this is the first item of the "Others" list
-                            // (Current is NOT a match, but Previous WAS a match)
                             bool showDivider = false;
                             if (index > 0 && !isMatch) {
                               final prevOption = options.elementAt(index - 1);
                               final prevWasMatch = prevOption.toLowerCase().contains(query);
                               if (prevWasMatch) showDivider = true;
                             }
-
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -136,20 +152,13 @@ class _SideMenuState extends State<SideMenu> {
                     ),
                   );
                 },
-                
-                // 2. On Selection (Clicking list item)
                 onSelected: (String selection) {
                   controller.loadSheetByName(selection);
                 },
-
-                // 3. The Input Field Builder
                 fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
-                  // Sync our local controller with the Autocomplete's controller
-                  // This ensures we can update the text if the model changes
                   if (textController.text != _textEditingController.text) {
-                     textController.text = _textEditingController.text;
+                    textController.text = _textEditingController.text;
                   }
-                  
                   return TextField(
                     controller: textController,
                     focusNode: focusNode,
@@ -167,11 +176,35 @@ class _SideMenuState extends State<SideMenu> {
               );
             },
           ),
-          
+
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 10),
           
+          const Text(
+            "Analysis Logs",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          
+          // --- Dynamic Tree View Section ---
+          // Use Expanded so the trees can scroll within the remaining space
+          Expanded(
+            child: analysis == null
+                ? const Center(child: Text("No analysis data"))
+                : SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        // Explicitly render the specific roots from AnalysisResult
+                        _buildNodeTree(analysis.errorRoot),
+                        _buildNodeTree(analysis.warningRoot),
+                        _buildNodeTree(analysis.mentionsRoot),
+                        _buildNodeTree(analysis.searchRoot),
+                        _buildNodeTree(analysis.categoriesRoot),
+                        _buildNodeTree(analysis.distPairsRoot),
+                      ],
+                    ),
+                  ),
+          ),
         ],
       ),
     );

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import '../repositories/sheet_repository.dart';
 
 class SaveSheetDataUseCase {
@@ -9,8 +11,10 @@ class SaveSheetDataUseCase {
     String sheetName,
     List<List<String>> table,
     List<String> columnTypes,
+    Point<int> selectionStart,
+    Point<int> selectionEnd,
   ) {
-    return repository.updateSheet(sheetName, table, columnTypes);
+    return repository.updateSheet(sheetName, table, columnTypes, selectionStart, selectionEnd);
   }
 
   Future<void> saveLastOpenedSheetName(String sheetName) {

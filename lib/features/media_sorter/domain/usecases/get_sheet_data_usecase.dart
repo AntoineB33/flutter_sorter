@@ -1,5 +1,6 @@
 import '../entities/spreadsheet_cell.dart';
 import '../repositories/sheet_repository.dart';
+import 'dart:math';
 
 class GetSheetDataUseCase {
   final SheetRepository repository;
@@ -14,7 +15,7 @@ class GetSheetDataUseCase {
     return repository.getAllSheetNames();
   }
 
-  Future<Map<String, dynamic>> loadSheet(String sheetName) {
+  Future<(List<List<String>>, List<String>, Point<int>, Point<int>)> loadSheet(String sheetName) {
     return repository.loadSheet(sheetName);
   }
 }

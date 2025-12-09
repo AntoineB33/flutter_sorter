@@ -637,7 +637,7 @@ class CalculateUsecase {
     }
 
     if (validRowIndexes.isEmpty) {
-      errorRoot.newChildren!.add(
+      warningRoot.newChildren!.add(
         NodeStruct(message: "No valid rows found in the table!"),
       );
       return;

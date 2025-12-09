@@ -17,7 +17,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
 
   Future<List<String>> getAllSheetNames() async {
     final directory = await getApplicationDocumentsDirectory();
-    final file = File('${directory.path}/sheets_index.json');
+    final file = File('${directory.path}/media_sorter/sheets_index.json');
     if (!await file.exists()) {
       return [];
     }
@@ -29,7 +29,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
 
   Future<void> saveAllSheetNames(List<String> sheetNames) async {
     final directory = await getApplicationDocumentsDirectory();
-    final file = File('${directory.path}/sheets_index.json');
+    final file = File('${directory.path}/media_sorter/sheets_index.json');
     final jsonString = jsonEncode(sheetNames);
     await file.writeAsString(jsonString);
   }

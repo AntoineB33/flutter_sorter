@@ -1,6 +1,8 @@
 import 'dart:math';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
 import '../../domain/usecases/get_sheet_data_usecase.dart';
@@ -11,6 +13,10 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct
 import '../../domain/usecases/manage_waiting_tasks.dart';
 import 'package:logging/logging.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_messages.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/dyn_and_int.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
+import 'package:trying_flutter/features/media_sorter/data/utils/hungarian_algorithm.dart';
 
 class SpreadsheetController extends ChangeNotifier {
   int saveDelayMs = 500;
@@ -30,14 +36,40 @@ class SpreadsheetController extends ChangeNotifier {
   List<String> availableSheets = [];
   Map<String, Map<String, dynamic>> loadedSheetsData = {};
 
-  final NodeStruct mentionsRoot = NodeStruct(message: "Root");
-
   // Dimensions
   bool _isLoading = false;
 
   // Selection State
-  Point<int>? _selectionStart;
-  Point<int>? _selectionEnd;
+  Point<int> _selectionStart = Point(0, 0);
+  Point<int> _selectionEnd = Point(0, 0);
+
+
+  String rowCst = SpreadsheetConstants.rowCst;
+  
+  final NodeStruct errorRoot = NodeStruct(message: 'Error Log', newChildren: [], hideIfEmpty: true);
+  final NodeStruct warningRoot = NodeStruct(message: 'Warning Log', newChildren: [], hideIfEmpty: true);
+  final NodeStruct mentionsRoot = NodeStruct(message: 'Current selection', newChildren: []);
+  final NodeStruct searchRoot = NodeStruct(message: 'Search results', newChildren: []);
+  final NodeStruct categoriesRoot = NodeStruct(message: 'Categories', newChildren: []);
+  final NodeStruct distPairsRoot = NodeStruct(message: 'Distance Pairs', newChildren: []);
+
+  /// 2D table of attribute identifiers (row index or name)
+  /// mentioned in each cell.
+  List<List<List<AttAndCol>>> mentions = [];
+  Map<String, Cell> names = {};
+  Map<String, List<dynamic>> attToCol = {};
+  List<int> nameIndexes = [];
+  List<int> pathIndexes = [];
+  /// Maps attribute identifiers (row index or name)
+  /// to a map of pointers (row index) to the column index,
+  /// in this direction so it is easy to diffuse characteristics to pointers.
+  Map<AttAndCol, Map<int, int>> attributes = {};
+  Map<int, Map<AttAndCol, int>> rowToAtt = {};
+  /// Maps attribute identifiers (row index or name)
+  /// to a map of mentioners (row index) to the column index
+  Map<AttAndCol, Map<int, int>> toMentioners = {};
+  List<Map<InstrStruct, int>> instrTable = [];
+  Map<dynamic, List<AttAndCol>> colToAtt = {};
 
   SpreadsheetController({
     required GetSheetDataUseCase getDataUseCase,
@@ -85,15 +117,12 @@ class SpreadsheetController extends ChangeNotifier {
         columnTypes = loadedSheetsData[name]!["columnTypes"] as List<String>;
       } else {
         _saveExecutors[name] = ManageWaitingTasks();
-        Map<String, dynamic> mapData = await _getDataUseCase.loadSheet(name);
         try {
-          final rawTable = mapData["table"] as List?;
-          final rawColumnTypes = mapData["columnTypes"] as List?;
-          table = rawTable?.map((row) {
-            // Convert each row (which is a List) into a List<String>
-            return (row as List).map((cell) => cell.toString()).toList();
-          }).toList() ?? [];
-          columnTypes = rawColumnTypes?.map((type) => type.toString()).toList() ?? [];
+          var (iTable, iColumnTypes, iSelectionStart, iSelectionEnd) = await _getDataUseCase.loadSheet(name);
+          table = iTable;
+          columnTypes = iColumnTypes;
+          _selectionStart = iSelectionStart;
+          _selectionEnd = iSelectionEnd;
         } catch (e) {
           print("Error parsing sheet data for $name: $e");
         }
@@ -103,7 +132,12 @@ class SpreadsheetController extends ChangeNotifier {
       columnTypes = [];
       availableSheets.add(name);
       availableSheetsChanged = true;
+      _saveExecutors[name] = ManageWaitingTasks();
     }
+    loadedSheetsData[name] = {
+      "table": table,
+      "columnTypes": columnTypes,
+    };
     _isLoading = false;
     notifyListeners();
     sheetName = name;
@@ -114,14 +148,7 @@ class SpreadsheetController extends ChangeNotifier {
       }
       await Future.delayed(Duration(milliseconds: saveDelayMs)); // Debounce
     });
-    final calculateUsecase = CalculateUsecase(table, columnTypes);
-    
-    _calculateExecutor.execute(() async {
-      result = await compute(
-        SpreadsheetController.runCalculator,
-        calculateUsecase.getMessage(table, columnTypes)
-      );
-    });
+    saveAndCalculate(save: false);
   }
 
   // --- Content Access ---
@@ -213,17 +240,44 @@ class SpreadsheetController extends ChangeNotifier {
     return columnTypes[col];
   }
 
-  Future<void> saveAndCalculate() async {
-    _saveExecutors[sheetName]!.execute(() async {
-      await _saveSheetDataUseCase.saveSheet(sheetName, table, columnTypes);
-      await Future.delayed(Duration(milliseconds: saveDelayMs));
-    });
+  Future<void> saveAndCalculate({bool save = true}) async {
+    if (save) {
+      _saveExecutors[sheetName]!.execute(() async {
+        await _saveSheetDataUseCase.saveSheet(sheetName, table, columnTypes, _selectionStart, _selectionEnd);
+        await Future.delayed(Duration(milliseconds: saveDelayMs));
+      });
+    }
     _calculateExecutor.execute(() async {
       final calculateUsecase = CalculateUsecase(table, columnTypes);
       result = await compute(
         runCalculator,
         calculateUsecase.getMessage(table, columnTypes),
       );
+      errorRoot.newChildren = result.errorRoot.newChildren;
+      warningRoot.newChildren = result.warningRoot.newChildren;
+      mentionsRoot.newChildren = result.mentionsRoot.newChildren;
+      searchRoot.newChildren = result.searchRoot.newChildren;
+      categoriesRoot.newChildren = result.categoriesRoot.newChildren;
+      distPairsRoot.newChildren = result.distPairsRoot.newChildren;
+
+      mentions = result.mentions;
+      names = result.names;
+      attToCol = result.attToCol;
+      nameIndexes = result.nameIndexes;
+
+      pathIndexes = result.pathIndexes;
+      attributes = result.attributes;
+      rowToAtt = result.rowToAtt;
+      toMentioners = result.toMentioners;
+      instrTable = result.instrTable;
+      colToAtt = result.colToAtt;
+      populateTree(errorRoot);
+      populateTree(warningRoot);
+      populateTree(mentionsRoot);
+      populateTree(searchRoot);
+      populateTree(categoriesRoot);
+      populateTree(distPairsRoot);
+      notifyListeners();
     });
   }
 
@@ -252,16 +306,25 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   // --- Selection Logic ---
-  void selectCell(int row, int col) {
-    _selectionStart = Point(row, col);
-    _selectionEnd = Point(row, col);
+  void checkSelectChange(Point<int> newSelectionStart, Point<int> newSelectionEnd) {
+    if (_selectionStart != newSelectionStart || _selectionEnd != newSelectionEnd) {
+      _selectionStart = newSelectionStart;
+      _selectionEnd = newSelectionEnd;
+      populateCellNode(mentionsRoot, _selectionStart!.x, _selectionStart!.y);
+    }
     notifyListeners();
   }
 
+  void selectCell(int row, int col) {
+    var newSelectionStart = Point(row, col);
+    var newSelectionEnd = Point(row, col);
+    checkSelectChange(newSelectionStart, newSelectionEnd);
+  }
+
   void selectRange(int startRow, int startCol, int endRow, int endCol) {
-    _selectionStart = Point(startRow, startCol);
-    _selectionEnd = Point(endRow, endCol);
-    notifyListeners();
+    var newSelectionStart = Point(startRow, startCol);
+    var newSelectionEnd = Point(endRow, endCol);
+    checkSelectChange(newSelectionStart, newSelectionEnd);
   }
 
   bool isCellSelected(int row, int col) {
@@ -332,5 +395,184 @@ class SpreadsheetController extends ChangeNotifier {
 
   void selectAll() {
     selectRange(0, 0, rowCount - 1, colCount - 1);
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  void populateCellNode(NodeStruct root, int rowId, int colId) {
+    if (rowId >= rowCount || colId >= colCount) return;
+    root.newChildren = [];
+    if (columnTypes[colId] == ColumnType.names.name ||
+        columnTypes[colId] == ColumnType.filePath.name ||
+        columnTypes[colId] == ColumnType.url.name) {
+      root.newChildren!.add(
+        NodeStruct(
+          message: table[rowId][colId],
+          att: AttAndCol(rowId, rowCst),
+        ),
+      );
+      return;
+    }
+    for (AttAndCol att in mentions[rowId][colId]) {
+      root.newChildren!.add(
+        NodeStruct(
+          att: att,
+        ),
+      );
+    }
+  }
+
+  void dfsDepthUpdate(NodeStruct node, int increase, bool newChildren) {
+    final stack = [DynAndInt(node, increase)];
+    while (stack.isNotEmpty) {
+      DynAndInt curr = stack.removeLast();
+      NodeStruct currNode = curr.dyn;
+      final parentDepth = curr.id;
+      for (final child in (newChildren ? currNode.newChildren! : currNode.children)) {
+        child.depth = parentDepth + ((child.startOpen && parentDepth == 0) ? 0 : 1);
+        if (child.depth < 2 + increase) {
+          stack.add(DynAndInt(child, child.depth));
+        }
+      }
+    }
+  }
+
+  void populateRowNode(NodeStruct root, int rowId) {
+    int colNb = 0;
+    for (int colId = 0; colId < colCount; colId++) {
+      if (table[rowId][colId].isNotEmpty) {
+        colNb = colId;
+      }
+      root.newChildren!.add(
+        NodeStruct(
+          row: rowId,
+          col: colId,
+        ),
+      );
+    }
+    root.newChildren = root.newChildren!
+          .sublist(0, colNb + 1);
+  }
+
+  void populateTree(NodeStruct root, {bool keepPrev = false}) {
+    var stack = [root];
+    while (stack.isNotEmpty) {
+      var node = stack.removeLast();
+      if (keepPrev) {
+        node.newChildren = node.children;
+      }
+      if (node.newChildren == null) {
+        node.newChildren = [];
+        if (node.row != null) {
+          if (node.col != null) {
+            populateCellNode(node, node.row!, node.col!);
+          } else {
+            populateRowNode(node, node.row!);
+          }
+        } else if (node.col != null) {
+          int colId = node.col!;
+          for (final att in colToAtt[colId]!) {
+            node.newChildren!.add(
+              NodeStruct(
+                att: att,
+              ),
+            );
+          }
+        } else if (node.att != null) {
+          int rowId = node.att!.name;
+          if (node.att!.col == rowCst) {
+            populateRowNode(node, rowId);
+          }
+          for (int pointerRowId in attributes[node.att]!.keys) {
+            node.newChildren!.add(
+              NodeStruct(
+                att: AttAndCol(pointerRowId, rowCst),
+              ),
+            );
+          }
+        }
+      }
+      for (final child in node.children) {
+        child.depth = node.depth + 1;
+      }
+
+      // TODO: find a faster process for bigger input
+      if (node.depth == 0) {
+        List<List<int>> similarity = List.generate(node.children.length, (_) => List.generate(0, (_) => 0));
+        for (int i = 0; i < node.children.length; i++) {
+          var obj = node.children[i];
+          for (int j = 0; j < node.newChildren!.length; j++) {
+            var newObj = node.newChildren![j];
+            int sim = 0;
+            sim << 1;
+            if (obj.message != null && obj.message == newObj.message) sim | 1;
+            sim << 1;
+            if (obj.row != null && obj.row == newObj.row) sim | 1;
+            sim << 1;
+            if (obj.col != null && obj.col == newObj.col) sim | 1;
+            sim << 1;
+            if (obj.startOpen == newObj.startOpen) sim | 1;
+            sim << 1;
+            if (obj.newChildren != null && newObj.newChildren != null) {
+              if (jsonEncode(obj.newChildren) == jsonEncode(newObj.newChildren)) {
+                sim | 1;
+              }
+            }
+            sim << 1;
+            if (obj.newChildren != null && newObj.newChildren != null) {
+              if (obj.newChildren!.length == newObj.newChildren!.length) {
+                sim | 1;
+              }
+            }
+            similarity[i][j] = sim;
+          }
+        }
+        final solver = HungarianAlgorithm(similarity);
+        final result = solver.compute();
+        for (int i = 0; i < result.assignments.length; i++) {
+          if (node.children[i].depth == 0) {
+            node.newChildren![result.assignments[i]].depth = 0;
+          }
+        }
+      }
+      node.children = node.newChildren!;
+      if (node.depth < 2) {
+        for (final child in node.children) {
+          stack.add(child);
+        }
+      }
+    }
   }
 }
