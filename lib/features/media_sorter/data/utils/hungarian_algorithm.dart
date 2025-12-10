@@ -63,8 +63,11 @@ class HungarianAlgorithm {
 
         for (int k = 0; k < dim; k++) {
           if (visX[k]) labelX[k] -= d;
-          if (visY[k]) labelY[k] += d;
-          else slack[k] -= d;
+          if (visY[k]) {
+            labelY[k] += d;
+          } else {
+            slack[k] -= d;
+          }
         }
       }
     }

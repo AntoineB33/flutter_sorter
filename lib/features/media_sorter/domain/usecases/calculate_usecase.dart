@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'dart:isolate';
+import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/dyn_and_int.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
@@ -213,7 +213,7 @@ class CalculateUsecase {
 
       while (stack.isNotEmpty) {
         final node = stack[stack.length - 1]; // peek
-        if (path[path.length - 1] == node) {
+        if (path.isNotEmpty && path[path.length - 1] == node) {
           Map nodeChildren = accumulator[node] ?? {};
 
           for (final child in nodeChildren.keys) {
@@ -346,7 +346,7 @@ class CalculateUsecase {
           if (positive == 0) {
             endOfCurrent = -double.infinity.toInt();
           } else if (
-            resultList.length > 0 &&
+            resultList.isNotEmpty &&
             resultList[resultList.length - 1][1] == -1
           ) {
             endOfCurrent = resultList[resultList.length - 1][0] - 1;
@@ -392,7 +392,7 @@ class CalculateUsecase {
       name = splitStr[1];
       colIdStr = getIndexFromString(splitStr[0]);
       if (colIdStr < 0 || colIdStr >= colCount) {
-        errorRoot.newChildren!.add(
+        warningRoot.newChildren!.add(
           NodeStruct(
             message: "Column ${splitStr[0]} does not exist",
             row: rowId,
@@ -435,15 +435,25 @@ class CalculateUsecase {
       att = AttAndCol(numK, rowCst);
     } else {
       // TODO: validate attribute name
-      if (columnTypes[colId] != ColumnType.attributes.name &&
-          columnTypes[colId] != ColumnType.sprawl.name) {
-        colIdStr = colId;
-      }
+      var fromDep = columnTypes[colId] != ColumnType.attributes.name &&
+            columnTypes[colId] != ColumnType.sprawl.name;
       att = AttAndCol(name, colIdStr);
+      if (colIdStr != notUsedCst) {
+        if (columnTypes[colIdStr] != ColumnType.attributes.name &&
+            columnTypes[colIdStr] != ColumnType.sprawl.name ||
+            fromDep && !attributes.containsKey(AttAndCol(name, colIdStr))) {
+          colIdStr = notUsedCst;
+        }
+      } else {
+        if (!fromDep) {
+          colIdStr = colId;
+        }
+        att = AttAndCol(name, colIdStr);
+      }
     }
     mentions[rowId][colId].add(att);
     rowToAtt[rowId]![att] = colId;
-    colToAtt[colId]!.add(att);
+    colToAtt[colIdStr]!.add(att);
     return att;
   }
 
@@ -470,7 +480,7 @@ class CalculateUsecase {
     attToCol = {};
     names = {};
     rowToAtt = { for (var i = 0; i < rowCount; i++) i: {} };
-    for (int rowId = 1; rowId < rowCount; rowId++) {
+    for (int rowId = 0; rowId < rowCount; rowId++) {
       final row = table[rowId];
       for (int colId = 0; colId < row.length; colId++) {
         final isSprawl = columnTypes[colId] == ColumnType.sprawl.name;
@@ -503,7 +513,7 @@ class CalculateUsecase {
             } else if (attWritten.contains("-fst")) {
               errorRoot.newChildren!.add(
                 NodeStruct(
-                  message: "'-fst' is not at the end of ${attWritten}",
+                  message: "'-fst' is not at the end of $attWritten",
                   row: rowId,
                   col: colId,
                 ),
@@ -573,10 +583,11 @@ class CalculateUsecase {
     );
 
     var urlFrom = List.generate(rowCount, (i) => -1);
-    for (int i = 1; i < rowCount; i++) {
+    for (int i = 0; i < rowCount; i++) {
       final row = table[i];
-      if (urls[i].isNotEmpty && attributes.containsKey(i)) {
-        for (final k in attributes[i]!.keys) {
+      AttAndCol att = AttAndCol(i, rowCst);
+      if (urls[i].isNotEmpty && attributes.containsKey(att)) {
+        for (final k in attributes[att]!.keys) {
           if (urls[k].isNotEmpty) {
             errorRoot.newChildren!.add(
               NodeStruct(
@@ -609,7 +620,7 @@ class CalculateUsecase {
             );
             return;
           }
-          if (!attributes.containsKey(k)) {
+          if (!attributes.containsKey(att)) {
             urls[k] = List.generate(
               pathIndexes.length,
               (j) => row[pathIndexes[j]],
@@ -625,7 +636,7 @@ class CalculateUsecase {
     final toOldIndexes = [];
     final catRows = [];
     int newIndex = 0;
-    for (int i = 1; i < rowCount; i++) {
+    for (int i = 0; i < rowCount; i++) {
       if (urls[i].isNotEmpty) {
         validRowIndexes.add(i);
         newIndexes[i] = newIndex;
@@ -643,10 +654,12 @@ class CalculateUsecase {
       return;
     }
 
-    final Map<dynamic, NodeStruct> categoriesChildren = {};
-    final Map<dynamic, NodeStruct> sprawlChildren = {};
-    for (final MapEntry(key: col, value: attrs) in colToAtt.entries) {
-      if (col == notUsedCst) continue;
+    // Build categories and distance pairs
+    for (var col in [...List.generate(colCount, (index) => index + 1), rowCst]) {
+      if (!colToAtt.containsKey(col) || colToAtt[col]!.isEmpty) {
+        continue;
+      }
+      var attrs = colToAtt[col]!;
       List<NodeStruct> catColChildren = [];
       List<NodeStruct> spColChildren = [];
       for (final attr in attrs) {
@@ -698,37 +711,15 @@ class CalculateUsecase {
           ),
         );
       }
-      categoriesChildren[col] = NodeStruct(
+      categoriesRoot.newChildren!.add(NodeStruct(
         col: col,
         newChildren: catColChildren..sort((a, b) => a.row! - b.row!),
-      );
-      sprawlChildren[col] = NodeStruct(
+      ));
+      distPairsRoot.newChildren!.add(NodeStruct(
         col: col,
         newChildren: spColChildren..sort((a, b) => a.minDist! - b.minDist!),
-      );
+      ));
     }
-    final List<NodeStruct> categoChildrenList = [];
-    final List<NodeStruct> sprawlChildrenList = [];
-    for (final (
-          List<NodeStruct> childrenList,
-          Map<dynamic, NodeStruct> children,
-        )
-        in [
-          (categoChildrenList, categoriesChildren),
-          (sprawlChildrenList, sprawlChildren),
-        ]) {
-      for (int j = 0; j < colCount; j++) {
-        final isSprawl = columnTypes[j] == ColumnType.sprawl.name;
-        if (columnTypes[j] == ColumnType.attributes.name || isSprawl) {
-          childrenList.add(children[j]!);
-        }
-      }
-      if (children.containsKey(rowCst)) {
-        childrenList.add(children[rowCst]!);
-      }
-    }
-    categoriesRoot.newChildren = categoChildrenList;
-    distPairsRoot.newChildren = sprawlChildrenList;
 
     instrTable = List.generate(rowCount, (_) => {});
 
@@ -803,8 +794,8 @@ class CalculateUsecase {
 
     final depPattern = table[0].map((cell) => cell.split(".")).toList();
 
-    for (int rowId = 1; rowId < rowCount; rowId++) {
-      if (urls[rowId].isEmpty && !(attributes[colCount]!.containsKey(rowId))) {
+    for (int rowId = 0; rowId < rowCount; rowId++) {
+      if (urls[rowId].isEmpty && !(attributes.containsKey(AttAndCol(rowId, rowCst)))) {
         continue;
       }
 
@@ -896,7 +887,7 @@ class CalculateUsecase {
     }
 
     toMentioners = {};
-    for (var i = 1; i < rowCount; i++) {
+    for (var i = 0; i < rowCount; i++) {
       for (var j = 0; j < table[i].length; j++) {
         if (columnTypes[j] == ColumnType.dependencies.name) {
           for (final n in mentions[i][j]) {
@@ -980,19 +971,19 @@ class CalculateUsecase {
 
     // TODO: solve sorting pb
 
-    if (attributes.containsKey(notUsedCst)) {
-      final atts = attributes[notUsedCst]!.keys.toList();
+    if (colToAtt[notUsedCst]!.isNotEmpty) {
+      final atts = colToAtt[notUsedCst]!;
       children = atts.asMap().entries.map((entry) {
         var a = entry.value;
         if (toMentioners[a]!.keys.length == 1) {
           return NodeStruct(
-            message: "$a",
+            message: a.name,
             row: toMentioners[a]!.keys.first,
             col: toMentioners[a]![toMentioners[a]!.keys.first],
           );
         } else {
           return NodeStruct(
-            message: "$a",
+            message: a.name,
             newChildren: toMentioners[a]!.keys.map(
               (k) => NodeStruct(row: k, col: toMentioners[a]![k]),
             ).toList(),
@@ -1010,7 +1001,7 @@ class CalculateUsecase {
   }
 
   void _getEverything() {
-    print("Processing spreadsheet data...");
+    debugPrint("Processing spreadsheet data...");
     errorRoot.newChildren!.clear();
     warningRoot.newChildren!.clear();
     for (final row in table) {
@@ -1044,7 +1035,7 @@ class CalculateUsecase {
       }
     }
     names = {};
-    for (int i = 1; i < rowCount; i++) {
+    for (int i = 0; i < rowCount; i++) {
       for (int j in nameIndexes) {
         for (final att in mentions[i][j]) {
           if (int.tryParse(att.name) != null) {
@@ -1072,26 +1063,26 @@ class CalculateUsecase {
           if (parenMatch != null) {
             errorRoot.newChildren!.add(
               NodeStruct(
-                message: "$att contains invalid parentheses",
+                message: "${att.name} contains invalid parentheses",
                 row: i,
                 col: j,
               ),
             );
           }
 
-          if (["fst", "lst"].contains(att)) {
+          if (["fst", "lst"].contains(att.name)) {
             errorRoot.newChildren!.add(
-              NodeStruct(message: "$att is a reserved name", row: i, col: j),
+              NodeStruct(message: "${att.name} is a reserved name", row: i, col: j),
             );
           }
 
-          if (names.containsKey(att)) {
+          if (names.containsKey(att.name)) {
             errorRoot.newChildren!.add(
               NodeStruct(
-                message: "name $att used two times",
+                message: "name ${att.name} used two times",
                 newChildren: [
                   NodeStruct(row: i, col: j),
-                  NodeStruct(row: names[att]!.row, col: j),
+                  NodeStruct(row: names[att.name]!.row, col: names[att.name]!.col),
                 ],
               ),
             );

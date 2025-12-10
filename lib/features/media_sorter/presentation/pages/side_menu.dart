@@ -36,7 +36,7 @@ class _SideMenuState extends State<SideMenu> {
     // 2. Leaf Node (No children) -> Simple List Tile
     if (node.newChildren!.isEmpty) {
       return ListTile(
-        title: Text(node.message!, style: const TextStyle(fontSize: 13)),
+        title: Text(node.message ?? '', style: const TextStyle(fontSize: 13)),
         dense: true,
         visualDensity: VisualDensity.compact,
         contentPadding: const EdgeInsets.only(left: 16.0), // Indent leaves slightly
@@ -104,7 +104,7 @@ class _SideMenuState extends State<SideMenu> {
                   return [...matches, ...others];
                 },
                 optionsViewBuilder: (context, onSelected, options) {
-                  print("Building options view with ${options.length} options");
+                  debugPrint("Building options view with ${options.length} options");
                   return Align(
                     alignment: Alignment.topLeft,
                     child: Material(
@@ -189,9 +189,7 @@ class _SideMenuState extends State<SideMenu> {
           // --- Dynamic Tree View Section ---
           // Use Expanded so the trees can scroll within the remaining space
           Expanded(
-            child: analysis == null
-                ? const Center(child: Text("No analysis data"))
-                : SingleChildScrollView(
+            child: SingleChildScrollView(
                     child: Column(
                       children: [
                         // Explicitly render the specific roots from AnalysisResult

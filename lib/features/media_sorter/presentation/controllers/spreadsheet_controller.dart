@@ -11,7 +11,6 @@ import '../../domain/entities/column_type.dart';
 import '../../domain/usecases/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import '../../domain/usecases/manage_waiting_tasks.dart';
-import 'package:logging/logging.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_messages.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/dyn_and_int.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
@@ -124,7 +123,7 @@ class SpreadsheetController extends ChangeNotifier {
           _selectionStart = iSelectionStart;
           _selectionEnd = iSelectionEnd;
         } catch (e) {
-          print("Error parsing sheet data for $name: $e");
+          debugPrint("Error parsing sheet data for $name: $e");
         }
       }
     } else {
@@ -240,12 +239,17 @@ class SpreadsheetController extends ChangeNotifier {
     return columnTypes[col];
   }
 
-  Future<void> saveAndCalculate({bool save = true}) async {
+  Future<void> saveAndCalculate({bool save = true, selectionChanged = false}) async {
     if (save) {
       _saveExecutors[sheetName]!.execute(() async {
         await _saveSheetDataUseCase.saveSheet(sheetName, table, columnTypes, _selectionStart, _selectionEnd);
         await Future.delayed(Duration(milliseconds: saveDelayMs));
       });
+    }
+    if (selectionChanged) {
+      populateCellNode(mentionsRoot, _selectionStart.x, _selectionStart.y);
+      populateTree(mentionsRoot);
+      return;
     }
     _calculateExecutor.execute(() async {
       final calculateUsecase = CalculateUsecase(table, columnTypes);
@@ -271,6 +275,7 @@ class SpreadsheetController extends ChangeNotifier {
       toMentioners = result.toMentioners;
       instrTable = result.instrTable;
       colToAtt = result.colToAtt;
+      populateCellNode(mentionsRoot, _selectionStart.x, _selectionStart.y);
       populateTree(errorRoot);
       populateTree(warningRoot);
       populateTree(mentionsRoot);
@@ -310,7 +315,7 @@ class SpreadsheetController extends ChangeNotifier {
     if (_selectionStart != newSelectionStart || _selectionEnd != newSelectionEnd) {
       _selectionStart = newSelectionStart;
       _selectionEnd = newSelectionEnd;
-      populateCellNode(mentionsRoot, _selectionStart!.x, _selectionStart!.y);
+      saveAndCalculate(selectionChanged: true);
     }
     notifyListeners();
   }
@@ -328,24 +333,20 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   bool isCellSelected(int row, int col) {
-    if (_selectionStart == null || _selectionEnd == null) return false;
-
-    final startRow = min(_selectionStart!.x, _selectionEnd!.x);
-    final endRow = max(_selectionStart!.x, _selectionEnd!.x);
-    final startCol = min(_selectionStart!.y, _selectionEnd!.y);
-    final endCol = max(_selectionStart!.y, _selectionEnd!.y);
+    final startRow = min(_selectionStart.x, _selectionEnd.x);
+    final endRow = max(_selectionStart.x, _selectionEnd.x);
+    final startCol = min(_selectionStart.y, _selectionEnd.y);
+    final endCol = max(_selectionStart.y, _selectionEnd.y);
 
     return row >= startRow && row <= endRow && col >= startCol && col <= endCol;
   }
 
   // --- Clipboard Logic ---
   Future<String?> copySelectionToClipboard() async {
-    if (_selectionStart == null || _selectionEnd == null) return null;
-
-    final startRow = min(_selectionStart!.x, _selectionEnd!.x);
-    final endRow = max(_selectionStart!.x, _selectionEnd!.x);
-    final startCol = min(_selectionStart!.y, _selectionEnd!.y);
-    final endCol = max(_selectionStart!.y, _selectionEnd!.y);
+    final startRow = min(_selectionStart.x, _selectionEnd.x);
+    final endRow = max(_selectionStart.x, _selectionEnd.x);
+    final startCol = min(_selectionStart.y, _selectionEnd.y);
+    final endCol = max(_selectionStart.y, _selectionEnd.y);
 
     StringBuffer buffer = StringBuffer();
 
@@ -365,17 +366,17 @@ class SpreadsheetController extends ChangeNotifier {
 
   Future<void> pasteSelection() async {
     final data = await Clipboard.getData('text/plain');
-    if (data?.text == null || _selectionStart == null) return;
+    if (data?.text == null) return;
 
     // 1. Delegate Logic to UseCase
     // We normalize selection to ensure we paste from top-left
     int startRow = min(
-      _selectionStart!.x,
-      _selectionEnd?.x ?? _selectionStart!.x,
+      _selectionStart.x,
+      _selectionEnd.x,
     );
     int startCol = min(
-      _selectionStart!.y,
-      _selectionEnd?.y ?? _selectionStart!.y,
+      _selectionStart.y,
+      _selectionEnd.y,
     );
 
     final List<CellUpdate> updates = _parsePasteDataUseCase.execute(
