@@ -43,7 +43,7 @@ class SpreadsheetController extends ChangeNotifier {
   Point<int> _selectionEnd = Point(0, 0);
 
 
-  String rowCst = SpreadsheetConstants.rowCst;
+  int all = SpreadsheetConstants.all;
   
   final NodeStruct errorRoot = NodeStruct(message: 'Error Log', newChildren: [], hideIfEmpty: true);
   final NodeStruct warningRoot = NodeStruct(message: 'Warning Log', newChildren: [], hideIfEmpty: true);
@@ -441,7 +441,7 @@ class SpreadsheetController extends ChangeNotifier {
       root.newChildren!.add(
         NodeStruct(
           message: table[rowId][colId],
-          att: AttAndCol(rowId, rowCst),
+          att: AttAndCol(row: rowId),
         ),
       );
       return;
@@ -471,20 +471,23 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   void populateRowNode(NodeStruct root, int rowId) {
-    int colNb = 0;
-    for (int colId = 0; colId < colCount; colId++) {
-      if (table[rowId][colId].isNotEmpty) {
-        colNb = colId;
-      }
+    if (attributes.containsKey(AttAndCol(row: rowId))) {
       root.newChildren!.add(
         NodeStruct(
-          row: rowId,
-          col: colId,
+          message: SpreadsheetConstants.referenceNodeMsg,
+          att: AttAndCol(row: rowId),
         ),
       );
     }
-    root.newChildren = root.newChildren!
-          .sublist(0, colNb + 1);
+    for (int colId = 0; colId < colCount; colId++) {
+      if (table[rowId][colId].isNotEmpty) {
+        root.newChildren!.add(
+          NodeStruct(
+            att: AttAndCol(row: rowId, col: colId),
+          ),
+        );
+      }
+    }
   }
 
   void populateTree(NodeStruct root, {bool keepPrev = false}) {
@@ -496,14 +499,33 @@ class SpreadsheetController extends ChangeNotifier {
       }
       if (node.newChildren == null) {
         node.newChildren = [];
-        if (node.row != null) {
-          if (node.col != null) {
-            populateCellNode(node, node.row!, node.col!);
-          } else {
-            populateRowNode(node, node.row!);
+        if (node.att.name.isNotEmpty) {
+          if (node.att.col != all) {
+            if (attributes.containsKey(node.att) && attributes[node.att]!.isNotEmpty) {
+              node.newChildren!.add(
+                NodeStruct(
+                  message: SpreadsheetConstants.refFromAttColMsg,
+                  att: node.att,
+                ),
+              );
+            }
+            if (toMentioners.containsKey(node.att) && toMentioners[node.att]!.isNotEmpty) {
+              node.newChildren!.add(
+                NodeStruct(
+                  message: SpreadsheetConstants.refFromDepColMsg,
+                  att: node.att,
+                ),
+              );
+            }
           }
-        } else if (node.col != null) {
-          int colId = node.col!;
+        } else if (node.att.row != all) {
+          if (node.att.col != all) {
+            populateCellNode(node, node.att.row, node.att.col);
+          } else {
+            populateRowNode(node, node.att.row);
+          }
+        } else if (node.att.col != all) {
+          int colId = node.att.col;
           for (final att in colToAtt[colId]!) {
             node.newChildren!.add(
               NodeStruct(
@@ -511,17 +533,19 @@ class SpreadsheetController extends ChangeNotifier {
               ),
             );
           }
-        } else if (node.att != null) {
-          int rowId = node.att!.name;
-          if (node.att!.col == rowCst) {
+        } else if (node.att.name.isNotEmpty) {
+          int rowId = node.att.name;
+          if (node.att.col == all) {
             populateRowNode(node, rowId);
           }
-          for (int pointerRowId in attributes[node.att]!.keys) {
-            node.newChildren!.add(
-              NodeStruct(
-                att: AttAndCol(pointerRowId, rowCst),
-              ),
-            );
+          if (attributes.containsKey(node.att)) {
+            for (int pointerRowId in attributes[node.att]!.keys) {
+              node.newChildren!.add(
+                NodeStruct(
+                  att: AttAndCol(pointerRowId, rowCst),
+                ),
+              );
+            }
           }
         }
       }
@@ -540,7 +564,7 @@ class SpreadsheetController extends ChangeNotifier {
             sim << 1;
             if (obj.message != null && obj.message == newObj.message) sim | 1;
             sim << 1;
-            if (obj.row != null && obj.row == newObj.row) sim | 1;
+            if (obj.row123 != null && obj.row123 == newObj.row123) sim | 1;
             sim << 1;
             if (obj.col != null && obj.col == newObj.col) sim | 1;
             sim << 1;

@@ -25,7 +25,7 @@ class AnalysisResult {
   Map<int, Map<AttAndCol, int>> rowToAtt = {};
   /// Maps attribute identifiers (row index or name)
   /// to a map of mentioners (row index) to the column index
-  Map<AttAndCol, Map<int, int>> toMentioners = {};
+  Map<AttAndCol, Map<int, List<int>>> toMentioners = {};
   List<Map<InstrStruct, int>> instrTable = [];
   Map<dynamic, List<AttAndCol>> colToAtt = {};
 }

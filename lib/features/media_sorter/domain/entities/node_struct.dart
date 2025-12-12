@@ -2,9 +2,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/dyn_and_int
 
 class NodeStruct {
   final String? message;
-  final int? row;
-  final dynamic col;
-  final AttAndCol? att;
+  final AttAndCol att;
   final int? dist;
   final int? minDist;
   List<NodeStruct> children;
@@ -16,9 +14,7 @@ class NodeStruct {
 
   NodeStruct({
     this.message,
-    this.row,
-    this.col,
-    this.att,
+    this.att = const AttAndCol(),
     this.dist,
     this.minDist,
     this.newChildren,
