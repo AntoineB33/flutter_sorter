@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/dyn_and_int.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
@@ -27,5 +28,5 @@ class AnalysisResult {
   /// to a map of mentioners (row index) to the column index
   Map<AttAndCol, Map<int, List<int>>> toMentioners = {};
   List<Map<InstrStruct, int>> instrTable = [];
-  Map<dynamic, List<AttAndCol>> colToAtt = {};
+  Map<dynamic, HashSet<AttAndCol>> colToAtt = {};
 }

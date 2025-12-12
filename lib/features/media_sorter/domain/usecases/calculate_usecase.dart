@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:isolate';
 import 'package:flutter/foundation.dart';
+import 'dart:collection';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/dyn_and_int.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
@@ -45,7 +46,7 @@ class CalculateUsecase {
 
   /// 2D table of attribute identifiers (row index or name)
   /// mentioned in each cell.
-  List<List<List<AttAndCol>>> tableToAtt = [];
+  List<List<HashSet<AttAndCol>>> tableToAtt = [];
   Map<String, Cell> names = {};
   Map<String, List<dynamic>> attToCol = {};
   List<int> nameIndexes = [];
@@ -61,7 +62,7 @@ class CalculateUsecase {
   /// to a map of mentioners (row index) to the column index
   Map<AttAndCol, Map<int, List<int>>> attToRefFromDepColToCol = {};
   List<Map<InstrStruct, int>> instrTable = [];
-  Map<dynamic, List<AttAndCol>> colToAtt = {};
+  Map<dynamic, HashSet<AttAndCol>> colToAtt = {};
 
   static const patternDistance = SpreadsheetConstants.patternDistance;
   static const patternAreas = SpreadsheetConstants.patternAreas;
@@ -266,7 +267,11 @@ class CalculateUsecase {
                             ...findPath(graph, child, grandChild),
                             Cell(row: node, col: graph[child]![node]!),
                           ]
-                          .map((k) => NodeStruct(att: AttAndCol(row: k.row, col: k.col)))
+                          .map(
+                            (k) => NodeStruct(
+                              att: AttAndCol(row: k.row, col: k.col),
+                            ),
+                          )
                           .toList();
                   redundantRef.add(
                     NodeStruct(
@@ -451,6 +456,9 @@ class CalculateUsecase {
       );
       return att;
     }
+    var fromDep =
+      columnTypes[colId] != ColumnType.attributes.name &&
+      columnTypes[colId] != ColumnType.sprawl.name;
     final numK = int.tryParse(name);
     if (numK != null) {
       if (attColId != notUsedCst) {
@@ -474,11 +482,9 @@ class CalculateUsecase {
       att = AttAndCol(row: numK);
     } else {
       // TODO: validate attribute name
-      var fromDep =
-          columnTypes[colId] != ColumnType.attributes.name &&
-          columnTypes[colId] != ColumnType.sprawl.name;
       if (attColId != notUsedCst) {
-        if (columnTypes[attColId] != ColumnType.attributes.name && columnTypes[attColId] != ColumnType.sprawl.name) {
+        if (columnTypes[attColId] != ColumnType.attributes.name &&
+            columnTypes[attColId] != ColumnType.sprawl.name) {
           errorRoot.newChildren!.add(
             NodeStruct(
               message:
@@ -489,7 +495,8 @@ class CalculateUsecase {
           return att;
         }
         if (fromDep) {
-          if (!attToRefFromAttColToCol.containsKey(AttAndCol(name: name, col: attColId))) {
+          att = AttAndCol(name: name, col: attColId);
+          if (!attToRefFromAttColToCol.containsKey(att)) {
             colToAtt[notUsedCst]!.add(att);
           }
         } else if (attColId != colId) {
@@ -507,12 +514,14 @@ class CalculateUsecase {
       att = AttAndCol(name: name, col: attColId);
     }
     tableToAtt[rowId][colId].add(att);
-    rowToAttToCol[rowId]![att] = colId;
+    if (!fromDep) {
+      rowToAttToCol[rowId]![att] = colId;
+    }
     colToAtt[attColId]!.add(att);
+    if (!attToCol.containsKey(attWritten)) {
+      attToCol[attWritten] = [];
+    }
     if (attColId != all) {
-      if (!attToCol.containsKey(attWritten)) {
-        attToCol[attWritten] = [];
-      }
       if (attToCol[attWritten]!.contains(attColId) == false) {
         attToCol[attWritten]!.add(attColId);
       }
@@ -536,8 +545,8 @@ class CalculateUsecase {
     DynAndInt lastElement = DynAndInt(-1, -1);
     final Map fstCat = {};
     final Map lstCat = {};
-    colToAtt[all] = [];
-    colToAtt[notUsedCst] = [];
+    colToAtt[all] = HashSet<AttAndCol>();
+    colToAtt[notUsedCst] = HashSet<AttAndCol>();
     List<NodeStruct> children = [];
     attToRefFromAttColToCol = {};
     attToCol = {};
@@ -608,7 +617,11 @@ class CalculateUsecase {
                 attToDist[att]!.add(rowId);
               }
             } else {
-              children.add(NodeStruct(att: AttAndCol(row: rowId, col: colId)));
+              children.add(
+                NodeStruct(
+                  att: AttAndCol(row: rowId, col: colId),
+                ),
+              );
             }
 
             if (isFst) {
@@ -655,15 +668,24 @@ class CalculateUsecase {
                   NodeStruct(
                     message: "path 1",
                     startOpen: true,
-                    newChildren: findPath(attToRefFromAttColToCol, urlFrom[k], k)
-                        .map((x) => NodeStruct(att: AttAndCol(row: x.row, col: x.col)))
-                        .toList(),
+                    newChildren:
+                        findPath(attToRefFromAttColToCol, urlFrom[k], k)
+                            .map(
+                              (x) => NodeStruct(
+                                att: AttAndCol(row: x.row, col: x.col),
+                              ),
+                            )
+                            .toList(),
                   ),
                   NodeStruct(
                     message: "path 2",
                     startOpen: true,
                     newChildren: findPath(attToRefFromAttColToCol, i, k)
-                        .map((x) => NodeStruct(att: AttAndCol(row: x.row, col: x.col)))
+                        .map(
+                          (x) => NodeStruct(
+                            att: AttAndCol(row: x.row, col: x.col),
+                          ),
+                        )
                         .toList(),
                   ),
                 ],
@@ -706,10 +728,7 @@ class CalculateUsecase {
     }
 
     // Build categories and distance pairs
-    for (var col in [
-      ...List.generate(colCount, (index) => index + 1),
-      all,
-    ]) {
+    for (var col in [...List.generate(colCount, (index) => index + 1), all]) {
       if (!colToAtt.containsKey(col) || colToAtt[col]!.isEmpty) {
         continue;
       }
@@ -767,7 +786,8 @@ class CalculateUsecase {
       categoriesRoot.newChildren!.add(
         NodeStruct(
           att: AttAndCol(col: col),
-          newChildren: catColChildren..sort((a, b) => a.att.name.compareTo(b.att.name)),
+          newChildren: catColChildren
+            ..sort((a, b) => a.att.name.compareTo(b.att.name)),
         ),
       );
       distPairsRoot.newChildren!.add(
@@ -950,13 +970,7 @@ class CalculateUsecase {
         }
       }
     }
-    
-    children = [];
-    for (AttAndCol att in colToAtt[notUsedCst]!) {
-      if (!attToCol.containsKey(att.name)) {
-        
-      }
-      
+
     attToRefFromDepColToCol = {};
     for (var i = 0; i < rowCount; i++) {
       for (var j = 0; j < table[i].length; j++) {
@@ -972,6 +986,35 @@ class CalculateUsecase {
           }
         }
       }
+    }
+
+    List<NodeStruct> unusedChildren = [];
+    List<NodeStruct> ambiguousChildren = [];
+    for (AttAndCol att in colToAtt[notUsedCst]!.toList()) {
+      if (attToCol[att.name]!.length == 1) {
+        AttAndCol newAtt = AttAndCol(name: att.name, col: attToCol[att.name]![0]);
+        for (int rowId in attToRefFromDepColToCol[att]!.keys) {
+          for (int colId in attToRefFromDepColToCol[att]![rowId]!) {
+            tableToAtt[rowId][colId].remove(att);
+            tableToAtt[rowId][colId].add(newAtt);
+          }
+        }
+        colToAtt[notUsedCst]!.remove(att);
+      } else if (attToCol[att.name]!.length > 1) {
+        ambiguousChildren.add(
+          NodeStruct(att: att),
+        );
+      } else {
+        unusedChildren.add(
+          NodeStruct(att: att),
+        );
+      }
+    }
+    if (unusedChildren.isNotEmpty) {
+      warningRoot.newChildren!.add(
+        NodeStruct(message: "unused attributes found",
+        newChildren: unusedChildren),
+      );
     }
 
     dfsIterative(rowToAttToCol, instrTable, "instruction");
@@ -1044,17 +1087,6 @@ class CalculateUsecase {
     }).toList();
 
     // TODO: solve sorting pb
-
-    if (colToAtt[notUsedCst]!.isNotEmpty) {
-      final atts = colToAtt[notUsedCst]!;
-      children = [];
-      for (AttAndCol a in atts) {
-        children.add(NodeStruct(att: AttAndCol(name: a.name, col: notUsedCst)));
-      }
-      warningRoot.newChildren!.add(
-        NodeStruct(message: "unused attributes found", newChildren: children),
-      );
-    }
     return;
   }
 
@@ -1143,9 +1175,14 @@ class CalculateUsecase {
               NodeStruct(
                 message: "name ${att.name} used two times",
                 newChildren: [
-                  NodeStruct(att: AttAndCol(row: i, col: j)),
                   NodeStruct(
-                    att: AttAndCol(row: names[att.name]!.row, col: names[att.name]!.col),
+                    att: AttAndCol(row: i, col: j),
+                  ),
+                  NodeStruct(
+                    att: AttAndCol(
+                      row: names[att.name]!.row,
+                      col: names[att.name]!.col,
+                    ),
                   ),
                 ],
               ),
