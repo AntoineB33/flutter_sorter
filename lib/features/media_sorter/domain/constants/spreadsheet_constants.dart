@@ -9,6 +9,6 @@ class SpreadsheetConstants {
   static const all = -1;
   static const notUsedCst = -2;
 
-  static const refFromAttColMsg = "rows that possess it";
-  static const refFromDepColMsg = "references";
+  static const refFromAttColMsg = "rows that have it as attribute";
+  static const refFromDepColMsg = "rows that have constraints based on it";
 }

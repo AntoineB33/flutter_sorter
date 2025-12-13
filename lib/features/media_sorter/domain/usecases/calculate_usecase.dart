@@ -107,13 +107,14 @@ class CalculateUsecase {
     result.categoriesRoot.newChildren = categoriesRoot.newChildren;
     result.distPairsRoot.newChildren = distPairsRoot.newChildren;
 
-    result.mentions = tableToAtt;
+    result.tableToAtt = tableToAtt;
     result.names = names;
     result.attToCol = attToCol;
     result.nameIndexes = nameIndexes;
 
     result.pathIndexes = pathIndexes;
-    result.attributes = attToRefFromAttColToCol;
+    result.attToRefFromAttColToCol = attToRefFromAttColToCol;
+    result.attToRefFromDepColToCol = attToRefFromDepColToCol;
     result.rowToAtt = rowToAttToCol;
     result.toMentioners = attToRefFromDepColToCol;
     result.instrTable = instrTable;
@@ -457,8 +458,8 @@ class CalculateUsecase {
       return att;
     }
     var fromDep =
-      columnTypes[colId] != ColumnType.attributes.name &&
-      columnTypes[colId] != ColumnType.sprawl.name;
+        columnTypes[colId] != ColumnType.attributes.name &&
+        columnTypes[colId] != ColumnType.sprawl.name;
     final numK = int.tryParse(name);
     if (numK != null) {
       if (attColId != notUsedCst) {
@@ -991,29 +992,41 @@ class CalculateUsecase {
     List<NodeStruct> unusedChildren = [];
     List<NodeStruct> ambiguousChildren = [];
     for (AttAndCol att in colToAtt[notUsedCst]!.toList()) {
-      if (attToCol[att.name]!.length == 1) {
-        AttAndCol newAtt = AttAndCol(name: att.name, col: attToCol[att.name]![0]);
-        for (int rowId in attToRefFromDepColToCol[att]!.keys) {
-          for (int colId in attToRefFromDepColToCol[att]![rowId]!) {
-            tableToAtt[rowId][colId].remove(att);
-            tableToAtt[rowId][colId].add(newAtt);
-          }
-        }
-        colToAtt[notUsedCst]!.remove(att);
-      } else if (attToCol[att.name]!.length > 1) {
-        ambiguousChildren.add(
-          NodeStruct(att: att),
-        );
+      if (attToCol[att.name]!.isEmpty) {
+        unusedChildren.add(NodeStruct(att: att));
       } else {
-        unusedChildren.add(
-          NodeStruct(att: att),
-        );
+        colToAtt[notUsedCst]!.remove(att);
+        if (attToCol[att.name]!.length == 1) {
+          AttAndCol newAtt = AttAndCol(
+            name: att.name,
+            col: attToCol[att.name]![0],
+          );
+          for (int rowId in attToRefFromDepColToCol[att]!.keys) {
+            for (int colId in attToRefFromDepColToCol[att]![rowId]!) {
+              tableToAtt[rowId][colId].remove(att);
+              tableToAtt[rowId][colId].add(newAtt);
+            }
+          }
+        } else {
+          ambiguousChildren.add(NodeStruct(att: att));
+        }
       }
+    }
+    if (ambiguousChildren.isNotEmpty) {
+      errorRoot.newChildren!.add(
+        NodeStruct(
+          message: "ambiguous attributes found",
+          newChildren: ambiguousChildren,
+        ),
+      );
+      return;
     }
     if (unusedChildren.isNotEmpty) {
       warningRoot.newChildren!.add(
-        NodeStruct(message: "unused attributes found",
-        newChildren: unusedChildren),
+        NodeStruct(
+          message: "unused attributes found",
+          newChildren: unusedChildren,
+        ),
       );
     }
 
@@ -1111,7 +1124,7 @@ class CalculateUsecase {
     }
     tableToAtt = List.generate(
       rowCount,
-      (_) => List.generate(colCount, (_) => <AttAndCol>[]),
+      (_) => List.generate(colCount, (_) => HashSet<AttAndCol>()),
     );
     for (int i = 0; i < rowCount; i++) {
       for (int j in nameIndexes) {

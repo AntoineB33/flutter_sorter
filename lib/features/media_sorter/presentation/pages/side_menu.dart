@@ -29,12 +29,12 @@ class _SideMenuState extends State<SideMenu> {
   /// Recursive helper to build the tree UI
   Widget _buildNodeTree(NodeStruct node) {
     // 1. Check strict visibility rule
-    if (node.hideIfEmpty && node.newChildren!.isEmpty) {
+    if (node.hideIfEmpty && node.children.isEmpty) {
       return const SizedBox.shrink();
     }
 
     // 2. Leaf Node (No children) -> Simple List Tile
-    if (node.newChildren!.isEmpty) {
+    if (node.children.isEmpty) {
       return ListTile(
         title: Text(node.message ?? '', style: const TextStyle(fontSize: 13)),
         dense: true,
@@ -50,7 +50,7 @@ class _SideMenuState extends State<SideMenu> {
       tilePadding: EdgeInsets.zero,
       childrenPadding: const EdgeInsets.only(left: 12.0), // Indent children
       expandedCrossAxisAlignment: CrossAxisAlignment.start,
-      children: node.newChildren!.map((child) => _buildNodeTree(child)).toList(),
+      children: node.children.map((child) => _buildNodeTree(child)).toList(),
     );
   }
 
@@ -63,9 +63,6 @@ class _SideMenuState extends State<SideMenu> {
     if (_textEditingController.text != controller.sheetName && !controller.isLoading) {
       _textEditingController.text = controller.sheetName;
     }
-
-    // Access the analysis result (Safe navigation in case it's null initially)
-    final analysis = controller.result;
 
     return Container(
       color: Colors.grey[50],
@@ -193,12 +190,12 @@ class _SideMenuState extends State<SideMenu> {
                     child: Column(
                       children: [
                         // Explicitly render the specific roots from AnalysisResult
-                        _buildNodeTree(analysis.errorRoot),
-                        _buildNodeTree(analysis.warningRoot),
-                        _buildNodeTree(analysis.mentionsRoot),
-                        _buildNodeTree(analysis.searchRoot),
-                        _buildNodeTree(analysis.categoriesRoot),
-                        _buildNodeTree(analysis.distPairsRoot),
+                        _buildNodeTree(controller.errorRoot),
+                        _buildNodeTree(controller.warningRoot),
+                        _buildNodeTree(controller.mentionsRoot),
+                        _buildNodeTree(controller.searchRoot),
+                        _buildNodeTree(controller.categoriesRoot),
+                        _buildNodeTree(controller.distPairsRoot),
                       ],
                     ),
                   ),

@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:convert';
+import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
@@ -42,33 +43,55 @@ class SpreadsheetController extends ChangeNotifier {
   Point<int> _selectionStart = Point(0, 0);
   Point<int> _selectionEnd = Point(0, 0);
 
-
   int all = SpreadsheetConstants.all;
-  
-  final NodeStruct errorRoot = NodeStruct(message: 'Error Log', newChildren: [], hideIfEmpty: true);
-  final NodeStruct warningRoot = NodeStruct(message: 'Warning Log', newChildren: [], hideIfEmpty: true);
-  final NodeStruct mentionsRoot = NodeStruct(message: 'Current selection', newChildren: []);
-  final NodeStruct searchRoot = NodeStruct(message: 'Search results', newChildren: []);
-  final NodeStruct categoriesRoot = NodeStruct(message: 'Categories', newChildren: []);
-  final NodeStruct distPairsRoot = NodeStruct(message: 'Distance Pairs', newChildren: []);
+
+  final NodeStruct errorRoot = NodeStruct(
+    message: 'Error Log',
+    newChildren: [],
+    hideIfEmpty: true,
+  );
+  final NodeStruct warningRoot = NodeStruct(
+    message: 'Warning Log',
+    newChildren: [],
+    hideIfEmpty: true,
+  );
+  final NodeStruct mentionsRoot = NodeStruct(
+    message: 'Current selection',
+    newChildren: [],
+  );
+  final NodeStruct searchRoot = NodeStruct(
+    message: 'Search results',
+    newChildren: [],
+  );
+  final NodeStruct categoriesRoot = NodeStruct(
+    message: 'Categories',
+    newChildren: [],
+  );
+  final NodeStruct distPairsRoot = NodeStruct(
+    message: 'Distance Pairs',
+    newChildren: [],
+  );
 
   /// 2D table of attribute identifiers (row index or name)
   /// mentioned in each cell.
-  List<List<List<AttAndCol>>> mentions = [];
+  List<List<HashSet<AttAndCol>>> tableToAtt = [];
   Map<String, Cell> names = {};
   Map<String, List<dynamic>> attToCol = {};
   List<int> nameIndexes = [];
   List<int> pathIndexes = [];
+
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
-  Map<AttAndCol, Map<int, int>> attributes = {};
+  Map<AttAndCol, Map<int, int>> attToRefFromAttColToCol = {};
+  Map<AttAndCol, Map<int, List<int>>> attToRefFromDepColToCol = {};
   Map<int, Map<AttAndCol, int>> rowToAtt = {};
+
   /// Maps attribute identifiers (row index or name)
   /// to a map of mentioners (row index) to the column index
-  Map<AttAndCol, Map<int, int>> toMentioners = {};
+  Map<AttAndCol, Map<int, List<int>>> toMentioners = {};
   List<Map<InstrStruct, int>> instrTable = [];
-  Map<dynamic, List<AttAndCol>> colToAtt = {};
+  Map<dynamic, HashSet<AttAndCol>> colToAtt = {};
 
   SpreadsheetController({
     required GetSheetDataUseCase getDataUseCase,
@@ -117,7 +140,8 @@ class SpreadsheetController extends ChangeNotifier {
       } else {
         _saveExecutors[name] = ManageWaitingTasks();
         try {
-          var (iTable, iColumnTypes, iSelectionStart, iSelectionEnd) = await _getDataUseCase.loadSheet(name);
+          var (iTable, iColumnTypes, iSelectionStart, iSelectionEnd) =
+              await _getDataUseCase.loadSheet(name);
           table = iTable;
           columnTypes = iColumnTypes;
           _selectionStart = iSelectionStart;
@@ -133,10 +157,7 @@ class SpreadsheetController extends ChangeNotifier {
       availableSheetsChanged = true;
       _saveExecutors[name] = ManageWaitingTasks();
     }
-    loadedSheetsData[name] = {
-      "table": table,
-      "columnTypes": columnTypes,
-    };
+    loadedSheetsData[name] = {"table": table, "columnTypes": columnTypes};
     _isLoading = false;
     notifyListeners();
     sheetName = name;
@@ -239,10 +260,19 @@ class SpreadsheetController extends ChangeNotifier {
     return columnTypes[col];
   }
 
-  Future<void> saveAndCalculate({bool save = true, selectionChanged = false}) async {
+  Future<void> saveAndCalculate({
+    bool save = true,
+    selectionChanged = false,
+  }) async {
     if (save) {
       _saveExecutors[sheetName]!.execute(() async {
-        await _saveSheetDataUseCase.saveSheet(sheetName, table, columnTypes, _selectionStart, _selectionEnd);
+        await _saveSheetDataUseCase.saveSheet(
+          sheetName,
+          table,
+          columnTypes,
+          _selectionStart,
+          _selectionEnd,
+        );
         await Future.delayed(Duration(milliseconds: saveDelayMs));
       });
     }
@@ -264,13 +294,13 @@ class SpreadsheetController extends ChangeNotifier {
       categoriesRoot.newChildren = result.categoriesRoot.newChildren;
       distPairsRoot.newChildren = result.distPairsRoot.newChildren;
 
-      mentions = result.mentions;
+      tableToAtt = result.tableToAtt;
       names = result.names;
       attToCol = result.attToCol;
       nameIndexes = result.nameIndexes;
 
       pathIndexes = result.pathIndexes;
-      attributes = result.attributes;
+      attToRefFromAttColToCol = result.attToRefFromAttColToCol;
       rowToAtt = result.rowToAtt;
       toMentioners = result.toMentioners;
       instrTable = result.instrTable;
@@ -311,8 +341,12 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   // --- Selection Logic ---
-  void checkSelectChange(Point<int> newSelectionStart, Point<int> newSelectionEnd) {
-    if (_selectionStart != newSelectionStart || _selectionEnd != newSelectionEnd) {
+  void checkSelectChange(
+    Point<int> newSelectionStart,
+    Point<int> newSelectionEnd,
+  ) {
+    if (_selectionStart != newSelectionStart ||
+        _selectionEnd != newSelectionEnd) {
       _selectionStart = newSelectionStart;
       _selectionEnd = newSelectionEnd;
       saveAndCalculate(selectionChanged: true);
@@ -370,14 +404,8 @@ class SpreadsheetController extends ChangeNotifier {
 
     // 1. Delegate Logic to UseCase
     // We normalize selection to ensure we paste from top-left
-    int startRow = min(
-      _selectionStart.x,
-      _selectionEnd.x,
-    );
-    int startCol = min(
-      _selectionStart.y,
-      _selectionEnd.y,
-    );
+    int startRow = min(_selectionStart.x, _selectionEnd.x);
+    int startCol = min(_selectionStart.y, _selectionEnd.y);
 
     final List<CellUpdate> updates = _parsePasteDataUseCase.execute(
       data!.text!,
@@ -398,40 +426,6 @@ class SpreadsheetController extends ChangeNotifier {
     selectRange(0, 0, rowCount - 1, colCount - 1);
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
   void populateCellNode(NodeStruct root, int rowId, int colId) {
     if (rowId >= rowCount || colId >= colCount) return;
     root.newChildren = [];
@@ -446,12 +440,8 @@ class SpreadsheetController extends ChangeNotifier {
       );
       return;
     }
-    for (AttAndCol att in mentions[rowId][colId]) {
-      root.newChildren!.add(
-        NodeStruct(
-          att: att,
-        ),
-      );
+    for (AttAndCol att in tableToAtt[rowId][colId]) {
+      root.newChildren!.add(NodeStruct(att: att));
     }
   }
 
@@ -461,8 +451,10 @@ class SpreadsheetController extends ChangeNotifier {
       DynAndInt curr = stack.removeLast();
       NodeStruct currNode = curr.dyn;
       final parentDepth = curr.id;
-      for (final child in (newChildren ? currNode.newChildren! : currNode.children)) {
-        child.depth = parentDepth + ((child.startOpen && parentDepth == 0) ? 0 : 1);
+      for (final child
+          in (newChildren ? currNode.newChildren! : currNode.children)) {
+        child.depth =
+            parentDepth + ((child.startOpen && parentDepth == 0) ? 0 : 1);
         if (child.depth < 2 + increase) {
           stack.add(DynAndInt(child, child.depth));
         }
@@ -471,22 +463,52 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   void populateRowNode(NodeStruct root, int rowId) {
-    if (attributes.containsKey(AttAndCol(row: rowId))) {
-      root.newChildren!.add(
-        NodeStruct(
-          message: SpreadsheetConstants.referenceNodeMsg,
-          att: AttAndCol(row: rowId),
-        ),
-      );
-    }
-    for (int colId = 0; colId < colCount; colId++) {
-      if (table[rowId][colId].isNotEmpty) {
+    if (root.message == SpreadsheetConstants.refFromAttColMsg) {
+      for (int pointerRowId
+          in attToRefFromAttColToCol[AttAndCol(row: rowId)]!.keys) {
+        root.newChildren!.add(
+          NodeStruct(att: AttAndCol(row: pointerRowId)),
+        );
+      }
+    } else if (root.message == SpreadsheetConstants.refFromDepColMsg) {
+      for (int pointerRowId
+          in attToRefFromDepColToCol[AttAndCol(row: rowId)]!.keys) {
+        root.newChildren!.add(
+          NodeStruct(att: AttAndCol(row: pointerRowId)),
+        );
+      }
+    } else {
+      if (attToRefFromAttColToCol.containsKey(AttAndCol(row: rowId))) {
         root.newChildren!.add(
           NodeStruct(
-            att: AttAndCol(row: rowId, col: colId),
+            message: SpreadsheetConstants.refFromAttColMsg,
+            att: AttAndCol(row: rowId),
           ),
         );
       }
+      if (attToRefFromDepColToCol.containsKey(AttAndCol(row: rowId))) {
+        root.newChildren!.add(
+          NodeStruct(
+            message: SpreadsheetConstants.refFromDepColMsg,
+            att: AttAndCol(row: rowId),
+          ),
+        );
+      }
+      for (int colId = 0; colId < colCount; colId++) {
+        if (table[rowId][colId].isNotEmpty) {
+          root.newChildren!.add(
+            NodeStruct(
+              att: AttAndCol(row: rowId, col: colId),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  void populateColNode(NodeStruct root, int colId) {
+    for (final att in colToAtt[colId]!) {
+      root.newChildren!.add(NodeStruct(att: att));
     }
   }
 
@@ -499,63 +521,28 @@ class SpreadsheetController extends ChangeNotifier {
       }
       if (node.newChildren == null) {
         node.newChildren = [];
-        if (node.att.name.isNotEmpty) {
-          if (node.att.col != all) {
-            if (attributes.containsKey(node.att) && attributes[node.att]!.isNotEmpty) {
-              node.newChildren!.add(
-                NodeStruct(
-                  message: SpreadsheetConstants.refFromAttColMsg,
-                  att: node.att,
-                ),
-              );
-            }
-            if (toMentioners.containsKey(node.att) && toMentioners[node.att]!.isNotEmpty) {
-              node.newChildren!.add(
-                NodeStruct(
-                  message: SpreadsheetConstants.refFromDepColMsg,
-                  att: node.att,
-                ),
-              );
-            }
-          }
-        } else if (node.att.row != all) {
-          if (node.att.col != all) {
-            populateCellNode(node, node.att.row, node.att.col);
-          } else {
-            populateRowNode(node, node.att.row);
-          }
-        } else if (node.att.col != all) {
-          int colId = node.att.col;
-          for (final att in colToAtt[colId]!) {
-            node.newChildren!.add(
-              NodeStruct(
-                att: att,
-              ),
-            );
-          }
-        } else if (node.att.name.isNotEmpty) {
-          int rowId = node.att.name;
-          if (node.att.col == all) {
+        int rowId = node.att.row;
+        int colId = node.att.col;
+        if (rowId != all) {
+          if (colId == all) {
             populateRowNode(node, rowId);
+          } else {
+            populateCellNode(node, rowId, colId);
           }
-          if (attributes.containsKey(node.att)) {
-            for (int pointerRowId in attributes[node.att]!.keys) {
-              node.newChildren!.add(
-                NodeStruct(
-                  att: AttAndCol(pointerRowId, rowCst),
-                ),
-              );
-            }
-          }
+        } else if (colId != all) {
+          populateColNode(node, colId);
         }
       }
-      for (final child in node.children) {
+      for (final child in node.newChildren!) {
         child.depth = node.depth + 1;
       }
 
       // TODO: find a faster process for bigger input
       if (node.depth == 0) {
-        List<List<int>> similarity = List.generate(node.children.length, (_) => List.generate(0, (_) => 0));
+        List<List<int>> similarity = List.generate(
+          node.children.length,
+          (_) => List.generate(0, (_) => 0),
+        );
         for (int i = 0; i < node.children.length; i++) {
           var obj = node.children[i];
           for (int j = 0; j < node.newChildren!.length; j++) {
@@ -564,14 +551,17 @@ class SpreadsheetController extends ChangeNotifier {
             sim << 1;
             if (obj.message != null && obj.message == newObj.message) sim | 1;
             sim << 1;
-            if (obj.row123 != null && obj.row123 == newObj.row123) sim | 1;
+            if (obj.att.name == newObj.att.name) sim | 1;
             sim << 1;
-            if (obj.col != null && obj.col == newObj.col) sim | 1;
+            if (obj.att.row == newObj.att.row) sim | 1;
+            sim << 1;
+            if (obj.att.col == newObj.att.col) sim | 1;
             sim << 1;
             if (obj.startOpen == newObj.startOpen) sim | 1;
             sim << 1;
             if (obj.newChildren != null && newObj.newChildren != null) {
-              if (jsonEncode(obj.newChildren) == jsonEncode(newObj.newChildren)) {
+              if (jsonEncode(obj.newChildren) ==
+                  jsonEncode(newObj.newChildren)) {
                 sim | 1;
               }
             }
