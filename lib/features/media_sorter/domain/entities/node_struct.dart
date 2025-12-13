@@ -9,8 +9,7 @@ class NodeStruct {
   List<NodeStruct>? newChildren;
   final bool hideIfEmpty;
   final bool startOpen;
-  int
-  depth; // 0 if expanded, 1 if shown but not expanded, 2 if hidden but parent is shown, 3 otherwise
+  int depth; // 0 if expanded, 1 if shown but not expanded, 2 if hidden but parent is shown, 3 otherwise
 
   NodeStruct({
     this.message,

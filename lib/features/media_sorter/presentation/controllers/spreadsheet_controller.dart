@@ -590,4 +590,11 @@ class SpreadsheetController extends ChangeNotifier {
       }
     }
   }
+
+  void toggleNodeExpansion(NodeStruct node, bool isExpanded) {
+    int increase = isExpanded ? 1 : -1;
+    dfsDepthUpdate(node, increase, false);
+    populateTree(node, keepPrev: true);
+    notifyListeners();
+  }
 }
