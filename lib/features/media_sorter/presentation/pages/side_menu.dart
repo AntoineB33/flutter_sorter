@@ -56,7 +56,7 @@ class _SideMenuState extends State<SideMenu> {
       key: ObjectKey(node),
       
       title: Text(
-        node.message!,
+        node.message ?? '',
         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
       ),
       dense: true,
@@ -103,6 +103,7 @@ class _SideMenuState extends State<SideMenu> {
           const SizedBox(height: 16),
 
           // --- Autocomplete Input Field (Kept as is) ---
+          // TODO: bug
           LayoutBuilder(
             builder: (context, constraints) {
               return Autocomplete<String>(

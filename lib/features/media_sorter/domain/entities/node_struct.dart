@@ -5,11 +5,11 @@ class NodeStruct {
   final AttAndCol att;
   final int? dist;
   final int? minDist;
-  List<NodeStruct> children;
+  List<NodeStruct> children = [];
   List<NodeStruct>? newChildren;
   final bool hideIfEmpty;
   final bool startOpen;
-  int depth; // 0 if expanded, 1 if shown but not expanded, 2 if hidden but parent is shown, 3 otherwise
+  int depth = 0; // 0 if expanded, 1 if shown but not expanded, 2 if hidden but parent is shown, 3 otherwise
 
   NodeStruct({
     this.message,
@@ -19,6 +19,26 @@ class NodeStruct {
     this.newChildren,
     this.hideIfEmpty = false,
     this.startOpen = false,
-  }) : children = [],
-       depth = startOpen ? 0 : 1;
+  }) : depth = startOpen ? 0 : 1;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is NodeStruct &&
+          runtimeType == other.runtimeType &&
+          message == other.message &&
+          att == other.att &&
+          dist == other.dist &&
+          minDist == other.minDist &&
+          hideIfEmpty == other.hideIfEmpty &&
+          startOpen == other.startOpen;
+  
+  @override
+  int get hashCode =>
+      message.hashCode ^
+      att.hashCode ^
+      dist.hashCode ^
+      minDist.hashCode ^
+      hideIfEmpty.hashCode ^
+      startOpen.hashCode;
 }

@@ -38,8 +38,8 @@ class SheetRepositoryImpl implements SheetRepository {
     }).toList() ?? [];
     List<String> columnTypes = rawColumnTypes?.map((type) => type.toString()).toList() ?? [];
     
-    final startMap = mapData['selectionStart'];
-    final endMap = mapData['selectionEnd'];
+    final startMap = mapData['selectionStart'] ?? {"x": 0, "y": 0};
+    final endMap = mapData['selectionEnd'] ?? {"x": 0, "y": 0};
     final selectionStart = Point<int>(startMap['x'] as int, startMap['y'] as int);
     final selectionEnd = Point<int>(endMap['x'] as int, endMap['y'] as int);
     return (table, columnTypes, selectionStart, selectionEnd);

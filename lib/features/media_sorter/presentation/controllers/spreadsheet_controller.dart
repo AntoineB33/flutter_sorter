@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:convert';
 import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -16,7 +15,6 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_mes
 import 'package:trying_flutter/features/media_sorter/domain/entities/dyn_and_int.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
-import 'package:trying_flutter/features/media_sorter/data/utils/hungarian_algorithm.dart';
 
 class SpreadsheetController extends ChangeNotifier {
   int saveDelayMs = 500;
@@ -260,10 +258,10 @@ class SpreadsheetController extends ChangeNotifier {
     return columnTypes[col];
   }
 
-  Future<void> saveAndCalculate({
+  void saveAndCalculate({
     bool save = true,
-    selectionChanged = false,
-  }) async {
+    bool calculate = true,
+  }) {
     if (save) {
       _saveExecutors[sheetName]!.execute(() async {
         await _saveSheetDataUseCase.saveSheet(
@@ -276,9 +274,7 @@ class SpreadsheetController extends ChangeNotifier {
         await Future.delayed(Duration(milliseconds: saveDelayMs));
       });
     }
-    if (selectionChanged) {
-      populateCellNode(mentionsRoot, _selectionStart.x, _selectionStart.y);
-      populateTree(mentionsRoot);
+    if (!calculate) {
       return;
     }
     _calculateExecutor.execute(() async {
@@ -349,9 +345,11 @@ class SpreadsheetController extends ChangeNotifier {
         _selectionEnd != newSelectionEnd) {
       _selectionStart = newSelectionStart;
       _selectionEnd = newSelectionEnd;
-      saveAndCalculate(selectionChanged: true);
+      saveAndCalculate(calculate: false);
+      populateCellNode(mentionsRoot, _selectionStart.x, _selectionStart.y);
+      populateTree(mentionsRoot);
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   void selectCell(int row, int col) {
@@ -445,23 +443,6 @@ class SpreadsheetController extends ChangeNotifier {
     }
   }
 
-  void dfsDepthUpdate(NodeStruct node, int increase, bool newChildren) {
-    final stack = [DynAndInt(node, increase)];
-    while (stack.isNotEmpty) {
-      DynAndInt curr = stack.removeLast();
-      NodeStruct currNode = curr.dyn;
-      final parentDepth = curr.id;
-      for (final child
-          in (newChildren ? currNode.newChildren! : currNode.children)) {
-        child.depth =
-            parentDepth + ((child.startOpen && parentDepth == 0) ? 0 : 1);
-        if (child.depth < 2 + increase) {
-          stack.add(DynAndInt(child, child.depth));
-        }
-      }
-    }
-  }
-
   void populateRowNode(NodeStruct root, int rowId) {
     if (root.message == SpreadsheetConstants.refFromAttColMsg) {
       for (int pointerRowId
@@ -512,13 +493,14 @@ class SpreadsheetController extends ChangeNotifier {
     }
   }
 
-  void populateTree(NodeStruct root, {bool keepPrev = false}) {
+  void populateTree(NodeStruct root) {
+    // TODO keep same expansion if the user just moved, or even if there have been changes
+    // List<int> newRowIndexes = [];
+    // List<int> newColIndexes = [];
+    // Map<String, String> newNameToOldName = {};
     var stack = [root];
     while (stack.isNotEmpty) {
       var node = stack.removeLast();
-      if (keepPrev) {
-        node.newChildren = node.children;
-      }
       if (node.newChildren == null) {
         node.newChildren = [];
         int rowId = node.att.row;
@@ -537,48 +519,18 @@ class SpreadsheetController extends ChangeNotifier {
         child.depth = node.depth + 1;
       }
 
-      // TODO: find a faster process for bigger input
       if (node.depth == 0) {
-        List<List<int>> similarity = List.generate(
-          node.children.length,
-          (_) => List.generate(0, (_) => 0),
-        );
         for (int i = 0; i < node.children.length; i++) {
           var obj = node.children[i];
+          if (obj.depth > 0) {
+            break;
+          }
           for (int j = 0; j < node.newChildren!.length; j++) {
             var newObj = node.newChildren![j];
-            int sim = 0;
-            sim << 1;
-            if (obj.message != null && obj.message == newObj.message) sim | 1;
-            sim << 1;
-            if (obj.att.name == newObj.att.name) sim | 1;
-            sim << 1;
-            if (obj.att.row == newObj.att.row) sim | 1;
-            sim << 1;
-            if (obj.att.col == newObj.att.col) sim | 1;
-            sim << 1;
-            if (obj.startOpen == newObj.startOpen) sim | 1;
-            sim << 1;
-            if (obj.newChildren != null && newObj.newChildren != null) {
-              if (jsonEncode(obj.newChildren) ==
-                  jsonEncode(newObj.newChildren)) {
-                sim | 1;
-              }
+            if (newObj.depth > 0 && obj == newObj) {
+              newObj.depth = 0;
+              break;
             }
-            sim << 1;
-            if (obj.newChildren != null && newObj.newChildren != null) {
-              if (obj.newChildren!.length == newObj.newChildren!.length) {
-                sim | 1;
-              }
-            }
-            similarity[i][j] = sim;
-          }
-        }
-        final solver = HungarianAlgorithm(similarity);
-        final result = solver.compute();
-        for (int i = 0; i < result.assignments.length; i++) {
-          if (node.children[i].depth == 0) {
-            node.newChildren![result.assignments[i]].depth = 0;
           }
         }
       }
@@ -592,9 +544,8 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   void toggleNodeExpansion(NodeStruct node, bool isExpanded) {
-    int increase = isExpanded ? 1 : -1;
-    dfsDepthUpdate(node, increase, false);
-    populateTree(node, keepPrev: true);
+    node.depth = isExpanded ? 0 : 1;
+    populateTree(node);
     notifyListeners();
   }
 }
