@@ -44,29 +44,29 @@ class SpreadsheetController extends ChangeNotifier {
   int all = SpreadsheetConstants.all;
 
   final NodeStruct errorRoot = NodeStruct(
-    message: 'Error Log',
+    instruction: SpreadsheetConstants.errorMsg,
     newChildren: [],
     hideIfEmpty: true,
   );
   final NodeStruct warningRoot = NodeStruct(
-    message: 'Warning Log',
+    instruction: SpreadsheetConstants.warningMsg,
     newChildren: [],
     hideIfEmpty: true,
   );
   final NodeStruct mentionsRoot = NodeStruct(
-    message: 'Current selection',
+    instruction: SpreadsheetConstants.selectionMsg,
     newChildren: [],
   );
   final NodeStruct searchRoot = NodeStruct(
-    message: 'Search results',
+    instruction: SpreadsheetConstants.searchMsg,
     newChildren: [],
   );
   final NodeStruct categoriesRoot = NodeStruct(
-    message: 'Categories',
+    instruction: SpreadsheetConstants.categoryMsg,
     newChildren: [],
   );
   final NodeStruct distPairsRoot = NodeStruct(
-    message: 'Distance Pairs',
+    instruction: SpreadsheetConstants.distPairsMsg,
     newChildren: [],
   );
 
@@ -427,6 +427,9 @@ class SpreadsheetController extends ChangeNotifier {
   void populateCellNode(NodeStruct root, int rowId, int colId) {
     if (rowId >= rowCount || colId >= colCount) return;
     root.message = '${columnName(colId)}$rowId: ${table[rowId][colId]}';
+    if (root.instruction == SpreadsheetConstants.selectionMsg) {
+      root.message = '${columnName(colId)}$rowId selected: ${table[rowId][colId]}';
+    }
     root.newChildren = [];
     if (columnTypes[colId] == ColumnType.names.name ||
         columnTypes[colId] == ColumnType.filePath.name ||
@@ -558,5 +561,17 @@ class SpreadsheetController extends ChangeNotifier {
     node.depth = isExpanded ? 0 : 1;
     populateTree(node);
     notifyListeners();
+  }
+
+  void onNodeSelected(NodeStruct node) {
+    if (node.att.row != all) {
+      if (node.att.col != all) {
+        selectCell(node.att.row, node.att.col);
+      } else {
+        selectCell(node.att.row, 0);
+      }
+    } else if (node.att.col != all) {
+      selectCell(0, node.att.col);
+    }
   }
 }

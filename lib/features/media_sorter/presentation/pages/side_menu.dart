@@ -25,67 +25,114 @@ class _SideMenuState extends State<SideMenu> {
     super.dispose();
   }
 
-  /// Recursive helper to build the tree UI
-  /// We pass [controller] in to avoid repetitive context lookups during recursion
+  /// Custom Recursive Tree Builder
   Widget _buildNodeTree(BuildContext context, NodeStruct node, SpreadsheetController controller) {
     // 1. Check strict visibility rule
     if (node.hideIfEmpty && node.children.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    // 2. Leaf Node (No children) -> Simple List Tile
-    // Note: If you want "Infinite Progression" where a node LOOKS like a leaf
-    // but loads data on click, you might need to change this logic to check 
-    // a flag like `node.hasChildren` instead of `node.children.isEmpty`.
-    if (node.children.isEmpty) {
-      return ListTile(
-        title: Text(node.message ?? '', style: const TextStyle(fontSize: 13)),
-        dense: true,
-        visualDensity: VisualDensity.compact,
-        contentPadding: const EdgeInsets.only(left: 16.0),
-        onTap: () {
-          // Optional: You might want to trigger loading on leaves too?
-        },
-      );
-    }
+    // Determine state
+    final bool isLeaf = node.children.isEmpty;
+    // According to your NodeStruct: depth 0 = expanded, >0 = collapsed
+    final bool isExpanded = node.depth == 0;
 
-    // 3. Branch Node (Has children) -> Expansion Tile
-    return ExpansionTile(
-      // CRITICAL: Uniquely identify this widget based on the Node instance.
-      // This ensures that when the tree rebuilds, Flutter knows this is the same node.
-      key: ObjectKey(node),
-      
-      title: Text(
-        node.message ?? '',
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-      ),
-      dense: true,
-      tilePadding: EdgeInsets.zero,
-      childrenPadding: const EdgeInsets.only(left: 12.0),
-      expandedCrossAxisAlignment: CrossAxisAlignment.start,
-      
-      // BIND STATE: Map depth 0 to expanded, others to collapsed
-      initiallyExpanded: node.depth == 0,
-      
-      // TRIGGER CONTROLLER: When user clicks the arrow
-      onExpansionChanged: (bool isExpanded) {
-        // We use the controller passed from the parent build method
-        // to avoid looking up context inside a callback asynchronously
-        controller.toggleNodeExpansion(node, isExpanded);
-      },
-      
-      children: node.children
-          .map((child) => _buildNodeTree(context, child, controller))
-          .toList(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // --- The Node Row (Icon + Text) ---
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // 1. The Arrow / Spacer
+              if (isLeaf)
+                 // Spacer for alignment if it's a leaf (same width as IconButton)
+                const SizedBox(width: 32, height: 32)
+              else
+                // The Toggle Button
+                SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    iconSize: 20,
+                    splashRadius: 16,
+                    icon: Icon(
+                      isExpanded
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_right,
+                      color: Colors.grey[700],
+                    ),
+                    onPressed: () {
+                      // Toggle expansion logic
+                      controller.toggleNodeExpansion(node, !isExpanded);
+                    },
+                  ),
+                ),
+
+              // 2. The Node Name (Clickable)
+              Expanded(
+                child: InkWell(
+                  // Action when clicking the name specifically
+                  onTap: () {
+                     controller.onNodeSelected(node); 
+                     print("Selected node: ${node.message}");
+                  },
+                  borderRadius: BorderRadius.circular(4),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 4.0),
+                    child: Text(
+                      node.message ?? node.instruction ?? '',
+                      style: const TextStyle(
+                        fontSize: 14, 
+                        fontWeight: FontWeight.w400, // Consistent font weight
+                        color: Colors.black87,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // --- The Children (Recursive) ---
+        // Only show if expanded and has children
+        if (isExpanded && !isLeaf)
+          Container(
+            // Indentation
+            margin: const EdgeInsets.only(left: 15.0), 
+            // The "Structure Line" - A vertical border on the left
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: Colors.grey.withOpacity(0.4), // Line color
+                  width: 1.0,
+                ),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 4.0), // Spacing between line and children
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: node.children
+                    .map((child) => _buildNodeTree(context, child, controller))
+                    .toList(),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Watch controller for changes (rebuilds this widget when notifyListeners is called)
     final controller = context.watch<SpreadsheetController>();
 
-    // Sync text field logic...
     if (_textEditingController.text != controller.sheetName && !controller.isLoading) {
       _textEditingController.text = controller.sheetName;
     }
@@ -102,7 +149,7 @@ class _SideMenuState extends State<SideMenu> {
           ),
           const SizedBox(height: 16),
 
-          // --- Autocomplete Input Field (Kept as is) ---
+          // --- Autocomplete Input Field ---
           // TODO: bug
           LayoutBuilder(
             builder: (context, constraints) {
@@ -211,13 +258,14 @@ class _SideMenuState extends State<SideMenu> {
             "Analysis Logs",
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
+          const SizedBox(height: 10),
 
           // --- Dynamic Tree View Section ---
           Expanded(
             child: SingleChildScrollView(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Pass 'context' and 'controller' into the builder
                   _buildNodeTree(context, controller.errorRoot, controller),
                   _buildNodeTree(context, controller.warningRoot, controller),
                   _buildNodeTree(context, controller.mentionsRoot, controller),

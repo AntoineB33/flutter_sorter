@@ -242,8 +242,8 @@ class CalculateUsecase {
     dynamic accumulator,
     String warningMsgPrefix,
   ) {
-    final visited = <int>{};
-    final completed = <int>{};
+    final visited = <AttAndCol>{};
+    final completed = <AttAndCol>{};
     List<dynamic> path = [];
 
     final List<NodeStruct> redundantRef = [];
@@ -548,6 +548,12 @@ class CalculateUsecase {
     final Map lstCat = {};
     colToAtt[all] = HashSet<AttAndCol>();
     colToAtt[notUsedCst] = HashSet<AttAndCol>();
+    for (int colId = 0; colId < colCount; colId++) {
+      if (columnTypes[colId] == ColumnType.attributes.name ||
+          columnTypes[colId] == ColumnType.sprawl.name) {
+        colToAtt[colId] = HashSet<AttAndCol>();
+      }
+    }
     List<NodeStruct> children = [];
     attToRefFromAttColToCol = {};
     attToCol = {};

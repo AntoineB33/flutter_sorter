@@ -9,6 +9,12 @@ class SpreadsheetConstants {
   static const all = -1;
   static const notUsedCst = -2;
 
+  static const errorMsg = 'Error Log';
+  static const warningMsg = 'Warning Log';
+  static const selectionMsg = 'Current Selection';
+  static const searchMsg = 'Search Results';
+  static const categoryMsg = 'Categories';
+  static const distPairsMsg = 'Distance Pairs';
   static const refFromAttColMsg = "rows that have it as attribute";
   static const refFromDepColMsg = "rows that have constraints based on it";
 }
