@@ -553,7 +553,7 @@ class CalculateUsecase {
     attToCol = {};
     names = {};
     rowToAttToCol = {for (var i = 0; i < rowCount; i++) i: {}};
-    for (int rowId = 0; rowId < rowCount; rowId++) {
+    for (int rowId = 1; rowId < rowCount; rowId++) {
       final row = table[rowId];
       for (int colId = 0; colId < row.length; colId++) {
         final isSprawl = columnTypes[colId] == ColumnType.sprawl.name;
@@ -655,7 +655,7 @@ class CalculateUsecase {
     );
 
     var urlFrom = List.generate(rowCount, (i) => -1);
-    for (int i = 0; i < rowCount; i++) {
+    for (int i = 1; i < rowCount; i++) {
       final row = table[i];
       AttAndCol att = AttAndCol(row: i, col: all);
       if (urls[i].isNotEmpty && attToRefFromAttColToCol.containsKey(att)) {
@@ -710,7 +710,7 @@ class CalculateUsecase {
     final toOldIndexes = [];
     final catRows = [];
     int newIndex = 0;
-    for (int i = 0; i < rowCount; i++) {
+    for (int i = 1; i < rowCount; i++) {
       if (urls[i].isNotEmpty) {
         validRowIndexes.add(i);
         newIndexes[i] = newIndex;
@@ -879,7 +879,7 @@ class CalculateUsecase {
 
     final depPattern = table[0].map((cell) => cell.split(".")).toList();
 
-    for (int rowId = 0; rowId < rowCount; rowId++) {
+    for (int rowId = 1; rowId < rowCount; rowId++) {
       if (urls[rowId].isEmpty &&
           !(attToRefFromAttColToCol.containsKey(AttAndCol(row: rowId)))) {
         continue;
@@ -1126,19 +1126,19 @@ class CalculateUsecase {
       rowCount,
       (_) => List.generate(colCount, (_) => HashSet<AttAndCol>()),
     );
-    for (int i = 0; i < rowCount; i++) {
+    for (int i = 1; i < rowCount; i++) {
       for (int j in nameIndexes) {
         var cellElements = table[i][j].split(";");
         for (int k = 0; k < cellElements.length; k++) {
           cellElements[k] = cellElements[k].trim().toLowerCase();
           if (cellElements[k].isNotEmpty) {
-            tableToAtt[i][j].add(AttAndCol(name: cellElements[k], col: j));
+            tableToAtt[i][j].add(AttAndCol(name: cellElements[k]));
           }
         }
       }
     }
     names = {};
-    for (int i = 0; i < rowCount; i++) {
+    for (int i = 1; i < rowCount; i++) {
       for (int j in nameIndexes) {
         for (final att in tableToAtt[i][j]) {
           if (int.tryParse(att.name) != null) {

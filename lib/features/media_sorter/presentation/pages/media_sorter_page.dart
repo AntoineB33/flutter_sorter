@@ -283,6 +283,10 @@ class _RowHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 1. Define the logic: If it's the first row (index 0), show a String.
+    // Otherwise, show the calculated number.
+    final String label = (rowIndex == 0) ? "Headers" : "$rowIndex";
+
     return Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(
@@ -292,11 +296,17 @@ class _RowHeader extends StatelessWidget {
           bottom: BorderSide(color: Colors.grey.shade400),
         ),
       ),
-      child: Text("${rowIndex + 1}"),
+      child: Text(
+        label,
+        // Optional: reduce font size slightly if the string is long
+        style: TextStyle(
+          fontWeight: rowIndex == 0 ? FontWeight.bold : FontWeight.normal,
+          fontSize: rowIndex == 0 ? 12 : 14,
+        ),
+      ),
     );
   }
 }
-
 class _DataCell extends StatelessWidget {
   final int row;
   final int col;

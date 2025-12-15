@@ -1,7 +1,8 @@
 import 'package:trying_flutter/features/media_sorter/domain/entities/dyn_and_int.dart';
 
 class NodeStruct {
-  final String? message;
+  String? message;
+  final String? instruction;
   final AttAndCol att;
   final int? dist;
   final int? minDist;
@@ -13,6 +14,7 @@ class NodeStruct {
 
   NodeStruct({
     this.message,
+    this.instruction,
     this.att = const AttAndCol(),
     this.dist,
     this.minDist,

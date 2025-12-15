@@ -426,6 +426,7 @@ class SpreadsheetController extends ChangeNotifier {
 
   void populateCellNode(NodeStruct root, int rowId, int colId) {
     if (rowId >= rowCount || colId >= colCount) return;
+    root.message = '${columnName(colId)}$rowId: ${table[rowId][colId]}';
     root.newChildren = [];
     if (columnTypes[colId] == ColumnType.names.name ||
         columnTypes[colId] == ColumnType.filePath.name ||
@@ -444,14 +445,16 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   void populateRowNode(NodeStruct root, int rowId) {
-    if (root.message == SpreadsheetConstants.refFromAttColMsg) {
+    if (root.instruction == SpreadsheetConstants.refFromAttColMsg) {
+      root.message = root.instruction;
       for (int pointerRowId
           in attToRefFromAttColToCol[AttAndCol(row: rowId)]!.keys) {
         root.newChildren!.add(
           NodeStruct(att: AttAndCol(row: pointerRowId)),
         );
       }
-    } else if (root.message == SpreadsheetConstants.refFromDepColMsg) {
+    } else if (root.instruction == SpreadsheetConstants.refFromDepColMsg) {
+      root.message = root.instruction;
       for (int pointerRowId
           in attToRefFromDepColToCol[AttAndCol(row: rowId)]!.keys) {
         root.newChildren!.add(
@@ -459,10 +462,17 @@ class SpreadsheetController extends ChangeNotifier {
         );
       }
     } else {
+      List<String> rowNames = [];
+      for (final index in nameIndexes) {
+        for (final name in tableToAtt[rowId][index]) {
+          rowNames.add(name.name);
+        }
+      }
+      root.message = 'Row $rowId: ${rowNames.join(', ')}';
       if (attToRefFromAttColToCol.containsKey(AttAndCol(row: rowId))) {
         root.newChildren!.add(
           NodeStruct(
-            message: SpreadsheetConstants.refFromAttColMsg,
+            instruction: SpreadsheetConstants.refFromAttColMsg,
             att: AttAndCol(row: rowId),
           ),
         );
@@ -470,7 +480,7 @@ class SpreadsheetController extends ChangeNotifier {
       if (attToRefFromDepColToCol.containsKey(AttAndCol(row: rowId))) {
         root.newChildren!.add(
           NodeStruct(
-            message: SpreadsheetConstants.refFromDepColMsg,
+            instruction: SpreadsheetConstants.refFromDepColMsg,
             att: AttAndCol(row: rowId),
           ),
         );
@@ -488,6 +498,7 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   void populateColNode(NodeStruct root, int colId) {
+    root.message = 'Column ${columnName(colId)}';
     for (final att in colToAtt[colId]!) {
       root.newChildren!.add(NodeStruct(att: att));
     }
