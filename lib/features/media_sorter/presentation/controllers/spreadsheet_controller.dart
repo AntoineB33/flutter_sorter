@@ -107,6 +107,7 @@ class SpreadsheetController extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
+    // await _saveSheetDataUseCase.clearAllData();
     try {
       availableSheets = await _getDataUseCase.getAllSheetNames();
       sheetName = await _getDataUseCase.getLastOpenedSheetName();
@@ -183,7 +184,7 @@ class SpreadsheetController extends ChangeNotifier {
       for (var r = 0; r < rowCount; r++) {
         table[r].addAll(List.filled(needed, '', growable: true));
       }
-      columnTypes.addAll(List.filled(needed, ColumnType.defaultType.name));
+      columnTypes.addAll(List.filled(needed, ColumnType.attributes.name));
     }
   }
 
@@ -254,7 +255,7 @@ class SpreadsheetController extends ChangeNotifier {
 
   // --- Column Logic ---
   String getColumnType(int col) {
-    if (col >= colCount) return ColumnType.defaultType.name;
+    if (col >= colCount) return ColumnType.attributes.name;
     return columnTypes[col];
   }
 
@@ -313,7 +314,7 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   void setColumnType(int col, String type) {
-    if (type == ColumnType.defaultType.name) {
+    if (type == ColumnType.attributes.name) {
       if (col < colCount) {
         columnTypes[col] = type;
         decreaseColumnCount(col);
@@ -426,9 +427,11 @@ class SpreadsheetController extends ChangeNotifier {
 
   void populateCellNode(NodeStruct root, int rowId, int colId) {
     if (rowId >= rowCount || colId >= colCount) return;
-    root.message = '${columnName(colId)}$rowId: ${table[rowId][colId]}';
-    if (root.instruction == SpreadsheetConstants.selectionMsg) {
-      root.message = '${columnName(colId)}$rowId selected: ${table[rowId][colId]}';
+    if (root.message == null) {
+      root.message = '${columnName(colId)}$rowId: ${table[rowId][colId]}';
+      if (root.instruction == SpreadsheetConstants.selectionMsg) {
+        root.message = '${columnName(colId)}$rowId selected: ${table[rowId][colId]}';
+      }
     }
     root.newChildren = [];
     if (columnTypes[colId] == ColumnType.names.name ||
@@ -471,7 +474,7 @@ class SpreadsheetController extends ChangeNotifier {
           rowNames.add(name.name);
         }
       }
-      root.message = 'Row $rowId: ${rowNames.join(', ')}';
+      root.message ??= 'Row $rowId: ${rowNames.join(', ')}';
       if (attToRefFromAttColToCol.containsKey(AttAndCol(row: rowId))) {
         root.newChildren!.add(
           NodeStruct(
@@ -501,7 +504,7 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   void populateColNode(NodeStruct root, int colId) {
-    root.message = 'Column ${columnName(colId)}';
+    root.message ??= 'Column ${columnName(colId)}';
     for (final att in colToAtt[colId]!) {
       root.newChildren!.add(NodeStruct(att: att));
     }

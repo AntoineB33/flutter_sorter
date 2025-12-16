@@ -145,7 +145,7 @@ class CalculateUsecase {
   }
 
   String getColumnType(int col) {
-    if (col >= colCount) return ColumnType.defaultType.name;
+    if (col >= colCount) return ColumnType.attributes.name;
     return columnTypes[col];
   }
 
@@ -242,8 +242,8 @@ class CalculateUsecase {
     dynamic accumulator,
     String warningMsgPrefix,
   ) {
-    final visited = <AttAndCol>{};
-    final completed = <AttAndCol>{};
+    final visited = <dynamic>{};
+    final completed = <dynamic>{};
     List<dynamic> path = [];
 
     final List<NodeStruct> redundantRef = [];
@@ -618,7 +618,7 @@ class CalculateUsecase {
               }
             }
 
-            if (attToRefFromAttColToCol[att]!.containsKey(rowId)) {
+            if (!attToRefFromAttColToCol[att]!.containsKey(rowId)) {
               attToRefFromAttColToCol[att]![rowId] = colId;
               if (isSprawl) {
                 attToDist[att]!.add(rowId);

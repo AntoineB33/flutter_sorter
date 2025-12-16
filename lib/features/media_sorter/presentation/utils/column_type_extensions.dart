@@ -4,8 +4,6 @@ import '../../domain/entities/column_type.dart';
 extension ColumnTypeX on ColumnType {
   Color get color {
     switch (this) {
-      case ColumnType.defaultType:
-        return Colors.transparent;
       case ColumnType.names:
         return Colors.green;
       case ColumnType.dependencies:

@@ -1,5 +1,4 @@
 enum ColumnType {
-  defaultType,
   names,
   dependencies,
   sprawl,

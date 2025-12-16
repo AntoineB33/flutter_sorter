@@ -1,4 +1,6 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Needed for HardwareKeyboard
 import 'package:provider/provider.dart';
 import '../controllers/spreadsheet_controller.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
@@ -12,46 +14,67 @@ class SideMenu extends StatefulWidget {
 
 class _SideMenuState extends State<SideMenu> {
   late TextEditingController _textEditingController;
+  
+  // 1. Initialize Scroll Controllers
+  late ScrollController _verticalController;
+  late ScrollController _horizontalController;
 
   @override
   void initState() {
     super.initState();
     _textEditingController = TextEditingController();
+    _verticalController = ScrollController();
+    _horizontalController = ScrollController();
   }
 
   @override
   void dispose() {
     _textEditingController.dispose();
+    _verticalController.dispose();
+    _horizontalController.dispose();
     super.dispose();
+  }
+
+  void _handleScroll(PointerEvent event) {
+    if (event is PointerScrollEvent) {
+      // Check if CTRL is pressed
+      final isCtrlPressed = HardwareKeyboard.instance.isLogicalKeyPressed(LogicalKeyboardKey.controlLeft) ||
+          HardwareKeyboard.instance.isLogicalKeyPressed(LogicalKeyboardKey.controlRight);
+
+      if (isCtrlPressed) {
+        // Redirect vertical scroll delta to horizontal controller
+        final double newOffset = _horizontalController.offset + event.scrollDelta.dy;
+        
+        if (_horizontalController.hasClients) {
+          _horizontalController.jumpTo(
+            newOffset.clamp(0.0, _horizontalController.position.maxScrollExtent),
+          );
+        }
+      }
+    }
   }
 
   /// Custom Recursive Tree Builder
   Widget _buildNodeTree(BuildContext context, NodeStruct node, SpreadsheetController controller) {
-    // 1. Check strict visibility rule
     if (node.hideIfEmpty && node.children.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    // Determine state
     final bool isLeaf = node.children.isEmpty;
-    // According to your NodeStruct: depth 0 = expanded, >0 = collapsed
     final bool isExpanded = node.depth == 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- The Node Row (Icon + Text) ---
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 2.0),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min, // Important for horizontal scrolling
             children: [
-              // 1. The Arrow / Spacer
               if (isLeaf)
-                 // Spacer for alignment if it's a leaf (same width as IconButton)
                 const SizedBox(width: 32, height: 32)
               else
-                // The Toggle Button
                 SizedBox(
                   width: 32,
                   height: 32,
@@ -66,57 +89,51 @@ class _SideMenuState extends State<SideMenu> {
                       color: Colors.grey[700],
                     ),
                     onPressed: () {
-                      // Toggle expansion logic
                       controller.toggleNodeExpansion(node, !isExpanded);
                     },
                   ),
                 ),
-
-              // 2. The Node Name (Clickable)
-              Expanded(
-                child: InkWell(
-                  // Action when clicking the name specifically
-                  onTap: () {
-                     controller.onNodeSelected(node); 
-                     print("Selected node: ${node.message}");
-                  },
-                  borderRadius: BorderRadius.circular(4),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 4.0),
-                    child: Text(
-                      node.message ?? node.instruction ?? '',
-                      style: const TextStyle(
-                        fontSize: 14, 
-                        fontWeight: FontWeight.w400, // Consistent font weight
-                        color: Colors.black87,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              
+              // Remove Expanded here, or constraints will break horizontal scroll
+              // Use Flexible or just the widget directly inside a Row with MainAxisSize.min
+              InkWell(
+                onTap: () {
+                  controller.onNodeSelected(node);
+                  print("Selected node: ${node.message}");
+                },
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 4.0),
+                  child: Text(
+                    node.message ?? node.instruction ?? '',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.black87,
                     ),
+                    // Removed maxLines/overflow to allow scrolling to see full text
+                    // or keep it if you prefer ellipsis:
+                    // maxLines: 1, 
+                    // overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
             ],
           ),
         ),
-
-        // --- The Children (Recursive) ---
-        // Only show if expanded and has children
         if (isExpanded && !isLeaf)
           Container(
-            // Indentation
-            margin: const EdgeInsets.only(left: 15.0), 
-            // The "Structure Line" - A vertical border on the left
+            margin: const EdgeInsets.only(left: 15.0),
             decoration: BoxDecoration(
               border: Border(
                 left: BorderSide(
-                  color: Colors.grey.withOpacity(0.4), // Line color
+                  color: Colors.grey.withValues(alpha: 0.4),
                   width: 1.0,
                 ),
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.only(left: 4.0), // Spacing between line and children
+              padding: const EdgeInsets.only(left: 4.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: node.children
@@ -260,19 +277,42 @@ class _SideMenuState extends State<SideMenu> {
           ),
           const SizedBox(height: 10),
 
-          // --- Dynamic Tree View Section ---
+          // --- Dynamic Tree View Section with Bi-directional Scrolling ---
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildNodeTree(context, controller.errorRoot, controller),
-                  _buildNodeTree(context, controller.warningRoot, controller),
-                  _buildNodeTree(context, controller.mentionsRoot, controller),
-                  _buildNodeTree(context, controller.searchRoot, controller),
-                  _buildNodeTree(context, controller.categoriesRoot, controller),
-                  _buildNodeTree(context, controller.distPairsRoot, controller),
-                ],
+            child: Listener(
+              onPointerSignal: _handleScroll, // Intercepts mouse wheel
+              child: Scrollbar(
+                controller: _verticalController,
+                thumbVisibility: true,
+                trackVisibility: true,
+                child: SingleChildScrollView(
+                  controller: _verticalController,
+                  scrollDirection: Axis.vertical,
+                  child: Scrollbar(
+                    controller: _horizontalController,
+                    thumbVisibility: true,
+                    trackVisibility: true,
+                    notificationPredicate: (notif) => notif.depth == 1,
+                    child: SingleChildScrollView(
+                      controller: _horizontalController,
+                      scrollDirection: Axis.horizontal,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0), // Space for horizontal scrollbar
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildNodeTree(context, controller.errorRoot, controller),
+                            _buildNodeTree(context, controller.warningRoot, controller),
+                            _buildNodeTree(context, controller.mentionsRoot, controller),
+                            _buildNodeTree(context, controller.searchRoot, controller),
+                            _buildNodeTree(context, controller.categoriesRoot, controller),
+                            _buildNodeTree(context, controller.distPairsRoot, controller),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

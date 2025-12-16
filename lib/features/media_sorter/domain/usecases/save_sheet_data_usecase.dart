@@ -27,4 +27,8 @@ class SaveSheetDataUseCase {
     // You might need to implement this method in the repository if it doesn't exist
     return repository.saveAllSheetNames(sheetNames);
   }
+
+  Future<void> clearAllData() {
+    return repository.clearAllData();
+  }
 }

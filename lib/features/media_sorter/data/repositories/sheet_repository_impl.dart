@@ -55,4 +55,9 @@ class SheetRepositoryImpl implements SheetRepository {
     };
     return await dataSource.saveSheet(sheetName, data);
   }
+
+  @override
+  Future<void> clearAllData() async {
+    await dataSource.clearAllData();
+  }
 }
