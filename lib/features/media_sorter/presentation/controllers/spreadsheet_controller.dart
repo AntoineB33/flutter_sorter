@@ -428,9 +428,10 @@ class SpreadsheetController extends ChangeNotifier {
   void populateCellNode(NodeStruct root, int rowId, int colId) {
     if (rowId >= rowCount || colId >= colCount) return;
     if (root.message == null) {
-      root.message = '${columnName(colId)}$rowId: ${table[rowId][colId]}';
       if (root.instruction == SpreadsheetConstants.selectionMsg) {
         root.message = '${columnName(colId)}$rowId selected: ${table[rowId][colId]}';
+      } else {
+        root.message = '${columnName(colId)}$rowId: ${table[rowId][colId]}';
       }
     }
     root.newChildren = [];
@@ -450,63 +451,70 @@ class SpreadsheetController extends ChangeNotifier {
     }
   }
 
-  void populateRowNode(NodeStruct root, int rowId) {
-    if (root.instruction == SpreadsheetConstants.refFromAttColMsg) {
-      root.message = root.instruction;
-      for (int pointerRowId
-          in attToRefFromAttColToCol[AttAndCol(row: rowId)]!.keys) {
-        root.newChildren!.add(
-          NodeStruct(att: AttAndCol(row: pointerRowId)),
-        );
-      }
-    } else if (root.instruction == SpreadsheetConstants.refFromDepColMsg) {
-      root.message = root.instruction;
-      for (int pointerRowId
-          in attToRefFromDepColToCol[AttAndCol(row: rowId)]!.keys) {
-        root.newChildren!.add(
-          NodeStruct(att: AttAndCol(row: pointerRowId)),
-        );
-      }
-    } else {
+  void populateAttributeNode(NodeStruct root, AttAndCol att) {
+    if (attToRefFromAttColToCol.containsKey(att)) {
+      root.newChildren!.add(
+        NodeStruct(
+          instruction: SpreadsheetConstants.refFromAttColMsg,
+          att: att,
+        ),
+      );
+    }
+    if (attToRefFromDepColToCol.containsKey(att)) {
+      root.newChildren!.add(
+        NodeStruct(
+          instruction: SpreadsheetConstants.refFromDepColMsg,
+          att: att,
+        ),
+      );
+    }
+    if (att.row != all && att.col == all) {
       List<String> rowNames = [];
       for (final index in nameIndexes) {
-        for (final name in tableToAtt[rowId][index]) {
+        for (final name in tableToAtt[att.row][index]) {
           rowNames.add(name.name);
         }
       }
-      root.message ??= 'Row $rowId: ${rowNames.join(', ')}';
-      if (attToRefFromAttColToCol.containsKey(AttAndCol(row: rowId))) {
-        root.newChildren!.add(
-          NodeStruct(
-            instruction: SpreadsheetConstants.refFromAttColMsg,
-            att: AttAndCol(row: rowId),
-          ),
-        );
-      }
-      if (attToRefFromDepColToCol.containsKey(AttAndCol(row: rowId))) {
-        root.newChildren!.add(
-          NodeStruct(
-            instruction: SpreadsheetConstants.refFromDepColMsg,
-            att: AttAndCol(row: rowId),
-          ),
-        );
-      }
+      root.message ??= 'Row ${att.row}: ${rowNames.join(', ')}';
       for (int colId = 0; colId < colCount; colId++) {
-        if (table[rowId][colId].isNotEmpty) {
+        if (table[att.row][colId].isNotEmpty) {
           root.newChildren!.add(
             NodeStruct(
-              att: AttAndCol(row: rowId, col: colId),
+              att: AttAndCol(row: att.row, col: colId),
             ),
           );
         }
       }
     }
   }
-
-  void populateColNode(NodeStruct root, int colId) {
-    root.message ??= 'Column ${columnName(colId)}';
-    for (final att in colToAtt[colId]!) {
-      root.newChildren!.add(NodeStruct(att: att));
+  
+  void populateNode(NodeStruct root, AttAndCol att, {String? instruction}) {
+    instruction ??= root.instruction;
+    switch (instruction) {
+      case SpreadsheetConstants.refFromAttColMsg:
+        root.message = instruction;
+        for (int pointerRowId
+            in attToRefFromAttColToCol[att]!.keys) {
+          root.newChildren!.add(
+            NodeStruct(att: AttAndCol(row: pointerRowId)),
+          );
+        }
+        break;
+      case SpreadsheetConstants.refFromDepColMsg:
+        root.message = instruction;
+        for (int pointerRowId
+            in attToRefFromDepColToCol[att]!.keys) {
+          root.newChildren!.add(
+            NodeStruct(att: AttAndCol(row: pointerRowId)),
+          );
+        }
+        break;
+      case SpreadsheetConstants.nodeAttributeMsg:
+        populateAttributeNode(root, att);
+        break;
+      case SpreadsheetConstants.nodeCellMsg:
+        populateCellNode(root, att.row, att.col);
+        break;
     }
   }
 
@@ -520,16 +528,39 @@ class SpreadsheetController extends ChangeNotifier {
       var node = stack.removeLast();
       if (node.newChildren == null) {
         node.newChildren = [];
-        int rowId = node.att.row;
-        int colId = node.att.col;
-        if (rowId != all) {
-          if (colId == all) {
-            populateRowNode(node, rowId);
-          } else {
-            populateCellNode(node, rowId, colId);
+        AttAndCol att = node.att;
+        if (att.row == all) {
+          if (att.col != all) {
+            if (att.name.isEmpty) {
+              node.message = 'Column ${columnName(att.col)}';
+              for (final attCol in colToAtt[att.col]!) {
+                node.newChildren!.add(NodeStruct(att: attCol));
+              }
+            } else {
+              populateAttribute(root, att);
+            }
           }
-        } else if (colId != all) {
-          populateColNode(node, colId);
+        } else if (att.col == all) {
+          if (att.name.isEmpty) {
+            List<String> rowNames = [];
+            for (final index in nameIndexes) {
+              for (final name in tableToAtt[att.row][index]) {
+                rowNames.add(name.name);
+              }
+            }
+            root.message ??= 'Row ${att.row}: ${rowNames.join(', ')}';
+            for (int colId = 0; colId < colCount; colId++) {
+              if (table[att.row][colId].isNotEmpty) {
+                root.newChildren!.add(
+                  NodeStruct(
+                    att: AttAndCol(row: att.row, col: colId),
+                  ),
+                );
+              }
+            }
+          } else {
+            debugPrint("hey");
+          }
         }
       }
       for (final child in node.newChildren!) {

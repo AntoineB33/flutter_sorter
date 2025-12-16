@@ -15,6 +15,8 @@ class SpreadsheetConstants {
   static const searchMsg = 'Search Results';
   static const categoryMsg = 'Categories';
   static const distPairsMsg = 'Distance Pairs';
+  static const nodeAttributeMsg = 'attribute';
+  static const nodeCellMsg = 'cell';
   static const refFromAttColMsg = "rows that have it as attribute";
   static const refFromDepColMsg = "rows that have constraints based on it";
 }

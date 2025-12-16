@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/dyn_and_int.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
@@ -6,29 +7,29 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struc
 
 class AnalysisResult {
   final NodeStruct errorRoot = NodeStruct(
-    message: 'Error Log',
+    instruction: SpreadsheetConstants.errorMsg,
     newChildren: [],
     hideIfEmpty: true,
   );
   final NodeStruct warningRoot = NodeStruct(
-    message: 'Warning Log',
+    instruction: SpreadsheetConstants.warningMsg,
     newChildren: [],
     hideIfEmpty: true,
   );
   final NodeStruct mentionsRoot = NodeStruct(
-    message: 'Current selection',
+    instruction: SpreadsheetConstants.selectionMsg,
     newChildren: [],
   );
   final NodeStruct searchRoot = NodeStruct(
-    message: 'Search results',
+    instruction: SpreadsheetConstants.searchMsg,
     newChildren: [],
   );
   final NodeStruct categoriesRoot = NodeStruct(
-    message: 'Categories',
+    instruction: SpreadsheetConstants.categoryMsg,
     newChildren: [],
   );
   final NodeStruct distPairsRoot = NodeStruct(
-    message: 'Distance Pairs',
+    instruction: SpreadsheetConstants.distPairsMsg,
     newChildren: [],
   );
 
