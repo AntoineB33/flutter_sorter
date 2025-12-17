@@ -18,29 +18,29 @@ class CalculateUsecase {
   List<String> columnTypes = [];
 
   final NodeStruct errorRoot = NodeStruct(
-    message: 'Error Log',
+    instruction: SpreadsheetConstants.errorMsg,
     newChildren: [],
     hideIfEmpty: true,
   );
   final NodeStruct warningRoot = NodeStruct(
-    message: 'Warning Log',
+    instruction: SpreadsheetConstants.warningMsg,
     newChildren: [],
     hideIfEmpty: true,
   );
   final NodeStruct mentionsRoot = NodeStruct(
-    message: 'Current selection',
+    instruction: SpreadsheetConstants.selectionMsg,
     newChildren: [],
   );
   final NodeStruct searchRoot = NodeStruct(
-    message: 'Search results',
+    instruction: SpreadsheetConstants.searchMsg,
     newChildren: [],
   );
   final NodeStruct categoriesRoot = NodeStruct(
-    message: 'Categories',
+    instruction: SpreadsheetConstants.categoryMsg,
     newChildren: [],
   );
   final NodeStruct distPairsRoot = NodeStruct(
-    message: 'Distance Pairs',
+    instruction: SpreadsheetConstants.distPairsMsg,
     newChildren: [],
   );
 
@@ -270,6 +270,7 @@ class CalculateUsecase {
                           ]
                           .map(
                             (k) => NodeStruct(
+                              instruction: SpreadsheetConstants.nodeCellMsg,
                               att: AttAndCol(row: k.row, col: k.col),
                             ),
                           )
