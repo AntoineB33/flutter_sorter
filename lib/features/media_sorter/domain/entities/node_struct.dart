@@ -1,9 +1,11 @@
 import 'package:trying_flutter/features/media_sorter/domain/entities/dyn_and_int.dart';
 
 class NodeStruct {
-  String? message;
   final String instruction;
-  final AttAndCol att;
+  String? message;
+  final int? row;
+  final int? col;
+  final AttAndCol? att;
   final int? dist;
   final int? minDist;
   List<NodeStruct> children = [];
@@ -13,9 +15,11 @@ class NodeStruct {
   int depth = 0; // 0 if expanded, 1 if shown but not expanded, 2 if hidden but parent is shown, 3 otherwise
 
   NodeStruct({
-    this.message,
     required this.instruction,
-    this.att = const AttAndCol(),
+    this.message,
+    this.row,
+    this.col,
+    this.att,
     this.dist,
     this.minDist,
     this.newChildren,

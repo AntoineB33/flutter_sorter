@@ -277,6 +277,7 @@ class CalculateUsecase {
                           .toList();
                   redundantRef.add(
                     NodeStruct(
+                      instruction: SpreadsheetConstants.nodeCellMsg,
                       message:
                           "$warningMsgPrefix \"$grandChild\" already pointed",
                       att: AttAndCol(row: node, col: nodeChildren[grandChild]),
