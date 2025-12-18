@@ -8,6 +8,18 @@ class SheetRepositoryImpl implements SheetRepository {
   SheetRepositoryImpl(this.dataSource);
 
   @override
+  Future<Point<int>> getLastSelectedCell() async {
+    final cellMap = await dataSource.getLastSelectedCell();
+    return Point<int>(cellMap["x"]!, cellMap["y"]!);
+  }
+
+  @override
+  Future<void> saveLastSelectedCell(Point<int> selectionStart) async {
+    final cell = {"x": selectionStart.x, "y": selectionStart.y};
+    await dataSource.saveLastSelectedCell(cell);
+  }
+
+  @override
   Future<String> getLastOpenedSheetName() async {
     return await dataSource.getLastOpenedSheetName();
   }
@@ -28,7 +40,7 @@ class SheetRepositoryImpl implements SheetRepository {
   }
 
   @override
-  Future<(List<List<String>> table, List<String> columnTypes, Point<int>, Point<int>)> loadSheet(String sheetName) async {
+  Future<(List<List<String>> table, List<String> columnTypes)> loadSheet(String sheetName) async {
     Map<String, dynamic> mapData = await dataSource.getSheet(sheetName);
     final rawTable = mapData["table"] as List?;
     final rawColumnTypes = mapData["columnTypes"] as List?;
@@ -37,23 +49,28 @@ class SheetRepositoryImpl implements SheetRepository {
       return (row as List).map((cell) => cell.toString()).toList();
     }).toList() ?? [];
     List<String> columnTypes = rawColumnTypes?.map((type) => type.toString()).toList() ?? [];
-    
-    final startMap = mapData['selectionStart'] ?? {"x": 0, "y": 0};
-    final endMap = mapData['selectionEnd'] ?? {"x": 0, "y": 0};
-    final selectionStart = Point<int>(startMap['x'] as int, startMap['y'] as int);
-    final selectionEnd = Point<int>(endMap['x'] as int, endMap['y'] as int);
-    return (table, columnTypes, selectionStart, selectionEnd);
+    return (table, columnTypes);
   }
 
   @override
-  Future<void> updateSheet(String sheetName, List<List<String>> table, List<String> columnTypes, Point<int> selectionStart, Point<int> selectionEnd) async {
+  Future<void> updateSheet(String sheetName, List<List<String>> table, List<String> columnTypes) async {
     final data = {
       "table": table,
       "columnTypes": columnTypes,
-      "selectionStart": {"x": selectionStart.x, "y": selectionStart.y},
-      "selectionEnd": {"x": selectionEnd.x, "y": selectionEnd.y},
     };
     return await dataSource.saveSheet(sheetName, data);
+  }
+
+  @override
+  Future<Map<String, Point<int>>> getAllLastSelected() async {
+    final cellMaps = await dataSource.getAllLastSelected();
+    return cellMaps.map((key, cellMap) => MapEntry(key, Point<int>(cellMap["x"]!, cellMap["y"]!)));
+  }
+
+  @override
+  Future<void> saveAllLastSelected(Map<String, Point<int>> cells) async {
+    final cellList = cells.map((key, cell) => MapEntry(key, {"x": cell.x, "y": cell.y}));
+    await dataSource.saveAllLastSelected(cellList);
   }
 
   @override

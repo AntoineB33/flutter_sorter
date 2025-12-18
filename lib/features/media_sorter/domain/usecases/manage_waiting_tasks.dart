@@ -1,19 +1,20 @@
-class ManageWaitingTasks {
+class ManageWaitingTasks<T> {
   bool _isCalculating = false;
   bool _waitingNewCalculation = false;
   
-  Future<void> execute(Future<void> Function() task) async {
+  Future<void> execute(Future<T> Function() task, {void Function(T)? onComplete}) async {
     _waitingNewCalculation = true;
     if (_isCalculating) {
       return;
     }
     _isCalculating = true;
-    // notifyListeners(); // Update UI to show loading spinner
+    dynamic result;
 
     while (_waitingNewCalculation) {
       _waitingNewCalculation = false;
-      await task();
+      result = await task();
     }
+    onComplete?.call(result as T);
     _isCalculating = false;
   }
 }

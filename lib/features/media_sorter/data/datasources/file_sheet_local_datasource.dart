@@ -1,11 +1,26 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:trying_flutter/features/media_sorter/domain/datasources/i_file_sheet_local_datasource.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_sheet_local_datasource.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 
 class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
+  Future<Map<String, int>> getLastSelectedCell() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cellString = prefs.getString('lastSelectedCell');
+    if (cellString == null) {
+      return {"x": 0, "y": 0};
+    }
+    final Map<String, dynamic> cellMap = jsonDecode(cellString);
+    return {"x": cellMap['x'] as int, "y": cellMap['y'] as int};
+  }
+
+  Future<void> saveLastSelectedCell(Map<String, int> cell) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('lastSelectedCell', jsonEncode(cell));
+  }
+
   Future<String> getLastOpenedSheetName() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('lastOpenedSheetName') ?? "";
@@ -73,6 +88,33 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
     } catch (e) {
       throw Exception("Error saving sheet: $e");
     }
+  }
+
+
+  Future<Map<String, Map<String, int>>> getAllLastSelected() async {
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/media_sorter/all_last_selected.json');
+    await file.parent.create(recursive: true);
+    try {
+      final jsonString = await file.readAsString();
+      final Map<String, dynamic> decoded = jsonDecode(jsonString);
+      final Map<String, Map<String, int>> result = decoded.map((key, value) {
+        final mapValue = (value as Map).map((k, v) => MapEntry(k.toString(), v as int));
+        return MapEntry(key, mapValue);
+      });
+      return result;
+    } catch (e) {
+      debugPrint("Error reading all last selected cells: $e");
+      return {};
+    }
+  }
+
+  Future<void> saveAllLastSelected(Map<String, Map<String, int>> lastSelected) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/media_sorter/all_last_selected.json');
+    await file.parent.create(recursive: true);
+    final jsonString = jsonEncode(lastSelected);
+    await file.writeAsString(jsonString);
   }
 
   Future<void> clearAllData() async {

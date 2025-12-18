@@ -3,9 +3,9 @@ class SpreadsheetConstants {
   const SpreadsheetConstants._();
 
   static const patternDistance =
-    r'^(?<prefix>as far as possible from )(?<any>any)?(?<att>.+)$/';
+      r'^(?<prefix>as far as possible from )(?<any>any)?(?<att>.+)$/';
   static const patternAreas =
-    r'^(?<prefix>.*\|)(?<any>any)?(?<att>.+)(?<suffix>\|.*)$/';
+      r'^(?<prefix>.*\|)(?<any>any)?(?<att>.+)(?<suffix>\|.*)$/';
   static const all = -1;
   static const notUsedCst = -2;
 
@@ -16,7 +16,10 @@ class SpreadsheetConstants {
   static const categoryMsg = 'Categories';
   static const distPairsMsg = 'Distance Pairs';
   static const nodeAttributeMsg = 'attribute';
-  static const nodeCellMsg = 'cell';
+  static const cell = 'cell';
+  static const row = 'row';
+  static const column = 'column';
+  static const cycleDetected = 'Cycle detected';
   static const refFromAttColMsg = "rows that have it as attribute";
   static const refFromDepColMsg = "rows that have constraints based on it";
 }

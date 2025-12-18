@@ -35,7 +35,7 @@ class AnalysisResult {
 
   /// 2D table of attribute identifiers (row index or name)
   /// mentioned in each cell.
-  List<List<HashSet<AttAndCol>>> tableToAtt = [];
+  List<List<HashSet<CellWithName>>> tableToAtt = [];
   Map<String, Cell> names = {};
   Map<String, List<dynamic>> attToCol = {};
   List<int> nameIndexes = [];
@@ -44,13 +44,13 @@ class AnalysisResult {
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
-  Map<AttAndCol, Map<int, int>> attToRefFromAttColToCol = {};
-  Map<AttAndCol, Map<int, List<int>>> attToRefFromDepColToCol = {};
-  Map<int, Map<AttAndCol, int>> rowToAtt = {};
+  Map<CellWithName, Map<int, int>> attToRefFromAttColToCol = {};
+  Map<CellWithName, Map<int, List<int>>> attToRefFromDepColToCol = {};
+  Map<int, Map<CellWithName, int>> rowToAtt = {};
 
   /// Maps attribute identifiers (row index or name)
   /// to a map of mentioners (row index) to the column index
-  Map<AttAndCol, Map<int, List<int>>> toMentioners = {};
+  Map<CellWithName, Map<int, List<int>>> toMentioners = {};
   List<Map<InstrStruct, int>> instrTable = [];
-  Map<dynamic, HashSet<AttAndCol>> colToAtt = {};
+  Map<dynamic, HashSet<CellWithName>> colToAtt = {};
 }
