@@ -477,7 +477,7 @@ class CalculateUsecase {
           errorRoot.newChildren!.add(
             NodeStruct(
               message:
-                  "Column ${getColumnLabel(attColId)} is not an attribute column",
+                  "Column ${nodesUsecase.getColumnLabel(attColId)} is not an attribute column",
               cellWithName: CellWithName(row: rowId, col: colId),
             ),
           );
@@ -492,7 +492,7 @@ class CalculateUsecase {
           warningRoot.newChildren!.add(
             NodeStruct(
               message:
-                  "Attribute column ${getColumnLabel(attColId)} differs from current column ${getColumnLabel(colId)}",
+                  "Attribute column ${nodesUsecase.getColumnLabel(attColId)} differs from current column ${nodesUsecase.getColumnLabel(colId)}",
               cellWithName: CellWithName(row: rowId, col: colId),
             ),
           );
@@ -735,7 +735,7 @@ class CalculateUsecase {
       List<NodeStruct> spColChildren = [];
       for (final attr in attrs) {
         catColChildren.add(
-          NodeStruct(cellWithName: CellWithName(name: attr.name)),
+          NodeStruct(name: attr.name),
         );
 
         var rowsList = attToDist[attr]!;
@@ -749,9 +749,9 @@ class CalculateUsecase {
           continue;
         }
         rowsList = rowsList..sort();
-        final distPairs = List.filled(rowsList.length - 1, 0);
+        final distPairs = List.filled(rowsList.length - 2, 0);
         int minDist = double.infinity.toInt();
-        for (var i = 0; i < rowsList.length - 1; i++) {
+        for (var i = 0; i < rowsList.length - 2; i++) {
           var d = (rowsList[i] - rowsList[i + 1]).abs();
           for (var k = rowsList[i] + 1; k < rowsList[i + 1]; k++) {
             if (urls[k].isEmpty) {
@@ -772,7 +772,7 @@ class CalculateUsecase {
                   final d = entry.value;
                   return NodeStruct(
                     message:
-                        "($d) ${getRowName(rowsList[idx])} - ${getRowName(rowsList[idx + 1])}",
+                        "($d) ${nodesUsecase.getRowName(rowsList[idx])} - ${nodesUsecase.getRowName(rowsList[idx + 1])}",
                     newChildren: [
                       NodeStruct(
                         cellWithName: CellWithName(row: rowsList[idx]),
@@ -784,7 +784,7 @@ class CalculateUsecase {
                     dist: d,
                   );
                 }).toList()..sort(
-                  (a, b) => a.cellWithName.name.compareTo(b.cellWithName.name),
+                  (a, b) => a.dist! - b.dist!,
                 ),
             minDist: minDist,
           ),
@@ -792,10 +792,10 @@ class CalculateUsecase {
       }
       categoriesRoot.newChildren!.add(
         NodeStruct(
-          cellWithName: CellWithName(col: col),
+          col: col,
           newChildren: catColChildren
             ..sort(
-              (a, b) => a.cellWithName.name.compareTo(b.cellWithName.name),
+              (a, b) => a.name.compareTo(b.name),
             ),
         ),
       );

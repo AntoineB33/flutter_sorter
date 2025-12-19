@@ -6,7 +6,7 @@ class NodeStruct {
   String? message;
   int? row;
   int? col;
-  final String? name;
+  String? name;
   final int? dist;
   final int? minDist;
   List<NodeStruct> children = [];
@@ -17,11 +17,14 @@ class NodeStruct {
       0; // 0 if expanded, 1 if shown but not expanded, 2 if hidden but parent is shown, 3 otherwise
   void Function(NodeStruct) onTap = (_) {};
 
+  static const _undefined = Object();
+
   NodeStruct({
     this.instruction,
     String? message,
     int? row,
     int? col,
+    String? name,
     CellWithName? cellWithName,
     Cell? cell,
     this.dist,
@@ -32,7 +35,7 @@ class NodeStruct {
   }) : depth = startOpen ? 0 : 1,
        row = cellWithName?.row ?? cell?.row ?? row,
        col = cellWithName?.col ?? cell?.col ?? col,
-       name = cellWithName?.name,
+       name = cellWithName?.name ?? name,
        message = message ?? instruction;
 
   @override
