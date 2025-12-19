@@ -1,6 +1,3 @@
-import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
-
 class DynAndInt {
   dynamic dyn;
   int id;
@@ -8,18 +5,18 @@ class DynAndInt {
   DynAndInt(this.dyn, this.id);
 }
 
-class CellWithName {
+class Attribute {
   final String? name;
   final int? row;
   final int? col;
 
-  const CellWithName({this.name, this.row, this.col});
+  const Attribute({this.name, this.row, this.col});
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
 
-    return other is CellWithName &&
+    return other is Attribute &&
         name == other.name &&
         row == other.row &&
         col == other.col;

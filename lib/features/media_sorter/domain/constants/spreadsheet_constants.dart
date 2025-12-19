@@ -20,6 +20,8 @@ class SpreadsheetConstants {
   static const row = 'row';
   static const column = 'column';
   static const cycleDetected = 'Cycle detected';
+  static const attToCol = 'Columns with this attribute';
   static const refFromAttColMsg = "rows that have it as attribute";
+  static const attToRefFromDepCol = "rows that mention this attribute";
   static const refFromDepColMsg = "rows that have constraints based on it";
 }

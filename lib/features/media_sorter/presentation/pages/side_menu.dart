@@ -98,8 +98,8 @@ class _SideMenuState extends State<SideMenu> {
               // Use Flexible or just the widget directly inside a Row with MainAxisSize.min
               InkWell(
                 onTap: () {
-                  controller.onNodeSelected(node);
-                  print("Selected node: ${node.message}");
+                  node.onTap(node);
+                  debugPrint("Selected node: ${node.message}");
                 },
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(

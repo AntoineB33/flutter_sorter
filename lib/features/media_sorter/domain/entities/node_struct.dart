@@ -4,6 +4,8 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 class NodeStruct {
   final String? instruction;
   String? message;
+  Cell? cell;
+  Attribute? att;
   int? row;
   int? col;
   String? name;
@@ -17,26 +19,41 @@ class NodeStruct {
       0; // 0 if expanded, 1 if shown but not expanded, 2 if hidden but parent is shown, 3 otherwise
   void Function(NodeStruct) onTap = (_) {};
 
-  static const _undefined = Object();
-
   NodeStruct({
     this.instruction,
     String? message,
-    int? row,
-    int? col,
+    int? rowId,
+    int? colId,
     String? name,
-    CellWithName? cellWithName,
+    Attribute? att,
     Cell? cell,
+    Attribute? attribute,
     this.dist,
     this.minDist,
     this.newChildren,
     this.hideIfEmpty = false,
     this.startOpen = false,
   }) : depth = startOpen ? 0 : 1,
-       row = cellWithName?.row ?? cell?.row ?? row,
-       col = cellWithName?.col ?? cell?.col ?? col,
-       name = cellWithName?.name ?? name,
-       message = message ?? instruction;
+       row = att?.row ?? cell?.row ?? rowId,
+       col = att?.col ?? cell?.col ?? colId,
+       name = att?.name ?? name,
+       message = message ?? instruction {
+    if (row != null) {
+      if (col != null) {
+        this.cell ??= Cell(row: row!, col: col!);
+      } else {
+        this.att ??= Attribute(row: row);
+      }
+    } else {
+      if (col != null) {
+        this.att ??= Attribute(col: col, name: name);
+      } else {
+        if (name != null) {
+          this.att ??= Attribute(name: name);
+        }
+      }
+    }
+  }
 
   @override
   bool operator ==(Object other) =>

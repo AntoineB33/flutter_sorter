@@ -155,7 +155,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     }
     if (r == 0) {
       return _ColumnHeader(
-        label: controller.columnName(c - 1),
+        label: controller.getColumnLabel(c - 1),
         colIndex: c - 1,
         onContextMenu: (details) => _showColumnContextMenu(context, controller, details.globalPosition, c - 1),
       );
