@@ -305,8 +305,8 @@ class SpreadsheetController extends ChangeNotifier {
         toMentioners = result.toMentioners;
         instrTable = result.instrTable;
         colToAtt = result.colToAtt;
-        mentionsRoot.row = _selectionStart.x;
-        mentionsRoot.col = _selectionStart.y;
+        mentionsRoot.rowId = _selectionStart.x;
+        mentionsRoot.colId = _selectionStart.y;
         populateTree([
           errorRoot,
           warningRoot,
@@ -345,8 +345,8 @@ class SpreadsheetController extends ChangeNotifier {
       _selectionEnd = newSelectionEnd;
       saveAndCalculate(calculate: false);
       _saveSheetDataUseCase.saveLastSelectedCell(_selectionStart);
-      mentionsRoot.row = _selectionStart.x;
-      mentionsRoot.col = _selectionStart.y;
+      mentionsRoot.rowId = _selectionStart.x;
+      mentionsRoot.colId = _selectionStart.y;
       populateTree([mentionsRoot]);
       notifyListeners();
     }
@@ -423,8 +423,8 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   void populateCellNode(NodeStruct root, bool populateChildren) {
-    int rowId = root.row!;
-    int colId = root.col!;
+    int rowId = root.rowId!;
+    int colId = root.colId!;
     if (rowId >= rowCount || colId >= colCount) return;
     if (root.message == null) {
       if (root.instruction == SpreadsheetConstants.selectionMsg) {
@@ -444,7 +444,7 @@ class SpreadsheetController extends ChangeNotifier {
       root.newChildren!.add(
         NodeStruct(
           message: table[rowId][colId],
-          att: Attribute(row: rowId),
+          att: Attribute(rowId: rowId),
         ),
       );
       return;
@@ -476,29 +476,40 @@ class SpreadsheetController extends ChangeNotifier {
     node.message ??= node.name;
   }
 
-  void populateRowNode(NodeStruct root, bool populateChildren) {
-    int rowId = root.row!;
-    root.message ??= nodesUsecase.getRowName(rowId);
+  void populateRowNode(NodeStruct node, bool populateChildren) {
+    int rowId = node.rowId!;
+    node.message ??= nodesUsecase.getRowName(rowId);
     if (!populateChildren) {
       return;
     }
+    List<NodeStruct> rowCells = [];
     for (int colId = 0; colId < colCount; colId++) {
       if (table[rowId][colId].isNotEmpty) {
-        root.newChildren!.add(
+        rowCells.add(
           NodeStruct(
-            att: Attribute(row: rowId, col: colId),
+            att: Attribute(rowId: rowId, colId: colId),
           ),
         );
       }
     }
+    if (rowCells.isNotEmpty) {
+      node.newChildren!.add(
+        NodeStruct(
+          message: 'Content of the row',
+          newChildren: rowCells,
+        ),
+      );
+    }
+    populateAttributeNode(node, true);
   }
 
   void populateColumnNode(NodeStruct node, bool populateChildren) {
-    node.message ??= 'Column ${getColumnLabel(node.col!)}';
+    node.message ??=
+        'Column ${getColumnLabel(node.colId!)} "${table[0][node.colId!]}"';
     if (!populateChildren) {
       return;
     }
-    for (final attCol in colToAtt[node.col]!) {
+    for (final attCol in colToAtt[node.colId]!) {
       node.newChildren!.add(NodeStruct(att: attCol));
     }
   }
@@ -509,7 +520,7 @@ class SpreadsheetController extends ChangeNotifier {
     }
     for (final rowId
         in attToRefFromDepColToCol[Attribute(name: node.name)]!.keys) {
-      node.newChildren!.add(NodeStruct(att: Attribute(row: rowId)));
+      node.newChildren!.add(NodeStruct(att: Attribute(rowId: rowId)));
     }
   }
 
@@ -520,13 +531,21 @@ class SpreadsheetController extends ChangeNotifier {
     }
     switch (node.instruction) {
       case SpreadsheetConstants.refFromAttColMsg:
-        for (int pointerRowId in attToRefFromAttColToCol[node.att]!.keys) {
-          node.newChildren!.add(NodeStruct(att: Attribute(row: pointerRowId)));
+        if (populateChildren) {
+          for (int pointerRowId in attToRefFromAttColToCol[node.att]!.keys) {
+            node.newChildren!.add(
+              NodeStruct(rowId: pointerRowId),
+            );
+          }
         }
         break;
       case SpreadsheetConstants.refFromDepColMsg:
-        for (int pointerRowId in attToRefFromDepColToCol[node.att]!.keys) {
-          node.newChildren!.add(NodeStruct(att: Attribute(row: pointerRowId)));
+        if (populateChildren) {
+          for (int pointerRowId in attToRefFromDepColToCol[node.att]!.keys) {
+            node.newChildren!.add(
+              NodeStruct(rowId: pointerRowId),
+            );
+          }
         }
         break;
       case SpreadsheetConstants.nodeAttributeMsg:
@@ -540,16 +559,16 @@ class SpreadsheetController extends ChangeNotifier {
           int found = -1;
           for (int i = 0; i < n.newChildren!.length; i++) {
             final child = n.newChildren![i];
-            if (_selectionStart.x == child.row) {
+            if (_selectionStart.x == child.rowId) {
               found = i;
               break;
             }
           }
           if (found == -1) {
-            selectCell(n.newChildren![0].row!, 0);
+            selectCell(n.newChildren![0].rowId!, 0);
           } else {
             selectCell(
-              n.newChildren![(found + 1) % n.newChildren!.length].row!,
+              n.newChildren![(found + 1) % n.newChildren!.length].rowId!,
               0,
             );
           }
@@ -558,8 +577,8 @@ class SpreadsheetController extends ChangeNotifier {
         populateAttToRefFromDepColNode(node, populateChildren);
         break;
       case null:
-        if (node.row != null) {
-          if (node.col != null) {
+        if (node.rowId != null) {
+          if (node.colId != null) {
             if (node.name != null) {
               throw UnimplementedError(
                 "CellWithName with name, row and col not implemented",
@@ -577,7 +596,7 @@ class SpreadsheetController extends ChangeNotifier {
             }
           }
         } else {
-          if (node.col != null) {
+          if (node.colId != null) {
             if (node.name != null) {
               populateAttributeNode(node, populateChildren);
             } else {

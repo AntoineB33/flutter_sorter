@@ -7,10 +7,10 @@ class DynAndInt {
 
 class Attribute {
   final String? name;
-  final int? row;
-  final int? col;
+  final int? rowId;
+  final int? colId;
 
-  const Attribute({this.name, this.row, this.col});
+  const Attribute({this.name, this.rowId, this.colId});
 
   @override
   bool operator ==(Object other) {
@@ -18,10 +18,10 @@ class Attribute {
 
     return other is Attribute &&
         name == other.name &&
-        row == other.row &&
-        col == other.col;
+        rowId == other.rowId &&
+        colId == other.colId;
   }
 
   @override
-  int get hashCode => Object.hash(name, row, col);
+  int get hashCode => Object.hash(name, rowId, colId);
 }

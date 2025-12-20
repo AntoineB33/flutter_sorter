@@ -1,21 +1,16 @@
 class Cell {
-  final int row;
-  final int col;
+  final int rowId;
+  final int colId;
 
-  Cell({
-    required this.row,
-    required this.col
-  });
+  Cell({required this.rowId, required this.colId});
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
 
-    return other is Cell &&
-        row == other.row &&
-        col == other.col;
+    return other is Cell && rowId == other.rowId && colId == other.colId;
   }
 
   @override
-  int get hashCode => Object.hash(row, col);
+  int get hashCode => Object.hash(rowId, colId);
 }

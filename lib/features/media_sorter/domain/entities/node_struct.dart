@@ -6,8 +6,8 @@ class NodeStruct {
   String? message;
   Cell? cell;
   Attribute? att;
-  int? row;
-  int? col;
+  int? rowId;
+  int? colId;
   String? name;
   final int? dist;
   final int? minDist;
@@ -32,22 +32,22 @@ class NodeStruct {
     this.newChildren,
     this.hideIfEmpty = false,
     this.startOpen = false,
-  }) : row = att?.row ?? cell?.row ?? rowId,
-       col = att?.col ?? cell?.col ?? colId,
+  }) : this.rowId = att?.rowId ?? cell?.rowId ?? rowId,
+       this.colId = att?.colId ?? cell?.colId ?? colId,
        name = att?.name ?? name,
        message = message ?? instruction {
-    if (row != null) {
-      if (col != null) {
-        this.cell ??= Cell(row: row!, col: col!);
+    if (this.rowId != null) {
+      if (this.colId != null) {
+        this.cell ??= Cell(rowId: this.rowId!, colId: this.colId!);
       } else {
-        this.att ??= Attribute(row: row);
+        this.att ??= Attribute(rowId: this.rowId);
       }
     } else {
-      if (col != null) {
-        this.att ??= Attribute(col: col, name: name);
+      if (this.colId != null) {
+        this.att ??= Attribute(colId: this.colId, name: this.name);
       } else {
-        if (name != null) {
-          this.att ??= Attribute(name: name);
+        if (this.name != null) {
+          this.att ??= Attribute(name: this.name);
         }
       }
     }
@@ -60,8 +60,8 @@ class NodeStruct {
           runtimeType == other.runtimeType &&
           instruction == other.instruction &&
           message == other.message &&
-          row == other.row &&
-          col == other.col &&
+          rowId == other.rowId &&
+          colId == other.colId &&
           dist == other.dist &&
           minDist == other.minDist &&
           hideIfEmpty == other.hideIfEmpty &&
@@ -71,8 +71,8 @@ class NodeStruct {
   int get hashCode =>
       instruction.hashCode ^
       message.hashCode ^
-      row.hashCode ^
-      col.hashCode ^
+      rowId.hashCode ^
+      colId.hashCode ^
       dist.hashCode ^
       minDist.hashCode ^
       hideIfEmpty.hashCode ^
