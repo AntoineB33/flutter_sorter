@@ -1,8 +1,1 @@
-enum ColumnType {
-  names,
-  dependencies,
-  sprawl,
-  attributes,
-  filePath,
-  url;
-}
+enum ColumnType { names, dependencies, sprawl, attributes, filePath, urls }

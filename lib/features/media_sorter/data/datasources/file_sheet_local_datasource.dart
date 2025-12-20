@@ -34,7 +34,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   Future<List<String>> getAllSheetNames() async {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/media_sorter/sheets_index.json');
-    await file.parent.create(recursive: true);
+    await file.create(recursive: true);
     try {
       final jsonString = await file.readAsString();
       final List<dynamic> jsonList = jsonDecode(jsonString);
@@ -49,7 +49,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   Future<void> saveAllSheetNames(List<String> sheetNames) async {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/media_sorter/sheets_index.json');
-    await file.parent.create(recursive: true);
+    await file.create(recursive: true);
     final jsonString = jsonEncode(sheetNames);
     await file.writeAsString(jsonString);
   }
@@ -58,17 +58,14 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
     final directory = await getApplicationDocumentsDirectory();
     // Sanitize filename to prevent path traversal
     final safeName = sheetName.replaceAll(RegExp(r'[^\w\s]+'), ''); 
-    return File('${directory.path}/sheet_$safeName.json');
+    final file = File('${directory.path}/media_sorter/sheet_$safeName.json');
+    await file.create(recursive: true);
+    return file;
   }
 
   @override
   Future<Map<String, dynamic>> getSheet(String sheetName) async {
     final file = await _getFile(sheetName);
-    Map<String, dynamic> emptyData = {};
-    if (!await file.exists()) {
-      return emptyData;
-    }
-
     final jsonString = await file.readAsString();
     Map<String, dynamic> decoded = {};
     try {
@@ -94,7 +91,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   Future<Map<String, Map<String, int>>> getAllLastSelected() async {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/media_sorter/all_last_selected.json');
-    await file.parent.create(recursive: true);
+    await file.create(recursive: true);
     try {
       final jsonString = await file.readAsString();
       final Map<String, dynamic> decoded = jsonDecode(jsonString);
@@ -112,7 +109,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   Future<void> saveAllLastSelected(Map<String, Map<String, int>> lastSelected) async {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/media_sorter/all_last_selected.json');
-    await file.parent.create(recursive: true);
+    await file.create(recursive: true);
     final jsonString = jsonEncode(lastSelected);
     await file.writeAsString(jsonString);
   }

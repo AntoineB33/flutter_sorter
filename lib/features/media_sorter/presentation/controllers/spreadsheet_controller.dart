@@ -141,7 +141,6 @@ class SpreadsheetController extends ChangeNotifier {
       _saveSheetDataUseCase.saveAllLastSelected(lastSelectedCells);
     }
 
-    bool availableSheetsChanged = false;
     if (availableSheets.contains(name)) {
       if (loadedSheetsData.containsKey(name)) {
         table = loadedSheetsData[name]!["table"] as List<List<String>>;
@@ -172,18 +171,12 @@ class SpreadsheetController extends ChangeNotifier {
       table = [];
       columnTypes = [];
       availableSheets.add(name);
-      availableSheetsChanged = true;
+      _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
       _saveExecutors[name] = ManageWaitingTasks<void>();
     }
     loadedSheetsData[name] = {"table": table, "columnTypes": columnTypes};
     sheetName = name;
-    _saveExecutors[sheetName]!.execute(() async {
-      await _saveSheetDataUseCase.saveLastOpenedSheetName(name);
-      if (availableSheetsChanged) {
-        await _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
-      }
-      await Future.delayed(Duration(milliseconds: saveDelayMs)); // Debounce
-    });
+    _saveSheetDataUseCase.saveLastOpenedSheetName(name);
     saveAndCalculate(save: false);
   }
 
@@ -444,7 +437,7 @@ class SpreadsheetController extends ChangeNotifier {
     root.newChildren = [];
     if (columnTypes[colId] == ColumnType.names.name ||
         columnTypes[colId] == ColumnType.filePath.name ||
-        columnTypes[colId] == ColumnType.url.name) {
+        columnTypes[colId] == ColumnType.urls.name) {
       root.newChildren!.add(
         NodeStruct(
           message: table[rowId][colId],
@@ -613,10 +606,6 @@ class SpreadsheetController extends ChangeNotifier {
                   "populateNode: Unhandled CellWithName with name only: ${node.name}",
                 );
               }
-            } else {
-              debugPrint(
-                "populateNode: Unhandled CellWithName with no identifiers",
-              );
             }
           }
         }

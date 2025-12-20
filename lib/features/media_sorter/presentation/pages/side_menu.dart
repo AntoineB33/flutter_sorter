@@ -259,7 +259,6 @@ class _SideMenuState extends State<SideMenu> {
                     ),
                     onSubmitted: (String value) {
                       controller.loadSheetByName(value.trim());
-                      onFieldSubmitted();
                     },
                   );
                 },

@@ -66,6 +66,7 @@ class CalculateUsecase {
   Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol = {};
   List<Map<InstrStruct, int>> instrTable = [];
   Map<int, HashSet<Attribute>> colToAtt = {};
+  List<bool> isMedium = [];
 
   static const patternDistance = SpreadsheetConstants.patternDistance;
   static const patternAreas = SpreadsheetConstants.patternAreas;
@@ -526,6 +527,14 @@ class CalculateUsecase {
     if (errorRoot.newChildren!.isNotEmpty) {
       return;
     }
+    
+    isMedium = List<bool>.filled(rowCount, false);
+    for (int rowId = 1; rowId < rowCount; rowId++) {
+      for (int colId = 0; colId < rowCount; colId++) {
+        isMedium[rowId] = isMedium[rowId] || columnTypes[colId] == ColumnType.filePath.name ||
+          columnTypes[colId] == ColumnType.urls.name;
+      }
+    }
 
     colToAtt = {};
     Map<Attribute, List<int>> attToDist = {};
@@ -544,11 +553,10 @@ class CalculateUsecase {
     List<NodeStruct> children = [];
     attToRefFromAttColToCol = {};
     attToCol = {};
-    names = {};
     rowToAttToCol = {for (var i = 0; i < rowCount; i++) i: {}};
     for (int rowId = 1; rowId < rowCount; rowId++) {
       final row = table[rowId];
-      for (int colId = 0; colId < row.length; colId++) {
+      for (int colId = 0; colId < rowCount; colId++) {
         final isSprawl = columnTypes[colId] == ColumnType.sprawl.name;
         if (columnTypes[colId] == ColumnType.attributes.name || isSprawl) {
           if (row[colId].isEmpty) {
@@ -689,9 +697,9 @@ class CalculateUsecase {
     for (int i = 1; i < rowCount; i++) {
       final row = table[i];
       Attribute att = Attribute(row: i, col: all);
-      if (urls[i].isNotEmpty && attToRefFromAttColToCol.containsKey(att)) {
+      if (isMedium[i] && attToRefFromAttColToCol.containsKey(att)) {
         for (final k in attToRefFromAttColToCol[att]!.keys) {
-          if (urls[k].isNotEmpty) {
+          if (isMedium[k]) {
             errorRoot.newChildren!.add(
               NodeStruct(
                 message: "URL conflict",
@@ -742,7 +750,7 @@ class CalculateUsecase {
     final catRows = [];
     int newIndex = 0;
     for (int i = 1; i < rowCount; i++) {
-      if (urls[i].isNotEmpty) {
+      if (isMedium[i]) {
         validRowIndexes.add(i);
         newIndexes[i] = newIndex;
         newIndex++;
@@ -786,7 +794,7 @@ class CalculateUsecase {
         for (var i = 0; i < rowsList.length - 2; i++) {
           var d = (rowsList[i] - rowsList[i + 1]).abs();
           for (var k = rowsList[i] + 1; k < rowsList[i + 1]; k++) {
-            if (urls[k].isEmpty) {
+            if (!isMedium[k]) {
               d--;
             }
           }
@@ -836,7 +844,7 @@ class CalculateUsecase {
     instrTable = List.generate(rowCount, (_) => {});
 
     for (final MapEntry(key: k, value: v) in fstCat.entries) {
-      if (urls[k].isNotEmpty) {
+      if (isMedium[k]) {
         var t = v.att;
         while (fstCat.containsKey(t)) {
           t = fstCat[t]!.att;
@@ -858,7 +866,7 @@ class CalculateUsecase {
     }
 
     for (final MapEntry(key: k, value: v) in lstCat.entries) {
-      if (urls[k].isNotEmpty) {
+      if (isMedium[k]) {
         var t = v.att;
         while (lstCat.containsKey(t)) {
           t = lstCat[t]!.att;
@@ -883,7 +891,7 @@ class CalculateUsecase {
       if (attToRefFromAttColToCol.containsKey(firstElement.dyn)) {
         if (attToRefFromAttColToCol[firstElement.dyn]!.keys.length > 1 ||
             attToRefFromAttColToCol[firstElement.dyn]!.keys.length == 1 &&
-                urls[firstElement.dyn].isNotEmpty) {
+                isMedium[firstElement.dyn]) {
           children = attToRefFromAttColToCol[firstElement.dyn]!.keys
               .map(
                 (k) => NodeStruct(
@@ -924,7 +932,7 @@ class CalculateUsecase {
       if (attToRefFromAttColToCol.containsKey(lastElement.dyn)) {
         if (attToRefFromAttColToCol[lastElement.dyn]!.keys.length > 1 ||
             attToRefFromAttColToCol[lastElement.dyn]!.keys.length == 1 &&
-                urls[lastElement.dyn].isNotEmpty) {
+                isMedium[lastElement.dyn]) {
           children = attToRefFromAttColToCol[lastElement.dyn]!.keys
               .map(
                 (k) => NodeStruct(
@@ -966,7 +974,7 @@ class CalculateUsecase {
     final Map<int, Map<int, (Attribute, bool, RegExpMatch, List<List<int>>)>>
     depCache = {};
     for (int rowId = 1; rowId < rowCount; rowId++) {
-      if (urls[rowId].isEmpty &&
+      if (!isMedium[rowId] &&
           !(attToRefFromAttColToCol.containsKey(Attribute(row: rowId)))) {
         continue;
       }
@@ -1095,7 +1103,7 @@ class CalculateUsecase {
     }
 
     for (int rowId = 1; rowId < rowCount; rowId++) {
-      if (urls[rowId].isEmpty &&
+      if (!isMedium[rowId] &&
           !(attToRefFromAttColToCol.containsKey(Attribute(row: rowId)))) {
         continue;
       }
@@ -1111,7 +1119,7 @@ class CalculateUsecase {
 
           final numbers = [];
           for (final r in attToRefFromAttColToCol[att]!.keys) {
-            if (urls[r].isNotEmpty) {
+            if (isMedium[r]) {
               numbers.add(r);
             }
           }
@@ -1243,7 +1251,6 @@ class CalculateUsecase {
         }
       }
     }
-    names = {};
     for (int i = 1; i < rowCount; i++) {
       for (int j in nameIndexes) {
         for (final att in tableToAtt[i][j]) {

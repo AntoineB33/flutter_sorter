@@ -14,7 +14,7 @@ extension ColumnTypeX on ColumnType {
         return Colors.orange;
       case ColumnType.filePath:
         return Colors.blue;
-      case ColumnType.url:
+      case ColumnType.urls:
         return Colors.cyan;
     }
   }
