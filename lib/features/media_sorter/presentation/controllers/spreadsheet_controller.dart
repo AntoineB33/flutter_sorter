@@ -157,23 +157,23 @@ class SpreadsheetController extends ChangeNotifier {
             _selectionStart = await _getDataUseCase.getLastSelectedCell();
           } else {
             _selectionStart = lastSelectedCells[name]!;
-            _selectionEnd = lastSelectedCells[name]!;
           }
         } catch (e) {
           debugPrint("Error parsing sheet data for $name: $e");
           table = [];
           columnTypes = [];
           _selectionStart = Point(0, 0);
-          _selectionEnd = Point(0, 0);
         }
       }
     } else {
       table = [];
       columnTypes = [];
+      _selectionStart = Point(0, 0);
       availableSheets.add(name);
       _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
       _saveExecutors[name] = ManageWaitingTasks<void>();
     }
+    _selectionEnd = _selectionStart;
     loadedSheetsData[name] = {"table": table, "columnTypes": columnTypes};
     sheetName = name;
     _saveSheetDataUseCase.saveLastOpenedSheetName(name);
@@ -422,7 +422,7 @@ class SpreadsheetController extends ChangeNotifier {
     selectRange(0, 0, rowCount - 1, colCount - 1);
   }
 
-  void populateCellNode(NodeStruct root) {
+  void populateCellNode(NodeStruct root, bool populateChildren) {
     int rowId = root.row!;
     int colId = root.col!;
     if (rowId >= rowCount || colId >= colCount) return;
@@ -433,6 +433,9 @@ class SpreadsheetController extends ChangeNotifier {
       } else {
         root.message = '${getColumnLabel(colId)}$rowId: ${table[rowId][colId]}';
       }
+    }
+    if (!populateChildren) {
+      return;
     }
     root.newChildren = [];
     if (columnTypes[colId] == ColumnType.names.name ||
@@ -451,46 +454,34 @@ class SpreadsheetController extends ChangeNotifier {
     }
   }
 
-  void populateAttributeNode(NodeStruct node) {
-    if (attToRefFromAttColToCol.containsKey(node.att)) {
-      node.newChildren!.add(
-        NodeStruct(
-          instruction: SpreadsheetConstants.refFromAttColMsg,
-          att: node.att,
-        ),
-      );
-    }
-    if (attToRefFromDepColToCol.containsKey(node.att)) {
-      node.newChildren!.add(
-        NodeStruct(
-          instruction: SpreadsheetConstants.refFromDepColMsg,
-          att: node.att,
-        ),
-      );
-    }
-    if (node.row != null && node.col == null) {
-      List<String> rowNames = [];
-      for (final index in nameIndexes) {
-        for (final name in tableToAtt[node.row!][index]) {
-          rowNames.add(name.name!);
-        }
+  void populateAttributeNode(NodeStruct node, bool populateChildren) {
+    if (populateChildren) {
+      if (attToRefFromAttColToCol.containsKey(node.att)) {
+        node.newChildren!.add(
+          NodeStruct(
+            instruction: SpreadsheetConstants.refFromAttColMsg,
+            att: node.att,
+          ),
+        );
       }
-      node.message ??= 'Row ${node.row}: ${rowNames.join(', ')}';
-      for (int colId = 0; colId < colCount; colId++) {
-        if (table[node.row!][colId].isNotEmpty) {
-          node.newChildren!.add(
-            NodeStruct(
-              att: Attribute(row: node.row, col: colId),
-            ),
-          );
-        }
+      if (attToRefFromDepColToCol.containsKey(node.att)) {
+        node.newChildren!.add(
+          NodeStruct(
+            instruction: SpreadsheetConstants.refFromDepColMsg,
+            att: node.att,
+          ),
+        );
       }
     }
+    node.message ??= node.name;
   }
 
-  void populateRowNode(NodeStruct root) {
+  void populateRowNode(NodeStruct root, bool populateChildren) {
     int rowId = root.row!;
     root.message ??= nodesUsecase.getRowName(rowId);
+    if (!populateChildren) {
+      return;
+    }
     for (int colId = 0; colId < colCount; colId++) {
       if (table[rowId][colId].isNotEmpty) {
         root.newChildren!.add(
@@ -502,16 +493,32 @@ class SpreadsheetController extends ChangeNotifier {
     }
   }
 
-  void populateColumnNode(NodeStruct node) {
+  void populateColumnNode(NodeStruct node, bool populateChildren) {
     node.message ??= 'Column ${getColumnLabel(node.col!)}';
+    if (!populateChildren) {
+      return;
+    }
     for (final attCol in colToAtt[node.col]!) {
       node.newChildren!.add(NodeStruct(att: attCol));
     }
   }
 
-  void populateNode(NodeStruct node, {String? instruction}) {
-    instruction ??= node.instruction;
-    switch (instruction) {
+  void populateAttToRefFromDepColNode(NodeStruct node, bool populateChildren) {
+    if (!populateChildren) {
+      return;
+    }
+    for (final rowId
+        in attToRefFromDepColToCol[Attribute(name: node.name)]!.keys) {
+      node.newChildren!.add(NodeStruct(att: Attribute(row: rowId)));
+    }
+  }
+
+  void populateNode(NodeStruct node) {
+    bool populateChildren = node.newChildren == null;
+    if (populateChildren) {
+      node.newChildren = [];
+    }
+    switch (node.instruction) {
       case SpreadsheetConstants.refFromAttColMsg:
         for (int pointerRowId in attToRefFromAttColToCol[node.att]!.keys) {
           node.newChildren!.add(NodeStruct(att: Attribute(row: pointerRowId)));
@@ -523,10 +530,10 @@ class SpreadsheetController extends ChangeNotifier {
         }
         break;
       case SpreadsheetConstants.nodeAttributeMsg:
-        populateAttributeNode(node);
+        populateAttributeNode(node, populateChildren);
         break;
       case SpreadsheetConstants.cell:
-        populateCellNode(node);
+        populateCellNode(node, populateChildren);
         break;
       case SpreadsheetConstants.cycleDetected:
         node.onTap = (n) {
@@ -548,10 +555,7 @@ class SpreadsheetController extends ChangeNotifier {
           }
         };
       case SpreadsheetConstants.attToRefFromDepCol:
-        for (final rowId
-            in attToRefFromDepColToCol[Attribute(name: node.name)]!.keys) {
-          node.newChildren!.add(NodeStruct(att: Attribute(row: rowId)));
-        }
+        populateAttToRefFromDepColNode(node, populateChildren);
         break;
       case null:
         if (node.row != null) {
@@ -561,7 +565,7 @@ class SpreadsheetController extends ChangeNotifier {
                 "CellWithName with name, row and col not implemented",
               );
             } else {
-              populateCellNode(node);
+              populateCellNode(node, populateChildren);
             }
           } else {
             if (node.name != null) {
@@ -569,15 +573,15 @@ class SpreadsheetController extends ChangeNotifier {
                 "CellWithName with name and row not implemented",
               );
             } else {
-              populateRowNode(node);
+              populateRowNode(node, populateChildren);
             }
           }
         } else {
           if (node.col != null) {
             if (node.name != null) {
-              populateAttributeNode(node);
+              populateAttributeNode(node, populateChildren);
             } else {
-              populateColumnNode(node);
+              populateColumnNode(node, populateChildren);
             }
           } else {
             if (node.name != null) {
@@ -596,10 +600,7 @@ class SpreadsheetController extends ChangeNotifier {
                     ),
                   );
                 } else {
-                  populateNode(
-                    node,
-                    instruction: SpreadsheetConstants.attToRefFromDepCol,
-                  );
+                  populateAttToRefFromDepColNode(node, populateChildren);
                 }
               } else {
                 debugPrint(
@@ -611,7 +612,7 @@ class SpreadsheetController extends ChangeNotifier {
         }
         break;
       default:
-        debugPrint("populateNode: Unhandled instruction: $instruction");
+        debugPrint("populateNode: Unhandled instruction: ${node.instruction}");
         break;
     }
   }
@@ -625,41 +626,37 @@ class SpreadsheetController extends ChangeNotifier {
       var stack = [root];
       while (stack.isNotEmpty) {
         var node = stack.removeLast();
-        if (node.newChildren == null) {
-          node.newChildren = [];
-          populateNode(node);
-        }
-        for (final child in node.newChildren!) {
-          child.depth = node.depth + 1;
-        }
-
-        if (node.depth == 0) {
+        populateNode(node);
+        if (node.isExpanded) {
           for (int i = 0; i < node.children.length; i++) {
             var obj = node.children[i];
-            if (obj.depth > 0) {
+            if (!obj.isExpanded) {
               break;
             }
             for (int j = 0; j < node.newChildren!.length; j++) {
               var newObj = node.newChildren![j];
-              if (newObj.depth > 0 && obj == newObj) {
-                newObj.depth = 0;
+              if (!newObj.isExpanded && obj == newObj) {
+                newObj.isExpanded = true;
                 break;
               }
             }
           }
-        }
-        node.children = node.newChildren!;
-        if (node.depth < 2) {
           for (final child in node.children) {
-            stack.add(child);
+            child.isExpanded = child.startOpen || child.isExpanded;
+          }
+          if (node.isExpanded) {
+            for (final child in node.newChildren!) {
+              stack.add(child);
+            }
           }
         }
+        node.children = node.newChildren!;
       }
     }
   }
 
   void toggleNodeExpansion(NodeStruct node, bool isExpanded) {
-    node.depth = isExpanded ? 0 : 1;
+    node.isExpanded = isExpanded;
     populateTree([node]);
     notifyListeners();
   }

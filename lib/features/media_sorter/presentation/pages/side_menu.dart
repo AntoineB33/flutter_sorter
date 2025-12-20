@@ -61,7 +61,7 @@ class _SideMenuState extends State<SideMenu> {
     }
 
     final bool isLeaf = node.children.isEmpty;
-    final bool isExpanded = node.depth == 0;
+    final bool isExpanded = node.isExpanded;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -15,8 +15,7 @@ class NodeStruct {
   List<NodeStruct>? newChildren;
   final bool hideIfEmpty;
   final bool startOpen;
-  int depth =
-      0; // 0 if expanded, 1 if shown but not expanded, 2 if hidden but parent is shown, 3 otherwise
+  bool isExpanded = false;
   void Function(NodeStruct) onTap = (_) {};
 
   NodeStruct({
@@ -33,8 +32,7 @@ class NodeStruct {
     this.newChildren,
     this.hideIfEmpty = false,
     this.startOpen = false,
-  }) : depth = startOpen ? 0 : 1,
-       row = att?.row ?? cell?.row ?? rowId,
+  }) : row = att?.row ?? cell?.row ?? rowId,
        col = att?.col ?? cell?.col ?? colId,
        name = att?.name ?? name,
        message = message ?? instruction {

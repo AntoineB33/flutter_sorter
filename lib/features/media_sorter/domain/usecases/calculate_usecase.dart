@@ -68,6 +68,8 @@ class CalculateUsecase {
   Map<int, HashSet<Attribute>> colToAtt = {};
   List<bool> isMedium = [];
 
+
+  static const int maxInt = -1 >>> 1;
   static const patternDistance = SpreadsheetConstants.patternDistance;
   static const patternAreas = SpreadsheetConstants.patternAreas;
   static const all = SpreadsheetConstants.all;
@@ -351,10 +353,10 @@ class CalculateUsecase {
           var [startStr, endStr] = part.split(":");
 
           var start = int.tryParse(startStr);
-          start ??= double.infinity.toInt();
+          start ??= maxInt;
 
           var end = int.tryParse(endStr);
-          end ??= double.infinity.toInt();
+          end ??= maxInt;
 
           if (positive == 0) {
             start = -start;
@@ -380,7 +382,7 @@ class CalculateUsecase {
 
         if (endOfCurrent == null) {
           if (positive == 0) {
-            endOfCurrent = -double.infinity.toInt();
+            endOfCurrent = -maxInt;
           } else if (resultList.isNotEmpty &&
               resultList[resultList.length - 1][1] == -1) {
             endOfCurrent = resultList[resultList.length - 1][0] - 1;
@@ -394,7 +396,7 @@ class CalculateUsecase {
           if (positive == 0) {
             startOfNext = 0;
           } else {
-            startOfNext = double.infinity.toInt();
+            startOfNext = maxInt;
           }
         }
 
@@ -527,12 +529,14 @@ class CalculateUsecase {
     if (errorRoot.newChildren!.isNotEmpty) {
       return;
     }
-    
+
     isMedium = List<bool>.filled(rowCount, false);
     for (int rowId = 1; rowId < rowCount; rowId++) {
-      for (int colId = 0; colId < rowCount; colId++) {
-        isMedium[rowId] = isMedium[rowId] || columnTypes[colId] == ColumnType.filePath.name ||
-          columnTypes[colId] == ColumnType.urls.name;
+      for (int colId = 0; colId < colCount; colId++) {
+        if (columnTypes[colId] == ColumnType.filePath.name ||
+            columnTypes[colId] == ColumnType.urls.name) {
+          isMedium[rowId] = isMedium[rowId] || table[rowId][colId].isNotEmpty;
+        }
       }
     }
 
@@ -556,7 +560,7 @@ class CalculateUsecase {
     rowToAttToCol = {for (var i = 0; i < rowCount; i++) i: {}};
     for (int rowId = 1; rowId < rowCount; rowId++) {
       final row = table[rowId];
-      for (int colId = 0; colId < rowCount; colId++) {
+      for (int colId = 0; colId < colCount; colId++) {
         final isSprawl = columnTypes[colId] == ColumnType.sprawl.name;
         if (columnTypes[colId] == ColumnType.attributes.name || isSprawl) {
           if (row[colId].isEmpty) {
@@ -778,6 +782,9 @@ class CalculateUsecase {
       for (final attr in attrs) {
         catColChildren.add(NodeStruct(att: attr));
 
+        if (!attToDist.containsKey(attr)) {
+          continue;
+        }
         var rowsList = attToDist[attr]!;
         if (rowsList.length < 2) {
           warningRoot.newChildren!.add(
@@ -790,7 +797,7 @@ class CalculateUsecase {
         }
         rowsList = rowsList..sort();
         final distPairs = List.filled(rowsList.length - 2, 0);
-        int minDist = double.infinity.toInt();
+        int minDist = maxInt;
         for (var i = 0; i < rowsList.length - 2; i++) {
           var d = (rowsList[i] - rowsList[i + 1]).abs();
           for (var k = rowsList[i] + 1; k < rowsList[i + 1]; k++) {
@@ -856,7 +863,7 @@ class CalculateUsecase {
                   false,
                   [newIndexes[k]],
                   [
-                    [-double.infinity.toInt(), -1],
+                    [-maxInt, -1],
                   ],
                 )] =
                 v.col;
@@ -878,7 +885,7 @@ class CalculateUsecase {
                   false,
                   [newIndexes[k]],
                   [
-                    [1, double.infinity.toInt()],
+                    [1, maxInt],
                   ],
                 )] =
                 v.col;
@@ -920,7 +927,7 @@ class CalculateUsecase {
                 false,
                 [newIndexes[firstElement.dyn]],
                 [
-                  [-double.infinity.toInt(), -1],
+                  [-maxInt, -1],
                 ],
               )] =
               firstElement.id;
@@ -961,7 +968,7 @@ class CalculateUsecase {
                 false,
                 [newIndexes[lastElement.dyn]],
                 [
-                  [1, double.infinity.toInt()],
+                  [1, maxInt],
                 ],
               )] =
               lastElement.id;
@@ -1144,7 +1151,7 @@ class CalculateUsecase {
       }
     }
 
-    dfsIterative(rowToAttToCol, instrTable, "instruction");
+    // dfsIterative(rowToAttToCol, instrTable, "instruction");
 
     // // Detect cycles in instrTable
     // bool hasCycle(instrTable, visited, List<DynAndInt> stack, node, {bool after = true}) {
@@ -1156,10 +1163,10 @@ class CalculateUsecase {
     //       neighbor.any ||
     //       !neighbor.isConstraint ||
     //       (after
-    //         ? neighbor.intervals[0][0] != -double.infinity.toInt() ||
+    //         ? neighbor.intervals[0][0] != -maxInt ||
     //           neighbor.intervals[0][1] != -1
     //         : neighbor.intervals[neighbor.intervals.length - 1][0] != 1 ||
-    //           neighbor.intervals[neighbor.intervals.length - 1][1] != double.infinity.toInt())
+    //           neighbor.intervals[neighbor.intervals.length - 1][1] != maxInt)
     //     ) {
     //       continue;
     //     }
