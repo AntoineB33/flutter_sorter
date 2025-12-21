@@ -32,15 +32,15 @@ class NodeStruct {
     this.newChildren,
     this.hideIfEmpty = false,
     this.startOpen = false,
-  }) : this.rowId = att?.rowId ?? cell?.rowId ?? rowId,
-       this.colId = att?.colId ?? cell?.colId ?? colId,
+  }) : rowId = att?.rowId ?? cell?.rowId ?? rowId,
+       colId = att?.colId ?? cell?.colId ?? colId,
        name = att?.name ?? name,
        message = message ?? instruction {
     if (this.rowId != null) {
       if (this.colId != null) {
         this.cell ??= Cell(rowId: this.rowId!, colId: this.colId!);
       } else {
-        this.att ??= Attribute(rowId: this.rowId);
+        this.att ??= Attribute(rowId: this.rowId, colId: 10);
       }
     } else {
       if (this.colId != null) {

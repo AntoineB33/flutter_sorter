@@ -1,16 +1,9 @@
-class DynAndInt {
-  dynamic dyn;
-  int id;
-
-  DynAndInt(this.dyn, this.id);
-}
-
 class Attribute {
   final String? name;
   final int? rowId;
   final int? colId;
 
-  const Attribute({this.name, this.rowId, this.colId});
+  Attribute({this.name, this.rowId, this.colId});
 
   @override
   bool operator ==(Object other) {

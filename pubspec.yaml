@@ -42,6 +42,9 @@ dependencies:
   get_it: ^7.6.0
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+  custom_lint: any          # The runner
+  extra_lints:              # Your local package
+    path: ./extra_lints
 
   # State management
   flutter_riverpod: ^2.5.1

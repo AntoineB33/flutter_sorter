@@ -274,10 +274,7 @@ class CalculateUsecase {
                       instruction: SpreadsheetConstants.cell,
                       message:
                           "$warningMsgPrefix \"$grandChild\" already pointed",
-                      att: Attribute(
-                        rowId: node,
-                        colId: nodeChildren[grandChild],
-                      ),
+                      cell: Cell(rowId: node, colId: nodeChildren[grandChild]),
                       newChildren: newPath,
                     ),
                   );
@@ -435,7 +432,7 @@ class CalculateUsecase {
         warningRoot.newChildren!.add(
           NodeStruct(
             message: "Column ${splitStr[0]} does not exist",
-            att: Attribute(rowId: rowId, colId: colId),
+            cell: Cell(rowId: rowId, colId: colId),
           ),
         );
         return att;
@@ -444,7 +441,7 @@ class CalculateUsecase {
       errorRoot.newChildren!.add(
         NodeStruct(
           message: "Invalid attribute format: too many '.' characters",
-          att: Attribute(rowId: rowId, colId: colId),
+          cell: Cell(rowId: rowId, colId: colId),
         ),
       );
       return att;
@@ -459,7 +456,7 @@ class CalculateUsecase {
           NodeStruct(
             message:
                 "Cannot use both column and row index for attribute reference",
-            att: Attribute(rowId: rowId, colId: colId),
+            cell: Cell(rowId: rowId, colId: colId),
           ),
         );
         return att;
@@ -468,7 +465,7 @@ class CalculateUsecase {
         warningRoot.newChildren!.add(
           NodeStruct(
             message: "$name points to an empty row $numK",
-            att: Attribute(rowId: rowId, colId: colId),
+            cell: Cell(rowId: rowId, colId: colId),
           ),
         );
       }
@@ -482,7 +479,7 @@ class CalculateUsecase {
             NodeStruct(
               message:
                   "Column ${nodesUsecase.getColumnLabel(attColId)} is not an attribute column",
-              att: Attribute(rowId: rowId, colId: colId),
+              cell: Cell(rowId: rowId, colId: colId),
             ),
           );
           return att;
@@ -497,7 +494,7 @@ class CalculateUsecase {
             NodeStruct(
               message:
                   "Attribute column ${nodesUsecase.getColumnLabel(attColId)} differs from current column ${nodesUsecase.getColumnLabel(colId)}",
-              att: Attribute(rowId: rowId, colId: colId),
+              cell: Cell(rowId: rowId, colId: colId),
             ),
           );
         }
@@ -544,10 +541,10 @@ class CalculateUsecase {
 
     colToAtt = {};
     Map<Attribute, List<int>> attToDist = {};
-    DynAndInt firstElement = DynAndInt(-1, -1);
-    DynAndInt lastElement = DynAndInt(-1, -1);
-    final Map fstCat = {};
-    final Map lstCat = {};
+    Cell? firstElement;
+    Cell? lastElement;
+    final Map<int, (Attribute, int)> fstCat = {};
+    final Map<int, (Attribute, int)> lstCat = {};
     colToAtt[all] = HashSet<Attribute>();
     colToAtt[notUsedCst] = HashSet<Attribute>();
     for (int colId = 0; colId < colCount; colId++) {
@@ -574,7 +571,7 @@ class CalculateUsecase {
               errorRoot.newChildren!.add(
                 NodeStruct(
                   message: "empty attribute name",
-                  att: Attribute(rowId: rowId, colId: colId),
+                  cell: Cell(rowId: rowId, colId: colId),
                 ),
               );
               return;
@@ -588,58 +585,48 @@ class CalculateUsecase {
                   .substring(0, attWritten.length - 4)
                   .trim();
             } else if (attWritten == "fst") {
-              if (firstElement.dyn != -1) {
+              if (firstElement != null) {
                 errorRoot.newChildren!.add(
                   NodeStruct(
                     message: "multiple 'fst' found",
                     newChildren: [
+                      NodeStruct(cell: firstElement),
                       NodeStruct(
-                        att: Attribute(
-                          rowId: firstElement.dyn,
-                          colId: firstElement.id,
-                        ),
-                      ),
-                      NodeStruct(
-                        att: Attribute(rowId: rowId, colId: colId),
+                        cell: Cell(rowId: rowId, colId: colId),
                       ),
                     ],
                   ),
                 );
                 return;
               }
-              firstElement = DynAndInt(rowId, colId);
+              firstElement = Cell(rowId: rowId, colId: colId);
               continue;
             } else if ((isLst = attWritten.endsWith("-lst"))) {
               attWritten = attWritten
                   .substring(0, attWritten.length - 4)
                   .trim();
             } else if (attWritten == "lst") {
-              if (lastElement.dyn != -1) {
+              if (lastElement != null) {
                 errorRoot.newChildren!.add(
                   NodeStruct(
                     message: "multiple 'lst' found",
                     newChildren: [
+                      NodeStruct(cell: lastElement),
                       NodeStruct(
-                        att: Attribute(
-                          rowId: lastElement.dyn,
-                          colId: lastElement.id,
-                        ),
-                      ),
-                      NodeStruct(
-                        att: Attribute(rowId: rowId, colId: colId),
+                        cell: Cell(rowId: rowId, colId: colId),
                       ),
                     ],
                   ),
                 );
                 return;
               }
-              lastElement = DynAndInt(rowId, colId);
+              lastElement = Cell(rowId: rowId, colId: colId);
               continue;
             } else if (attWritten.contains("-fst")) {
               errorRoot.newChildren!.add(
                 NodeStruct(
                   message: "'-fst' is not at the end of $attWritten",
-                  att: Attribute(rowId: rowId, colId: colId),
+                  cell: Cell(rowId: rowId, colId: colId),
                 ),
               );
               return;
@@ -665,15 +652,15 @@ class CalculateUsecase {
             } else {
               children.add(
                 NodeStruct(
-                  att: Attribute(rowId: rowId, colId: colId),
+                  cell: Cell(rowId: rowId, colId: colId),
                 ),
               );
             }
 
             if (isFst) {
-              fstCat[rowId] = DynAndInt(att, colId);
+              fstCat[rowId] = (att, colId);
             } else if (isLst) {
-              lstCat[rowId] = DynAndInt(att, colId);
+              lstCat[rowId] = (att, colId);
             }
           }
         }
@@ -702,7 +689,7 @@ class CalculateUsecase {
     var urlFrom = List.generate(rowCount, (i) => -1);
     for (int i = 1; i < rowCount; i++) {
       final row = table[i];
-      Attribute att = Attribute(rowId: i, colId: all);
+      Attribute att = Attribute(rowId: i);
       if (isMedium[i] && attToRefFromAttColToCol.containsKey(att)) {
         for (final k in attToRefFromAttColToCol[att]!.keys) {
           if (isMedium[k]) {
@@ -718,7 +705,7 @@ class CalculateUsecase {
                         findPath(attToRefFromAttColToCol, urlFrom[k], k)
                             .map(
                               (x) => NodeStruct(
-                                att: Attribute(rowId: x.rowId, colId: x.colId),
+                                cell: Cell(rowId: x.rowId, colId: x.colId),
                               ),
                             )
                             .toList(),
@@ -729,7 +716,7 @@ class CalculateUsecase {
                     newChildren: findPath(attToRefFromAttColToCol, i, k)
                         .map(
                           (x) => NodeStruct(
-                            att: Attribute(rowId: x.rowId, colId: x.colId),
+                            cell: Cell(rowId: x.rowId, colId: x.colId),
                           ),
                         )
                         .toList(),
@@ -854,9 +841,9 @@ class CalculateUsecase {
 
     for (final MapEntry(key: k, value: v) in fstCat.entries) {
       if (isMedium[k]) {
-        var t = v.att;
+        var t = v.$1;
         while (fstCat.containsKey(t)) {
-          t = fstCat[t]!.att;
+          t = fstCat[t]!.$1;
         }
         for (final i in attToRefFromAttColToCol[t]!.keys) {
           if (i != k) {
@@ -868,7 +855,7 @@ class CalculateUsecase {
                     [-maxInt, -1],
                   ],
                 )] =
-                v.col;
+                v.$2;
           }
         }
       }
@@ -876,9 +863,9 @@ class CalculateUsecase {
 
     for (final MapEntry(key: k, value: v) in lstCat.entries) {
       if (isMedium[k]) {
-        var t = v.att;
+        var t = v.$1;
         while (lstCat.containsKey(t)) {
-          t = lstCat[t]!.att;
+          t = lstCat[t]!.$1;
         }
         for (final i in attToRefFromAttColToCol[t]!.keys) {
           if (i != k) {
@@ -890,32 +877,29 @@ class CalculateUsecase {
                     [1, maxInt],
                   ],
                 )] =
-                v.col;
+                v.$2;
           }
         }
       }
     }
 
-    if (firstElement.dyn != -1) {
-      if (attToRefFromAttColToCol.containsKey(firstElement.dyn)) {
-        if (attToRefFromAttColToCol[firstElement.dyn]!.keys.length > 1 ||
-            attToRefFromAttColToCol[firstElement.dyn]!.keys.length == 1 &&
-                isMedium[firstElement.dyn]) {
-          children = attToRefFromAttColToCol[firstElement.dyn]!.keys
+    if (firstElement != null) {
+      Attribute att = Attribute(rowId: firstElement.rowId);
+      if (attToRefFromAttColToCol.containsKey(att)) {
+        if (attToRefFromAttColToCol[att]!.keys.length > 1 ||
+            attToRefFromAttColToCol[att]!.keys.length == 1 &&
+                isMedium[firstElement.rowId]) {
+          children = attToRefFromAttColToCol[att]!.keys
               .map(
                 (k) => NodeStruct(
-                  att: Attribute(
+                  cell: Cell(
                     rowId: k,
-                    colId: attToRefFromAttColToCol[firstElement.dyn]![k]!,
+                    colId: attToRefFromAttColToCol[att]![k]!,
                   ),
                 ),
               )
               .toList();
-          children.add(
-            NodeStruct(
-              att: Attribute(rowId: firstElement.dyn, colId: firstElement.id),
-            ),
-          );
+          children.add(NodeStruct(cell: firstElement));
           errorRoot.newChildren!.add(
             NodeStruct(message: "multiple 'fst' found", newChildren: children),
           );
@@ -923,40 +907,37 @@ class CalculateUsecase {
         }
       }
       for (final i in validRowIndexes) {
-        if (i != firstElement.dyn) {
+        if (i != firstElement.rowId) {
           instrTable[i][InstrStruct(
                 true,
                 false,
-                [newIndexes[firstElement.dyn]],
+                [newIndexes[firstElement.rowId]],
                 [
                   [-maxInt, -1],
                 ],
               )] =
-              firstElement.id;
+              firstElement.colId;
         }
       }
     }
 
-    if (lastElement.dyn != -1) {
-      if (attToRefFromAttColToCol.containsKey(lastElement.dyn)) {
-        if (attToRefFromAttColToCol[lastElement.dyn]!.keys.length > 1 ||
-            attToRefFromAttColToCol[lastElement.dyn]!.keys.length == 1 &&
-                isMedium[lastElement.dyn]) {
-          children = attToRefFromAttColToCol[lastElement.dyn]!.keys
+    if (lastElement != null) {
+      Attribute att = Attribute(rowId: lastElement.rowId);
+      if (attToRefFromAttColToCol.containsKey(att)) {
+        if (attToRefFromAttColToCol[att]!.keys.length > 1 ||
+            attToRefFromAttColToCol[att]!.keys.length == 1 &&
+                isMedium[lastElement.rowId]) {
+          children = attToRefFromAttColToCol[att]!.keys
               .map(
                 (k) => NodeStruct(
-                  att: Attribute(
+                  cell: Cell(
                     rowId: k,
-                    colId: attToRefFromAttColToCol[lastElement.dyn]![k]!,
+                    colId: attToRefFromAttColToCol[att]![k]!,
                   ),
                 ),
               )
               .toList();
-          children.add(
-            NodeStruct(
-              att: Attribute(rowId: lastElement.dyn, colId: lastElement.id),
-            ),
-          );
+          children.add(NodeStruct(cell: lastElement));
           errorRoot.newChildren!.add(
             NodeStruct(message: "multiple 'lst' found", newChildren: children),
           );
@@ -964,16 +945,16 @@ class CalculateUsecase {
         }
       }
       for (final i in validRowIndexes) {
-        if (i != lastElement.dyn) {
+        if (i != lastElement.rowId) {
           instrTable[i][InstrStruct(
                 true,
                 false,
-                [newIndexes[lastElement.dyn]],
+                [newIndexes[lastElement.rowId]],
                 [
                   [1, maxInt],
                 ],
               )] =
-              lastElement.id;
+              lastElement.colId;
         }
       }
     }
@@ -1002,7 +983,7 @@ class CalculateUsecase {
               NodeStruct(
                 message:
                     "$instr does not match dependencies pattern ${depPattern[colId]}",
-                att: Attribute(rowId: rowId, colId: colId),
+                cell: Cell(rowId: rowId, colId: colId),
               ),
             );
             return;
@@ -1032,7 +1013,7 @@ class CalculateUsecase {
               errorRoot.newChildren!.add(
                 NodeStruct(
                   message: "$instr does not match expected format",
-                  att: Attribute(rowId: rowId, colId: colId),
+                  cell: Cell(rowId: rowId, colId: colId),
                 ),
               );
               return;
@@ -1143,7 +1124,7 @@ class CalculateUsecase {
             errorRoot.newChildren!.add(
               NodeStruct(
                 message: "duplicate instruction",
-                att: Attribute(rowId: rowId, colId: colId),
+                cell: Cell(rowId: rowId, colId: colId),
               ),
             );
           } else {
@@ -1271,7 +1252,7 @@ class CalculateUsecase {
             errorRoot.newChildren!.add(
               NodeStruct(
                 message: "${att.name} is not a valid name",
-                att: Attribute(rowId: i, colId: j),
+                cell: Cell(rowId: i, colId: j),
               ),
             );
             return;
@@ -1285,7 +1266,7 @@ class CalculateUsecase {
             errorRoot.newChildren!.add(
               NodeStruct(
                 message: "${att.name} contains invalid characters (_ : | -)",
-                att: Attribute(rowId: i, colId: j),
+                cell: Cell(rowId: i, colId: j),
               ),
             );
           }
@@ -1295,7 +1276,7 @@ class CalculateUsecase {
             errorRoot.newChildren!.add(
               NodeStruct(
                 message: "${att.name} contains invalid parentheses",
-                att: Attribute(rowId: i, colId: j),
+                cell: Cell(rowId: i, colId: j),
               ),
             );
           }
@@ -1304,7 +1285,7 @@ class CalculateUsecase {
             errorRoot.newChildren!.add(
               NodeStruct(
                 message: "${att.name} is a reserved name",
-                att: Attribute(rowId: i, colId: j),
+                cell: Cell(rowId: i, colId: j),
               ),
             );
           }
@@ -1315,10 +1296,10 @@ class CalculateUsecase {
                 message: "name ${att.name} used two times",
                 newChildren: [
                   NodeStruct(
-                    att: Attribute(rowId: i, colId: j),
+                    cell: Cell(rowId: i, colId: j),
                   ),
                   NodeStruct(
-                    att: Attribute(
+                    cell: Cell(
                       rowId: names[att.name]!.rowId,
                       colId: names[att.name]!.colId,
                     ),
