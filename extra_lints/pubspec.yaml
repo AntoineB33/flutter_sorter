@@ -7,3 +7,4 @@ environment:
 dependencies:
   analyzer: any
   custom_lint_builder: any
+  custom_lint: any

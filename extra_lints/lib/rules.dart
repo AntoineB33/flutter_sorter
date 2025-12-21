@@ -8,7 +8,7 @@ class AvoidAttributeRowAndColumn extends DartLintRule {
   static const _code = LintCode(
     name: 'avoid_attribute_row_and_column',
     problemMessage:
-        'Do not instantiate Attribue with rowId and colId at the same time.',
+        'Do not instantiate Attribute with rowId and colId at the same time.',
   );
 
   @override
@@ -18,15 +18,18 @@ class AvoidAttributeRowAndColumn extends DartLintRule {
     CustomLintContext context,
   ) {
     context.registry.addInstanceCreationExpression((node) {
-      // Fix 2: Change .element to .staticElement
-      final element = node.constructorName.staticElement;
-
-      // We check the enclosing element (the class) of the constructor
-      // Note: In very new versions, enclosingElement might require enclosingElement3, 
-      // but usually this still works.
-      final type = element?.enclosingElement;
-
-      if (type?.name != 'Attribute') return;
+      print('Checking node: ${node.constructorName.type.toSource()}');
+      // 1. ROBUST CHECK: Check the name from the code text (AST)
+      // instead of waiting for the analyzer to resolve the element type.
+      final typeName = node.constructorName.type.name2.lexeme; // .name2.lexeme handles newer analyzer versions
+      
+      // If you are using an older analyzer where .name2 doesn't exist yet, 
+      // use: node.constructorName.type.name.name;
+      
+      // We accept 'Attribute' or 'some_prefix.Attribute'
+      if (typeName != 'Attribute' && !typeName.endsWith('.Attribute')) {
+        return;
+      }
 
       // 2. Check for the presence of both arguments
       bool hasRowId = false;
