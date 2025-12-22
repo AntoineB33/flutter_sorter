@@ -5,6 +5,9 @@ environment:
   sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
-  analyzer: any
-  custom_lint_builder: any
-  custom_lint: any
+  # Downgraded to be compatible with isar_generator
+  analyzer: ">=5.13.0 <6.0.0" 
+  
+  # Version 0.5.x supports analyzer 5.x (0.6.x requires analyzer 6.x)
+  custom_lint_builder: ^0.5.8
+  custom_lint: ^0.5.8

@@ -1,3 +1,4 @@
+import 'package:analyzer/error/error.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:custom_lint_builder/custom_lint_builder.dart';
@@ -7,8 +8,14 @@ class AvoidAttributeRowAndColumn extends DartLintRule {
 
   static const _code = LintCode(
     name: 'avoid_attribute_row_and_column',
-    problemMessage:
-        'Do not instantiate Attribute with rowId and colId at the same time.',
+    problemMessage: 'Do not instantiate Attribute with rowId and colId simultaneously.',
+  );
+
+  // Define a temporary debug code to verify the linter is running
+  static const _debugCode = LintCode(
+    name: 'debug_linter_active',
+    problemMessage: 'The linter is alive and checking this node.',
+    errorSeverity: ErrorSeverity.INFO,
   );
 
   @override
@@ -18,16 +25,16 @@ class AvoidAttributeRowAndColumn extends DartLintRule {
     CustomLintContext context,
   ) {
     context.registry.addInstanceCreationExpression((node) {
-      print('Checking node: ${node.constructorName.type.toSource()}');
-      // 1. ROBUST CHECK: Check the name from the code text (AST)
-      // instead of waiting for the analyzer to resolve the element type.
-      final typeName = node.constructorName.type.name2.lexeme; // .name2.lexeme handles newer analyzer versions
+      // 1. SAFET CHECK: Use toSource() to get the class name.
+      // This is safer than .name2.lexeme as it handles prefixes (e.g., ui.Attribute) automatically.
+      final sourceName = node.constructorName.type.toSource();
       
-      // If you are using an older analyzer where .name2 doesn't exist yet, 
-      // use: node.constructorName.type.name.name;
-      
-      // We accept 'Attribute' or 'some_prefix.Attribute'
-      if (typeName != 'Attribute' && !typeName.endsWith('.Attribute')) {
+      // DEBUG: Uncomment this line if you still see nothing. 
+      // It will mark EVERY class instantiation in your app as an Info warning.
+      reporter.reportErrorForNode(_debugCode, node);
+
+      // Check if the class is Attribute
+      if (!sourceName.endsWith('Attribute')) {
         return;
       }
 

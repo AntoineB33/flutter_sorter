@@ -1,16 +1,29 @@
+class SheetModel {
+  final List<List<String>> table;
+  final List<String> columnTypes;
 
+  SheetModel({required this.table, required this.columnTypes});
 
-// class SheetModel {
-//   final List<List<String>> table;
-//   final List<String> columnTypes;
-//   // ... other fields
+  // This factory handles the ugly 'dynamic' parsing in one isolated place
+  factory SheetModel.fromJson(Map<String, dynamic> json) {
+    var rawTable = json['table'] as List? ?? [];
+    
+    // Safely convert the table, handling non-string values gracefully
+    List<List<String>> parsedTable = rawTable.map((row) {
+      if (row is List) {
+        return row.map((cell) => cell.toString()).toList();
+      }
+      return <String>[]; // Handle malformed rows safely
+    }).toList();
 
-//   factory SheetModel.fromJson(Map<String, dynamic> json) {
-//     // Move the parsing logic here
-//     final rawTable = json["table"] as List?;
-//     // ... logic from repository ...
-//     return SheetModel(...);
-//   }
+    var rawTypes = json['columnTypes'] as List? ?? [];
+    List<String> parsedTypes = rawTypes.map((e) => e.toString()).toList();
 
-//   Map<String, dynamic> toJson() => { ... };
-// }
+    return SheetModel(table: parsedTable, columnTypes: parsedTypes);
+  }
+  
+  Map<String, dynamic> toJson() => {
+    'table': table,
+    'columnTypes': columnTypes,
+  };
+}

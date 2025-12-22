@@ -23,5 +23,7 @@ class SpreadsheetConstants {
   static const attToCol = 'Columns with this attribute';
   static const refFromAttColMsg = "rows that have it as attribute";
   static const attToRefFromDepCol = "rows that mention this attribute";
+  static const moveToUniqueMentionSprawlCol =
+      "moved to unique mention in sprawl column for this attribute";
   static const refFromDepColMsg = "rows that have constraints based on it";
 }

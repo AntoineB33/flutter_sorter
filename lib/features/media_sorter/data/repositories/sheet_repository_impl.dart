@@ -1,6 +1,7 @@
+import 'dart:math';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_repository.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
-import 'dart:math';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
 
 class SheetRepositoryImpl implements SheetRepository {
   final FileSheetLocalDataSource dataSource;
@@ -41,15 +42,9 @@ class SheetRepositoryImpl implements SheetRepository {
 
   @override
   Future<(List<List<String>> table, List<String> columnTypes)> loadSheet(String sheetName) async {
-    Map<String, dynamic> mapData = await dataSource.getSheet(sheetName);
-    final rawTable = mapData["table"] as List?;
-    final rawColumnTypes = mapData["columnTypes"] as List?;
-    List<List<String>> table = rawTable?.map((row) {
-      // Convert each row (which is a List) into a List<String>
-      return (row as List).map((cell) => cell.toString()).toList();
-    }).toList() ?? [];
-    List<String> columnTypes = rawColumnTypes?.map((type) => type.toString()).toList() ?? [];
-    return (table, columnTypes);
+    final mapData = await dataSource.getSheet(sheetName);
+    final sheet = SheetModel.fromJson(mapData);
+    return (sheet.table, sheet.columnTypes);
   }
 
   @override

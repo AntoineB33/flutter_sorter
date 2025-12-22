@@ -12,7 +12,7 @@ import '../../domain/usecases/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import '../../domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_messages.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/dyn_and_int.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/nodes_usecase.dart';
@@ -84,7 +84,7 @@ class SpreadsheetController extends ChangeNotifier {
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
-  Map<Attribute, Map<int, int>> attToRefFromAttColToCol = {};
+  Map<Attribute, Map<int, List<int>>> attToRefFromAttColToCol = {};
   Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol = {};
   Map<int, Map<Attribute, int>> rowToAtt = {};
 
@@ -444,7 +444,7 @@ class SpreadsheetController extends ChangeNotifier {
       root.newChildren!.add(
         NodeStruct(
           message: table[rowId][colId],
-          att: Attribute(rowId: rowId),
+          att: Attribute.row(rowId: rowId),
         ),
       );
       return;
@@ -463,6 +463,12 @@ class SpreadsheetController extends ChangeNotifier {
             att: node.att,
           ),
         );
+      } else {
+        node.newChildren!.add(
+          NodeStruct(
+            message: 'No references from attribute columns found',
+          ),
+        );
       }
       if (attToRefFromDepColToCol.containsKey(node.att)) {
         node.newChildren!.add(
@@ -471,9 +477,42 @@ class SpreadsheetController extends ChangeNotifier {
             att: node.att,
           ),
         );
+      } else {
+        node.newChildren!.add(
+          NodeStruct(
+            message: 'No references from dependence columns found',
+          ),
+        );
       }
     }
     node.message ??= node.name;
+    if (node.defaultOnTap) {
+      node.onTap = (n) {
+        List<Cell> cells = [];
+        for (final MapEntry(key: rowId, value: colIds) in [...attToRefFromAttColToCol[node.att]!.entries, ...attToRefFromDepColToCol[node.att]!.entries]) {
+          for (final colId in colIds) {
+            cells.add(Cell(rowId: rowId, colId: colId));
+          }
+        }
+        int found = -1;
+        for (int i = 0; i < n.newChildren!.length; i++) {
+          final child = n.newChildren![i];
+          if (_selectionStart.x == child.rowId) {
+            found = i;
+            break;
+          }
+        }
+        if (found == -1) {
+          selectCell(n.newChildren![0].rowId!, 0);
+        } else {
+          selectCell(
+            n.newChildren![(found + 1) % n.newChildren!.length].rowId!,
+            0,
+          );
+        }
+      };
+      node.defaultOnTap = false;
+    }
   }
 
   void populateRowNode(NodeStruct node, bool populateChildren) {
@@ -518,6 +557,61 @@ class SpreadsheetController extends ChangeNotifier {
     for (final rowId
         in attToRefFromDepColToCol[Attribute(name: node.name)]!.keys) {
       node.newChildren!.add(NodeStruct(rowId: rowId));
+    }
+  }
+
+  void populateNodeDefault(NodeStruct node, bool populateChildren) {
+    if (node.rowId != null) {
+      if (node.colId != null) {
+        if (node.name != null) {
+          throw UnimplementedError(
+            "CellWithName with name, row and col not implemented",
+          );
+        } else {
+          populateCellNode(node, populateChildren);
+        }
+      } else {
+        if (node.name != null) {
+          throw UnimplementedError(
+            "CellWithName with name and row not implemented",
+          );
+        } else {
+          populateRowNode(node, populateChildren);
+        }
+      }
+    } else {
+      if (node.colId != null) {
+        if (node.name != null) {
+          populateAttributeNode(node, populateChildren);
+        } else {
+          populateColumnNode(node, populateChildren);
+        }
+      } else {
+        if (node.name != null) {
+          if (attToCol.containsKey(node.name)) {
+            if (attToCol[node.name]! != [SpreadsheetConstants.notUsedCst]) {
+              node.newChildren!.add(
+                NodeStruct(
+                  instruction: SpreadsheetConstants.attToRefFromDepCol,
+                  name: node.name,
+                ),
+              );
+              node.newChildren!.add(
+                NodeStruct(
+                  instruction: SpreadsheetConstants.attToCol,
+                  name: node.name,
+                ),
+              );
+            } else {
+              populateAttToRefFromDepColNode(node, populateChildren);
+            }
+          } else {
+            debugPrint(
+              "populateNode: Unhandled CellWithName with name only: ${node.name}",
+            );
+          }
+        }
+      }
     }
   }
 
@@ -569,63 +663,21 @@ class SpreadsheetController extends ChangeNotifier {
       case SpreadsheetConstants.attToRefFromDepCol:
         populateAttToRefFromDepColNode(node, populateChildren);
         break;
+      case SpreadsheetConstants.moveToUniqueMentionSprawlCol:
+        node.onTap = (n) {
+          int rowId = attToRefFromAttColToCol[node.att]!.keys.first;
+          selectCell(rowId, attToRefFromAttColToCol[node.att]![rowId]!);
+        };
+        node.defaultOnTap = false;
+        populateNodeDefault(node, populateChildren);
+        break;
       case null:
-        if (node.rowId != null) {
-          if (node.colId != null) {
-            if (node.name != null) {
-              throw UnimplementedError(
-                "CellWithName with name, row and col not implemented",
-              );
-            } else {
-              populateCellNode(node, populateChildren);
-            }
-          } else {
-            if (node.name != null) {
-              throw UnimplementedError(
-                "CellWithName with name and row not implemented",
-              );
-            } else {
-              populateRowNode(node, populateChildren);
-            }
-          }
-        } else {
-          if (node.colId != null) {
-            if (node.name != null) {
-              populateAttributeNode(node, populateChildren);
-            } else {
-              populateColumnNode(node, populateChildren);
-            }
-          } else {
-            if (node.name != null) {
-              if (attToCol.containsKey(node.name)) {
-                if (attToCol[node.name]! != [SpreadsheetConstants.notUsedCst]) {
-                  node.newChildren!.add(
-                    NodeStruct(
-                      instruction: SpreadsheetConstants.attToRefFromDepCol,
-                      name: node.name,
-                    ),
-                  );
-                  node.newChildren!.add(
-                    NodeStruct(
-                      instruction: SpreadsheetConstants.attToCol,
-                      name: node.name,
-                    ),
-                  );
-                } else {
-                  populateAttToRefFromDepColNode(node, populateChildren);
-                }
-              } else {
-                debugPrint(
-                  "populateNode: Unhandled CellWithName with name only: ${node.name}",
-                );
-              }
-            }
-          }
-        }
+        populateNodeDefault(node, populateChildren);
         break;
       default:
-        debugPrint("populateNode: Unhandled instruction: ${node.instruction}");
-        break;
+        throw UnimplementedError(
+          "populateNode: Unhandled instruction ${node.instruction}",
+        );
     }
   }
 

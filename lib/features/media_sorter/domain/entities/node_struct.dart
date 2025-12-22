@@ -1,4 +1,4 @@
-import 'package:trying_flutter/features/media_sorter/domain/entities/dyn_and_int.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 
 class NodeStruct {
@@ -17,6 +17,7 @@ class NodeStruct {
   final bool startOpen;
   bool isExpanded = false;
   void Function(NodeStruct) onTap = (_) {};
+  bool defaultOnTap = true;
 
   NodeStruct({
     this.instruction,
@@ -40,7 +41,7 @@ class NodeStruct {
       if (this.colId != null) {
         this.cell ??= Cell(rowId: this.rowId!, colId: this.colId!);
       } else {
-        this.att ??= Attribute(rowId: this.rowId, colId: 10);
+        this.att ??= Attribute.row(rowId: this.rowId!);
       }
     } else {
       if (this.colId != null) {

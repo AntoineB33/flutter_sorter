@@ -1,7 +1,7 @@
 import 'dart:collection';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/dyn_and_int.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
 
@@ -44,7 +44,7 @@ class AnalysisResult {
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
-  Map<Attribute, Map<int, int>> attToRefFromAttColToCol = {};
+  Map<Attribute, Map<int, List<int>>> attToRefFromAttColToCol = {};
   Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol = {};
   Map<int, Map<Attribute, int>> rowToAtt = {};
 

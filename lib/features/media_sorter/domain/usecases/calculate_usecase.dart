@@ -3,7 +3,7 @@ import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'dart:collection';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/dyn_and_int.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_messages.dart';
@@ -58,7 +58,7 @@ class CalculateUsecase {
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
-  Map<Attribute, Map<int, int>> attToRefFromAttColToCol = {};
+  Map<Attribute, Map<int, List<int>>> attToRefFromAttColToCol = {};
   Map<int, Map<Attribute, int>> rowToAttToCol = {};
 
   /// Maps attribute identifiers (row index or name)
@@ -209,7 +209,7 @@ class CalculateUsecase {
   }
 
   List<Cell> findPath(
-    dynamic graph,
+    Map<Attribute, Map<int, int>> graph,
     int start,
     int end, {
     bool reverse = true,
@@ -232,13 +232,14 @@ class CalculateUsecase {
   }
 
   void dfsIterative(
-    Map<dynamic, Map<dynamic, int>> graph,
-    dynamic accumulator,
+    Map<Attribute, Map<int, int>> graph,
+    Map<Attribute, Map<int, int>> accumulator,
     String warningMsgPrefix,
   ) {
-    final visited = <dynamic>{};
-    final completed = <dynamic>{};
-    List<dynamic> path = [];
+    const int added = -1;
+    final visited = <Attribute>{};
+    final completed = <Attribute>{};
+    List<Attribute> path = [];
 
     final List<NodeStruct> redundantRef = [];
     for (final start in graph.keys) {
@@ -246,21 +247,21 @@ class CalculateUsecase {
       final stack = [start];
 
       while (stack.isNotEmpty) {
-        final node = stack[stack.length - 1]; // peek
-        if (path.isNotEmpty && path[path.length - 1] == node) {
-          Map nodeChildren = accumulator[node] ?? {};
+        Attribute att = stack[stack.length - 1]; // peek
+        if (path.isNotEmpty && path[path.length - 1] == att) {
+          Map<int, int> rowsToCol = accumulator[att] ?? {};
 
-          for (final child in nodeChildren.keys) {
-            Map<dynamic, int>? childMap = graph[child];
-            if (childMap != null) {
-              for (final grandChild in childMap.keys) {
-                if (!nodeChildren.containsKey(grandChild)) {
-                  nodeChildren[grandChild] = -1;
-                } else if (nodeChildren[grandChild] != -1) {
+          for (final rowId in rowsToCol.keys) {
+            Map<int, int>? childRowsToCol = graph[Attribute.row(rowId: rowId)];
+            if (childRowsToCol != null) {
+              for (int childRowId in childRowsToCol.keys) {
+                if (!rowsToCol.containsKey(childRowId)) {
+                  rowsToCol[childRowId] = added;
+                } else if (rowsToCol[childRowId] != added) {
                   var newPath =
                       [
-                            ...findPath(graph, child, grandChild),
-                            Cell(rowId: node, colId: graph[child]![node]!),
+                            ...findPath(graph, rowId, childRowId),
+                            Cell(rowId: att, colId: graph[rowId]![att]!),
                           ]
                           .map(
                             (k) => NodeStruct(
@@ -273,8 +274,8 @@ class CalculateUsecase {
                     NodeStruct(
                       instruction: SpreadsheetConstants.cell,
                       message:
-                          "$warningMsgPrefix \"$grandChild\" already pointed",
-                      cell: Cell(rowId: node, colId: nodeChildren[grandChild]),
+                          "$warningMsgPrefix \"$childRowId\" already pointed",
+                      cell: Cell(rowId: childRowId, colId: rowsToCol[childRowId]!),
                       newChildren: newPath,
                     ),
                   );
@@ -283,21 +284,21 @@ class CalculateUsecase {
             }
           }
 
-          completed.add(node);
+          completed.add(att);
           path.removeLast();
           stack.removeLast();
           continue;
         }
 
-        if (visited.contains(node)) {
+        if (visited.contains(att)) {
           stack.removeLast(); // already processed
           continue;
         }
 
-        visited.add(node);
-        path.add(node);
+        visited.add(att);
+        path.add(att);
 
-        final neighborsMap = graph[node] ?? {};
+        final neighborsMap = graph[att] ?? {};
         final neighbors = neighborsMap.keys.toList();
 
         for (int i = neighbors.length - 1; i >= 0; i--) {
@@ -469,7 +470,7 @@ class CalculateUsecase {
           ),
         );
       }
-      att = Attribute(rowId: numK);
+      att = Attribute.row(rowId: numK);
     } else {
       // TODO: validate attribute name
       if (attColId != notUsedCst) {
@@ -543,8 +544,8 @@ class CalculateUsecase {
     Map<Attribute, List<int>> attToDist = {};
     Cell? firstElement;
     Cell? lastElement;
-    final Map<int, (Attribute, int)> fstCat = {};
-    final Map<int, (Attribute, int)> lstCat = {};
+    final Map<int, List<(Attribute, int)>> fstCat = {};
+    final Map<int, List<(Attribute, int)>> lstCat = {};
     colToAtt[all] = HashSet<Attribute>();
     colToAtt[notUsedCst] = HashSet<Attribute>();
     for (int colId = 0; colId < colCount; colId++) {
@@ -578,7 +579,7 @@ class CalculateUsecase {
             }
 
             bool isFst = attWritten.endsWith("-fst");
-            bool isLst = false;
+            bool isLst = attWritten.endsWith("-lst");
 
             if (isFst) {
               attWritten = attWritten
@@ -601,7 +602,7 @@ class CalculateUsecase {
               }
               firstElement = Cell(rowId: rowId, colId: colId);
               continue;
-            } else if ((isLst = attWritten.endsWith("-lst"))) {
+            } else if (isLst) {
               attWritten = attWritten
                   .substring(0, attWritten.length - 4)
                   .trim();
@@ -689,7 +690,7 @@ class CalculateUsecase {
     var urlFrom = List.generate(rowCount, (i) => -1);
     for (int i = 1; i < rowCount; i++) {
       final row = table[i];
-      Attribute att = Attribute(rowId: i);
+      Attribute att = Attribute.row(rowId: i);
       if (isMedium[i] && attToRefFromAttColToCol.containsKey(att)) {
         for (final k in attToRefFromAttColToCol[att]!.keys) {
           if (isMedium[k]) {
@@ -761,6 +762,7 @@ class CalculateUsecase {
     }
 
     // Build categories and distance pairs
+    List<NodeStruct> onlyOneMediumDist = [];
     for (var col in [...List.generate(colCount, (index) => index + 1), all]) {
       if (!colToAtt.containsKey(col) || colToAtt[col]!.isEmpty) {
         continue;
@@ -775,12 +777,9 @@ class CalculateUsecase {
           continue;
         }
         var rowsList = attToDist[attr]!;
-        if (rowsList.length < 2) {
-          warningRoot.newChildren!.add(
-            NodeStruct(
-              message: "Only one row for sprawl attribute \"${attr.name}\"",
-              att: attr,
-            ),
+        if (rowsList.length == 1) {
+          onlyOneMediumDist.add(
+            NodeStruct(att: attr),
           );
           continue;
         }
@@ -809,8 +808,8 @@ class CalculateUsecase {
                 message:
                     "($d) ${nodesUsecase.getRowName(rowsList[idx])} - ${nodesUsecase.getRowName(rowsList[idx + 1])}",
                 newChildren: [
-                  NodeStruct(att: Attribute(rowId: rowsList[idx])),
-                  NodeStruct(att: Attribute(rowId: rowsList[idx + 1])),
+                  NodeStruct(att: Attribute.row(rowId: rowsList[idx])),
+                  NodeStruct(att: Attribute.row(rowId: rowsList[idx + 1])),
                 ],
                 dist: d,
               );
@@ -833,6 +832,15 @@ class CalculateUsecase {
         NodeStruct(
           att: Attribute(colId: col),
           newChildren: spColChildren..sort((a, b) => a.minDist! - b.minDist!),
+        ),
+      );
+    }
+    if (onlyOneMediumDist.isNotEmpty) {
+      warningRoot.newChildren!.add(
+        NodeStruct(
+          message:
+              "Attributes with only one medium in sprawl columns found",
+          newChildren: onlyOneMediumDist,
         ),
       );
     }
@@ -865,7 +873,7 @@ class CalculateUsecase {
       if (isMedium[k]) {
         var t = v.$1;
         while (lstCat.containsKey(t)) {
-          t = lstCat[t]!.$1;
+          t = lstCat[t.rowId]!.$1;
         }
         for (final i in attToRefFromAttColToCol[t]!.keys) {
           if (i != k) {
@@ -884,7 +892,7 @@ class CalculateUsecase {
     }
 
     if (firstElement != null) {
-      Attribute att = Attribute(rowId: firstElement.rowId);
+      Attribute att = Attribute.row(rowId: firstElement.rowId);
       if (attToRefFromAttColToCol.containsKey(att)) {
         if (attToRefFromAttColToCol[att]!.keys.length > 1 ||
             attToRefFromAttColToCol[att]!.keys.length == 1 &&
@@ -922,7 +930,7 @@ class CalculateUsecase {
     }
 
     if (lastElement != null) {
-      Attribute att = Attribute(rowId: lastElement.rowId);
+      Attribute att = Attribute.row(rowId: lastElement.rowId);
       if (attToRefFromAttColToCol.containsKey(att)) {
         if (attToRefFromAttColToCol[att]!.keys.length > 1 ||
             attToRefFromAttColToCol[att]!.keys.length == 1 &&
@@ -965,7 +973,7 @@ class CalculateUsecase {
     depCache = {};
     for (int rowId = 1; rowId < rowCount; rowId++) {
       if (!isMedium[rowId] &&
-          !(attToRefFromAttColToCol.containsKey(Attribute(rowId: rowId)))) {
+          !(attToRefFromAttColToCol.containsKey(Attribute.row(rowId: rowId)))) {
         continue;
       }
 
@@ -1094,7 +1102,7 @@ class CalculateUsecase {
 
     for (int rowId = 1; rowId < rowCount; rowId++) {
       if (!isMedium[rowId] &&
-          !(attToRefFromAttColToCol.containsKey(Attribute(rowId: rowId)))) {
+          !(attToRefFromAttColToCol.containsKey(Attribute.row(rowId: rowId)))) {
         continue;
       }
 
