@@ -41,30 +41,37 @@ class SheetRepositoryImpl implements SheetRepository {
   }
 
   @override
-  Future<(List<List<String>> table, List<String> columnTypes)> loadSheet(String sheetName) async {
+  Future<(List<List<String>> table, List<String> columnTypes)> loadSheet(
+    String sheetName,
+  ) async {
     final mapData = await dataSource.getSheet(sheetName);
     final sheet = SheetModel.fromJson(mapData);
     return (sheet.table, sheet.columnTypes);
   }
 
   @override
-  Future<void> updateSheet(String sheetName, List<List<String>> table, List<String> columnTypes) async {
-    final data = {
-      "table": table,
-      "columnTypes": columnTypes,
-    };
+  Future<void> updateSheet(
+    String sheetName,
+    List<List<String>> table,
+    List<String> columnTypes,
+  ) async {
+    final data = {"table": table, "columnTypes": columnTypes};
     return await dataSource.saveSheet(sheetName, data);
   }
 
   @override
   Future<Map<String, Point<int>>> getAllLastSelected() async {
     final cellMaps = await dataSource.getAllLastSelected();
-    return cellMaps.map((key, cellMap) => MapEntry(key, Point<int>(cellMap["x"]!, cellMap["y"]!)));
+    return cellMaps.map(
+      (key, cellMap) => MapEntry(key, Point<int>(cellMap["x"]!, cellMap["y"]!)),
+    );
   }
 
   @override
   Future<void> saveAllLastSelected(Map<String, Point<int>> cells) async {
-    final cellList = cells.map((key, cell) => MapEntry(key, {"x": cell.x, "y": cell.y}));
+    final cellList = cells.map(
+      (key, cell) => MapEntry(key, {"x": cell.x, "y": cell.y}),
+    );
     await dataSource.saveAllLastSelected(cellList);
   }
 

@@ -53,11 +53,11 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
     final jsonString = jsonEncode(sheetNames);
     await file.writeAsString(jsonString);
   }
-  
+
   Future<File> _getFile(String sheetName) async {
     final directory = await getApplicationDocumentsDirectory();
     // Sanitize filename to prevent path traversal
-    final safeName = sheetName.replaceAll(RegExp(r'[^\w\s]+'), ''); 
+    final safeName = sheetName.replaceAll(RegExp(r'[^\w\s]+'), '');
     final file = File('${directory.path}/media_sorter/sheet_$safeName.json');
     await file.create(recursive: true);
     return file;
@@ -87,7 +87,6 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
     }
   }
 
-
   Future<Map<String, Map<String, int>>> getAllLastSelected() async {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/media_sorter/all_last_selected.json');
@@ -96,7 +95,9 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
       final jsonString = await file.readAsString();
       final Map<String, dynamic> decoded = jsonDecode(jsonString);
       final Map<String, Map<String, int>> result = decoded.map((key, value) {
-        final mapValue = (value as Map).map((k, v) => MapEntry(k.toString(), v as int));
+        final mapValue = (value as Map).map(
+          (k, v) => MapEntry(k.toString(), v as int),
+        );
         return MapEntry(key, mapValue);
       });
       return result;
@@ -106,7 +107,9 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
     }
   }
 
-  Future<void> saveAllLastSelected(Map<String, Map<String, int>> lastSelected) async {
+  Future<void> saveAllLastSelected(
+    Map<String, Map<String, int>> lastSelected,
+  ) async {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/media_sorter/all_last_selected.json');
     await file.create(recursive: true);
@@ -129,14 +132,14 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
     }
 
     // 4. Delete individual sheet files (sheet_*.json)
-    // Note: Your _getFile method saves these in the root directory, 
+    // Note: Your _getFile method saves these in the root directory,
     // so we must find and delete them manually.
     final List<FileSystemEntity> entities = await directory.list().toList();
     for (final entity in entities) {
       if (entity is File) {
         // Extract the filename from the path
         final filename = entity.uri.pathSegments.last;
-        
+
         // Check if it matches your naming convention
         if (filename.startsWith('sheet_') && filename.endsWith('.json')) {
           await entity.delete();

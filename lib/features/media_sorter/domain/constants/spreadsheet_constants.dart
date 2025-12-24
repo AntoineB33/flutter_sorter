@@ -3,9 +3,9 @@ class SpreadsheetConstants {
   const SpreadsheetConstants._();
 
   static const patternDistance =
-      r'^(?<prefix>as far as possible from )(?<any>any)?(?<att>.+)$/';
+      r'^(?<prefix>as far as possible from )(?<any>any)?(?<att>.+)$';
   static const patternAreas =
-      r'^(?<prefix>.*\|)(?<any>any)?(?<att>.+)(?<suffix>\|.*)$/';
+      r'^(?<prefix>.*\|)(?<any>any)?(?<att>.+)(?<suffix>\|.*)$';
   static const all = -1;
   static const notUsedCst = -2;
 

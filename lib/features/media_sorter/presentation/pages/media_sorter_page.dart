@@ -9,8 +9,20 @@ import 'side_menu.dart';
 import '../../domain/entities/column_type.dart';
 import '../utils/column_type_extensions.dart';
 
-class MediaSorterPage extends StatelessWidget {
+class MediaSorterPage extends StatefulWidget {
   const MediaSorterPage({super.key});
+
+  @override
+  State<MediaSorterPage> createState() => _MediaSorterPageState();
+}
+
+class _MediaSorterPageState extends State<MediaSorterPage> {
+  // Default width
+  double _sidebarWidth = 250.0;
+  
+  // Constraints
+  static const double _minSidebarWidth = 150.0;
+  static const double _maxSidebarWidth = 600.0;
 
   @override
   Widget build(BuildContext context) {
@@ -18,20 +30,47 @@ class MediaSorterPage extends StatelessWidget {
       create: (context) => sl<SpreadsheetController>(),
       child: Scaffold(
         appBar: const NavigationDropdown(),
-        // 1. Change Body to a Row to support Sidebar + Content
         body: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 2. The Sidebar
-            const SizedBox(
-              width: 250, // Set your desired sidebar width
-              child: SideMenu(),
+            // 1. The Resizable Sidebar
+            SizedBox(
+              width: _sidebarWidth,
+              child: const SideMenu(),
             ),
-            
-            // Optional: A vertical divider for visual separation
-            const VerticalDivider(width: 1, thickness: 1),
 
-            // 3. The Spreadsheet (Wrapped in Expanded)
+            // 2. The Resizer Handle (The "Draggable Border")
+            MouseRegion(
+              cursor: SystemMouseCursors.resizeColumn, // Changes cursor to <->
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragUpdate: (details) {
+                  setState(() {
+                    // Adjust width based on drag delta
+                    final newWidth = _sidebarWidth + details.delta.dx;
+                    // Clamp to prevent breaking UI
+                    _sidebarWidth = newWidth.clamp(_minSidebarWidth, _maxSidebarWidth);
+                  });
+                },
+                // We create a container that is wider than the visible line
+                // to make it easier for the user to grab (hitbox).
+                child: Container(
+                  width: 9, 
+                  alignment: Alignment.center,
+                  // The container is transparent, but holds the visual divider
+                  color: Colors.transparent, 
+                  child: Container(
+                    width: 1,
+                    height: double.infinity,
+                    color: Colors.grey.shade400,
+                  ),
+                ),
+              ),
+            ),
+
+            // 3. The Spreadsheet
+            // Because this is Expanded, it will automatically shrink/grow/move
+            // as the sidebar (sibling) changes size.
             const Expanded(
               child: SpreadsheetWidget(),
             ),
@@ -41,6 +80,10 @@ class MediaSorterPage extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// The rest of the file remains exactly the same as your provided code
+// ---------------------------------------------------------------------------
 
 class SpreadsheetWidget extends StatefulWidget {
   const SpreadsheetWidget({super.key});
@@ -52,8 +95,6 @@ class SpreadsheetWidget extends StatefulWidget {
 class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   final FocusNode _focusNode = FocusNode();
   
-  // We utilize ScrollControllers provided by the TwoDimensionalScrollView 
-  // if we need programmatic scrolling, otherwise TableView handles it.
   final ScrollController _verticalController = ScrollController();
   final ScrollController _horizontalController = ScrollController();
 
@@ -65,7 +106,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   @override
   void initState() {
     super.initState();
-    // Ensure the grid can receive keyboard events immediately
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -95,19 +135,15 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         verticalDetails: ScrollableDetails.vertical(controller: _verticalController),
         horizontalDetails: ScrollableDetails.horizontal(controller: _horizontalController),
         
-        // 1. PINNED HEADERS: This replaces LinkedScrollControllerGroup
         pinnedRowCount: 1, 
         pinnedColumnCount: 1,
         
-        // 2. TOTAL COUNTS: +1 to account for the header row/column
         rowCount: controller.tableViewRows + 1,
         columnCount: controller.tableViewCols + 1,
 
-        // 3. SIZE BUILDERS
         columnBuilder: (index) => _buildColumnSpan(index),
         rowBuilder: (index) => _buildRowSpan(index),
 
-        // 4. CELL BUILDER (The core logic)
         cellBuilder: (context, vicinity) => _buildCellDispatcher(context, vicinity, controller),
       ),
     );
@@ -121,16 +157,15 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         HardwareKeyboard.instance.isMetaPressed;
 
     if (isControl && key == 'c') {
-      ctrl.copySelectionToClipboard(); // Logic moved to controller
+      ctrl.copySelectionToClipboard(); 
       ScaffoldMessenger.of(context).showSnackBar(
          const SnackBar(content: Text('Selection copied'), duration: Duration(milliseconds: 500)),
       );
     } else if (isControl && key == 'v') {
-      ctrl.pasteSelection(); // Logic moved to controller
+      ctrl.pasteSelection(); 
     }
   }
 
-  // --- Span Builders (Size definitions) ---
   TableSpan _buildColumnSpan(int index) {
     return TableSpan(
       extent: FixedTableSpanExtent(index == 0 ? _headerWidth : _defaultCellWidth),
@@ -143,7 +178,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     );
   }
 
-  // --- 3. WIDGET COMPOSITION: Dispatcher splits logic for readability ---
   Widget _buildCellDispatcher(
       BuildContext context, TableVicinity vicinity, SpreadsheetController controller) {
     
@@ -164,7 +198,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return _RowHeader(rowIndex: r - 1);
     }
 
-    // Standard Data Cell
     return _DataCell(
       row: r - 1,
       col: c - 1,
@@ -176,9 +209,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       },
     );
   }
-
-  // --- Menus (View Logic) ---
-  
   
   Future<void> _showTypeMenu(
     BuildContext context,
@@ -233,7 +263,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 }
 
-
 class _SelectAllCorner extends StatelessWidget {
   final VoidCallback onTap;
   const _SelectAllCorner({required this.onTap});
@@ -283,8 +312,6 @@ class _RowHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Define the logic: If it's the first row (index 0), show a String.
-    // Otherwise, show the calculated number.
     final String label = (rowIndex == 0) ? "Headers" : "$rowIndex";
 
     return Container(
@@ -298,7 +325,6 @@ class _RowHeader extends StatelessWidget {
       ),
       child: Text(
         label,
-        // Optional: reduce font size slightly if the string is long
         style: TextStyle(
           fontWeight: rowIndex == 0 ? FontWeight.bold : FontWeight.normal,
           fontSize: rowIndex == 0 ? 12 : 14,
@@ -307,6 +333,7 @@ class _RowHeader extends StatelessWidget {
     );
   }
 }
+
 class _DataCell extends StatelessWidget {
   final int row;
   final int col;
