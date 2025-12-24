@@ -12,7 +12,7 @@ class Attribute {
   }
 
   // 2. Row-specific constructor: Accepts ONLY rowId
-  factory Attribute.row({required int rowId}) {
+  factory Attribute.row(int rowId) {
     return Attribute._(rowId: rowId);
   }
 

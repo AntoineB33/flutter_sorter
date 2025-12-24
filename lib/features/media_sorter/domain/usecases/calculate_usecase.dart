@@ -73,6 +73,7 @@ class CalculateUsecase {
   static const patternAreas = SpreadsheetConstants.patternAreas;
   static const all = SpreadsheetConstants.all;
   static const notUsedCst = SpreadsheetConstants.notUsedCst;
+  static const List<int> added = [];
 
   int get rowCount => table.length;
   int get colCount => rowCount > 0 ? table[0].length : 0;
@@ -208,23 +209,30 @@ class CalculateUsecase {
     return result;
   }
 
-  List<Cell> findPath(
-    Map<Attribute, Map<int, int>> graph,
-    int start,
+  List<List<Cell>> findPath(
+    Map<Attribute, Map<int, List<int>>> graph,
+    Attribute start,
     int end, {
     bool reverse = true,
   }) {
-    int row = start;
-    List<Cell> path = [];
+    Attribute att = start;
+    List<List<Cell>> path = [];
     while (true) {
-      if (graph[row]![end] != -1) {
-        path.add(Cell(rowId: end, colId: graph[row]![end]!));
+      if (graph[att]![end] != added) {
+        List<Cell> cells = graph[att]![end]!
+            .map((colId) => Cell(rowId: end, colId: colId))
+            .toList();
+        path.add(cells);
         return reverse ? path.reversed.toList() : path;
       }
-      for (final child in graph[row]!.keys) {
-        if (graph[child]!.containsKey(end)) {
-          path.add(Cell(rowId: child, colId: graph[row]![child]!));
-          row = child;
+      for (final rowId in graph[att]!.keys) {
+        Attribute childAtt = Attribute.row(rowId);
+        if (graph[childAtt]!.containsKey(end)) {
+          List<Cell> cells = graph[att]![rowId]!
+              .map((colId) => Cell(rowId: rowId, colId: colId))
+              .toList();
+          path.add(cells);
+          att = childAtt;
           break;
         }
       }
@@ -232,11 +240,10 @@ class CalculateUsecase {
   }
 
   void dfsIterative(
-    Map<Attribute, Map<int, int>> graph,
-    Map<Attribute, Map<int, int>> accumulator,
+    Map<Attribute, Map<int, List<int>>> graph,
+    Map<Attribute, Map<int, List<int>>> accumulator,
     String warningMsgPrefix,
   ) {
-    const int added = -1;
     final visited = <Attribute>{};
     final completed = <Attribute>{};
     List<Attribute> path = [];
@@ -249,33 +256,30 @@ class CalculateUsecase {
       while (stack.isNotEmpty) {
         Attribute att = stack[stack.length - 1]; // peek
         if (path.isNotEmpty && path[path.length - 1] == att) {
-          Map<int, int> rowsToCol = accumulator[att] ?? {};
+          Map<int, List<int>> rowsToCol = accumulator[att] ?? {};
 
           for (final rowId in rowsToCol.keys) {
-            Map<int, int>? childRowsToCol = graph[Attribute.row(rowId: rowId)];
+            Map<int, List<int>>? childRowsToCol = graph[Attribute.row(rowId)];
             if (childRowsToCol != null) {
               for (int childRowId in childRowsToCol.keys) {
                 if (!rowsToCol.containsKey(childRowId)) {
                   rowsToCol[childRowId] = added;
                 } else if (rowsToCol[childRowId] != added) {
-                  var newPath =
-                      [
-                            ...findPath(graph, rowId, childRowId),
-                            Cell(rowId: att, colId: graph[rowId]![att]!),
-                          ]
-                          .map(
-                            (k) => NodeStruct(
-                              instruction: SpreadsheetConstants.cell,
-                              cell: k,
-                            ),
-                          )
-                          .toList();
+                  var newPath = findPath(graph, Attribute.row(childRowId), rowId)
+                    .map(
+                      (k) => NodeStruct(
+                        instruction: SpreadsheetConstants.cell,
+                        cells: k,
+                      ),
+                    ).toList();
                   redundantRef.add(
                     NodeStruct(
                       instruction: SpreadsheetConstants.cell,
                       message:
                           "$warningMsgPrefix \"$childRowId\" already pointed",
-                      cell: Cell(rowId: childRowId, colId: rowsToCol[childRowId]!),
+                      cells: rowsToCol[childRowId]!
+                          .map((colId) => Cell(rowId: childRowId, colId: colId))
+                          .toList(),
                       newChildren: newPath,
                     ),
                   );
@@ -302,16 +306,17 @@ class CalculateUsecase {
         final neighbors = neighborsMap.keys.toList();
 
         for (int i = neighbors.length - 1; i >= 0; i--) {
-          final child = neighbors[i];
-          if (!visited.contains(child)) {
-            stack.add(child);
-          } else if (!completed.contains(child)) {
-            final cycle = path.sublist(path.indexOf(child));
+          int child = neighbors[i];
+          Attribute childAtt = Attribute.row(child);
+          if (!visited.contains(childAtt)) {
+            stack.add(childAtt);
+          } else if (!completed.contains(childAtt)) {
+            final cycle = path.sublist(path.indexOf(childAtt));
             final cyclePathNodes = cycle
                 .map(
                   (k) => NodeStruct(
                     instruction: SpreadsheetConstants.row,
-                    rowId: k,
+                    att: k,
                   ),
                 )
                 .toList();
@@ -470,7 +475,7 @@ class CalculateUsecase {
           ),
         );
       }
-      att = Attribute.row(rowId: numK);
+      att = Attribute.row(numK);
     } else {
       // TODO: validate attribute name
       if (attColId != notUsedCst) {
@@ -578,8 +583,8 @@ class CalculateUsecase {
               return;
             }
 
-            bool isFst = attWritten.endsWith("-fst");
-            bool isLst = attWritten.endsWith("-lst");
+            bool isFst = attWritten.endsWith("-appear_fst");
+            bool isLst = attWritten.endsWith("-appear_lst");
 
             if (isFst) {
               attWritten = attWritten
@@ -623,10 +628,10 @@ class CalculateUsecase {
               }
               lastElement = Cell(rowId: rowId, colId: colId);
               continue;
-            } else if (attWritten.contains("-fst")) {
+            } else if (attWritten.contains("-appear_fst")) {
               errorRoot.newChildren!.add(
                 NodeStruct(
-                  message: "'-fst' is not at the end of $attWritten",
+                  message: "'-appear_fst' is not at the end of $attWritten",
                   cell: Cell(rowId: rowId, colId: colId),
                 ),
               );
@@ -646,22 +651,28 @@ class CalculateUsecase {
             }
 
             if (!attToRefFromAttColToCol[att]!.containsKey(rowId)) {
-              attToRefFromAttColToCol[att]![rowId] = colId;
+              attToRefFromAttColToCol[att]![rowId] = [colId];
               if (isSprawl) {
                 attToDist[att]!.add(rowId);
               }
             } else {
-              children.add(
-                NodeStruct(
-                  cell: Cell(rowId: rowId, colId: colId),
-                ),
+              if (children.isEmpty || children[children.length - 1].att != att || children[children.length - 1].newChildren![0].rowId != rowId) {
+                children.add(
+                  NodeStruct(
+                    att: att,
+                    newChildren: [],
+                  ),
+                );
+              }
+              children[children.length - 1].newChildren!.add(
+                NodeStruct(rowId: rowId, colId: colId)
               );
             }
 
             if (isFst) {
-              fstCat[rowId] = (att, colId);
+              fstCat[rowId]!.add((att, colId));
             } else if (isLst) {
-              lstCat[rowId] = (att, colId);
+              lstCat[rowId]!.add((att, colId));
             }
           }
         }
@@ -690,7 +701,7 @@ class CalculateUsecase {
     var urlFrom = List.generate(rowCount, (i) => -1);
     for (int i = 1; i < rowCount; i++) {
       final row = table[i];
-      Attribute att = Attribute.row(rowId: i);
+      Attribute att = Attribute.row(i);
       if (isMedium[i] && attToRefFromAttColToCol.containsKey(att)) {
         for (final k in attToRefFromAttColToCol[att]!.keys) {
           if (isMedium[k]) {
@@ -703,10 +714,14 @@ class CalculateUsecase {
                     message: "path 1",
                     startOpen: true,
                     newChildren:
-                        findPath(attToRefFromAttColToCol, urlFrom[k], k)
+                        findPath(attToRefFromAttColToCol, Attribute.row(urlFrom[k]), k)
                             .map(
                               (x) => NodeStruct(
-                                cell: Cell(rowId: x.rowId, colId: x.colId),
+                                cells: x
+                                    .map(
+                                      (y) => Cell(rowId: y.rowId, colId: y.colId),
+                                    )
+                                    .toList(),
                               ),
                             )
                             .toList(),
@@ -714,10 +729,14 @@ class CalculateUsecase {
                   NodeStruct(
                     message: "path 2",
                     startOpen: true,
-                    newChildren: findPath(attToRefFromAttColToCol, i, k)
+                    newChildren: findPath(attToRefFromAttColToCol, Attribute.row(i), k)
                         .map(
                           (x) => NodeStruct(
-                            cell: Cell(rowId: x.rowId, colId: x.colId),
+                            cells: x
+                                .map(
+                                  (y) => Cell(rowId: y.rowId, colId: y.colId),
+                                )
+                                .toList(),
                           ),
                         )
                         .toList(),
@@ -808,8 +827,8 @@ class CalculateUsecase {
                 message:
                     "($d) ${nodesUsecase.getRowName(rowsList[idx])} - ${nodesUsecase.getRowName(rowsList[idx + 1])}",
                 newChildren: [
-                  NodeStruct(att: Attribute.row(rowId: rowsList[idx])),
-                  NodeStruct(att: Attribute.row(rowId: rowsList[idx + 1])),
+                  NodeStruct(att: Attribute.row(rowsList[idx])),
+                  NodeStruct(att: Attribute.row(rowsList[idx + 1])),
                 ],
                 dist: d,
               );
@@ -847,125 +866,129 @@ class CalculateUsecase {
 
     instrTable = List.generate(rowCount, (_) => {});
 
-    for (final MapEntry(key: k, value: v) in fstCat.entries) {
-      if (isMedium[k]) {
-        var t = v.$1;
-        while (fstCat.containsKey(t)) {
-          t = fstCat[t]!.$1;
-        }
-        for (final i in attToRefFromAttColToCol[t]!.keys) {
-          if (i != k) {
-            instrTable[i][InstrStruct(
-                  true,
-                  false,
-                  [newIndexes[k]],
-                  [
-                    [-maxInt, -1],
-                  ],
-                )] =
-                v.$2;
-          }
-        }
-      }
-    }
+    //TODO: att1 with "att2 -appear_fst" means the first medium with att2 is a att1
+    //TODO: att1 with "att2 -fst" means all media with att1 come before other media with att2
+    // for (final MapEntry(key: k, value: vList) in fstCat.entries) {
+    //   if (isMedium[k]) {
+    //     for (final v in vList) {
+    //       var t = v.$1;
+    //       while (fstCat.containsKey(t)) {
+    //         t = fstCat[t.rowId]!.$1;
+    //       }
+    //       for (final i in attToRefFromAttColToCol[t]!.keys) {
+    //         if (i != k) {
+    //           instrTable[i][InstrStruct(
+    //                 true,
+    //                 false,
+    //                 [newIndexes[k]],
+    //                 [
+    //                   [-maxInt, -1],
+    //                 ],
+    //               )] =
+    //               v.$2;
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
 
-    for (final MapEntry(key: k, value: v) in lstCat.entries) {
-      if (isMedium[k]) {
-        var t = v.$1;
-        while (lstCat.containsKey(t)) {
-          t = lstCat[t.rowId]!.$1;
-        }
-        for (final i in attToRefFromAttColToCol[t]!.keys) {
-          if (i != k) {
-            instrTable[i][InstrStruct(
-                  true,
-                  false,
-                  [newIndexes[k]],
-                  [
-                    [1, maxInt],
-                  ],
-                )] =
-                v.$2;
-          }
-        }
-      }
-    }
+    // for (final MapEntry(key: k, value: v) in lstCat.entries) {
+    //   if (isMedium[k]) {
+    //     var t = v.$1;
+    //     while (lstCat.containsKey(t)) {
+    //       t = lstCat[t.rowId]!.$1;
+    //     }
+    //     for (final i in attToRefFromAttColToCol[t]!.keys) {
+    //       if (i != k) {
+    //         instrTable[i][InstrStruct(
+    //               true,
+    //               false,
+    //               [newIndexes[k]],
+    //               [
+    //                 [1, maxInt],
+    //               ],
+    //             )] =
+    //             v.$2;
+    //       }
+    //     }
+    //   }
+    // }
 
-    if (firstElement != null) {
-      Attribute att = Attribute.row(rowId: firstElement.rowId);
-      if (attToRefFromAttColToCol.containsKey(att)) {
-        if (attToRefFromAttColToCol[att]!.keys.length > 1 ||
-            attToRefFromAttColToCol[att]!.keys.length == 1 &&
-                isMedium[firstElement.rowId]) {
-          children = attToRefFromAttColToCol[att]!.keys
-              .map(
-                (k) => NodeStruct(
-                  cell: Cell(
-                    rowId: k,
-                    colId: attToRefFromAttColToCol[att]![k]!,
-                  ),
-                ),
-              )
-              .toList();
-          children.add(NodeStruct(cell: firstElement));
-          errorRoot.newChildren!.add(
-            NodeStruct(message: "multiple 'fst' found", newChildren: children),
-          );
-          return;
-        }
-      }
-      for (final i in validRowIndexes) {
-        if (i != firstElement.rowId) {
-          instrTable[i][InstrStruct(
-                true,
-                false,
-                [newIndexes[firstElement.rowId]],
-                [
-                  [-maxInt, -1],
-                ],
-              )] =
-              firstElement.colId;
-        }
-      }
-    }
+    // if (firstElement != null) {
+    //   Attribute att = Attribute.row(rowId: firstElement.rowId);
+    //   if (attToRefFromAttColToCol.containsKey(att)) {
+    //     if (attToRefFromAttColToCol[att]!.keys.length > 1 ||
+    //         attToRefFromAttColToCol[att]!.keys.length == 1 &&
+    //             isMedium[firstElement.rowId]) {
+    //       children = attToRefFromAttColToCol[att]!.keys
+    //           .map(
+    //             (k) => NodeStruct(
+    //               cell: Cell(
+    //                 rowId: k,
+    //                 colId: attToRefFromAttColToCol[att]![k]!,
+    //               ),
+    //             ),
+    //           )
+    //           .toList();
+    //       children.add(NodeStruct(cell: firstElement));
+    //       errorRoot.newChildren!.add(
+    //         NodeStruct(message: "multiple 'fst' found", newChildren: children),
+    //       );
+    //       return;
+    //     }
+    //   }
+    //   for (final i in validRowIndexes) {
+    //     if (i != firstElement.rowId) {
+    //       instrTable[i][InstrStruct(
+    //             true,
+    //             false,
+    //             [newIndexes[firstElement.rowId]],
+    //             [
+    //               [-maxInt, -1],
+    //             ],
+    //           )] =
+    //           firstElement.colId;
+    //     }
+    //   }
+    // }
 
-    if (lastElement != null) {
-      Attribute att = Attribute.row(rowId: lastElement.rowId);
-      if (attToRefFromAttColToCol.containsKey(att)) {
-        if (attToRefFromAttColToCol[att]!.keys.length > 1 ||
-            attToRefFromAttColToCol[att]!.keys.length == 1 &&
-                isMedium[lastElement.rowId]) {
-          children = attToRefFromAttColToCol[att]!.keys
-              .map(
-                (k) => NodeStruct(
-                  cell: Cell(
-                    rowId: k,
-                    colId: attToRefFromAttColToCol[att]![k]!,
-                  ),
-                ),
-              )
-              .toList();
-          children.add(NodeStruct(cell: lastElement));
-          errorRoot.newChildren!.add(
-            NodeStruct(message: "multiple 'lst' found", newChildren: children),
-          );
-          return;
-        }
-      }
-      for (final i in validRowIndexes) {
-        if (i != lastElement.rowId) {
-          instrTable[i][InstrStruct(
-                true,
-                false,
-                [newIndexes[lastElement.rowId]],
-                [
-                  [1, maxInt],
-                ],
-              )] =
-              lastElement.colId;
-        }
-      }
-    }
+    // if (lastElement != null) {
+    //   Attribute att = Attribute.row(rowId: lastElement.rowId);
+    //   if (attToRefFromAttColToCol.containsKey(att)) {
+    //     if (attToRefFromAttColToCol[att]!.keys.length > 1 ||
+    //         attToRefFromAttColToCol[att]!.keys.length == 1 &&
+    //             isMedium[lastElement.rowId]) {
+    //       children = attToRefFromAttColToCol[att]!.keys
+    //           .map(
+    //             (k) => NodeStruct(
+    //               cell: Cell(
+    //                 rowId: k,
+    //                 colId: attToRefFromAttColToCol[att]![k]!,
+    //               ),
+    //             ),
+    //           )
+    //           .toList();
+    //       children.add(NodeStruct(cell: lastElement));
+    //       errorRoot.newChildren!.add(
+    //         NodeStruct(message: "multiple 'lst' found", newChildren: children),
+    //       );
+    //       return;
+    //     }
+    //   }
+    //   for (final i in validRowIndexes) {
+    //     if (i != lastElement.rowId) {
+    //       instrTable[i][InstrStruct(
+    //             true,
+    //             false,
+    //             [newIndexes[lastElement.rowId]],
+    //             [
+    //               [1, maxInt],
+    //             ],
+    //           )] =
+    //           lastElement.colId;
+    //     }
+    //   }
+    // }
 
     final depPattern = table[0].map((cell) => cell.split(".")).toList();
 
@@ -973,7 +996,7 @@ class CalculateUsecase {
     depCache = {};
     for (int rowId = 1; rowId < rowCount; rowId++) {
       if (!isMedium[rowId] &&
-          !(attToRefFromAttColToCol.containsKey(Attribute.row(rowId: rowId)))) {
+          !(attToRefFromAttColToCol.containsKey(Attribute.row(rowId)))) {
         continue;
       }
 
@@ -1102,7 +1125,7 @@ class CalculateUsecase {
 
     for (int rowId = 1; rowId < rowCount; rowId++) {
       if (!isMedium[rowId] &&
-          !(attToRefFromAttColToCol.containsKey(Attribute.row(rowId: rowId)))) {
+          !(attToRefFromAttColToCol.containsKey(Attribute.row(rowId)))) {
         continue;
       }
 

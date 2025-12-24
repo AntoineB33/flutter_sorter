@@ -8,6 +8,7 @@ class NodeStruct {
   Attribute? att;
   int? rowId;
   int? colId;
+  List<Cell>? cells;
   String? name;
   final int? dist;
   final int? minDist;
@@ -18,6 +19,7 @@ class NodeStruct {
   bool isExpanded = false;
   void Function(NodeStruct) onTap = (_) {};
   bool defaultOnTap = true;
+  List<Cell>? cellsToSelect;
 
   NodeStruct({
     this.instruction,
@@ -28,6 +30,7 @@ class NodeStruct {
     Attribute? att,
     Cell? cell,
     Attribute? attribute,
+    List<Cell>? cells,
     this.dist,
     this.minDist,
     this.newChildren,
@@ -41,7 +44,7 @@ class NodeStruct {
       if (this.colId != null) {
         this.cell ??= Cell(rowId: this.rowId!, colId: this.colId!);
       } else {
-        this.att ??= Attribute.row(rowId: this.rowId!);
+        this.att ??= Attribute.row(this.rowId!);
       }
     } else {
       if (this.colId != null) {
@@ -52,6 +55,8 @@ class NodeStruct {
         }
       }
     }
+    this.cell ??= cells != null && cells.isNotEmpty ? cells.first : null;
+    this.cells ??= cell != null ? [cell] : null;
   }
 
   @override

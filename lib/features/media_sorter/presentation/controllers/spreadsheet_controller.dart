@@ -422,35 +422,36 @@ class SpreadsheetController extends ChangeNotifier {
     selectRange(0, 0, rowCount - 1, colCount - 1);
   }
 
-  void populateCellNode(NodeStruct root, bool populateChildren) {
-    int rowId = root.rowId!;
-    int colId = root.colId!;
+  void populateCellNode(NodeStruct node, bool populateChildren) {
+    int rowId = node.rowId!;
+    int colId = node.colId!;
+    node.cellsToSelect = node.cells;
     if (rowId >= rowCount || colId >= colCount) return;
-    if (root.message == null) {
-      if (root.instruction == SpreadsheetConstants.selectionMsg) {
-        root.message =
+    if (node.message == null) {
+      if (node.instruction == SpreadsheetConstants.selectionMsg) {
+        node.message =
             '${getColumnLabel(colId)}$rowId selected: ${table[rowId][colId]}';
       } else {
-        root.message = '${getColumnLabel(colId)}$rowId: ${table[rowId][colId]}';
+        node.message = '${getColumnLabel(colId)}$rowId: ${table[rowId][colId]}';
       }
     }
     if (!populateChildren) {
       return;
     }
-    root.newChildren = [];
+    node.newChildren = [];
     if (columnTypes[colId] == ColumnType.names.name ||
         columnTypes[colId] == ColumnType.filePath.name ||
         columnTypes[colId] == ColumnType.urls.name) {
-      root.newChildren!.add(
+      node.newChildren!.add(
         NodeStruct(
           message: table[rowId][colId],
-          att: Attribute.row(rowId: rowId),
+          att: Attribute.row(rowId),
         ),
       );
       return;
     }
     for (Attribute att in tableToAtt[rowId][colId]) {
-      root.newChildren!.add(NodeStruct(att: att));
+      node.newChildren!.add(NodeStruct(att: att));
     }
   }
 
@@ -489,25 +490,30 @@ class SpreadsheetController extends ChangeNotifier {
     if (node.defaultOnTap) {
       node.onTap = (n) {
         List<Cell> cells = [];
-        for (final MapEntry(key: rowId, value: colIds) in [...attToRefFromAttColToCol[node.att]!.entries, ...attToRefFromDepColToCol[node.att]!.entries]) {
+        List<MapEntry> entries = attToRefFromAttColToCol[node.att]!.entries.toList();
+        if (node.instruction !=
+            SpreadsheetConstants.moveToUniqueMentionSprawlCol) {
+          entries.addAll(attToRefFromDepColToCol[node.att]!.entries.toList());
+        }
+        for (final MapEntry(key: rowId, value: colIds) in entries) {
           for (final colId in colIds) {
             cells.add(Cell(rowId: rowId, colId: colId));
           }
         }
         int found = -1;
-        for (int i = 0; i < n.newChildren!.length; i++) {
-          final child = n.newChildren![i];
-          if (_selectionStart.x == child.rowId) {
+        for (int i = 0; i < cells.length; i++) {
+          final child = cells[i];
+          if (_selectionStart.x == child.rowId && _selectionStart.y == child.colId) {
             found = i;
             break;
           }
         }
         if (found == -1) {
-          selectCell(n.newChildren![0].rowId!, 0);
+          selectCell(cells[0].rowId, 0);
         } else {
           selectCell(
-            n.newChildren![(found + 1) % n.newChildren!.length].rowId!,
-            0,
+            cells[(found + 1) % cells.length].rowId,
+            cells[(found + 1) % cells.length].colId,
           );
         }
       };
@@ -613,6 +619,48 @@ class SpreadsheetController extends ChangeNotifier {
         }
       }
     }
+    if (node.defaultOnTap) {
+      if (node.cellsToSelect == null) {
+        List<Cell> cells = [];
+        for (final child in node.children) {
+          if (child.rowId != null) {
+            if (child.colId != null) {
+              cells.add(Cell(rowId: child.rowId!, colId: child.colId!));
+            } else {
+              cells.add(Cell(rowId: child.rowId!, colId: 0));
+            }
+          } else if (child.colId != null) {
+            cells.add(Cell(rowId: 0, colId: child.colId!));
+          }
+        }
+        if (cells.isEmpty) {
+          return;
+        }
+        node.cellsToSelect = cells;
+      }
+      node.onTap = (n) {
+        if (node.cellsToSelect == null || node.cellsToSelect!.isEmpty) {
+          return;
+        }
+        int found = -1;
+        for (int i = 0; i < node.cellsToSelect!.length; i++) {
+          final child = node.cellsToSelect![i];
+          if (_selectionStart.x == child.rowId && _selectionStart.y == child.colId) {
+            found = i;
+            break;
+          }
+        }
+        if (found == -1) {
+          selectCell(node.cellsToSelect![0].rowId, 0);
+        } else {
+          selectCell(
+            node.cellsToSelect![(found + 1) % node.cellsToSelect!.length].rowId,
+            node.cellsToSelect![(found + 1) % node.cellsToSelect!.length].colId,
+          );
+        }
+      };
+      node.defaultOnTap = false;
+    }
   }
 
   void populateNode(NodeStruct node) {
@@ -660,24 +708,13 @@ class SpreadsheetController extends ChangeNotifier {
             );
           }
         };
+        break;
       case SpreadsheetConstants.attToRefFromDepCol:
         populateAttToRefFromDepColNode(node, populateChildren);
         break;
-      case SpreadsheetConstants.moveToUniqueMentionSprawlCol:
-        node.onTap = (n) {
-          int rowId = attToRefFromAttColToCol[node.att]!.keys.first;
-          selectCell(rowId, attToRefFromAttColToCol[node.att]![rowId]!);
-        };
-        node.defaultOnTap = false;
-        populateNodeDefault(node, populateChildren);
-        break;
-      case null:
-        populateNodeDefault(node, populateChildren);
-        break;
       default:
-        throw UnimplementedError(
-          "populateNode: Unhandled instruction ${node.instruction}",
-        );
+        populateNodeDefault(node, populateChildren);
+        break;
     }
   }
 

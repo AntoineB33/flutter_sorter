@@ -1,4 +1,8 @@
-optimize sync when paste group of cells
+cells cell
+
+
+
+
 
 
 Adding a 5-minute screen-free break each hour (optional)
