@@ -19,8 +19,8 @@ class AnalysisController extends ChangeNotifier {
       ManageWaitingTasks<AnalysisResult>();
   
   NodesUsecase nodesUsecase = NodesUsecase(AnalysisResult());
-  late SideMenuTreeBuilder builder;
-  
+  SideMenuTreeBuilder? builder;
+
   // Dependencies
   SpreadsheetDataController? _dataController;
   SpreadsheetSelectionController? _selectionController;
@@ -82,16 +82,15 @@ class AnalysisController extends ChangeNotifier {
   }
 
   void _onSelectionChanged() {
-    // Only update mentions part of the tree
-    if (_selectionController != null) {
+    if (_selectionController != null && builder != null) {
       mentionsRoot.rowId = _selectionController!.selectionStart.x;
       mentionsRoot.colId = _selectionController!.selectionStart.y;
       
       // Update builder context
-      builder.selectionStart = _selectionController!.selectionStart;
-      builder.selectionEnd = _selectionController!.selectionEnd;
+      builder!.selectionStart = _selectionController!.selectionStart;
+      builder!.selectionEnd = _selectionController!.selectionEnd;
       
-      builder.populateTree([mentionsRoot]);
+      builder!.populateTree([mentionsRoot]);
       notifyListeners();
     }
   }
@@ -167,7 +166,7 @@ class AnalysisController extends ChangeNotifier {
       onSelectCell: (r, c) => _selectionController?.selectCell(r, c),
     );
 
-    builder.populateTree([
+    builder!.populateTree([
       errorRoot,
       warningRoot,
       mentionsRoot,
@@ -181,8 +180,10 @@ class AnalysisController extends ChangeNotifier {
 
   void toggleNodeExpansion(NodeStruct node, bool isExpanded) {
     node.isExpanded = isExpanded;
-    builder.populateTree([node]);
-    notifyListeners();
+    if (builder != null) {
+      builder!.populateTree([node]);
+      notifyListeners();
+    }
   }
 
   String getColumnLabel(int col) {
