@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
-import '../controllers/spreadsheet_controller.dart';
+
 import 'package:trying_flutter/injection_container.dart';
 import '../../../../shared/widgets/navigation_dropdown.dart';
+
+// Import new controllers
+import '../controllers/spreadsheet_data_controller.dart';
+import '../controllers/spreadsheet_selection_controller.dart';
+import '../controllers/analysis_controller.dart';
+
 import 'side_menu.dart';
 import '../../domain/entities/column_type.dart';
 import '../utils/column_type_extensions.dart';
@@ -17,48 +23,64 @@ class MediaSorterPage extends StatefulWidget {
 }
 
 class _MediaSorterPageState extends State<MediaSorterPage> {
-  // Default width
   double _sidebarWidth = 250.0;
-  
-  // Constraints
   static const double _minSidebarWidth = 150.0;
   static const double _maxSidebarWidth = 600.0;
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => sl<SpreadsheetController>(),
+    // We use MultiProvider to instantiate all 3 and link them up
+    return MultiProvider(
+      providers: [
+        // 1. Data Controller (Base)
+        ChangeNotifierProvider(
+          create: (_) => sl<SpreadsheetDataController>(),
+        ),
+        // 2. Selection Controller (Needs Data)
+        ChangeNotifierProxyProvider<SpreadsheetDataController, SpreadsheetSelectionController>(
+          create: (context) => sl<SpreadsheetSelectionController>(),
+          update: (context, dataCtrl, selCtrl) {
+            if (selCtrl == null) throw Exception("Selection Controller not found in SL");
+            selCtrl.updateDataController(dataCtrl);
+            return selCtrl;
+          },
+        ),
+        // 3. Analysis Controller (Needs Data and Selection)
+        ChangeNotifierProxyProvider2<SpreadsheetDataController, SpreadsheetSelectionController, AnalysisController>(
+          create: (context) => sl<AnalysisController>(),
+          update: (context, dataCtrl, selCtrl, analysisCtrl) {
+            if (analysisCtrl == null) throw Exception("Analysis Controller not found in SL");
+            analysisCtrl.updateDependencies(
+              dataCtrl: dataCtrl,
+              selCtrl: selCtrl,
+            );
+            return analysisCtrl;
+          },
+        ),
+      ],
       child: Scaffold(
         appBar: const NavigationDropdown(),
         body: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. The Resizable Sidebar
             SizedBox(
               width: _sidebarWidth,
               child: const SideMenu(),
             ),
-
-            // 2. The Resizer Handle (The "Draggable Border")
             MouseRegion(
-              cursor: SystemMouseCursors.resizeColumn, // Changes cursor to <->
+              cursor: SystemMouseCursors.resizeColumn,
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onHorizontalDragUpdate: (details) {
                   setState(() {
-                    // Adjust width based on drag delta
-                    final newWidth = _sidebarWidth + details.delta.dx;
-                    // Clamp to prevent breaking UI
-                    _sidebarWidth = newWidth.clamp(_minSidebarWidth, _maxSidebarWidth);
+                    _sidebarWidth = (_sidebarWidth + details.delta.dx)
+                        .clamp(_minSidebarWidth, _maxSidebarWidth);
                   });
                 },
-                // We create a container that is wider than the visible line
-                // to make it easier for the user to grab (hitbox).
                 child: Container(
-                  width: 9, 
+                  width: 9,
                   alignment: Alignment.center,
-                  // The container is transparent, but holds the visual divider
-                  color: Colors.transparent, 
+                  color: Colors.transparent,
                   child: Container(
                     width: 1,
                     height: double.infinity,
@@ -67,10 +89,6 @@ class _MediaSorterPageState extends State<MediaSorterPage> {
                 ),
               ),
             ),
-
-            // 3. The Spreadsheet
-            // Because this is Expanded, it will automatically shrink/grow/move
-            // as the sidebar (sibling) changes size.
             const Expanded(
               child: SpreadsheetWidget(),
             ),
@@ -81,10 +99,6 @@ class _MediaSorterPageState extends State<MediaSorterPage> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// The rest of the file remains exactly the same as your provided code
-// ---------------------------------------------------------------------------
-
 class SpreadsheetWidget extends StatefulWidget {
   const SpreadsheetWidget({super.key});
 
@@ -94,7 +108,6 @@ class SpreadsheetWidget extends StatefulWidget {
 
 class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   final FocusNode _focusNode = FocusNode();
-  
   final ScrollController _verticalController = ScrollController();
   final ScrollController _horizontalController = ScrollController();
 
@@ -121,98 +134,90 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<SpreadsheetController>();
+    // Watch specific controllers based on what triggers a rebuild
+    final dataCtrl = context.watch<SpreadsheetDataController>();
+    final selCtrl = context.watch<SpreadsheetSelectionController>();
+    // Analysis is only needed here for Column Headers (Labels), 
+    // but if that changes often, watch it. 
+    final analysisCtrl = context.watch<AnalysisController>();
 
-    if (controller.isLoading) {
+    if (dataCtrl.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     return KeyboardListener(
       focusNode: _focusNode,
       autofocus: true,
-      onKeyEvent: (KeyEvent event) => _handleKeyboard(context, event, controller),
+      onKeyEvent: (KeyEvent event) => _handleKeyboard(context, event, selCtrl),
       child: TableView.builder(
         verticalDetails: ScrollableDetails.vertical(controller: _verticalController),
         horizontalDetails: ScrollableDetails.horizontal(controller: _horizontalController),
-        
-        pinnedRowCount: 1, 
+        pinnedRowCount: 1,
         pinnedColumnCount: 1,
-        
-        rowCount: controller.tableViewRows + 1,
-        columnCount: controller.tableViewCols + 1,
+        rowCount: dataCtrl.tableViewRows + 1,
+        columnCount: dataCtrl.tableViewCols + 1,
+        columnBuilder: (index) => TableSpan(
+          extent: FixedTableSpanExtent(index == 0 ? _headerWidth : _defaultCellWidth),
+        ),
+        rowBuilder: (index) => TableSpan(
+          extent: FixedTableSpanExtent(index == 0 ? _headerHeight : _defaultCellHeight),
+        ),
+        cellBuilder: (context, vicinity) {
+          final int r = vicinity.row;
+          final int c = vicinity.column;
 
-        columnBuilder: (index) => _buildColumnSpan(index),
-        rowBuilder: (index) => _buildRowSpan(index),
+          if (r == 0 && c == 0) {
+            return _SelectAllCorner(onTap: () => selCtrl.selectAll());
+          }
+          if (r == 0) {
+            // Header needs Analysis for Label and Data for Type
+            return _ColumnHeader(
+              label: analysisCtrl.getColumnLabel(c - 1),
+              colIndex: c - 1,
+              onContextMenu: (details) => _showColumnContextMenu(
+                  context, dataCtrl, details.globalPosition, c - 1),
+            );
+          }
+          if (c == 0) {
+            return _RowHeader(rowIndex: r - 1);
+          }
 
-        cellBuilder: (context, vicinity) => _buildCellDispatcher(context, vicinity, controller),
+          return _DataCell(
+            row: r - 1,
+            col: c - 1,
+            content: dataCtrl.getContent(r - 1, c - 1),
+            isSelected: selCtrl.isCellSelected(r - 1, c - 1),
+            onTap: () {
+              selCtrl.selectCell(r - 1, c - 1);
+              _focusNode.requestFocus();
+            },
+          );
+        },
       ),
     );
   }
 
-  void _handleKeyboard(BuildContext context, KeyEvent event, SpreadsheetController ctrl) {
+  void _handleKeyboard(BuildContext context, KeyEvent event, SpreadsheetSelectionController selCtrl) {
     if (event is! KeyDownEvent) return;
-
     final key = event.logicalKey.keyLabel.toLowerCase();
     final isControl = HardwareKeyboard.instance.isControlPressed ||
         HardwareKeyboard.instance.isMetaPressed;
 
     if (isControl && key == 'c') {
-      ctrl.copySelectionToClipboard(); 
+      selCtrl.copySelectionToClipboard();
       ScaffoldMessenger.of(context).showSnackBar(
-         const SnackBar(content: Text('Selection copied'), duration: Duration(milliseconds: 500)),
+        const SnackBar(content: Text('Selection copied'), duration: Duration(milliseconds: 500)),
       );
     } else if (isControl && key == 'v') {
-      ctrl.pasteSelection(); 
+      selCtrl.pasteSelection();
     }
   }
 
-  TableSpan _buildColumnSpan(int index) {
-    return TableSpan(
-      extent: FixedTableSpanExtent(index == 0 ? _headerWidth : _defaultCellWidth),
-    );
-  }
-
-  TableSpan _buildRowSpan(int index) {
-    return TableSpan(
-      extent: FixedTableSpanExtent(index == 0 ? _headerHeight : _defaultCellHeight),
-    );
-  }
-
-  Widget _buildCellDispatcher(
-      BuildContext context, TableVicinity vicinity, SpreadsheetController controller) {
-    
-    final int r = vicinity.row;
-    final int c = vicinity.column;
-
-    if (r == 0 && c == 0) {
-      return _SelectAllCorner(onTap: () => controller.selectAll());
-    }
-    if (r == 0) {
-      return _ColumnHeader(
-        label: controller.getColumnLabel(c - 1),
-        colIndex: c - 1,
-        onContextMenu: (details) => _showColumnContextMenu(context, controller, details.globalPosition, c - 1),
-      );
-    }
-    if (c == 0) {
-      return _RowHeader(rowIndex: r - 1);
-    }
-
-    return _DataCell(
-      row: r - 1,
-      col: c - 1,
-      content: controller.getContent(r - 1, c - 1),
-      isSelected: controller.isCellSelected(r - 1, c - 1),
-      onTap: () {
-        controller.selectCell(r - 1, c - 1);
-        _focusNode.requestFocus();
-      },
-    );
-  }
+  
   
   Future<void> _showTypeMenu(
     BuildContext context,
-    SpreadsheetController controller,
+    SpreadsheetDataController controller,
     Offset position,
     int col,
   ) async {
@@ -240,7 +245,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     }
   }
 
-  void _showColumnContextMenu(BuildContext context, SpreadsheetController controller, 
+  void _showColumnContextMenu(BuildContext context, SpreadsheetDataController controller, 
       Offset position, int col) async {
     final result = await showMenu<String>(
       context: context,

@@ -22,8 +22,8 @@ class SideMenuTreeBuilder {
   final Map<String, List<int>> attToCol;
   
   // Selection Context (needed for onTap logic)
-  final Point<int> selectionStart;
-  final Point<int> selectionEnd;
+  Point<int> selectionStart;
+  Point<int> selectionEnd;
   final Function(int r, int c) onSelectCell;
 
   SideMenuTreeBuilder({
