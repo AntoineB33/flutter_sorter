@@ -90,11 +90,10 @@ class CalculateUsecase {
     if (table.length < 5000) {
       return RawDataMessage(table: table, columnTypes: columnTypes);
     } else {
-      // TODO: Handle edge cases for data containing ';;;' or '|||'
-      // Optimization: Using a safer separator or standard JSON
-      // But keeping your logic for the example:
-      final String combined = table.map((row) => row.join(';;;')).join('|||');
+      final String combined = jsonEncode(table);
+      // 2. Convert to UTF-8 bytes
       final Uint8List bytes = utf8.encode(combined);
+      // 3. Create TransferableTypedData
       final transferable = TransferableTypedData.fromList([bytes]);
 
       return TransferableDataMessage(
@@ -133,18 +132,13 @@ class CalculateUsecase {
 
   void _decodeData() {
     if (dataPackage is TransferableTypedData) {
-      // 1. Materialize bytes and decode to String
-      // We synchronize execution here to get the raw bytes out of the transferable wrapper
-      final Uint8List bytes = (dataPackage as TransferableTypedData)
-          .materialize()
-          .asUint8List();
-      final String giantString = utf8.decode(bytes);
-
-      // 2. Reconstruct List<List<String>>
-      // First split by Row Delimiter (|||), then by Cell Delimiter (;;;)
-      table = giantString
-          .split('|||')
-          .map((rowString) => rowString.split(';;;'))
+      // 1. Materialize the bytes
+      final Uint8List receivedBytes = (dataPackage as TransferableTypedData).materialize().asUint8List();
+      // 2. Decode UTF-8 to String, then JSON to List
+      final List<dynamic> decodedTable = jsonDecode(utf8.decode(receivedBytes));
+      // 3. Cast back to strictly typed List<List<String>> if necessary
+      table = decodedTable
+          .map((row) => (row as List).cast<String>())
           .toList();
     } else if (dataPackage is List<List<String>>) {
       table = dataPackage as List<List<String>>;
