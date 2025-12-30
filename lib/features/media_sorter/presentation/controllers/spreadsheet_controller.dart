@@ -1,7 +1,6 @@
 import 'dart:math';
 import 'dart:collection';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
@@ -16,13 +15,19 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.d
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/nodes_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/tree_manager.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/selection_manager.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/clipboard_manager.dart';
 
 class SpreadsheetController extends ChangeNotifier {
   int saveDelayMs = 500;
 
+  late final TreeManager _treeManager;
+  late final SelectionManager _selectionManager;
+  late final ClipboardManager _clipboardManager;
+
   final GetSheetDataUseCase _getDataUseCase;
   final SaveSheetDataUseCase _saveSheetDataUseCase;
-  final ParsePasteDataUseCase _parsePasteDataUseCase;
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
   final ManageWaitingTasks<AnalysisResult> _calculateExecutor =
       ManageWaitingTasks<AnalysisResult>();
@@ -39,10 +44,6 @@ class SpreadsheetController extends ChangeNotifier {
 
   // Dimensions
   bool _isLoading = false;
-
-  // Selection State
-  Point<int> _selectionStart = Point(0, 0);
-  Point<int> _selectionEnd = Point(0, 0);
 
   int all = SpreadsheetConstants.all;
 
@@ -99,8 +100,10 @@ class SpreadsheetController extends ChangeNotifier {
     required SaveSheetDataUseCase saveSheetDataUseCase,
     required ParsePasteDataUseCase parsePasteDataUseCase,
   }) : _getDataUseCase = getDataUseCase,
-       _saveSheetDataUseCase = saveSheetDataUseCase,
-       _parsePasteDataUseCase = parsePasteDataUseCase {
+       _saveSheetDataUseCase = saveSheetDataUseCase {
+    _treeManager = TreeManager(this);
+    _selectionManager = SelectionManager(this);
+    _clipboardManager = ClipboardManager(this);
     init();
   }
 
@@ -137,7 +140,7 @@ class SpreadsheetController extends ChangeNotifier {
     }
 
     if (!init) {
-      lastSelectedCells[sheetName] = _selectionStart;
+      lastSelectedCells[sheetName] = _selectionManager.selectionStart;
       _saveSheetDataUseCase.saveAllLastSelected(lastSelectedCells);
     }
 
@@ -145,8 +148,8 @@ class SpreadsheetController extends ChangeNotifier {
       if (loadedSheetsData.containsKey(name)) {
         table = loadedSheetsData[name]!["table"] as List<List<String>>;
         columnTypes = loadedSheetsData[name]!["columnTypes"] as List<String>;
-        _selectionStart = lastSelectedCells[name]!;
-        _selectionEnd = lastSelectedCells[name]!;
+        _selectionManager.selectionStart = lastSelectedCells[name]!;
+        _selectionManager.selectionEnd = lastSelectedCells[name]!;
       } else {
         _saveExecutors[name] = ManageWaitingTasks<void>();
         try {
@@ -154,26 +157,26 @@ class SpreadsheetController extends ChangeNotifier {
           table = iTable;
           columnTypes = iColumnTypes;
           if (init) {
-            _selectionStart = await _getDataUseCase.getLastSelectedCell();
+           _selectionManager.selectionStart = await _getDataUseCase.getLastSelectedCell();
           } else {
-            _selectionStart = lastSelectedCells[name]!;
+            _selectionManager.selectionStart = lastSelectedCells[name]!;
           }
         } catch (e) {
           debugPrint("Error parsing sheet data for $name: $e");
           table = [];
           columnTypes = [];
-          _selectionStart = Point(0, 0);
+          _selectionManager.selectionStart = Point(0, 0);
         }
       }
     } else {
       table = [];
       columnTypes = [];
-      _selectionStart = Point(0, 0);
+      _selectionManager.selectionStart = Point(0, 0);
       availableSheets.add(name);
       _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
       _saveExecutors[name] = ManageWaitingTasks<void>();
     }
-    _selectionEnd = _selectionStart;
+    _selectionManager.selectionEnd = _selectionManager.selectionStart;
     loadedSheetsData[name] = {"table": table, "columnTypes": columnTypes};
     sheetName = name;
     _saveSheetDataUseCase.saveLastOpenedSheetName(name);
@@ -305,9 +308,9 @@ class SpreadsheetController extends ChangeNotifier {
         toMentioners = result.toMentioners;
         instrTable = result.instrTable;
         colToAtt = result.colToAtt;
-        mentionsRoot.rowId = _selectionStart.x;
-        mentionsRoot.colId = _selectionStart.y;
-        populateTree([
+        mentionsRoot.rowId = _selectionManager.selectionStart.x;
+        mentionsRoot.colId = _selectionManager.selectionStart.y;
+        _treeManager.populateTree([
           errorRoot,
           warningRoot,
           mentionsRoot,
@@ -334,435 +337,54 @@ class SpreadsheetController extends ChangeNotifier {
     saveAndCalculate();
   }
 
-  // --- Selection Logic ---
-  void checkSelectChange(
-    Point<int> newSelectionStart,
-    Point<int> newSelectionEnd,
-  ) {
-    if (_selectionStart != newSelectionStart ||
-        _selectionEnd != newSelectionEnd) {
-      _selectionStart = newSelectionStart;
-      _selectionEnd = newSelectionEnd;
-      saveAndCalculate(calculate: false);
-      _saveSheetDataUseCase.saveLastSelectedCell(_selectionStart);
-      mentionsRoot.rowId = _selectionStart.x;
-      mentionsRoot.colId = _selectionStart.y;
-      populateTree([mentionsRoot]);
-      notifyListeners();
-    }
-  }
-
   void selectCell(int row, int col) {
-    var newSelectionStart = Point(row, col);
-    var newSelectionEnd = Point(row, col);
-    checkSelectChange(newSelectionStart, newSelectionEnd);
-  }
-
-  void selectRange(int startRow, int startCol, int endRow, int endCol) {
-    var newSelectionStart = Point(startRow, startCol);
-    var newSelectionEnd = Point(endRow, endCol);
-    checkSelectChange(newSelectionStart, newSelectionEnd);
+    _selectionManager.selectCell(row, col);
   }
 
   bool isCellSelected(int row, int col) {
-    final startRow = min(_selectionStart.x, _selectionEnd.x);
-    final endRow = max(_selectionStart.x, _selectionEnd.x);
-    final startCol = min(_selectionStart.y, _selectionEnd.y);
-    final endCol = max(_selectionStart.y, _selectionEnd.y);
+    final startRow = min(selectionStart.x, selectionEnd.x);
+    final endRow = max(selectionStart.x, selectionEnd.x);
+    final startCol = min(selectionStart.y, selectionEnd.y);
+    final endCol = max(selectionStart.y, selectionEnd.y);
 
     return row >= startRow && row <= endRow && col >= startCol && col <= endCol;
   }
 
-  // --- Clipboard Logic ---
+  String getColumnLabel(int col) {
+    return nodesUsecase.getColumnLabel(col);
+  }
+  
+  void toggleNodeExpansion(NodeStruct node, bool isExpanded) {
+    // Logic is now in the manager
+    node.isExpanded = isExpanded;
+    _treeManager.populateTree([node]); 
+    notifyListeners();
+  }
+  
+  void saveLastSelectedCell(Point<int> cell) {
+    _saveSheetDataUseCase.saveLastSelectedCell(cell);
+  }
+
+  void populateTree(List<NodeStruct> nodes) {
+    _treeManager.populateTree(nodes);
+  }
+
+  Point<int> get selectionStart => _selectionManager.selectionStart;
+  Point<int> get selectionEnd => _selectionManager.selectionEnd;
+
   Future<String?> copySelectionToClipboard() async {
-    final startRow = min(_selectionStart.x, _selectionEnd.x);
-    final endRow = max(_selectionStart.x, _selectionEnd.x);
-    final startCol = min(_selectionStart.y, _selectionEnd.y);
-    final endCol = max(_selectionStart.y, _selectionEnd.y);
-
-    StringBuffer buffer = StringBuffer();
-
-    for (int r = startRow; r <= endRow; r++) {
-      List<String> rowData = [];
-      for (int c = startCol; c <= endCol; c++) {
-        rowData.add(getContent(r, c));
-      }
-      buffer.write(rowData.join('\t')); // Tab separated for Excel compat
-      if (r < endRow) buffer.write('\n');
-    }
-
-    final text = buffer.toString();
-    await Clipboard.setData(ClipboardData(text: text));
-    return text;
+    return await _clipboardManager.copySelectionToClipboard();
   }
 
   Future<void> pasteSelection() async {
-    final data = await Clipboard.getData('text/plain');
-    if (data?.text == null) return;
-
-    // 1. Delegate Logic to UseCase
-    // We normalize selection to ensure we paste from top-left
-    int startRow = min(_selectionStart.x, _selectionEnd.x);
-    int startCol = min(_selectionStart.y, _selectionEnd.y);
-
-    final List<CellUpdate> updates = _parsePasteDataUseCase.execute(
-      data!.text!,
-      startRow,
-      startCol,
-    );
-
-    // 2. Update UI & Persist
-    for (var update in updates) {
-      updateCell(update.row, update.col, update.value);
-    }
-    saveAndCalculate();
+    await _clipboardManager.pasteSelection();
   }
 
   void selectAll() {
-    selectRange(0, 0, rowCount - 1, colCount - 1);
+    _selectionManager.selectAll();
   }
-
-  void populateCellNode(NodeStruct node, bool populateChildren) {
-    int rowId = node.rowId!;
-    int colId = node.colId!;
-    node.cellsToSelect = node.cells;
-    if (rowId >= rowCount || colId >= colCount) return;
-    if (node.message == null) {
-      if (node.instruction == SpreadsheetConstants.selectionMsg) {
-        node.message =
-            '${getColumnLabel(colId)}$rowId selected: ${table[rowId][colId]}';
-      } else {
-        node.message = '${getColumnLabel(colId)}$rowId: ${table[rowId][colId]}';
-      }
-    }
-    if (!populateChildren) {
-      return;
-    }
-    node.newChildren = [];
-    if (columnTypes[colId] == ColumnType.names.name ||
-        columnTypes[colId] == ColumnType.filePath.name ||
-        columnTypes[colId] == ColumnType.urls.name) {
-      node.newChildren!.add(
-        NodeStruct(
-          message: table[rowId][colId],
-          att: Attribute.row(rowId),
-        ),
-      );
-      return;
-    }
-    for (Attribute att in tableToAtt[rowId][colId]) {
-      node.newChildren!.add(NodeStruct(att: att));
-    }
-  }
-
-  void populateAttributeNode(NodeStruct node, bool populateChildren) {
-    if (populateChildren) {
-      if (attToRefFromAttColToCol.containsKey(node.att)) {
-        node.newChildren!.add(
-          NodeStruct(
-            instruction: SpreadsheetConstants.refFromAttColMsg,
-            att: node.att,
-          ),
-        );
-      } else {
-        node.newChildren!.add(
-          NodeStruct(
-            message: 'No references from attribute columns found',
-          ),
-        );
-      }
-      if (attToRefFromDepColToCol.containsKey(node.att)) {
-        node.newChildren!.add(
-          NodeStruct(
-            instruction: SpreadsheetConstants.refFromDepColMsg,
-            att: node.att,
-          ),
-        );
-      } else {
-        node.newChildren!.add(
-          NodeStruct(
-            message: 'No references from dependence columns found',
-          ),
-        );
-      }
-    }
-    node.message ??= node.name;
-    if (node.defaultOnTap) {
-      node.onTap = (n) {
-        List<Cell> cells = [];
-        List<MapEntry> entries = attToRefFromAttColToCol[node.att]!.entries.toList();
-        if (node.instruction !=
-            SpreadsheetConstants.moveToUniqueMentionSprawlCol) {
-          entries.addAll(attToRefFromDepColToCol[node.att]!.entries.toList());
-        }
-        for (final MapEntry(key: rowId, value: colIds) in entries) {
-          for (final colId in colIds) {
-            cells.add(Cell(rowId: rowId, colId: colId));
-          }
-        }
-        int found = -1;
-        for (int i = 0; i < cells.length; i++) {
-          final child = cells[i];
-          if (_selectionStart.x == child.rowId && _selectionStart.y == child.colId) {
-            found = i;
-            break;
-          }
-        }
-        if (found == -1) {
-          selectCell(cells[0].rowId, 0);
-        } else {
-          selectCell(
-            cells[(found + 1) % cells.length].rowId,
-            cells[(found + 1) % cells.length].colId,
-          );
-        }
-      };
-      node.defaultOnTap = false;
-    }
-  }
-
-  void populateRowNode(NodeStruct node, bool populateChildren) {
-    int rowId = node.rowId!;
-    node.message ??= nodesUsecase.getRowName(rowId);
-    if (!populateChildren) {
-      return;
-    }
-    List<NodeStruct> rowCells = [];
-    for (int colId = 0; colId < colCount; colId++) {
-      if (table[rowId][colId].isNotEmpty) {
-        rowCells.add(
-          NodeStruct(
-            cell: Cell(rowId: rowId, colId: colId),
-          ),
-        );
-      }
-    }
-    if (rowCells.isNotEmpty) {
-      node.newChildren!.add(
-        NodeStruct(message: 'Content of the row', newChildren: rowCells),
-      );
-    }
-    populateAttributeNode(node, true);
-  }
-
-  void populateColumnNode(NodeStruct node, bool populateChildren) {
-    node.message ??=
-        'Column ${getColumnLabel(node.colId!)} "${table[0][node.colId!]}"';
-    if (!populateChildren) {
-      return;
-    }
-    for (final attCol in colToAtt[node.colId]!) {
-      node.newChildren!.add(NodeStruct(att: attCol));
-    }
-  }
-
-  void populateAttToRefFromDepColNode(NodeStruct node, bool populateChildren) {
-    if (!populateChildren) {
-      return;
-    }
-    for (final rowId
-        in attToRefFromDepColToCol[Attribute(name: node.name)]!.keys) {
-      node.newChildren!.add(NodeStruct(rowId: rowId));
-    }
-  }
-
-  void populateNodeDefault(NodeStruct node, bool populateChildren) {
-    if (node.rowId != null) {
-      if (node.colId != null) {
-        if (node.name != null) {
-          throw UnimplementedError(
-            "CellWithName with name, row and col not implemented",
-          );
-        } else {
-          populateCellNode(node, populateChildren);
-        }
-      } else {
-        if (node.name != null) {
-          throw UnimplementedError(
-            "CellWithName with name and row not implemented",
-          );
-        } else {
-          populateRowNode(node, populateChildren);
-        }
-      }
-    } else {
-      if (node.colId != null) {
-        if (node.name != null) {
-          populateAttributeNode(node, populateChildren);
-        } else {
-          populateColumnNode(node, populateChildren);
-        }
-      } else {
-        if (node.name != null) {
-          if (attToCol.containsKey(node.name)) {
-            if (attToCol[node.name]! != [SpreadsheetConstants.notUsedCst]) {
-              node.newChildren!.add(
-                NodeStruct(
-                  instruction: SpreadsheetConstants.attToRefFromDepCol,
-                  name: node.name,
-                ),
-              );
-              node.newChildren!.add(
-                NodeStruct(
-                  instruction: SpreadsheetConstants.attToCol,
-                  name: node.name,
-                ),
-              );
-            } else {
-              populateAttToRefFromDepColNode(node, populateChildren);
-            }
-          } else {
-            debugPrint(
-              "populateNode: Unhandled CellWithName with name only: ${node.name}",
-            );
-          }
-        }
-      }
-    }
-    if (node.defaultOnTap) {
-      if (node.cellsToSelect == null) {
-        List<Cell> cells = [];
-        for (final child in node.children) {
-          if (child.rowId != null) {
-            if (child.colId != null) {
-              cells.add(Cell(rowId: child.rowId!, colId: child.colId!));
-            } else {
-              cells.add(Cell(rowId: child.rowId!, colId: 0));
-            }
-          } else if (child.colId != null) {
-            cells.add(Cell(rowId: 0, colId: child.colId!));
-          }
-        }
-        if (cells.isEmpty) {
-          return;
-        }
-        node.cellsToSelect = cells;
-      }
-      node.onTap = (n) {
-        if (node.cellsToSelect == null || node.cellsToSelect!.isEmpty) {
-          return;
-        }
-        int found = -1;
-        for (int i = 0; i < node.cellsToSelect!.length; i++) {
-          final child = node.cellsToSelect![i];
-          if (_selectionStart.x == child.rowId && _selectionStart.y == child.colId) {
-            found = i;
-            break;
-          }
-        }
-        if (found == -1) {
-          selectCell(node.cellsToSelect![0].rowId, 0);
-        } else {
-          selectCell(
-            node.cellsToSelect![(found + 1) % node.cellsToSelect!.length].rowId,
-            node.cellsToSelect![(found + 1) % node.cellsToSelect!.length].colId,
-          );
-        }
-      };
-      node.defaultOnTap = false;
-    }
-  }
-
-  void populateNode(NodeStruct node) {
-    bool populateChildren = node.newChildren == null;
-    if (populateChildren) {
-      node.newChildren = [];
-    }
-    switch (node.instruction) {
-      case SpreadsheetConstants.refFromAttColMsg:
-        if (populateChildren) {
-          for (int pointerRowId in attToRefFromAttColToCol[node.att]!.keys) {
-            node.newChildren!.add(NodeStruct(rowId: pointerRowId));
-          }
-        }
-        break;
-      case SpreadsheetConstants.refFromDepColMsg:
-        if (populateChildren) {
-          for (int pointerRowId in attToRefFromDepColToCol[node.att]!.keys) {
-            node.newChildren!.add(NodeStruct(rowId: pointerRowId));
-          }
-        }
-        break;
-      case SpreadsheetConstants.nodeAttributeMsg:
-        populateAttributeNode(node, populateChildren);
-        break;
-      case SpreadsheetConstants.cell:
-        populateCellNode(node, populateChildren);
-        break;
-      case SpreadsheetConstants.cycleDetected:
-        node.onTap = (n) {
-          int found = -1;
-          for (int i = 0; i < n.newChildren!.length; i++) {
-            final child = n.newChildren![i];
-            if (_selectionStart.x == child.rowId) {
-              found = i;
-              break;
-            }
-          }
-          if (found == -1) {
-            selectCell(n.newChildren![0].rowId!, 0);
-          } else {
-            selectCell(
-              n.newChildren![(found + 1) % n.newChildren!.length].rowId!,
-              0,
-            );
-          }
-        };
-        break;
-      case SpreadsheetConstants.attToRefFromDepCol:
-        populateAttToRefFromDepColNode(node, populateChildren);
-        break;
-      default:
-        populateNodeDefault(node, populateChildren);
-        break;
-    }
-  }
-
-  void populateTree(List<NodeStruct> roots) {
-    // TODO keep same expansion if the user just moved, or even if there have been changes
-    // List<int> newRowIndexes = [];
-    // List<int> newColIndexes = [];
-    // Map<String, String> newNameToOldName = {};
-    for (final root in roots) {
-      var stack = [root];
-      while (stack.isNotEmpty) {
-        var node = stack.removeLast();
-        populateNode(node);
-        if (node.isExpanded) {
-          for (int i = 0; i < node.children.length; i++) {
-            var obj = node.children[i];
-            if (!obj.isExpanded) {
-              break;
-            }
-            for (int j = 0; j < node.newChildren!.length; j++) {
-              var newObj = node.newChildren![j];
-              if (!newObj.isExpanded && obj == newObj) {
-                newObj.isExpanded = true;
-                break;
-              }
-            }
-          }
-          for (final child in node.children) {
-            child.isExpanded = child.startOpen || child.isExpanded;
-          }
-          if (node.isExpanded) {
-            for (final child in node.newChildren!) {
-              stack.add(child);
-            }
-          }
-        }
-        node.children = node.newChildren!;
-      }
-    }
-  }
-
-  void toggleNodeExpansion(NodeStruct node, bool isExpanded) {
-    node.isExpanded = isExpanded;
-    populateTree([node]);
+  
+  void notify() {
     notifyListeners();
-  }
-
-  String getColumnLabel(int col) {
-    return nodesUsecase.getColumnLabel(col);
   }
 }

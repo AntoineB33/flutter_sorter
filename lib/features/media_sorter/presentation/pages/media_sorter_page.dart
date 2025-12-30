@@ -157,12 +157,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         HardwareKeyboard.instance.isMetaPressed;
 
     if (isControl && key == 'c') {
-      ctrl.copySelectionToClipboard(); 
+      ctrl.copySelectionToClipboard();
       ScaffoldMessenger.of(context).showSnackBar(
          const SnackBar(content: Text('Selection copied'), duration: Duration(milliseconds: 500)),
       );
     } else if (isControl && key == 'v') {
-      ctrl.pasteSelection(); 
+      ctrl.pasteSelection();
     }
   }
 
