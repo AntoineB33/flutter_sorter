@@ -116,7 +116,7 @@ class SpreadsheetSelectionController extends ChangeNotifier {
 
     await Clipboard.setData(ClipboardData(text: buffer.toString()));
   }
-
+  
   Future<void> pasteSelection() async {
     if (_dataController == null) return;
 

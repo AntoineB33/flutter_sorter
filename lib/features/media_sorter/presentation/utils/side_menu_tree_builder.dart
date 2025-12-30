@@ -7,6 +7,7 @@ import '../../domain/entities/attribute.dart';
 import '../../domain/entities/cell.dart';
 import '../../domain/usecases/nodes_usecase.dart';
 import '../../domain/entities/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
 
 class SideMenuTreeBuilder {
   // --- Context Data (Passed in via Constructor) ---
@@ -20,6 +21,11 @@ class SideMenuTreeBuilder {
   final Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol;
   final Map<int, HashSet<Attribute>> colToAtt;
   final Map<String, List<int>> attToCol;
+  final Map<int, Map<Attribute, int>> rowToAtt;
+  final Map<Attribute, Map<int, List<int>>> toMentioners;
+  final List<Map<InstrStruct, int>> instrTable;
+  final List<int> nameIndexes;
+  final List<int> pathIndexes;
   
   // Selection Context (needed for onTap logic)
   Point<int> selectionStart;
@@ -35,6 +41,11 @@ class SideMenuTreeBuilder {
     required this.attToRefFromDepColToCol,
     required this.colToAtt,
     required this.attToCol,
+    required this.rowToAtt,
+    required this.toMentioners,
+    required this.instrTable,
+    required this.nameIndexes,
+    required this.pathIndexes,
     required this.selectionStart,
     required this.selectionEnd,
     required this.onSelectCell,

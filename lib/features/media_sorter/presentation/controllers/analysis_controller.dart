@@ -13,6 +13,7 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_wait
 import 'package:trying_flutter/features/media_sorter/presentation/utils/side_menu_tree_builder.dart';
 import 'spreadsheet_data_controller.dart';
 import 'spreadsheet_selection_controller.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
 
 class AnalysisController extends ChangeNotifier {
   final ManageWaitingTasks<AnalysisResult> _calculateExecutor =
@@ -25,21 +26,7 @@ class AnalysisController extends ChangeNotifier {
   SpreadsheetDataController? _dataController;
   SpreadsheetSelectionController? _selectionController;
 
-  // Tree Roots
-  final NodeStruct errorRoot = NodeStruct(instruction: SpreadsheetConstants.errorMsg, newChildren: [], hideIfEmpty: true);
-  final NodeStruct warningRoot = NodeStruct(instruction: SpreadsheetConstants.warningMsg, newChildren: [], hideIfEmpty: true);
-  final NodeStruct mentionsRoot = NodeStruct(instruction: SpreadsheetConstants.selectionMsg, newChildren: []);
-  final NodeStruct searchRoot = NodeStruct(instruction: SpreadsheetConstants.searchMsg, newChildren: []);
-  final NodeStruct categoriesRoot = NodeStruct(instruction: SpreadsheetConstants.categoryMsg, newChildren: []);
-  final NodeStruct distPairsRoot = NodeStruct(instruction: SpreadsheetConstants.distPairsMsg, newChildren: []);
-
-  // Analysis Data
-  List<List<HashSet<Attribute>>> tableToAtt = [];
-  Map<String, Cell> names = {};
-  Map<String, List<int>> attToCol = {};
-  Map<Attribute, Map<int, List<int>>> attToRefFromAttColToCol = {};
-  Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol = {};
-  Map<int, HashSet<Attribute>> colToAtt = {};
+  AnalysisResult analysisResult = AnalysisResult();
 
   final bool _isAnalyzing = false;
   bool get isAnalyzing => _isAnalyzing;
@@ -83,14 +70,14 @@ class AnalysisController extends ChangeNotifier {
 
   void _onSelectionChanged() {
     if (_selectionController != null && builder != null) {
-      mentionsRoot.rowId = _selectionController!.selectionStart.x;
-      mentionsRoot.colId = _selectionController!.selectionStart.y;
+      analysisResult.mentionsRoot.rowId = _selectionController!.selectionStart.x;
+      analysisResult.mentionsRoot.colId = _selectionController!.selectionStart.y;
       
       // Update builder context
       builder!.selectionStart = _selectionController!.selectionStart;
       builder!.selectionEnd = _selectionController!.selectionEnd;
       
-      builder!.populateTree([mentionsRoot]);
+      builder!.populateTree([analysisResult.mentionsRoot]);
       notifyListeners();
     }
   }
@@ -127,27 +114,11 @@ class AnalysisController extends ChangeNotifier {
 
   void _applyAnalysisResult(AnalysisResult result) {
     nodesUsecase = NodesUsecase(result);
-    
-    // Update Roots
-    errorRoot.newChildren = result.errorRoot.newChildren;
-    warningRoot.newChildren = result.warningRoot.newChildren;
-    mentionsRoot.newChildren = result.mentionsRoot.newChildren;
-    searchRoot.newChildren = result.searchRoot.newChildren;
-    categoriesRoot.newChildren = result.categoriesRoot.newChildren;
-    distPairsRoot.newChildren = result.distPairsRoot.newChildren;
-
-    // Update Maps
-    tableToAtt = result.tableToAtt;
-    names = result.names;
-    attToCol = result.attToCol;
-    attToRefFromAttColToCol = result.attToRefFromAttColToCol;
-    attToRefFromDepColToCol = result.attToRefFromDepColToCol; 
-    colToAtt = result.colToAtt;
 
     // Setup Mentions Context
     if (_selectionController != null) {
-      mentionsRoot.rowId = _selectionController!.selectionStart.x;
-      mentionsRoot.colId = _selectionController!.selectionStart.y;
+      analysisResult.mentionsRoot.rowId = _selectionController!.selectionStart.x;
+      analysisResult.mentionsRoot.colId = _selectionController!.selectionStart.y;
     }
 
     // Instantiate Builder
@@ -156,23 +127,28 @@ class AnalysisController extends ChangeNotifier {
       table: _dataController!.table,
       columnTypes: _dataController!.columnTypes,
       nodesUsecase: nodesUsecase,
-      tableToAtt: tableToAtt,
-      attToRefFromAttColToCol: attToRefFromAttColToCol,
-      attToRefFromDepColToCol: attToRefFromDepColToCol,
-      colToAtt: colToAtt,
-      attToCol: attToCol,
+      tableToAtt: analysisResult.tableToAtt,
+      attToRefFromAttColToCol: analysisResult.attToRefFromAttColToCol,
+      attToRefFromDepColToCol: analysisResult.attToRefFromDepColToCol,
+      rowToAtt: analysisResult.rowToAtt,
+      toMentioners: analysisResult.toMentioners,
+      instrTable: analysisResult.instrTable,
+      colToAtt: analysisResult.colToAtt,
+      attToCol: analysisResult.attToCol,
+      nameIndexes: analysisResult.nameIndexes,
+      pathIndexes: analysisResult.pathIndexes,
       selectionStart: _selectionController?.selectionStart ?? const Point(0,0),
       selectionEnd: _selectionController?.selectionEnd ?? const Point(0,0),
       onSelectCell: (r, c) => _selectionController?.selectCell(r, c),
     );
 
     builder!.populateTree([
-      errorRoot,
-      warningRoot,
-      mentionsRoot,
-      searchRoot,
-      categoriesRoot,
-      distPairsRoot,
+      analysisResult.errorRoot,
+      analysisResult.warningRoot,
+      analysisResult.mentionsRoot,
+      analysisResult.searchRoot,
+      analysisResult.categoriesRoot,
+      analysisResult.distPairsRoot,
     ]);
 
     notifyListeners();
