@@ -1,23 +1,4 @@
 import 'dart:math';
-import 'dart:collection';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
-import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
-import '../../domain/usecases/get_sheet_data_usecase.dart';
-import '../../domain/usecases/save_sheet_data_usecase.dart'; // Assume created
-import '../../domain/entities/column_type.dart';
-import '../../domain/usecases/parse_paste_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import '../../domain/usecases/manage_waiting_tasks.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_messages.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/nodes_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/tree_manager.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/selection_manager.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_controller.dart';
 
 class SelectionManager {
