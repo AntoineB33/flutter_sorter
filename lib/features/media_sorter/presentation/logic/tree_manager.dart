@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import '../../domain/entities/column_type.dart';
@@ -82,7 +84,12 @@ class TreeManager {
     if (node.defaultOnTap) {
       node.onTap = (n) {
         List<Cell> cells = [];
-        List<MapEntry> entries = _controller.attToRefFromAttColToCol[node.att]!.entries.toList();
+        List<MapEntry> entries;
+        if (node.colId == SpreadsheetConstants.notUsedCst) {
+          entries = _controller.attToRefFromDepColToCol[node.att]!.entries.toList();
+        } else {
+          entries = _controller.attToRefFromAttColToCol[node.att]!.entries.toList();
+        }
         if (node.instruction !=
             SpreadsheetConstants.moveToUniqueMentionSprawlCol) {
           entries.addAll(_controller.attToRefFromDepColToCol[node.att]!.entries.toList());

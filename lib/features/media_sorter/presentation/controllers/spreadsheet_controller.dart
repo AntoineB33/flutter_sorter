@@ -304,6 +304,7 @@ class SpreadsheetController extends ChangeNotifier {
 
         pathIndexes = result.pathIndexes;
         attToRefFromAttColToCol = result.attToRefFromAttColToCol;
+        attToRefFromDepColToCol = result.attToRefFromDepColToCol;
         rowToAtt = result.rowToAtt;
         toMentioners = result.toMentioners;
         instrTable = result.instrTable;

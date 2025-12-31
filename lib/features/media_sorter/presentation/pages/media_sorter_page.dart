@@ -15,7 +15,7 @@ class MediaSorterPage extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => sl<SpreadsheetController>(),
       child: const Scaffold(
-        appBar: NavigationDropdown(), // Ensure this implements PreferredSizeWidget
+        appBar: NavigationDropdown(),
         body: ResizableSplitView(
           initialWidth: 250,
           minWidth: 150,
