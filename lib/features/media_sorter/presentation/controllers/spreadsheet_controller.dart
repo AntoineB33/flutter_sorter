@@ -18,6 +18,7 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/nodes_useca
 import 'package:trying_flutter/features/media_sorter/presentation/logic/tree_manager.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/selection_manager.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/clipboard_manager.dart';
+import 'package:flutter/material.dart';
 
 class SpreadsheetController extends ChangeNotifier {
   int saveDelayMs = 500;
@@ -25,6 +26,7 @@ class SpreadsheetController extends ChangeNotifier {
   late final TreeManager _treeManager;
   late final SelectionManager _selectionManager;
   late final ClipboardManager _clipboardManager;
+  Size _visibleWindowSize = Size.zero;
 
   final GetSheetDataUseCase _getDataUseCase;
   final SaveSheetDataUseCase _saveSheetDataUseCase;
@@ -35,6 +37,8 @@ class SpreadsheetController extends ChangeNotifier {
 
   List<List<String>> table = [];
   List<String> columnTypes = [];
+  int tableHeight = 0;
+  int tableWidth = 0;
   String sheetName = "";
   int tableViewRows = 50;
   int tableViewCols = 50;
@@ -148,14 +152,18 @@ class SpreadsheetController extends ChangeNotifier {
       if (loadedSheetsData.containsKey(name)) {
         table = loadedSheetsData[name]!["table"] as List<List<String>>;
         columnTypes = loadedSheetsData[name]!["columnTypes"] as List<String>;
+        tableHeight = loadedSheetsData[name]!["tableHeight"] as int;
+        tableWidth = loadedSheetsData[name]!["tableWidth"] as int;
         _selectionManager.selectionStart = lastSelectedCells[name]!;
         _selectionManager.selectionEnd = lastSelectedCells[name]!;
       } else {
         _saveExecutors[name] = ManageWaitingTasks<void>();
         try {
-          var (iTable, iColumnTypes) = await _getDataUseCase.loadSheet(name);
+          var (iTable, iColumnTypes, iTableHeight, iTableWidth) = await _getDataUseCase.loadSheet(name);
           table = iTable;
           columnTypes = iColumnTypes;
+          tableHeight = iTableHeight;
+          tableWidth = iTableWidth;
           if (init) {
            _selectionManager.selectionStart = await _getDataUseCase.getLastSelectedCell();
           } else {
@@ -165,12 +173,16 @@ class SpreadsheetController extends ChangeNotifier {
           debugPrint("Error parsing sheet data for $name: $e");
           table = [];
           columnTypes = [];
+          tableHeight = 0;
+          tableWidth = 0;
           _selectionManager.selectionStart = Point(0, 0);
         }
       }
     } else {
       table = [];
       columnTypes = [];
+      tableHeight = 0;
+      tableWidth = 0;
       _selectionManager.selectionStart = Point(0, 0);
       availableSheets.add(name);
       _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
@@ -387,5 +399,31 @@ class SpreadsheetController extends ChangeNotifier {
   
   void notify() {
     notifyListeners();
+  }
+
+  void updateRowCount(int newCount) {
+    if (tableViewRows == newCount) return;
+    tableViewRows = newCount;
+    notifyListeners();
+  }
+
+  int get minRows {
+    if (_visibleWindowSize.height > tableHeight) {
+      return rowCount + (_visibleWindowSize.height - tableHeight) ~/ SpreadsheetConstants.defaultCellHeight;
+    }
+    return rowCount;
+  }
+
+  Size get visibleWindowSize => _visibleWindowSize;
+
+  void updateVisibleWindowSize(Size newSize) {
+    // PREVENT INFINITE LOOP: Only notify if the size actually changed
+    if (_visibleWindowSize != newSize) {
+      _visibleWindowSize = newSize;
+      notifyListeners();
+      
+      // Optional: Log it to verify it works
+      // print("Spreadsheet Window Resized: $newSize");
+    }
   }
 }

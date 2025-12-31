@@ -8,6 +8,10 @@ class SpreadsheetConstants {
       r'^(?<prefix>.*\|)(?<any>any)?(?<att>.+)(?<suffix>\|.*)$';
   static const all = -1;
   static const notUsedCst = -2;
+  static const defaultCellHeight = 30.0;
+  static const defaultCellWidth = 100.0;
+  static const headerHeight = 40.0;
+  static const headerWidth = 60.0;
 
   static const errorMsg = 'Error Log';
   static const warningMsg = 'Warning Log';

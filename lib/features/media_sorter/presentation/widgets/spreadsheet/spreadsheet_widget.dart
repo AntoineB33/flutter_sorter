@@ -6,6 +6,8 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/sp
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/column_type_extensions.dart';
 import 'spreadsheet_components.dart';
+import 'dart:math' as math;
+import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 
 class SpreadsheetWidget extends StatefulWidget {
   const SpreadsheetWidget({super.key});
@@ -18,11 +20,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   final FocusNode _focusNode = FocusNode();
   final ScrollController _verticalController = ScrollController();
   final ScrollController _horizontalController = ScrollController();
-
-  static const double _defaultCellWidth = 100;
-  static const double _defaultCellHeight = 40;
-  static const double _headerHeight = 44;
-  static const double _headerWidth = 60;
 
   @override
   void initState() {
@@ -48,22 +45,93 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return KeyboardListener(
-      focusNode: _focusNode,
-      autofocus: true,
-      onKeyEvent: (KeyEvent event) => _handleKeyboard(context, event, controller),
-      child: TableView.builder(
-        verticalDetails: ScrollableDetails.vertical(controller: _verticalController),
-        horizontalDetails: ScrollableDetails.horizontal(controller: _horizontalController),
-        pinnedRowCount: 1,
-        pinnedColumnCount: 1,
-        rowCount: controller.tableViewRows + 1,
-        columnCount: controller.tableViewCols + 1,
-        columnBuilder: (index) => _buildColumnSpan(index),
-        rowBuilder: (index) => _buildRowSpan(index),
-        cellBuilder: (context, vicinity) => _buildCellDispatcher(context, vicinity, controller),
-      ),
+    // 1. Wrap everything in LayoutBuilder to get dimensions
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 2. Determine the available size
+        final Size currentSize = constraints.biggest;
+
+        // 3. Update controller if size has changed.
+        // We check against the controller's current value to prevent infinite loops.
+        // We use addPostFrameCallback because we cannot setState/notifyListeners during build.
+        if (controller.visibleWindowSize != currentSize) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            controller.updateVisibleWindowSize(currentSize);
+          });
+        }
+
+        return KeyboardListener(
+          focusNode: _focusNode,
+          autofocus: true,
+          onKeyEvent: (KeyEvent event) => _handleKeyboard(context, event, controller),
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) => _handleScrollNotification(notification, controller),
+            child: TableView.builder(
+              verticalDetails: ScrollableDetails.vertical(controller: _verticalController),
+              horizontalDetails: ScrollableDetails.horizontal(controller: _horizontalController),
+              pinnedRowCount: 1,
+              pinnedColumnCount: 1,
+              rowCount: controller.tableViewRows + 1,
+              columnCount: controller.tableViewCols + 1,
+              columnBuilder: (index) => _buildColumnSpan(index),
+              rowBuilder: (index) => _buildRowSpan(index),
+              cellBuilder: (context, vicinity) => _buildCellDispatcher(context, vicinity, controller),
+            ),
+          ),
+        );
+      },
     );
+  }
+
+  bool _handleScrollNotification(ScrollNotification notification, SpreadsheetController controller) {
+    // We only care about vertical scrolling on the TableView
+    if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
+
+    final metrics = notification.metrics;
+    
+    // We calculate the row count required so that maxScrollExtent > pixels.
+    // Logic:
+    // 1. Visible Bottom Edge = currentPixels + viewportDimension
+    // 2. Content Height needed > Visible Bottom Edge (strictly greater to not 'reach' bottom)
+    // 3. Content Height = HeaderHeight + (Rows * CellHeight)
+    // 4. Rows > (VisibleBottomEdge - HeaderHeight) / CellHeight
+    
+    final double visibleBottomEdge = metrics.pixels + metrics.viewportDimension;
+    final double rawRowsNeeded = (visibleBottomEdge - SpreadsheetConstants.headerHeight) / SpreadsheetConstants.defaultCellHeight;
+    
+    // floor() gives us the index of the row currently at the bottom edge. 
+    // We add 1 to ensure the total count extends BEYOND that edge.
+    // Example: If bottom edge is exactly at end of row 10, raw is 10.0. 
+    // floor(10.0)+1 = 11. Rows 0-10 (11 rows) means height is slightly past row 10 (if using > logic). 
+    // Actually, to strictly ensure extentAfter > 0, we need the count to cover the space + epsilon.
+    final int requiredRows = rawRowsNeeded.floor() + 1;
+
+    // Apply minimum constraint
+    final int targetRows = math.max(controller.minRows, requiredRows);
+
+    if (notification is ScrollUpdateNotification) {
+      // SCENARIO 1: Scrolling Down.
+      // We check if we *will* reach bottom (or are effectively there).
+      // If our current rows are less than what is needed to keep extentAfter > 0, we update.
+      if (targetRows > controller.tableViewRows) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          controller.updateRowCount(targetRows);
+        });
+      }
+    } else if (notification is ScrollEndNotification) {
+      // SCENARIO 2: Scrolling Up (or stopping).
+      // "After scrolling... calculate least amount... so spreadsheet doesn't reach bottom"
+      // If we have more rows than strictly necessary, we trim them down to the target.
+      if (controller.tableViewRows > targetRows) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          controller.updateRowCount(targetRows);
+        });
+      }
+    }
+
+    return false;
   }
 
   void _handleKeyboard(BuildContext context, KeyEvent event, SpreadsheetController ctrl) {
@@ -85,13 +153,13 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   TableSpan _buildColumnSpan(int index) {
     return TableSpan(
-      extent: FixedTableSpanExtent(index == 0 ? _headerWidth : _defaultCellWidth),
+      extent: FixedTableSpanExtent(index == 0 ? SpreadsheetConstants.headerWidth : SpreadsheetConstants.defaultCellWidth),
     );
   }
 
   TableSpan _buildRowSpan(int index) {
     return TableSpan(
-      extent: FixedTableSpanExtent(index == 0 ? _headerHeight : _defaultCellHeight),
+      extent: FixedTableSpanExtent(index == 0 ? SpreadsheetConstants.headerHeight : SpreadsheetConstants.defaultCellHeight),
     );
   }
 

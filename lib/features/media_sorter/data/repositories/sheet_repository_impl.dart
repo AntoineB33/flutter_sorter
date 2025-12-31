@@ -41,12 +41,12 @@ class SheetRepositoryImpl implements SheetRepository {
   }
 
   @override
-  Future<(List<List<String>> table, List<String> columnTypes)> loadSheet(
+  Future<(List<List<String>> table, List<String> columnTypes, int tableHeight, int tableWidth)> loadSheet(
     String sheetName,
   ) async {
     final mapData = await dataSource.getSheet(sheetName);
     final sheet = SheetModel.fromJson(mapData);
-    return (sheet.table, sheet.columnTypes);
+    return (sheet.table, sheet.columnTypes, sheet.tableHeight, sheet.tableWidth);
   }
 
   @override

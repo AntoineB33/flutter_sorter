@@ -31,7 +31,7 @@ class GetSheetDataUseCase {
     return result;
   }
 
-  Future<(List<List<String>>, List<String>)> loadSheet(String sheetName) {
+  Future<(List<List<String>>, List<String>, int, int)> loadSheet(String sheetName) {
     return repository.loadSheet(sheetName);
   }
 }
