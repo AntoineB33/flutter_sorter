@@ -8,10 +8,6 @@ class SpreadsheetConstants {
       r'^(?<prefix>.*\|)(?<any>any)?(?<att>.+)(?<suffix>\|.*)$';
   static const all = -1;
   static const notUsedCst = -2;
-  static const defaultCellHeight = 30.0;
-  static const defaultCellWidth = 100.0;
-  static const headerHeight = 40.0;
-  static const headerWidth = 60.0;
 
   static const errorMsg = 'Error Log';
   static const warningMsg = 'Warning Log';
@@ -30,4 +26,7 @@ class SpreadsheetConstants {
   static const moveToUniqueMentionSprawlCol =
       "moved to unique mention in sprawl column for this attribute";
   static const refFromDepColMsg = "rows that have constraints based on it";
+
+  static const noSPNameFound = 'No Spreadsheet Name Found';
+  static const defaultSheetName = 'Sheet1';
 }

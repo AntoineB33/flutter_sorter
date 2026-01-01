@@ -4,6 +4,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_sheet_local_datasource.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
+import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
 
 class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   Future<Map<String, int>> getLastSelectedCell() async {
@@ -23,7 +25,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
 
   Future<String> getLastOpenedSheetName() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('lastOpenedSheetName') ?? "";
+    return prefs.getString('lastOpenedSheetName') ?? SpreadsheetConstants.noSPNameFound;
   }
 
   Future<void> saveLastOpenedSheetName(String sheetName) async {
@@ -64,7 +66,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   }
 
   @override
-  Future<Map<String, dynamic>> getSheet(String sheetName) async {
+  Future<SheetModel> getSheet(String sheetName) async {
     final file = await _getFile(sheetName);
     final jsonString = await file.readAsString();
     Map<String, dynamic> decoded = {};
@@ -73,14 +75,14 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
     } catch (e) {
       debugPrint("Error decoding JSON for sheet $sheetName: $e");
     }
-    return decoded;
+    return SheetModel.fromJson(decoded);
   }
 
   @override
-  Future<void> saveSheet(String sheetName, Map<String, dynamic> data) async {
+  Future<void> saveSheet(String sheetName, SheetModel sheet) async {
     try {
       final file = await _getFile(sheetName);
-      final jsonString = jsonEncode(data);
+      final jsonString = jsonEncode(sheet.toJson());
       await file.writeAsString(jsonString);
     } catch (e) {
       throw Exception("Error saving sheet: $e");
@@ -121,6 +123,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
     // 1. Clear SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('lastOpenedSheetName');
+    await prefs.remove('lastSelectedCell');
 
     // 2. Get the Documents Directory
     final directory = await getApplicationDocumentsDirectory();
@@ -129,22 +132,6 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
     final mediaSorterDir = Directory('${directory.path}/media_sorter');
     if (await mediaSorterDir.exists()) {
       await mediaSorterDir.delete(recursive: true);
-    }
-
-    // 4. Delete individual sheet files (sheet_*.json)
-    // Note: Your _getFile method saves these in the root directory,
-    // so we must find and delete them manually.
-    final List<FileSystemEntity> entities = await directory.list().toList();
-    for (final entity in entities) {
-      if (entity is File) {
-        // Extract the filename from the path
-        final filename = entity.uri.pathSegments.last;
-
-        // Check if it matches your naming convention
-        if (filename.startsWith('sheet_') && filename.endsWith('.json')) {
-          await entity.delete();
-        }
-      }
     }
   }
 }

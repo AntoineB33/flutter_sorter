@@ -16,11 +16,18 @@ class SelectionManager {
         selectionEnd != newSelectionEnd) {
       selectionStart = newSelectionStart;
       selectionEnd = newSelectionEnd;
+      
       _controller.saveAndCalculate(calculate: false);
       _controller.saveLastSelectedCell(selectionStart);
+      
+      // Update Mentions
       _controller.mentionsRoot.rowId = selectionStart.x;
       _controller.mentionsRoot.colId = selectionStart.y;
       _controller.populateTree([_controller.mentionsRoot]);
+      
+      // Request scroll to visible
+      _controller.triggerScrollTo(newSelectionEnd.x, newSelectionEnd.y);
+      
       _controller.notify();
     }
   }

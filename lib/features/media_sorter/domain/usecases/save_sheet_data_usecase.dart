@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
+
 import '../repositories/sheet_repository.dart';
 
 class SaveSheetDataUseCase {
@@ -13,10 +15,12 @@ class SaveSheetDataUseCase {
 
   Future<void> saveSheet(
     String sheetName,
-    List<List<String>> table,
-    List<String> columnTypes
+    SheetModel sheet,
   ) {
-    return repository.updateSheet(sheetName, table, columnTypes);
+    return repository.updateSheet(
+      sheetName,
+      sheet,
+    );
   }
 
   Future<void> saveLastOpenedSheetName(String sheetName) {

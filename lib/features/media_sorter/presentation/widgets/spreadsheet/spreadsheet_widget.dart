@@ -1,3 +1,4 @@
+import 'dart:async'; // Added for StreamSubscription
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -7,7 +8,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/column_type
 import 'package:trying_flutter/features/media_sorter/presentation/utils/column_type_extensions.dart';
 import 'spreadsheet_components.dart';
 import 'dart:math' as math;
-import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 
 class SpreadsheetWidget extends StatefulWidget {
   const SpreadsheetWidget({super.key});
@@ -20,21 +21,111 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   final FocusNode _focusNode = FocusNode();
   final ScrollController _verticalController = ScrollController();
   final ScrollController _horizontalController = ScrollController();
+  StreamSubscription? _scrollSubscription;
 
   @override
   void initState() {
     super.initState();
+
+    // Defer the subscription until after build to access the Provider safely
+    // or just assume access if this widget is always under a Provider.
+    // However, usually safest to access Provider in didChangeDependencies or build.
+    // For simplicity with ChangeNotifierProvider, we can hook it up in addPostFrameCallback
+    // or rely on didChangeDependencies.
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
+      _subscribeToScrollEvents();
     });
+  }
+
+  void _subscribeToScrollEvents() {
+    final controller = context.read<SpreadsheetController>();
+    _scrollSubscription?.cancel();
+    _scrollSubscription = controller.scrollToCellStream.listen(_revealCell);
   }
 
   @override
   void dispose() {
+    _scrollSubscription?.cancel();
     _verticalController.dispose();
     _horizontalController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  /// Calculates offsets and scrolls to ensure the target cell is visible.
+  void _revealCell(math.Point<int> cell) {
+    if (!_verticalController.hasClients || !_horizontalController.hasClients) {
+      return;
+    }
+
+    const double cellWidth = PageConstants.defaultCellWidth;
+    final controller = context.read<SpreadsheetController>();
+
+    // Vertical Logic
+    final double targetTop = controller.getTargetTop(cell.x);
+    final double targetBottom = controller.getTargetTop(cell.x + 1);
+    final double currentVerticalOffset = _verticalController.offset;
+    final double verticalViewport =
+        _verticalController.position.viewportDimension -
+        controller.sheet.rowHeaderWidth;
+
+    double? newVerticalOffset;
+
+    if (targetTop < currentVerticalOffset) {
+      // Cell is above the current view
+      newVerticalOffset = targetTop;
+    } else if (targetBottom > currentVerticalOffset + verticalViewport) {
+      // Cell is below the current view
+      newVerticalOffset = targetBottom - verticalViewport;
+    }
+
+    if (newVerticalOffset != null) {
+      // Clamp logic is usually handled by the controller, but good to be safe
+      final double maxScroll = _verticalController.position.maxScrollExtent;
+      final double clampedOffset = math.min(
+        math.max(newVerticalOffset, 0),
+        maxScroll,
+      );
+
+      _verticalController.animateTo(
+        clampedOffset,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+      );
+    }
+
+    // Horizontal Logic
+    final double targetLeft = cell.y * cellWidth;
+    final double targetRight = targetLeft + cellWidth;
+    final double currentHorizontalOffset = _horizontalController.offset;
+    final double horizontalViewport =
+        _horizontalController.position.viewportDimension;
+
+    double? newHorizontalOffset;
+
+    if (targetLeft < currentHorizontalOffset) {
+      // Cell is to the left
+      newHorizontalOffset = targetLeft;
+    } else if (targetRight > currentHorizontalOffset + horizontalViewport) {
+      // Cell is to the right
+      newHorizontalOffset = targetRight - horizontalViewport;
+    }
+
+    if (newHorizontalOffset != null) {
+      final double maxScroll = _horizontalController.position.maxScrollExtent;
+      final double clampedOffset = math.min(
+        math.max(newHorizontalOffset, 0),
+        maxScroll,
+      );
+
+      _horizontalController.animateTo(
+        clampedOffset,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -52,8 +143,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         final Size currentSize = constraints.biggest;
 
         // 3. Update controller if size has changed.
-        // We check against the controller's current value to prevent infinite loops.
-        // We use addPostFrameCallback because we cannot setState/notifyListeners during build.
         if (controller.visibleWindowSize != currentSize) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             controller.updateVisibleWindowSize(currentSize);
@@ -63,19 +152,26 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         return KeyboardListener(
           focusNode: _focusNode,
           autofocus: true,
-          onKeyEvent: (KeyEvent event) => _handleKeyboard(context, event, controller),
+          onKeyEvent: (KeyEvent event) =>
+              _handleKeyboard(context, event, controller),
           child: NotificationListener<ScrollNotification>(
-            onNotification: (notification) => _handleScrollNotification(notification, controller),
+            onNotification: (notification) =>
+                _handleScrollNotification(notification, controller),
             child: TableView.builder(
-              verticalDetails: ScrollableDetails.vertical(controller: _verticalController),
-              horizontalDetails: ScrollableDetails.horizontal(controller: _horizontalController),
+              verticalDetails: ScrollableDetails.vertical(
+                controller: _verticalController,
+              ),
+              horizontalDetails: ScrollableDetails.horizontal(
+                controller: _horizontalController,
+              ),
               pinnedRowCount: 1,
               pinnedColumnCount: 1,
               rowCount: controller.tableViewRows + 1,
               columnCount: controller.tableViewCols + 1,
               columnBuilder: (index) => _buildColumnSpan(index),
               rowBuilder: (index) => _buildRowSpan(index),
-              cellBuilder: (context, vicinity) => _buildCellDispatcher(context, vicinity, controller),
+              cellBuilder: (context, vicinity) =>
+                  _buildCellDispatcher(context, vicinity, controller),
             ),
           ),
         );
@@ -83,47 +179,34 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     );
   }
 
-  bool _handleScrollNotification(ScrollNotification notification, SpreadsheetController controller) {
+  bool _handleScrollNotification(
+    ScrollNotification notification,
+    SpreadsheetController controller,
+  ) {
     // We only care about vertical scrolling on the TableView
     if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
       return false;
     }
 
     final metrics = notification.metrics;
-    
-    // We calculate the row count required so that maxScrollExtent > pixels.
-    // Logic:
-    // 1. Visible Bottom Edge = currentPixels + viewportDimension
-    // 2. Content Height needed > Visible Bottom Edge (strictly greater to not 'reach' bottom)
-    // 3. Content Height = HeaderHeight + (Rows * CellHeight)
-    // 4. Rows > (VisibleBottomEdge - HeaderHeight) / CellHeight
-    
+
     final double visibleBottomEdge = metrics.pixels + metrics.viewportDimension;
-    final double rawRowsNeeded = (visibleBottomEdge - SpreadsheetConstants.headerHeight) / SpreadsheetConstants.defaultCellHeight;
-    
-    // floor() gives us the index of the row currently at the bottom edge. 
-    // We add 1 to ensure the total count extends BEYOND that edge.
-    // Example: If bottom edge is exactly at end of row 10, raw is 10.0. 
-    // floor(10.0)+1 = 11. Rows 0-10 (11 rows) means height is slightly past row 10 (if using > logic). 
-    // Actually, to strictly ensure extentAfter > 0, we need the count to cover the space + epsilon.
+    final double rawRowsNeeded =
+        (visibleBottomEdge - PageConstants.defaultColHeaderHeight) /
+        PageConstants.defaultCellHeight;
+
     final int requiredRows = rawRowsNeeded.floor() + 1;
 
     // Apply minimum constraint
     final int targetRows = math.max(controller.minRows, requiredRows);
 
     if (notification is ScrollUpdateNotification) {
-      // SCENARIO 1: Scrolling Down.
-      // We check if we *will* reach bottom (or are effectively there).
-      // If our current rows are less than what is needed to keep extentAfter > 0, we update.
       if (targetRows > controller.tableViewRows) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           controller.updateRowCount(targetRows);
         });
       }
     } else if (notification is ScrollEndNotification) {
-      // SCENARIO 2: Scrolling Up (or stopping).
-      // "After scrolling... calculate least amount... so spreadsheet doesn't reach bottom"
-      // If we have more rows than strictly necessary, we trim them down to the target.
       if (controller.tableViewRows > targetRows) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           controller.updateRowCount(targetRows);
@@ -134,17 +217,25 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     return false;
   }
 
-  void _handleKeyboard(BuildContext context, KeyEvent event, SpreadsheetController ctrl) {
+  void _handleKeyboard(
+    BuildContext context,
+    KeyEvent event,
+    SpreadsheetController ctrl,
+  ) {
     if (event is! KeyDownEvent) return;
 
     final key = event.logicalKey.keyLabel.toLowerCase();
-    final isControl = HardwareKeyboard.instance.isControlPressed ||
+    final isControl =
+        HardwareKeyboard.instance.isControlPressed ||
         HardwareKeyboard.instance.isMetaPressed;
 
     if (isControl && key == 'c') {
       ctrl.copySelectionToClipboard();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selection copied'), duration: Duration(milliseconds: 500)),
+        const SnackBar(
+          content: Text('Selection copied'),
+          duration: Duration(milliseconds: 500),
+        ),
       );
     } else if (isControl && key == 'v') {
       ctrl.pasteSelection();
@@ -153,18 +244,29 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   TableSpan _buildColumnSpan(int index) {
     return TableSpan(
-      extent: FixedTableSpanExtent(index == 0 ? SpreadsheetConstants.headerWidth : SpreadsheetConstants.defaultCellWidth),
+      extent: FixedTableSpanExtent(
+        index == 0
+            ? PageConstants.defaultRowHedaerWidth
+            : PageConstants.defaultCellWidth,
+      ),
     );
   }
 
   TableSpan _buildRowSpan(int index) {
     return TableSpan(
-      extent: FixedTableSpanExtent(index == 0 ? SpreadsheetConstants.headerHeight : SpreadsheetConstants.defaultCellHeight),
+      extent: FixedTableSpanExtent(
+        index == 0
+            ? PageConstants.defaultColHeaderHeight
+            : PageConstants.defaultCellHeight,
+      ),
     );
   }
 
   Widget _buildCellDispatcher(
-      BuildContext context, TableVicinity vicinity, SpreadsheetController controller) {
+    BuildContext context,
+    TableVicinity vicinity,
+    SpreadsheetController controller,
+  ) {
     final int r = vicinity.row;
     final int c = vicinity.column;
 
@@ -175,8 +277,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return SpreadsheetColumnHeader(
         label: controller.getColumnLabel(c - 1),
         colIndex: c - 1,
-        onContextMenu: (details) =>
-            _showColumnContextMenu(context, controller, details.globalPosition, c - 1),
+        onContextMenu: (details) => _showColumnContextMenu(
+          context,
+          controller,
+          details.globalPosition,
+          c - 1,
+        ),
       );
     }
     if (c == 0) {
@@ -204,7 +310,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     final currentType = controller.getColumnType(col);
     final result = await showMenu<String>(
       context: context,
-      position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx,
+        position.dy,
+      ),
       items: ColumnType.values.map((entry) {
         return CheckedPopupMenuItem<String>(
           value: entry.name,
@@ -226,10 +337,19 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 
   void _showColumnContextMenu(
-      BuildContext context, SpreadsheetController controller, Offset position, int col) async {
+    BuildContext context,
+    SpreadsheetController controller,
+    Offset position,
+    int col,
+  ) async {
     final result = await showMenu<String>(
       context: context,
-      position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx,
+        position.dy,
+      ),
       items: [
         const PopupMenuItem(value: 'sort_asc', child: Text('Sort A-Z')),
         const PopupMenuItem(value: 'sort_desc', child: Text('Sort Z-A')),

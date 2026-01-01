@@ -22,21 +22,21 @@ class TreeManager {
     if (node.message == null) {
       if (node.instruction == SpreadsheetConstants.selectionMsg) {
         node.message =
-            '${_controller.getColumnLabel(colId)}$rowId selected: ${_controller.table[rowId][colId]}';
+            '${_controller.getColumnLabel(colId)}$rowId selected: ${_controller.sheet.table[rowId][colId]}';
       } else {
-        node.message = '${_controller.getColumnLabel(colId)}$rowId: ${_controller.table[rowId][colId]}';
+        node.message = '${_controller.getColumnLabel(colId)}$rowId: ${_controller.sheet.table[rowId][colId]}';
       }
     }
     if (!populateChildren) {
       return;
     }
     node.newChildren = [];
-    if (_controller.columnTypes[colId] == ColumnType.names.name ||
-        _controller.columnTypes[colId] == ColumnType.filePath.name ||
-        _controller.columnTypes[colId] == ColumnType.urls.name) {
+    if (_controller.sheet.columnTypes[colId] == ColumnType.names.name ||
+        _controller.sheet.columnTypes[colId] == ColumnType.filePath.name ||
+        _controller.sheet.columnTypes[colId] == ColumnType.urls.name) {
       node.newChildren!.add(
         NodeStruct(
-          message: _controller.table[rowId][colId],
+          message: _controller.sheet.table[rowId][colId],
           att: Attribute.row(rowId),
         ),
       );
@@ -82,10 +82,8 @@ class TreeManager {
     if (node.defaultOnTap) {
       node.onTap = (n) {
         List<Cell> cells = [];
-        List<MapEntry> entries;
-        if (node.colId == SpreadsheetConstants.notUsedCst) {
-          entries = _controller.attToRefFromDepColToCol[node.att]!.entries.toList();
-        } else {
+        List<MapEntry> entries = [];
+        if (node.colId != SpreadsheetConstants.notUsedCst) {
           entries = _controller.attToRefFromAttColToCol[node.att]!.entries.toList();
         }
         if (node.instruction !=
@@ -106,7 +104,7 @@ class TreeManager {
           }
         }
         if (found == -1) {
-          _controller.selectCell(cells[0].rowId, 0);
+          _controller.selectCell(cells[0].rowId, cells[0].colId);
         } else {
           _controller.selectCell(
             cells[(found + 1) % cells.length].rowId,
@@ -126,7 +124,7 @@ class TreeManager {
     }
     List<NodeStruct> rowCells = [];
     for (int colId = 0; colId < _controller.colCount; colId++) {
-      if (_controller.table[rowId][colId].isNotEmpty) {
+      if (_controller.sheet.table[rowId][colId].isNotEmpty) {
         rowCells.add(
           NodeStruct(
             cell: Cell(rowId: rowId, colId: colId),
@@ -144,7 +142,7 @@ class TreeManager {
 
   void populateColumnNode(NodeStruct node, bool populateChildren) {
     node.message ??=
-        'Column ${_controller.getColumnLabel(node.colId!)} "${_controller.table[0][node.colId!]}"';
+        'Column ${_controller.getColumnLabel(node.colId!)} "${_controller.sheet.table[0][node.colId!]}"';
     if (!populateChildren) {
       return;
     }

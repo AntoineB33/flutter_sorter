@@ -1,4 +1,6 @@
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
+
 abstract class IFileSheetLocalDataSource {
-  Future<Map<String, dynamic>> getSheet(String sheetName);
-  Future<void> saveSheet(String sheetName, Map<String, dynamic> data);
+  Future<SheetModel> getSheet(String sheetName);
+  Future<void> saveSheet(String sheetName, SheetModel sheet);
 }

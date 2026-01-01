@@ -1,6 +1,8 @@
+import 'dart:async'; // Add this import
 import 'dart:math';
 import 'dart:collection';
 import 'package:flutter/foundation.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
@@ -19,6 +21,7 @@ import 'package:trying_flutter/features/media_sorter/presentation/logic/tree_man
 import 'package:trying_flutter/features/media_sorter/presentation/logic/selection_manager.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/clipboard_manager.dart';
 import 'package:flutter/material.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 
 class SpreadsheetController extends ChangeNotifier {
   int saveDelayMs = 500;
@@ -28,6 +31,11 @@ class SpreadsheetController extends ChangeNotifier {
   late final ClipboardManager _clipboardManager;
   Size _visibleWindowSize = Size.zero;
 
+  // --- Scroll Stream Controller ---
+  final StreamController<Point<int>> _scrollToCellController =
+      StreamController<Point<int>>.broadcast();
+  Stream<Point<int>> get scrollToCellStream => _scrollToCellController.stream;
+
   final GetSheetDataUseCase _getDataUseCase;
   final SaveSheetDataUseCase _saveSheetDataUseCase;
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
@@ -35,15 +43,12 @@ class SpreadsheetController extends ChangeNotifier {
       ManageWaitingTasks<AnalysisResult>();
   NodesUsecase nodesUsecase = NodesUsecase(AnalysisResult());
 
-  List<List<String>> table = [];
-  List<String> columnTypes = [];
-  int tableHeight = 0;
-  int tableWidth = 0;
+  SheetModel sheet = SheetModel.empty();
   String sheetName = "";
   int tableViewRows = 50;
   int tableViewCols = 50;
   List<String> availableSheets = [];
-  Map<String, Map<String, dynamic>> loadedSheetsData = {};
+  Map<String, SheetModel> loadedSheetsData = {};
   Map<String, Point<int>> lastSelectedCells = {};
 
   // Dimensions
@@ -111,6 +116,10 @@ class SpreadsheetController extends ChangeNotifier {
     init();
   }
 
+  bool isValidSheetName(String name) {
+    return name.isNotEmpty && !name.contains(RegExp(r'[\\/:*?"<>|]'));
+  }
+
   // --- Initialization Logic ---
   Future<void> init() async {
     _isLoading = true;
@@ -119,23 +128,57 @@ class SpreadsheetController extends ChangeNotifier {
     // await _saveSheetDataUseCase.clearAllData();
     availableSheets = await _getDataUseCase.getAllSheetNames();
     sheetName = await _getDataUseCase.getLastOpenedSheetName();
+    if (sheetName == SpreadsheetConstants.noSPNameFound || !isValidSheetName(sheetName)) {
+      if (availableSheets.isNotEmpty) {
+        sheetName = availableSheets[0];
+      } else {
+        sheetName = SpreadsheetConstants.defaultSheetName;
+      }
+      _saveSheetDataUseCase.saveLastOpenedSheetName(sheetName);
+    }
+    bool availableSheetsChanged = false;
     if (!availableSheets.contains(sheetName)) {
       availableSheets.add(sheetName);
+      availableSheetsChanged = true;
       debugPrint(
         "Last opened sheet $sheetName not found in available sheets, adding it.",
       );
     }
-    lastSelectedCells = await _getDataUseCase.getAllLastSelected(
-      availableSheets,
-    );
+    lastSelectedCells = await _getDataUseCase.getAllLastSelected();
+    bool changed = false;
+    for (var name in availableSheets) {
+      if (!lastSelectedCells.containsKey(name)) {
+        lastSelectedCells[name] = Point(0, 0);
+        changed = true;
+        debugPrint("No last selected cell for sheet $name, defaulting to (0,0)");
+      }
+    }
+    if (changed) {
+      _saveSheetDataUseCase.saveAllLastSelected(lastSelectedCells);
+    }
+    for (var name in lastSelectedCells.keys) {
+      if (!availableSheets.contains(name)) {
+        availableSheets.add(name);
+        availableSheetsChanged = true;
+      }
+    }
+    if (availableSheetsChanged) {
+      _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
+    }
 
     await loadSheetByName(sheetName, init: true);
   }
 
+  @override
+  void dispose() {
+    _scrollToCellController.close();
+    super.dispose();
+  }
+
   // Getters
   bool get isLoading => _isLoading;
-  int get rowCount => table.length;
-  int get colCount => rowCount > 0 ? table[0].length : 0;
+  int get rowCount => sheet.table.length;
+  int get colCount => rowCount > 0 ? sheet.table[0].length : 0;
 
   Future<void> loadSheetByName(String name, {bool init = false}) async {
     if (!_isLoading) {
@@ -150,46 +193,35 @@ class SpreadsheetController extends ChangeNotifier {
 
     if (availableSheets.contains(name)) {
       if (loadedSheetsData.containsKey(name)) {
-        table = loadedSheetsData[name]!["table"] as List<List<String>>;
-        columnTypes = loadedSheetsData[name]!["columnTypes"] as List<String>;
-        tableHeight = loadedSheetsData[name]!["tableHeight"] as int;
-        tableWidth = loadedSheetsData[name]!["tableWidth"] as int;
+        sheet = loadedSheetsData[name]!;
         _selectionManager.selectionStart = lastSelectedCells[name]!;
         _selectionManager.selectionEnd = lastSelectedCells[name]!;
       } else {
         _saveExecutors[name] = ManageWaitingTasks<void>();
         try {
-          var (iTable, iColumnTypes, iTableHeight, iTableWidth) = await _getDataUseCase.loadSheet(name);
-          table = iTable;
-          columnTypes = iColumnTypes;
-          tableHeight = iTableHeight;
-          tableWidth = iTableWidth;
+          sheet =
+              await _getDataUseCase.loadSheet(name);
           if (init) {
-           _selectionManager.selectionStart = await _getDataUseCase.getLastSelectedCell();
+            _selectionManager.selectionStart = await _getDataUseCase
+                .getLastSelectedCell();
           } else {
             _selectionManager.selectionStart = lastSelectedCells[name]!;
           }
         } catch (e) {
           debugPrint("Error parsing sheet data for $name: $e");
-          table = [];
-          columnTypes = [];
-          tableHeight = 0;
-          tableWidth = 0;
+          sheet = SheetModel.empty();
           _selectionManager.selectionStart = Point(0, 0);
         }
       }
     } else {
-      table = [];
-      columnTypes = [];
-      tableHeight = 0;
-      tableWidth = 0;
+      sheet = SheetModel.empty();
       _selectionManager.selectionStart = Point(0, 0);
       availableSheets.add(name);
       _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
       _saveExecutors[name] = ManageWaitingTasks<void>();
     }
     _selectionManager.selectionEnd = _selectionManager.selectionStart;
-    loadedSheetsData[name] = {"table": table, "columnTypes": columnTypes};
+    loadedSheetsData[name] = sheet;
     sheetName = name;
     _saveSheetDataUseCase.saveLastOpenedSheetName(name);
     saveAndCalculate(save: false);
@@ -198,7 +230,7 @@ class SpreadsheetController extends ChangeNotifier {
   // --- Content Access ---
   String getContent(int row, int col) {
     if (row < rowCount && col < colCount) {
-      return table[row][col];
+      return sheet.table[row][col];
     }
     return '';
   }
@@ -207,37 +239,38 @@ class SpreadsheetController extends ChangeNotifier {
     if (col >= colCount) {
       final needed = col + 1 - colCount;
       for (var r = 0; r < rowCount; r++) {
-        table[r].addAll(List.filled(needed, '', growable: true));
+        sheet.table[r].addAll(List.filled(needed, '', growable: true));
       }
-      columnTypes.addAll(List.filled(needed, ColumnType.attributes.name));
+      sheet.columnTypes.addAll(List.filled(needed, ColumnType.attributes.name));
     }
   }
 
   void decreaseColumnCount(col) {
-    if (col == columnTypes.length - 1) {
+    if (col == sheet.columnTypes.length - 1) {
       bool canRemove = true;
       while (canRemove && col > 0) {
         for (var r = 0; r < rowCount; r++) {
-          if (table[r][col].isNotEmpty) {
+          if (sheet.table[r][col].isNotEmpty) {
             canRemove = false;
             break;
           }
         }
         if (canRemove) {
           for (var r = 0; r < rowCount; r++) {
-            table[r].removeLast();
+            sheet.table[r].removeLast();
           }
           col--;
         }
       }
-      columnTypes = columnTypes.sublist(0, col + 1);
+      sheet.columnTypes = sheet.columnTypes.sublist(0, col + 1);
     }
   }
 
   void decreaseRowCount(int row) {
     if (row == rowCount - 1) {
-      while (!table[row].any((cell) => cell.isNotEmpty) && row > 0) {
-        table.removeLast();
+      while (!sheet.table[row].any((cell) => cell.isNotEmpty) && row > 0) {
+        sheet.table.removeLast();
+        sheet.rowsBottomPos.removeLast();
         row--;
       }
     }
@@ -256,7 +289,7 @@ class SpreadsheetController extends ChangeNotifier {
     if (newValue.isNotEmpty || (row < rowCount && col < colCount)) {
       if (row >= rowCount) {
         final needed = row + 1 - rowCount;
-        table.addAll(
+        sheet.table.addAll(
           List.generate(
             needed,
             (_) => List.filled(colCount, '', growable: true),
@@ -264,13 +297,13 @@ class SpreadsheetController extends ChangeNotifier {
         );
       }
       increaseColumnCount(col);
-      table[row][col] = newValue;
+      sheet.table[row][col] = newValue;
     }
     if (newValue.isEmpty &&
         row < rowCount &&
         col < colCount &&
         (row == rowCount - 1 || col == colCount - 1) &&
-        table[row][col].isNotEmpty) {
+        sheet.table[row][col].isNotEmpty) {
       decreaseRowCount(row);
       decreaseColumnCount(col);
     }
@@ -279,13 +312,16 @@ class SpreadsheetController extends ChangeNotifier {
   // --- Column Logic ---
   String getColumnType(int col) {
     if (col >= colCount) return ColumnType.attributes.name;
-    return columnTypes[col];
+    return sheet.columnTypes[col];
   }
 
   void saveAndCalculate({bool save = true, bool calculate = true}) {
     if (save) {
       _saveExecutors[sheetName]!.execute(() async {
-        await _saveSheetDataUseCase.saveSheet(sheetName, table, columnTypes);
+        await _saveSheetDataUseCase.saveSheet(
+          sheetName,
+          sheet
+        );
         await Future.delayed(Duration(milliseconds: saveDelayMs));
       });
     }
@@ -294,10 +330,10 @@ class SpreadsheetController extends ChangeNotifier {
     }
     _calculateExecutor.execute(
       () async {
-        final calculateUsecase = CalculateUsecase(table, columnTypes);
+        final calculateUsecase = CalculateUsecase(sheet.table, sheet.columnTypes);
         return await compute(
           runCalculator,
-          calculateUsecase.getMessage(table, columnTypes),
+          calculateUsecase.getMessage(sheet.table, sheet.columnTypes),
         );
       },
       onComplete: (AnalysisResult result) {
@@ -340,12 +376,12 @@ class SpreadsheetController extends ChangeNotifier {
   void setColumnType(int col, String type) {
     if (type == ColumnType.attributes.name) {
       if (col < colCount) {
-        columnTypes[col] = type;
+        sheet.columnTypes[col] = type;
         decreaseColumnCount(col);
       }
     } else {
       increaseColumnCount(col);
-      columnTypes[col] = type;
+      sheet.columnTypes[col] = type;
     }
     saveAndCalculate();
   }
@@ -366,14 +402,14 @@ class SpreadsheetController extends ChangeNotifier {
   String getColumnLabel(int col) {
     return nodesUsecase.getColumnLabel(col);
   }
-  
+
   void toggleNodeExpansion(NodeStruct node, bool isExpanded) {
     // Logic is now in the manager
     node.isExpanded = isExpanded;
-    _treeManager.populateTree([node]); 
+    _treeManager.populateTree([node]);
     notifyListeners();
   }
-  
+
   void saveLastSelectedCell(Point<int> cell) {
     _saveSheetDataUseCase.saveLastSelectedCell(cell);
   }
@@ -396,7 +432,7 @@ class SpreadsheetController extends ChangeNotifier {
   void selectAll() {
     _selectionManager.selectAll();
   }
-  
+
   void notify() {
     notifyListeners();
   }
@@ -407,9 +443,25 @@ class SpreadsheetController extends ChangeNotifier {
     notifyListeners();
   }
 
+  double getTargetTop(int row) {
+    if (row <= 0) return 0.0;
+    const double cellHeight = PageConstants.defaultCellHeight;
+    final int nbKnownBottomPos = sheet.rowsBottomPos.length;
+    var rowsBottomPos = sheet.rowsBottomPos;
+    final int tableHeight = nbKnownBottomPos == 0 ? 0 : rowsBottomPos.last;
+    final double targetTop = row - 1 < nbKnownBottomPos
+        ? rowsBottomPos[row - 1].toDouble()
+        : tableHeight + (row - nbKnownBottomPos) * cellHeight;
+    return targetTop;
+  }
+
   int get minRows {
-    if (_visibleWindowSize.height > tableHeight) {
-      return rowCount + (_visibleWindowSize.height - tableHeight) ~/ SpreadsheetConstants.defaultCellHeight;
+    double tableHeight = getTargetTop(rowCount - 1);
+    if (sheet.rowsBottomPos.isNotEmpty &&
+        _visibleWindowSize.height > tableHeight) {
+      return sheet.rowsBottomPos.length +
+          (_visibleWindowSize.height - tableHeight) ~/
+              PageConstants.defaultCellHeight;
     }
     return rowCount;
   }
@@ -421,9 +473,11 @@ class SpreadsheetController extends ChangeNotifier {
     if (_visibleWindowSize != newSize) {
       _visibleWindowSize = newSize;
       notifyListeners();
-      
-      // Optional: Log it to verify it works
-      // print("Spreadsheet Window Resized: $newSize");
     }
+  }
+
+  /// Triggers a visual scroll event to the Widget via the Stream
+  void triggerScrollTo(int row, int col) {
+    _scrollToCellController.add(Point(row, col));
   }
 }
