@@ -22,6 +22,7 @@ import 'package:trying_flutter/features/media_sorter/presentation/logic/selectio
 import 'package:trying_flutter/features/media_sorter/presentation/logic/clipboard_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
 
 class SpreadsheetController extends ChangeNotifier {
   int saveDelayMs = 500;
@@ -49,7 +50,7 @@ class SpreadsheetController extends ChangeNotifier {
   int tableViewCols = 50;
   List<String> availableSheets = [];
   Map<String, SheetModel> loadedSheetsData = {};
-  Map<String, Point<int>> lastSelectedCells = {};
+  Map<String, SelectionModel> lastSelectedCells = {};
 
   // Dimensions
   bool _isLoading = false;
@@ -104,6 +105,8 @@ class SpreadsheetController extends ChangeNotifier {
   List<Map<InstrStruct, int>> instrTable = [];
   Map<int, HashSet<Attribute>> colToAtt = {};
 
+  SelectionModel get selection => _selectionManager.selection;
+
   SpreadsheetController({
     required GetSheetDataUseCase getDataUseCase,
     required SaveSheetDataUseCase saveSheetDataUseCase,
@@ -117,7 +120,9 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   bool isValidSheetName(String name) {
-    return name.isNotEmpty && !name.contains(RegExp(r'[\\/:*?"<>|]'));
+    return name.isNotEmpty &&
+        !name.contains(RegExp(r'[\\/:*?"<>|]')) &&
+        name != SpreadsheetConstants.noSPNameFound;
   }
 
   // --- Initialization Logic ---
@@ -126,9 +131,20 @@ class SpreadsheetController extends ChangeNotifier {
     notifyListeners();
 
     // await _saveSheetDataUseCase.clearAllData();
+    await _saveSheetDataUseCase.initialize();
+    try {
+      sheetName = await _getDataUseCase.getLastOpenedSheetName();
+    } catch (e) {
+      await _saveSheetDataUseCase.saveLastOpenedSheetName(sheetName);
+    }
+    try {
+      await _getDataUseCase.getLastSelection();
+    } catch (e) {
+      await _saveSheetDataUseCase.saveLastSelection(SelectionModel.empty());
+    }
+
     availableSheets = await _getDataUseCase.getAllSheetNames();
-    sheetName = await _getDataUseCase.getLastOpenedSheetName();
-    if (sheetName == SpreadsheetConstants.noSPNameFound || !isValidSheetName(sheetName)) {
+    if (!isValidSheetName(sheetName)) {
       if (availableSheets.isNotEmpty) {
         sheetName = availableSheets[0];
       } else {
@@ -148,9 +164,11 @@ class SpreadsheetController extends ChangeNotifier {
     bool changed = false;
     for (var name in availableSheets) {
       if (!lastSelectedCells.containsKey(name)) {
-        lastSelectedCells[name] = Point(0, 0);
+        lastSelectedCells[name] = SelectionModel.empty();
         changed = true;
-        debugPrint("No last selected cell for sheet $name, defaulting to (0,0)");
+        debugPrint(
+          "No last selected cell for sheet $name, defaulting to (0,0)",
+        );
       }
     }
     if (changed) {
@@ -187,43 +205,40 @@ class SpreadsheetController extends ChangeNotifier {
     }
 
     if (!init) {
-      lastSelectedCells[sheetName] = _selectionManager.selectionStart;
+      lastSelectedCells[sheetName] = _selectionManager.selection;
       _saveSheetDataUseCase.saveAllLastSelected(lastSelectedCells);
+      _saveSheetDataUseCase.saveLastOpenedSheetName(name);
     }
 
     if (availableSheets.contains(name)) {
       if (loadedSheetsData.containsKey(name)) {
         sheet = loadedSheetsData[name]!;
-        _selectionManager.selectionStart = lastSelectedCells[name]!;
-        _selectionManager.selectionEnd = lastSelectedCells[name]!;
+        _selectionManager.selection = lastSelectedCells[name]!;
       } else {
         _saveExecutors[name] = ManageWaitingTasks<void>();
         try {
-          sheet =
-              await _getDataUseCase.loadSheet(name);
+          sheet = await _getDataUseCase.loadSheet(name);
           if (init) {
-            _selectionManager.selectionStart = await _getDataUseCase
-                .getLastSelectedCell();
+            _selectionManager.selection = await _getDataUseCase
+                .getLastSelection();
           } else {
-            _selectionManager.selectionStart = lastSelectedCells[name]!;
+            _selectionManager.selection = lastSelectedCells[name]!;
           }
         } catch (e) {
           debugPrint("Error parsing sheet data for $name: $e");
           sheet = SheetModel.empty();
-          _selectionManager.selectionStart = Point(0, 0);
+          _selectionManager.selection = SelectionModel.empty();
         }
       }
     } else {
       sheet = SheetModel.empty();
-      _selectionManager.selectionStart = Point(0, 0);
+      _selectionManager.selection = SelectionModel.empty();
       availableSheets.add(name);
       _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
       _saveExecutors[name] = ManageWaitingTasks<void>();
     }
-    _selectionManager.selectionEnd = _selectionManager.selectionStart;
     loadedSheetsData[name] = sheet;
     sheetName = name;
-    _saveSheetDataUseCase.saveLastOpenedSheetName(name);
     saveAndCalculate(save: false);
   }
 
@@ -307,6 +322,79 @@ class SpreadsheetController extends ChangeNotifier {
       decreaseRowCount(row);
       decreaseColumnCount(col);
     }
+
+    int newLines = '\n'.allMatches(newValue).length + 1;
+    double heightItNeeds =
+        newLines * PageConstants.defaultFontHeight +
+        2 * PageConstants.defaultHeightPadding;
+    if (newLines > 1 && sheet.rowsBottomPos.length <= row) {
+      int prevRowsBottomPosLength = sheet.rowsBottomPos.length;
+      sheet.rowsBottomPos.addAll(
+        List.filled(row + 1 - sheet.rowsBottomPos.length, 0),
+      );
+      for (int i = prevRowsBottomPosLength; i <= row; i++) {
+        sheet.rowsBottomPos[i] = i == 0
+            ? PageConstants.defaultFontHeight +
+                  2 * PageConstants.defaultHeightPadding
+            : sheet.rowsBottomPos[i - 1] +
+                  PageConstants.defaultFontHeight +
+                  2 * PageConstants.defaultHeightPadding;
+      }
+    }
+    if (row < sheet.rowsBottomPos.length) {
+      if (sheet.rowsManuallyAdjustedHeight.length <= row ||
+          !sheet.rowsManuallyAdjustedHeight[row]) {
+        if (heightItNeeds < sheet.rowsBottomPos[row]) {
+          int prevLinesNb = '\n'.allMatches(sheet.table[row][col]).length + 1;
+          double heightItNeeded =
+              prevLinesNb * PageConstants.defaultFontHeight +
+              2 * PageConstants.defaultHeightPadding;
+          if (heightItNeeded == sheet.rowsBottomPos[row]) {
+            int maxLinesNb = newLines;
+            for (int j = 0; j <= colCount; j++) {
+              if (j == col) continue;
+              maxLinesNb = max(
+                '\n'.allMatches(sheet.table[row][j]).length + 1,
+                maxLinesNb,
+              );
+              if (maxLinesNb == prevLinesNb) break;
+            }
+            if (maxLinesNb < prevLinesNb) {
+              double newHeight =
+                  maxLinesNb * PageConstants.defaultFontHeight +
+                  2 * PageConstants.defaultHeightPadding;
+              double heightDiff = sheet.rowsBottomPos[row] - newHeight;
+              for (int r = row; r < sheet.rowsBottomPos.length; r++) {
+                sheet.rowsBottomPos[r] = sheet.rowsBottomPos[r] - heightDiff;
+              }
+              if (maxLinesNb == 1) {
+                int removeFrom = sheet.rowsBottomPos.length;
+                for (int r = sheet.rowsBottomPos.length - 1; r >= 0; r--) {
+                  if (r < sheet.rowsManuallyAdjustedHeight.length &&
+                          sheet.rowsManuallyAdjustedHeight[r] ||
+                      sheet.rowsBottomPos[r] >
+                          (r == 0 ? 0 : sheet.rowsBottomPos[r - 1]) +
+                              PageConstants.defaultFontHeight +
+                              2 * PageConstants.defaultHeightPadding) {
+                    break;
+                  }
+                  removeFrom--;
+                }
+                sheet.rowsBottomPos = sheet.rowsBottomPos.sublist(
+                  0,
+                  removeFrom,
+                );
+              }
+            }
+          }
+        } else if (heightItNeeds > sheet.rowsBottomPos[row]) {
+          double heightDiff = heightItNeeds - sheet.rowsBottomPos[row];
+          for (int r = row; r < sheet.rowsBottomPos.length; r++) {
+            sheet.rowsBottomPos[r] = sheet.rowsBottomPos[r] + heightDiff;
+          }
+        }
+      } // TODO: else
+    }
   }
 
   // --- Column Logic ---
@@ -315,22 +403,19 @@ class SpreadsheetController extends ChangeNotifier {
     return sheet.columnTypes[col];
   }
 
-  void saveAndCalculate({bool save = true, bool calculate = true}) {
+  void saveAndCalculate({bool save = true}) {
     if (save) {
       _saveExecutors[sheetName]!.execute(() async {
-        await _saveSheetDataUseCase.saveSheet(
-          sheetName,
-          sheet
-        );
+        await _saveSheetDataUseCase.saveSheet(sheetName, sheet);
         await Future.delayed(Duration(milliseconds: saveDelayMs));
       });
     }
-    if (!calculate) {
-      return;
-    }
     _calculateExecutor.execute(
       () async {
-        final calculateUsecase = CalculateUsecase(sheet.table, sheet.columnTypes);
+        final calculateUsecase = CalculateUsecase(
+          sheet.table,
+          sheet.columnTypes,
+        );
         return await compute(
           runCalculator,
           calculateUsecase.getMessage(sheet.table, sheet.columnTypes),
@@ -357,8 +442,8 @@ class SpreadsheetController extends ChangeNotifier {
         toMentioners = result.toMentioners;
         instrTable = result.instrTable;
         colToAtt = result.colToAtt;
-        mentionsRoot.rowId = _selectionManager.selectionStart.x;
-        mentionsRoot.colId = _selectionManager.selectionStart.y;
+        mentionsRoot.rowId = _selectionManager.primarySelectedCell.x;
+        mentionsRoot.colId = _selectionManager.primarySelectedCell.y;
         _treeManager.populateTree([
           errorRoot,
           warningRoot,
@@ -391,12 +476,8 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   bool isCellSelected(int row, int col) {
-    final startRow = min(selectionStart.x, selectionEnd.x);
-    final endRow = max(selectionStart.x, selectionEnd.x);
-    final startCol = min(selectionStart.y, selectionEnd.y);
-    final endCol = max(selectionStart.y, selectionEnd.y);
-
-    return row >= startRow && row <= endRow && col >= startCol && col <= endCol;
+    return row == _selectionManager.primarySelectedCell.x &&
+        col == _selectionManager.primarySelectedCell.y;
   }
 
   String getColumnLabel(int col) {
@@ -410,23 +491,26 @@ class SpreadsheetController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void saveLastSelectedCell(Point<int> cell) {
-    _saveSheetDataUseCase.saveLastSelectedCell(cell);
+  void saveLastSelection(SelectionModel selection) {
+    _saveSheetDataUseCase.saveLastSelection(selection);
   }
 
   void populateTree(List<NodeStruct> nodes) {
     _treeManager.populateTree(nodes);
   }
 
-  Point<int> get selectionStart => _selectionManager.selectionStart;
-  Point<int> get selectionEnd => _selectionManager.selectionEnd;
+  Point<int> get primarySelectedCell => _selectionManager.primarySelectedCell;
 
-  Future<String?> copySelectionToClipboard() async {
-    return await _clipboardManager.copySelectionToClipboard();
+  Future<void> copySelectionToClipboard() async {
+    await _clipboardManager.copySelectionToClipboard();
   }
 
   Future<void> pasteSelection() async {
     await _clipboardManager.pasteSelection();
+  }
+
+  Future<void> clearSelection() async {
+    await _clipboardManager.clearSelection();
   }
 
   void selectAll() {
@@ -445,14 +529,30 @@ class SpreadsheetController extends ChangeNotifier {
 
   double getTargetTop(int row) {
     if (row <= 0) return 0.0;
-    const double cellHeight = PageConstants.defaultCellHeight;
+    const double cellHeight = PageConstants.defaultFontHeight;
     final int nbKnownBottomPos = sheet.rowsBottomPos.length;
     var rowsBottomPos = sheet.rowsBottomPos;
-    final int tableHeight = nbKnownBottomPos == 0 ? 0 : rowsBottomPos.last;
+    final int tableHeight = nbKnownBottomPos == 0
+        ? 0
+        : rowsBottomPos.last.toInt();
     final double targetTop = row - 1 < nbKnownBottomPos
         ? rowsBottomPos[row - 1].toDouble()
         : tableHeight + (row - nbKnownBottomPos) * cellHeight;
     return targetTop;
+  }
+
+  double getTargetLeft(int col) {
+    if (col <= 0) return 0.0;
+    const double cellWidth = PageConstants.defaultCellWidth;
+    final int nbKnownRightPos = sheet.colRightPos.length;
+    var columnsRightPos = sheet.colRightPos;
+    final int tableWidth = nbKnownRightPos == 0
+        ? 0
+        : columnsRightPos.last.toInt();
+    final double targetRight = col - 1 < nbKnownRightPos
+        ? columnsRightPos[col - 1].toDouble()
+        : tableWidth + (col - nbKnownRightPos) * cellWidth;
+    return targetRight;
   }
 
   int get minRows {
@@ -461,7 +561,7 @@ class SpreadsheetController extends ChangeNotifier {
         _visibleWindowSize.height > tableHeight) {
       return sheet.rowsBottomPos.length +
           (_visibleWindowSize.height - tableHeight) ~/
-              PageConstants.defaultCellHeight;
+              PageConstants.defaultFontHeight;
     }
     return rowCount;
   }
@@ -479,5 +579,31 @@ class SpreadsheetController extends ChangeNotifier {
   /// Triggers a visual scroll event to the Widget via the Stream
   void triggerScrollTo(int row, int col) {
     _scrollToCellController.add(Point(row, col));
+  }
+
+  Point<int>? _editingCell;
+  Point<int>? get editingCell => _editingCell;
+
+  bool isCellEditing(int row, int col) =>
+      _editingCell != null && _editingCell!.x == row && _editingCell!.y == col;
+
+  void startEditing() {
+    _editingCell = _selectionManager.primarySelectedCell;
+    notifyListeners();
+  }
+
+  void saveEdit(String newValue) {
+    if (_editingCell != null) {
+      // Update your data source here
+      // data[_editingCell!.x][_editingCell!.y] = newValue;
+
+      _editingCell = null; // Stop editing
+      notifyListeners();
+    }
+  }
+
+  void cancelEditing() {
+    _editingCell = null;
+    notifyListeners();
   }
 }

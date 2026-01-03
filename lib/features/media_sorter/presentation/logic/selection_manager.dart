@@ -1,50 +1,42 @@
 import 'dart:math';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_controller.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
 
 class SelectionManager {
   final SpreadsheetController _controller;
-  Point<int> selectionStart = const Point(0, 0);
-  Point<int> selectionEnd = const Point(0, 0);
+  SelectionModel selection = SelectionModel.empty();
+
+  Point<int> get primarySelectedCell => selection.primarySelectedCell;
+  List<Point<int>> get selectedCells => selection.selectedCells;
 
   SelectionManager(this._controller);
-  
-  void checkSelectChange(
-    Point<int> newSelectionStart,
-    Point<int> newSelectionEnd,
-  ) {
-    if (selectionStart != newSelectionStart ||
-        selectionEnd != newSelectionEnd) {
-      selectionStart = newSelectionStart;
-      selectionEnd = newSelectionEnd;
-      
-      _controller.saveAndCalculate(calculate: false);
-      _controller.saveLastSelectedCell(selectionStart);
-      
-      // Update Mentions
-      _controller.mentionsRoot.rowId = selectionStart.x;
-      _controller.mentionsRoot.colId = selectionStart.y;
-      _controller.populateTree([_controller.mentionsRoot]);
-      
-      // Request scroll to visible
-      _controller.triggerScrollTo(newSelectionEnd.x, newSelectionEnd.y);
-      
-      _controller.notify();
-    }
-  }
 
   void selectCell(int row, int col) {
-    var newSelectionStart = Point(row, col);
-    var newSelectionEnd = Point(row, col);
-    checkSelectChange(newSelectionStart, newSelectionEnd);
+    selection.primarySelectedCell = Point(row, col);
+    _controller.saveLastSelection(_controller.selection);
+
+    // Update Mentions
+    _controller.mentionsRoot.rowId = row;
+    _controller.mentionsRoot.colId = col;
+    _controller.populateTree([_controller.mentionsRoot]);
+
+    // Request scroll to visible
+    _controller.triggerScrollTo(row, col);
+
+    _controller.notify();
   }
 
-  void selectRange(int startRow, int startCol, int endRow, int endCol) {
-    var newSelectionStart = Point(startRow, startCol);
-    var newSelectionEnd = Point(endRow, endCol);
-    checkSelectChange(newSelectionStart, newSelectionEnd);
+  void keepOnlyPrim() {
+    selectedCells.clear();
+    _controller.saveLastSelection(selection);
+    _controller.notify();
   }
 
   void selectAll() {
-    selectRange(0, 0, _controller.rowCount - 1, _controller.colCount - 1);
+    for (int r = 0; r < _controller.rowCount; r++) {
+      for (int c = 0; c < _controller.colCount; c++) {
+        selectedCells.add(Point(r, c));
+      }
+    }
   }
 }

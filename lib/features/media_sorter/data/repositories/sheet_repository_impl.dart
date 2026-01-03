@@ -1,7 +1,7 @@
-import 'dart:math';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_repository.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
 
 class SheetRepositoryImpl implements SheetRepository {
   final FileSheetLocalDataSource dataSource;
@@ -9,15 +9,18 @@ class SheetRepositoryImpl implements SheetRepository {
   SheetRepositoryImpl(this.dataSource);
 
   @override
-  Future<Point<int>> getLastSelectedCell() async {
-    final cellMap = await dataSource.getLastSelectedCell();
-    return Point<int>(cellMap["x"]!, cellMap["y"]!);
+  Future<void> createFile(String fileName) async {
+    await dataSource.createFile(fileName);
   }
 
   @override
-  Future<void> saveLastSelectedCell(Point<int> selectionStart) async {
-    final cell = {"x": selectionStart.x, "y": selectionStart.y};
-    await dataSource.saveLastSelectedCell(cell);
+  Future<SelectionModel> getLastSelection() async {
+    return await dataSource.getLastSelection();
+  }
+
+  @override
+  Future<void> saveLastSelection(SelectionModel selection) async {
+    await dataSource.saveLastSelection(selection);
   }
 
   @override
@@ -41,32 +44,23 @@ class SheetRepositoryImpl implements SheetRepository {
   }
 
   @override
-  Future<SheetModel>loadSheet(String sheetName) async {
+  Future<SheetModel> loadSheet(String sheetName) async {
     return await dataSource.getSheet(sheetName);
   }
 
   @override
-  Future<void> updateSheet(
-    String sheetName,
-    SheetModel sheet,
-  ) async {
+  Future<void> updateSheet(String sheetName, SheetModel sheet) async {
     return await dataSource.saveSheet(sheetName, sheet);
   }
 
   @override
-  Future<Map<String, Point<int>>> getAllLastSelected() async {
-    final cellMaps = await dataSource.getAllLastSelected();
-    return cellMaps.map(
-      (key, cellMap) => MapEntry(key, Point<int>(cellMap["x"]!, cellMap["y"]!)),
-    );
+  Future<Map<String, SelectionModel>> getAllLastSelected() async {
+    return await dataSource.getAllLastSelected();
   }
 
   @override
-  Future<void> saveAllLastSelected(Map<String, Point<int>> cells) async {
-    final cellList = cells.map(
-      (key, cell) => MapEntry(key, {"x": cell.x, "y": cell.y}),
-    );
-    await dataSource.saveAllLastSelected(cellList);
+  Future<void> saveAllLastSelected(Map<String, SelectionModel> cells) async {
+    await dataSource.saveAllLastSelected(cells);
   }
 
   @override

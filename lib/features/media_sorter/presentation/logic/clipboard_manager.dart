@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../../domain/usecases/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_controller.dart';
@@ -9,12 +10,35 @@ class ClipboardManager {
 
   ClipboardManager(this._controller);
 
-  
-  Future<String?> copySelectionToClipboard() async {
-    final startRow = min(_controller.selectionStart.x, _controller.selectionEnd.x);
-    final endRow = max(_controller.selectionStart.x, _controller.selectionEnd.x);
-    final startCol = min(_controller.selectionStart.y, _controller.selectionEnd.y);
-    final endCol = max(_controller.selectionStart.y, _controller.selectionEnd.y);
+  Future<void> copySelectionToClipboard() async {
+    int startRow = _controller.primarySelectedCell.x;
+    int endRow = _controller.primarySelectedCell.x;
+    int startCol = _controller.primarySelectedCell.y;
+    int endCol = _controller.primarySelectedCell.y;
+    for (Point<int> cell in _controller.selection.selectedCells) {
+      if (cell.x < startRow) startRow = cell.x;
+      if (cell.y < startCol) startCol = cell.y;
+      if (cell.x > endRow) endRow = cell.x;
+      if (cell.y > endCol) endCol = cell.y;
+    }
+    List<List<bool>> selectedCellsTable = List.generate(
+      endRow - startRow + 1,
+      (_) => List.generate(endCol - startCol + 1, (_) => false),
+    );
+    for (Point<int> cell in _controller.selection.selectedCells) {
+      selectedCellsTable[cell.x - startRow][cell.y - startCol] = true;
+    }
+    if (!selectedCellsTable.every((row) => row.every((cell) => !cell))) {
+      await Clipboard.setData(
+        ClipboardData(
+          text: _controller.getContent(
+            _controller.primarySelectedCell.x,
+            _controller.primarySelectedCell.y,
+          ),
+        ),
+      );
+      return;
+    }
 
     StringBuffer buffer = StringBuffer();
 
@@ -29,27 +53,33 @@ class ClipboardManager {
 
     final text = buffer.toString();
     await Clipboard.setData(ClipboardData(text: text));
-    return text;
   }
 
   Future<void> pasteSelection() async {
     final data = await Clipboard.getData('text/plain');
     if (data?.text == null) return;
+    // if contains "
+    if (data!.text!.contains('"')) {
+      debugPrint('Paste data contains unsupported characters.');
+      return;
+    }
 
-    // 1. Delegate Logic to UseCase
-    // We normalize selection to ensure we paste from top-left
-    int startRow = min(_controller.selectionStart.x, _controller.selectionEnd.x);
-    int startCol = min(_controller.selectionStart.y, _controller.selectionEnd.y);
-
-    final List<CellUpdate> updates = _parsePasteDataUseCase.execute(
-      data!.text!,
-      startRow,
-      startCol,
+    final List<CellUpdate> updates = _parsePasteDataUseCase.pasteText(
+      data.text!,
+      _controller.primarySelectedCell.x,
+      _controller.primarySelectedCell.y,
     );
 
     // 2. Update UI & Persist
     for (var update in updates) {
       _controller.updateCell(update.row, update.col, update.value);
+    }
+    _controller.saveAndCalculate();
+  }
+
+  Future<void> clearSelection() async {
+    for (Point<int> cell in _controller.selection.selectedCells) {
+      _controller.updateCell(cell.x, cell.y, '');
     }
     _controller.saveAndCalculate();
   }

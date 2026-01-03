@@ -60,7 +60,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return;
     }
 
-    const double cellWidth = PageConstants.defaultCellWidth;
     final controller = context.read<SpreadsheetController>();
 
     // Vertical Logic
@@ -97,11 +96,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     }
 
     // Horizontal Logic
-    final double targetLeft = cell.y * cellWidth;
-    final double targetRight = targetLeft + cellWidth;
+    final double targetLeft = controller.getTargetLeft(cell.y);
+    final double targetRight = controller.getTargetLeft(cell.y + 1);
     final double currentHorizontalOffset = _horizontalController.offset;
     final double horizontalViewport =
-        _horizontalController.position.viewportDimension;
+        _horizontalController.position.viewportDimension -
+        controller.sheet.rowHeaderWidth;
 
     double? newHorizontalOffset;
 
@@ -193,7 +193,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     final double visibleBottomEdge = metrics.pixels + metrics.viewportDimension;
     final double rawRowsNeeded =
         (visibleBottomEdge - PageConstants.defaultColHeaderHeight) /
-        PageConstants.defaultCellHeight;
+        PageConstants.defaultFontHeight;
 
     final int requiredRows = rawRowsNeeded.floor() + 1;
 
@@ -239,6 +239,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       );
     } else if (isControl && key == 'v') {
       ctrl.pasteSelection();
+    } else if (key == 'delete') {
+      ctrl.clearSelection();
     }
   }
 
@@ -246,7 +248,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     return TableSpan(
       extent: FixedTableSpanExtent(
         index == 0
-            ? PageConstants.defaultRowHedaerWidth
+            ? PageConstants.defaultRowHeaderWidth
             : PageConstants.defaultCellWidth,
       ),
     );
@@ -257,7 +259,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       extent: FixedTableSpanExtent(
         index == 0
             ? PageConstants.defaultColHeaderHeight
-            : PageConstants.defaultCellHeight,
+            : PageConstants.defaultFontHeight,
       ),
     );
   }

@@ -29,4 +29,10 @@ class SpreadsheetConstants {
 
   static const noSPNameFound = 'No Spreadsheet Name Found';
   static const defaultSheetName = 'Sheet1';
+
+  static const folderName = 'media_sorter';
+  static const sheetsIndexFileName = 'sheets_index.json';
+  static const allLastSelectedFileName = 'all_last_selected.json';
+  static const lastOpenedSheetNameKey = 'lastOpenedSheetName';
+  static const lastSelectedCellKey = 'lastSelectedCell';
 }

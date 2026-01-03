@@ -98,7 +98,7 @@ class TreeManager {
         int found = -1;
         for (int i = 0; i < cells.length; i++) {
           final child = cells[i];
-          if (_controller.selectionStart.x == child.rowId && _controller.selectionStart.y == child.colId) {
+          if (_controller.primarySelectedCell.x == child.rowId && _controller.primarySelectedCell.y == child.colId) {
             found = i;
             break;
           }
@@ -240,7 +240,7 @@ class TreeManager {
         int found = -1;
         for (int i = 0; i < node.cellsToSelect!.length; i++) {
           final child = node.cellsToSelect![i];
-          if (_controller.selectionStart.x == child.rowId && _controller.selectionStart.y == child.colId) {
+          if (_controller.primarySelectedCell.x == child.rowId && _controller.primarySelectedCell.y == child.colId) {
             found = i;
             break;
           }
@@ -289,7 +289,7 @@ class TreeManager {
           int found = -1;
           for (int i = 0; i < n.newChildren!.length; i++) {
             final child = n.newChildren![i];
-            if (_controller.selectionStart.x == child.rowId) {
+            if (_controller.primarySelectedCell.x == child.rowId) {
               found = i;
               break;
             }

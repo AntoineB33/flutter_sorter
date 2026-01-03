@@ -1,14 +1,14 @@
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_repository.dart';
-import 'dart:math';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
 
 class GetSheetDataUseCase {
   final SheetRepository repository;
 
   GetSheetDataUseCase(this.repository);
 
-  Future<Point<int>> getLastSelectedCell() {
-    return repository.getLastSelectedCell();
+  Future<SelectionModel> getLastSelection() {
+    return repository.getLastSelection();
   }
 
   Future<String> getLastOpenedSheetName() {
@@ -19,7 +19,7 @@ class GetSheetDataUseCase {
     return repository.getAllSheetNames();
   }
 
-  Future<Map<String, Point<int>>> getAllLastSelected() async {
+  Future<Map<String, SelectionModel>> getAllLastSelected() async {
     return await repository.getAllLastSelected();
   }
 

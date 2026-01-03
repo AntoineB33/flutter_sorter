@@ -1239,7 +1239,6 @@ class CalculateUsecase {
   }
 
   void _getEverything() {
-    debugPrint("Processing spreadsheet data...");
     errorRoot.newChildren!.clear();
     warningRoot.newChildren!.clear();
     for (final row in table) {
