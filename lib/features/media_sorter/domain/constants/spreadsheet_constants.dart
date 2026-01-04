@@ -35,4 +35,7 @@ class SpreadsheetConstants {
   static const allLastSelectedFileName = 'all_last_selected.json';
   static const lastOpenedSheetNameKey = 'lastOpenedSheetName';
   static const lastSelectedCellKey = 'lastSelectedCell';
+
+  // static const debugDelayMs = 500000000;
+  static const debugDelayMs = 0;
 }

@@ -12,19 +12,24 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   @override
   Future<void> createFile(String fileName) async {
     final directory = await getApplicationDocumentsDirectory();
-    final file = File('${directory.path}/${SpreadsheetConstants.folderName}/$fileName');
+    final file = File(
+      '${directory.path}/${SpreadsheetConstants.folderName}/$fileName',
+    );
     await file.create(recursive: true);
   }
 
   @override
   Future<SelectionModel> getLastSelection() async {
     final prefs = await SharedPreferences.getInstance();
-    final cellString = prefs.getString(SpreadsheetConstants.lastSelectedCellKey);
+    final cellString = prefs.getString(
+      SpreadsheetConstants.lastSelectedCellKey,
+    );
     return SelectionModel.fromJson(jsonDecode(cellString!));
   }
 
   @override
   Future<void> saveLastSelection(SelectionModel selection) async {
+    await Future.delayed(const Duration(milliseconds: SpreadsheetConstants.debugDelayMs));
     final prefs = await SharedPreferences.getInstance();
     final jsonString = jsonEncode(selection.toJson());
     await prefs.setString(SpreadsheetConstants.lastSelectedCellKey, jsonString);
@@ -38,14 +43,20 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
 
   @override
   Future<void> saveLastOpenedSheetName(String sheetName) async {
+    await Future.delayed(const Duration(milliseconds: SpreadsheetConstants.debugDelayMs));
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(SpreadsheetConstants.lastOpenedSheetNameKey, sheetName);
+    await prefs.setString(
+      SpreadsheetConstants.lastOpenedSheetNameKey,
+      sheetName,
+    );
   }
 
   @override
   Future<List<String>> getAllSheetNames() async {
     final directory = await getApplicationDocumentsDirectory();
-    final file = File('${directory.path}/${SpreadsheetConstants.folderName}/${SpreadsheetConstants.sheetsIndexFileName}');
+    final file = File(
+      '${directory.path}/${SpreadsheetConstants.folderName}/${SpreadsheetConstants.sheetsIndexFileName}',
+    );
     try {
       final jsonString = await file.readAsString();
       final List<dynamic> jsonList = jsonDecode(jsonString);
@@ -60,8 +71,11 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   @override
   Future<void> saveAllSheetNames(List<String> sheetNames) async {
     try {
+      await Future.delayed(const Duration(milliseconds: SpreadsheetConstants.debugDelayMs));
       final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/${SpreadsheetConstants.folderName}/${SpreadsheetConstants.sheetsIndexFileName}');
+      final file = File(
+        '${directory.path}/${SpreadsheetConstants.folderName}/${SpreadsheetConstants.sheetsIndexFileName}',
+      );
       await file.create(recursive: true);
       final jsonString = jsonEncode(sheetNames);
       await file.writeAsString(jsonString);
@@ -73,7 +87,9 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   Future<File> _getFile(String sheetName) async {
     final directory = await getApplicationDocumentsDirectory();
     // Sanitize filename to prevent path traversal
-    final file = File('${directory.path}/${SpreadsheetConstants.folderName}/sheet_$sheetName.json');
+    final file = File(
+      '${directory.path}/${SpreadsheetConstants.folderName}/sheet_$sheetName.json',
+    );
     await file.create(recursive: true);
     return file;
   }
@@ -94,6 +110,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   @override
   Future<void> saveSheet(String sheetName, SheetModel sheet) async {
     try {
+      await Future.delayed(const Duration(milliseconds: SpreadsheetConstants.debugDelayMs));
       final file = await _getFile(sheetName);
       final jsonString = jsonEncode(sheet.toJson());
       await file.writeAsString(jsonString);
@@ -105,7 +122,9 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   @override
   Future<Map<String, SelectionModel>> getAllLastSelected() async {
     final directory = await getApplicationDocumentsDirectory();
-    final file = File('${directory.path}/${SpreadsheetConstants.folderName}/${SpreadsheetConstants.allLastSelectedFileName}');
+    final file = File(
+      '${directory.path}/${SpreadsheetConstants.folderName}/${SpreadsheetConstants.allLastSelectedFileName}',
+    );
     try {
       final jsonString = await file.readAsString();
       final Map<String, dynamic> decoded = jsonDecode(jsonString);
@@ -124,6 +143,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   Future<void> saveAllLastSelected(
     Map<String, SelectionModel> lastSelected,
   ) async {
+    await Future.delayed(const Duration(milliseconds: SpreadsheetConstants.debugDelayMs));
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/media_sorter/all_last_selected.json');
     await file.create(recursive: true);
@@ -142,7 +162,9 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
     final directory = await getApplicationDocumentsDirectory();
 
     // 3. Delete the 'media_sorter' folder (contains sheets_index.json)
-    final mediaSorterDir = Directory('${directory.path}/${SpreadsheetConstants.folderName}');
+    final mediaSorterDir = Directory(
+      '${directory.path}/${SpreadsheetConstants.folderName}',
+    );
     if (await mediaSorterDir.exists()) {
       await mediaSorterDir.delete(recursive: true);
     }

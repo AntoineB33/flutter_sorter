@@ -23,6 +23,7 @@ import 'package:trying_flutter/features/media_sorter/presentation/logic/clipboar
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
+import 'dart:io';
 
 class SpreadsheetController extends ChangeNotifier {
   int saveDelayMs = 500;
@@ -245,6 +246,7 @@ class SpreadsheetController extends ChangeNotifier {
     loadedSheetsData[name] = sheet;
     sheetName = name;
     saveAndCalculate(save: false);
+    notifyListeners();
   }
 
   // --- Content Access ---
@@ -294,6 +296,20 @@ class SpreadsheetController extends ChangeNotifier {
         row--;
       }
     }
+  }
+
+  // This must be a static method or a top-level function.
+  // It cannot be a normal instance method.
+  static AnalysisResult _isolateHandler(IsolateMessage message) {
+    // 1. Handle Debug Delay (Synchronously)
+    // Inside an isolate, use sleep() instead of Future.delayed to block execution
+    // without returning a Future.
+    sleep(Duration(milliseconds: SpreadsheetConstants.debugDelayMs));
+
+    // 2. Run the calculation
+    // You must move the logic of 'runCalculator' here, or make runCalculator
+    // static and pass 'message' to it.
+    return runCalculator(message); 
   }
 
   static AnalysisResult runCalculator(IsolateMessage message) {
@@ -422,7 +438,7 @@ class SpreadsheetController extends ChangeNotifier {
           sheet.columnTypes,
         );
         return await compute(
-          runCalculator,
+          _isolateHandler,
           calculateUsecase.getMessage(sheet.table, sheet.columnTypes),
         );
       },
@@ -476,13 +492,19 @@ class SpreadsheetController extends ChangeNotifier {
     saveAndCalculate();
   }
 
-  void selectCell(int row, int col) {
-    _selectionManager.selectCell(row, col);
+  void selectCell(int row, int col, bool keepSelection) {
+    _selectionManager.setPrimarySelection(row, col, keepSelection);
+  }
+
+  bool isPrimarySelectedCell(int row, int col) {
+    return row == _selectionManager.primarySelectedCell.x &&
+        col == _selectionManager.primarySelectedCell.y;
   }
 
   bool isCellSelected(int row, int col) {
-    return row == _selectionManager.primarySelectedCell.x &&
-        col == _selectionManager.primarySelectedCell.y;
+    return selection.selectedCells.any(
+      (cell) => cell.x == row && cell.y == col,
+    );
   }
 
   String getColumnLabel(int col) {
@@ -521,8 +543,12 @@ class SpreadsheetController extends ChangeNotifier {
     await _clipboardManager.pasteSelection();
   }
 
-  Future<void> clearSelection() async {
-    await _clipboardManager.clearSelection();
+  Future<void> clearSelection(bool save) async {
+    await _clipboardManager.clearSelection(save);
+  }
+
+  Future<void> delete() async {
+    await _clipboardManager.delete();
   }
 
   void selectAll() {
@@ -593,28 +619,29 @@ class SpreadsheetController extends ChangeNotifier {
     _scrollToCellController.add(Point(row, col));
   }
 
-  bool _editingMode = false;
-  bool get isEditing => _editingMode;
+  bool editingMode = false;
 
   bool isCellEditing(int row, int col) =>
-      _editingMode && primarySelectedCell.x == row &&
+      editingMode &&
+      primarySelectedCell.x == row &&
       primarySelectedCell.y == col;
 
   void startEditing() {
-    _editingMode = true;
+    editingMode = true;
     notifyListeners();
   }
 
   void saveEdit(String newValue) {
-    if (_editingMode) {
+    if (editingMode) {
       updateCell(primarySelectedCell.x, primarySelectedCell.y, newValue);
+      notifyListeners();
       saveAndCalculate();
-      _editingMode = false;
+      editingMode = false;
     }
   }
 
   void cancelEditing() {
-    _editingMode = false;
+    editingMode = false;
     notifyListeners();
   }
 }

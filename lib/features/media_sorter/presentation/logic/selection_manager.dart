@@ -11,7 +11,10 @@ class SelectionManager {
 
   SelectionManager(this._controller);
 
-  void selectCell(int row, int col) {
+  void setPrimarySelection(int row, int col, bool keepSelection) {
+    if (!keepSelection) {
+      selectedCells.clear();
+    }
     selection.primarySelectedCell = Point(row, col);
     _controller.saveLastSelection(_controller.selection);
 
@@ -22,7 +25,6 @@ class SelectionManager {
 
     // Request scroll to visible
     _controller.triggerScrollTo(row, col);
-
     _controller.notify();
   }
 
@@ -33,10 +35,12 @@ class SelectionManager {
   }
 
   void selectAll() {
+    selectedCells.clear();
     for (int r = 0; r < _controller.rowCount; r++) {
       for (int c = 0; c < _controller.colCount; c++) {
         selectedCells.add(Point(r, c));
       }
     }
+    setPrimarySelection(0, 0, true);
   }
 }

@@ -74,13 +74,25 @@ class ClipboardManager {
     for (var update in updates) {
       _controller.updateCell(update.row, update.col, update.value);
     }
+    _controller.notify();
     _controller.saveAndCalculate();
   }
 
-  Future<void> clearSelection() async {
+  Future<void> clearSelection(bool save) async {
     for (Point<int> cell in _controller.selection.selectedCells) {
       _controller.updateCell(cell.x, cell.y, '');
     }
+    if (save) {
+      _controller.notify();
+      _controller.saveAndCalculate();
+    }
+  }
+
+  Future<void> delete() async {
+    for (Point<int> cell in _controller.selection.selectedCells) {
+      _controller.updateCell(cell.x, cell.y, '');
+    }
+    _controller.notify();
     _controller.saveAndCalculate();
   }
 }

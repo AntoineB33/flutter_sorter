@@ -1,4 +1,5 @@
 import 'dart:async'; // Added for StreamSubscription
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -132,9 +133,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   Widget build(BuildContext context) {
     final controller = context.watch<SpreadsheetController>();
     
-    if (controller.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    // if (controller.isLoading) {
+    //   return const Center(child: CircularProgressIndicator());
+    // }
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -223,7 +224,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   ) {
     // If a cell is currently editing, we ignore the main Grid keyboard events
     // because the TextField inside the cell handles its own keys.
-    if (ctrl.isEditing) return;
+    if (ctrl.editingMode) return;
 
     if (event is! KeyDownEvent) return;
 
@@ -243,6 +244,20 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return;
     }
 
+    if (logicalKey == LogicalKeyboardKey.arrowUp) {
+      ctrl.selectCell(max(ctrl.primarySelectedCell.x - 1, 0), ctrl.primarySelectedCell.y, false);
+      return;
+    } else if (logicalKey == LogicalKeyboardKey.arrowDown) {
+      ctrl.selectCell(ctrl.primarySelectedCell.x + 1, ctrl.primarySelectedCell.y, false);
+      return;
+    } else if (logicalKey == LogicalKeyboardKey.arrowLeft) {
+      ctrl.selectCell(ctrl.primarySelectedCell.x, max(0, ctrl.primarySelectedCell.y - 1), false);
+      return;
+    } else if (logicalKey == LogicalKeyboardKey.arrowRight) {
+      ctrl.selectCell(ctrl.primarySelectedCell.x, ctrl.primarySelectedCell.y + 1, false);
+      return;
+    }
+
     if (isControl && keyLabel == 'c') {
       ctrl.copySelectionToClipboard();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -251,7 +266,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     } else if (isControl && keyLabel == 'v') {
       ctrl.pasteSelection();
     } else if (keyLabel == 'delete') {
-      ctrl.clearSelection();
+      ctrl.delete();
     }
   }
 
@@ -309,18 +324,24 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       row: dataRow,
       col: dataCol,
       content: controller.getContent(dataRow, dataCol),
+      isPrimarySelectedCell: controller.isPrimarySelectedCell(dataRow, dataCol),
       isSelected: controller.isCellSelected(dataRow, dataCol),
       // Check if this specific cell is in edit mode
       isEditing: controller.isCellEditing(dataRow, dataCol),
       onTap: () {
-        controller.selectCell(dataRow, dataCol);
-        // Important: Ensure focus is on the grid when tapping cells (unless editing)
-        _focusNode.requestFocus(); 
+        if (controller.primarySelectedCell.x != dataRow ||
+            controller.primarySelectedCell.y != dataCol) {
+          controller.editingMode = false;
+        }
+        controller.selectCell(dataRow, dataCol, false);
+        _focusNode.requestFocus();
+      },
+      onDoubleTap: () {
+        controller.startEditing();
       },
       onSave: (newValue) {
         // Save the data via controller
         controller.saveEdit(newValue);
-        // CRITICAL: Return focus to the main Grid so arrow keys work again
         _focusNode.requestFocus();
       },
     );

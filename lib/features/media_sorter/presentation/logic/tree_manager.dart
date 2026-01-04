@@ -104,11 +104,12 @@ class TreeManager {
           }
         }
         if (found == -1) {
-          _controller.selectCell(cells[0].rowId, cells[0].colId);
+          _controller.selectCell(cells[0].rowId, cells[0].colId, false);
         } else {
           _controller.selectCell(
             cells[(found + 1) % cells.length].rowId,
             cells[(found + 1) % cells.length].colId,
+            false
           );
         }
       };
@@ -246,11 +247,12 @@ class TreeManager {
           }
         }
         if (found == -1) {
-          _controller.selectCell(node.cellsToSelect![0].rowId, 0);
+          _controller.selectCell(node.cellsToSelect![0].rowId, 0, false);
         } else {
           _controller.selectCell(
             node.cellsToSelect![(found + 1) % node.cellsToSelect!.length].rowId,
             node.cellsToSelect![(found + 1) % node.cellsToSelect!.length].colId,
+            false
           );
         }
       };
@@ -295,11 +297,12 @@ class TreeManager {
             }
           }
           if (found == -1) {
-            _controller.selectCell(n.newChildren![0].rowId!, 0);
+            _controller.selectCell(n.newChildren![0].rowId!, 0, false);
           } else {
             _controller.selectCell(
               n.newChildren![(found + 1) % n.newChildren!.length].rowId!,
               0,
+              false
             );
           }
         };

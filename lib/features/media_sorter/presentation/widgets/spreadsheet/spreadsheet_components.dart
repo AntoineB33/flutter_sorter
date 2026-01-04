@@ -80,9 +80,11 @@ class SpreadsheetDataCell extends StatefulWidget {
   final int row;
   final int col;
   final String content;
+  final bool isPrimarySelectedCell;
   final bool isSelected;
   final bool isEditing;
   final VoidCallback onTap;
+  final VoidCallback onDoubleTap;
   final ValueChanged<String> onSave;
 
   const SpreadsheetDataCell({
@@ -90,9 +92,11 @@ class SpreadsheetDataCell extends StatefulWidget {
     required this.row,
     required this.col,
     required this.content,
+    required this.isPrimarySelectedCell,
     required this.isSelected,
     required this.isEditing,
     required this.onTap,
+    required this.onDoubleTap,
     required this.onSave,
   });
 
@@ -103,6 +107,10 @@ class SpreadsheetDataCell extends StatefulWidget {
 class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
   late TextEditingController _textController;
   final FocusNode _editFocusNode = FocusNode();
+  
+  // Variables for manual double-tap detection
+  int _lastTapTime = 0;
+  static const int _doubleTapTimeout = 300; // Standard Android/iOS timeout
 
   @override
   void initState() {
@@ -130,6 +138,18 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
     _textController.dispose();
     _editFocusNode.dispose();
     super.dispose();
+  }
+  
+  void _handleTap() {
+    final int now = DateTime.now().millisecondsSinceEpoch;
+    
+    if (now - _lastTapTime < _doubleTapTimeout) {
+      widget.onDoubleTap();
+    } else {
+      widget.onTap();
+    }
+
+    _lastTapTime = now;
   }
 
   @override
@@ -159,17 +179,12 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
 
     // 2. View Mode
     return InkWell(
-      onTap: widget.onTap,
-      // Double tap to edit is standard spreadsheet behavior
-      onDoubleTap: () {
-         widget.onTap(); // Ensure selected
-         // You might want to trigger edit callback here too if passed down
-      },
+      onTap: _handleTap,
       child: Container(
         alignment: Alignment.centerLeft, // Align left usually looks better for data
         padding: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
-          color: widget.isSelected ? Colors.blue.shade100 : Colors.white,
+          color: widget.isPrimarySelectedCell ? Colors.blue.shade300 : (widget.isSelected ? Colors.blue.shade100 : Colors.white),
           border: Border(
             right: BorderSide(color: Colors.grey.shade200),
             bottom: BorderSide(color: Colors.grey.shade200),
