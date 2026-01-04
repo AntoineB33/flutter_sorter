@@ -323,7 +323,7 @@ class SpreadsheetController extends ChangeNotifier {
 
   // --- Logic to Measure Text Wrapping ---
   double _calculateRequiredRowHeight(String text) {
-    if (text.isEmpty) return 0.0;
+    if (text.isEmpty) return getDefaultRowHeight();
 
     // Use TextPainter to measure how the text will wrap
     final TextPainter textPainter = TextPainter(
@@ -335,21 +335,27 @@ class SpreadsheetController extends ChangeNotifier {
       maxLines: null,
     );
 
-    // Constrain width to cell width minus padding
-    // Assuming EdgeInsets.symmetric(horizontal: 4) => 8.0 total horizontal padding
-    const double horizontalPadding = 8.0; 
-    const double verticalPadding = 8.0; // Top + Bottom padding
-
     textPainter.layout(
       minWidth: 0, 
-      maxWidth: PageConstants.defaultCellWidth - horizontalPadding
+      maxWidth: PageConstants.defaultCellWidth - 2 * PageConstants.horizontalPadding,
     );
 
-    return textPainter.height + verticalPadding;
+    return textPainter.height + 2 * PageConstants.verticalPadding;
   }
 
   double getDefaultRowHeight() {
-    return PageConstants.defaultFontHeight + 2 * PageConstants.defaultHeightPadding;
+    return PageConstants.defaultFontHeight + 2 * PageConstants.verticalPadding;
+  }
+
+  double getRowHeight(int row) {
+    if (row < sheet.rowsBottomPos.length) {
+      if (row == 0) {
+        return sheet.rowsBottomPos[0];
+      } else {
+        return sheet.rowsBottomPos[row] - sheet.rowsBottomPos[row - 1];
+      }
+    }
+    return getDefaultRowHeight();
   }
 
   void updateCell(int row, int col, String newValue) {
@@ -394,11 +400,12 @@ class SpreadsheetController extends ChangeNotifier {
     if (row < sheet.rowsBottomPos.length) {
       if (sheet.rowsManuallyAdjustedHeight.length <= row ||
           !sheet.rowsManuallyAdjustedHeight[row]) {
-        if (heightItNeeds < sheet.rowsBottomPos[row]) {
+        double currentHeight = getRowHeight(row);
+        if (heightItNeeds < currentHeight) {
           double heightItNeeded = _calculateRequiredRowHeight(prevValue);
-          if (heightItNeeded == sheet.rowsBottomPos[row]) {
+          if (heightItNeeded == currentHeight) {
             double newHeight = heightItNeeds;
-            for (int j = 0; j <= colCount; j++) {
+            for (int j = 0; j < colCount; j++) {
               if (j == col) continue;
               newHeight = max(
                 _calculateRequiredRowHeight(sheet.table[row][j]),
@@ -407,9 +414,9 @@ class SpreadsheetController extends ChangeNotifier {
               if (newHeight == heightItNeeded) break;
             }
             if (newHeight < heightItNeeded) {
-              double heightDiff = sheet.rowsBottomPos[row] - newHeight;
+              double heightDiff = currentHeight - newHeight;
               for (int r = row; r < sheet.rowsBottomPos.length; r++) {
-                sheet.rowsBottomPos[r] = sheet.rowsBottomPos[r] - heightDiff;
+                sheet.rowsBottomPos[r] -= heightDiff;
               }
               if (newHeight == getDefaultRowHeight()) {
                 int removeFrom = sheet.rowsBottomPos.length;
@@ -430,8 +437,8 @@ class SpreadsheetController extends ChangeNotifier {
               }
             }
           }
-        } else if (heightItNeeds > sheet.rowsBottomPos[row]) {
-          double heightDiff = heightItNeeds - sheet.rowsBottomPos[row];
+        } else if (heightItNeeds > currentHeight) {
+          double heightDiff = heightItNeeds - currentHeight;
           for (int r = row; r < sheet.rowsBottomPos.length; r++) {
             sheet.rowsBottomPos[r] = sheet.rowsBottomPos[r] + heightDiff;
           }
@@ -589,7 +596,6 @@ class SpreadsheetController extends ChangeNotifier {
 
   double getTargetTop(int row) {
     if (row <= 0) return 0.0;
-    const double cellHeight = PageConstants.defaultFontHeight;
     final int nbKnownBottomPos = sheet.rowsBottomPos.length;
     var rowsBottomPos = sheet.rowsBottomPos;
     final int tableHeight = nbKnownBottomPos == 0
@@ -597,7 +603,7 @@ class SpreadsheetController extends ChangeNotifier {
         : rowsBottomPos.last.toInt();
     final double targetTop = row - 1 < nbKnownBottomPos
         ? rowsBottomPos[row - 1].toDouble()
-        : tableHeight + (row - nbKnownBottomPos) * cellHeight;
+        : tableHeight + (row - nbKnownBottomPos) * getDefaultRowHeight();
     return targetTop;
   }
 

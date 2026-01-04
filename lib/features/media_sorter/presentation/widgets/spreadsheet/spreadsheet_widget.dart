@@ -153,8 +153,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           focusNode: _focusNode,
           autofocus: true,
           onKeyEvent: (node, event) {
-            _handleKeyboard(context, event, controller);
-            return KeyEventResult.handled; 
+            return _handleKeyboard(context, event, controller);
           },
           child: NotificationListener<ScrollNotification>(
             onNotification: (notification) =>
@@ -219,16 +218,20 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     return false;
   }
 
-  void _handleKeyboard(
+  KeyEventResult _handleKeyboard(
     BuildContext context,
     KeyEvent event,
     SpreadsheetController ctrl,
   ) {
-    // If a cell is currently editing, we ignore the main Grid keyboard events
-    // because the TextField inside the cell handles its own keys.
-    if (ctrl.editingMode) return;
+    // 1. If Editing: Return 'ignored' so the TextField inside the cell receives the key.
+    if (ctrl.editingMode) {
+      return KeyEventResult.ignored;
+    }
 
-    if (event is! KeyDownEvent) return;
+    // 2. We only care about KeyDownEvent for navigation
+    if (event is! KeyDownEvent) {
+       return KeyEventResult.ignored;
+    }
 
     final keyLabel = event.logicalKey.keyLabel.toLowerCase();
     final logicalKey = event.logicalKey;
@@ -236,40 +239,56 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         HardwareKeyboard.instance.isMetaPressed;
 
     // ENTER KEY LOGIC
-    if (logicalKey == LogicalKeyboardKey.enter || logicalKey == LogicalKeyboardKey.numpadEnter) {
+    if (logicalKey == LogicalKeyboardKey.enter ||
+        logicalKey == LogicalKeyboardKey.numpadEnter) {
       ctrl.startEditing();
-      return;
+      return KeyEventResult.handled;
     }
 
     if (logicalKey == LogicalKeyboardKey.escape) {
       ctrl.cancelEditing();
-      return;
+      return KeyEventResult.handled;
     }
 
+    // NAVIGATION LOGIC
     if (logicalKey == LogicalKeyboardKey.arrowUp) {
-      ctrl.selectCell(max(ctrl.primarySelectedCell.x - 1, 0), ctrl.primarySelectedCell.y, false);
-      return;
+      ctrl.selectCell(
+          max(ctrl.primarySelectedCell.x - 1, 0), ctrl.primarySelectedCell.y, false);
+      return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowDown) {
-      ctrl.selectCell(ctrl.primarySelectedCell.x + 1, ctrl.primarySelectedCell.y, false);
-      return;
+      ctrl.selectCell(
+          ctrl.primarySelectedCell.x + 1, ctrl.primarySelectedCell.y, false);
+      return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowLeft) {
-      ctrl.selectCell(ctrl.primarySelectedCell.x, max(0, ctrl.primarySelectedCell.y - 1), false);
-      return;
+      ctrl.selectCell(
+          ctrl.primarySelectedCell.x, max(0, ctrl.primarySelectedCell.y - 1), false);
+      return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowRight) {
-      ctrl.selectCell(ctrl.primarySelectedCell.x, ctrl.primarySelectedCell.y + 1, false);
-      return;
+      ctrl.selectCell(
+          ctrl.primarySelectedCell.x, ctrl.primarySelectedCell.y + 1, false);
+      return KeyEventResult.handled;
     }
 
+    // SHORTCUTS
     if (isControl && keyLabel == 'c') {
       ctrl.copySelectionToClipboard();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selection copied'), duration: Duration(milliseconds: 500)),
+        const SnackBar(
+            content: Text('Selection copied'),
+            duration: Duration(milliseconds: 500)),
       );
+      return KeyEventResult.handled;
     } else if (isControl && keyLabel == 'v') {
       ctrl.pasteSelection();
+      return KeyEventResult.handled;
     } else if (keyLabel == 'delete') {
       ctrl.delete();
+      return KeyEventResult.handled;
     }
+
+    // 3. If we didn't handle it (e.g., user typed a letter while NOT in edit mode),
+    // return ignored.
+    return KeyEventResult.ignored;
   }
 
   TableSpan _buildColumnSpan(int index) {
@@ -294,7 +313,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     
     // Data Rows (index 1 maps to data row 0)
     final int dataRowIndex = index - 1;
-    final double rowHeight = controller.getTargetTop(dataRowIndex) - controller.getTargetTop(dataRowIndex - 1);
+    final double rowHeight = controller.getRowHeight(dataRowIndex);
 
     return TableSpan(
       extent: FixedTableSpanExtent(rowHeight),
@@ -350,9 +369,14 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       onDoubleTap: () {
         controller.startEditing();
       },
-      onSave: (newValue) {
-        // Save the data via controller
+      // UPDATED Callback here
+      onSave: (newValue, {bool moveUp = false}) {
+        // Pass the moveUp flag to your controller
+        // Ensure your controller.saveEdit signature accepts this named argument
         controller.saveEdit(newValue);
+        if (moveUp) {
+          controller.selectCell(max(0, dataRow - 1), dataCol, false);
+        }
         _focusNode.requestFocus();
       },
     );

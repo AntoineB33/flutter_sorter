@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class SpreadsheetSelectAllCorner extends StatelessWidget {
   final VoidCallback onTap;
@@ -85,7 +86,7 @@ class SpreadsheetDataCell extends StatefulWidget {
   final bool isEditing;
   final VoidCallback onTap;
   final VoidCallback onDoubleTap;
-  final ValueChanged<String> onSave;
+  final void Function(String value, {bool moveUp}) onSave;
 
   const SpreadsheetDataCell({
     super.key,
@@ -110,14 +111,13 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
   
   // Variables for manual double-tap detection
   int _lastTapTime = 0;
-  static const int _doubleTapTimeout = 300; // Standard Android/iOS timeout
+  static const int _doubleTapTimeout = 300; 
 
   @override
   void initState() {
     super.initState();
     _textController = TextEditingController(text: widget.content);
     
-    // If created in edit mode, request focus immediately
     if (widget.isEditing) {
       _editFocusNode.requestFocus();
     }
@@ -126,7 +126,6 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
   @override
   void didUpdateWidget(SpreadsheetDataCell oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If we just entered edit mode
     if (widget.isEditing && !oldWidget.isEditing) {
       _textController.text = widget.content;
       _editFocusNode.requestFocus();
@@ -152,6 +151,24 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
     _lastTapTime = now;
   }
 
+  /// Manually inserts a newline at the current cursor position
+  void _insertNewline() {
+    final text = _textController.text;
+    final selection = _textController.selection;
+    
+    // Fallback if selection is invalid (rare)
+    final int start = selection.start >= 0 ? selection.start : text.length;
+    final int end = selection.end >= 0 ? selection.end : text.length;
+
+    // Replace selected text (or insert at cursor) with \n
+    final newText = text.replaceRange(start, end, '\n');
+    
+    _textController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: start + 1), // Move cursor after \n
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // 1. Edit Mode
@@ -159,22 +176,39 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
       return Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: Colors.blue, width: 2.0), // Highlight border
+          border: Border.all(color: Colors.blue, width: 2.0),
         ),
-        child: TextField(
-          controller: _textController,
-          focusNode: _editFocusNode,
-          autofocus: true,
-          maxLines: null, // Allow multiline editing
-          minLines: 1,
-          decoration: const InputDecoration(
-            contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 4), // Added vertical padding
-            border: InputBorder.none,
-            isDense: true,
+        // 2. Wrap TextField in CallbackShortcuts
+        child: CallbackShortcuts(
+          bindings: {
+            // 1. Ctrl + Enter: Insert New Line
+            const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
+              _insertNewline();
+            },
+            // 2. Shift + Enter: Save and Move Up
+            const SingleActivator(LogicalKeyboardKey.enter, shift: true): () {
+              widget.onSave(_textController.text, moveUp: true);
+            },
+            // 3. Enter (No Modifiers): Save (defaults to moving down)
+            const SingleActivator(LogicalKeyboardKey.enter): () {
+              widget.onSave(_textController.text, moveUp: false);
+            },
+          },
+          child: TextField(
+            controller: _textController,
+            focusNode: _editFocusNode,
+            autofocus: true,
+            maxLines: null, 
+            minLines: 1,
+            decoration: const InputDecoration(
+              contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              border: InputBorder.none,
+              isDense: true,
+            ),
+            style: const TextStyle(fontSize: 14),
+            // This acts as a fallback or for mobile "Done" buttons
+            onSubmitted: (value) => widget.onSave(value),
           ),
-          style: const TextStyle(fontSize: 14),
-          onSubmitted: (value) => widget.onSave(value),
-          // Optional: TapOutside logic could go here to save on blur
         ),
       );
     }
@@ -182,11 +216,13 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
     // 2. View Mode
     return InkWell(
       onTap: _handleTap,
-      child: Container(// Changed to topLeft so multiline text starts correctly
+      child: Container(
         alignment: Alignment.topLeft, 
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4), // Add vertical padding
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         decoration: BoxDecoration(
-          color: widget.isPrimarySelectedCell ? Colors.blue.shade300 : (widget.isSelected ? Colors.blue.shade100 : Colors.white),
+          color: widget.isPrimarySelectedCell 
+              ? Colors.blue.shade300 
+              : (widget.isSelected ? Colors.blue.shade100 : Colors.white),
           border: Border(
             right: BorderSide(color: Colors.grey.shade200),
             bottom: BorderSide(color: Colors.grey.shade200),
@@ -194,7 +230,6 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
         ),
         child: Text(
           widget.content,
-          // Removed maxLines: 1 and overflow ellipsis
           style: const TextStyle(fontSize: 14),
         ),
       ),
