@@ -149,11 +149,13 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           });
         }
 
-        return KeyboardListener(
+        return Focus(
           focusNode: _focusNode,
           autofocus: true,
-          onKeyEvent: (KeyEvent event) =>
-              _handleKeyboard(context, event, controller),
+          onKeyEvent: (node, event) {
+            _handleKeyboard(context, event, controller);
+            return KeyEventResult.handled; 
+          },
           child: NotificationListener<ScrollNotification>(
             onNotification: (notification) =>
                 _handleScrollNotification(notification, controller),
