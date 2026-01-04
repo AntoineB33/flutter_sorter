@@ -39,6 +39,8 @@ class SpreadsheetController extends ChangeNotifier {
 
   final GetSheetDataUseCase _getDataUseCase;
   final SaveSheetDataUseCase _saveSheetDataUseCase;
+  final ManageWaitingTasks<void> _saveLastSelectionExecutor =
+      ManageWaitingTasks<void>();
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
   final ManageWaitingTasks<AnalysisResult> _calculateExecutor =
       ManageWaitingTasks<AnalysisResult>();
@@ -140,7 +142,7 @@ class SpreadsheetController extends ChangeNotifier {
     try {
       await _getDataUseCase.getLastSelection();
     } catch (e) {
-      await _saveSheetDataUseCase.saveLastSelection(SelectionModel.empty());
+      await saveLastSelection(SelectionModel.empty());
     }
 
     availableSheets = await _getDataUseCase.getAllSheetNames();
@@ -236,6 +238,9 @@ class SpreadsheetController extends ChangeNotifier {
       availableSheets.add(name);
       _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
       _saveExecutors[name] = ManageWaitingTasks<void>();
+    }
+    if (!init) {
+      await saveLastSelection(selection);
     }
     loadedSheetsData[name] = sheet;
     sheetName = name;
@@ -491,8 +496,15 @@ class SpreadsheetController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void saveLastSelection(SelectionModel selection) {
-    _saveSheetDataUseCase.saveLastSelection(selection);
+  Future<void> saveLastSelection(SelectionModel selection) async {
+    _saveLastSelectionExecutor.execute(() async {
+      await _saveSheetDataUseCase.saveLastSelection(selection);
+      await Future.delayed(Duration(milliseconds: saveDelayMs));
+    });
+  }
+
+  Future<void> saveSheet(String sheetName, SheetModel sheet) async {
+    await _saveSheetDataUseCase.saveSheet(sheetName, sheet);
   }
 
   void populateTree(List<NodeStruct> nodes) {
@@ -581,29 +593,28 @@ class SpreadsheetController extends ChangeNotifier {
     _scrollToCellController.add(Point(row, col));
   }
 
-  Point<int>? _editingCell;
-  Point<int>? get editingCell => _editingCell;
+  bool _editingMode = false;
+  bool get isEditing => _editingMode;
 
   bool isCellEditing(int row, int col) =>
-      _editingCell != null && _editingCell!.x == row && _editingCell!.y == col;
+      _editingMode && primarySelectedCell.x == row &&
+      primarySelectedCell.y == col;
 
   void startEditing() {
-    _editingCell = _selectionManager.primarySelectedCell;
+    _editingMode = true;
     notifyListeners();
   }
 
   void saveEdit(String newValue) {
-    if (_editingCell != null) {
-      // Update your data source here
-      // data[_editingCell!.x][_editingCell!.y] = newValue;
-
-      _editingCell = null; // Stop editing
-      notifyListeners();
+    if (_editingMode) {
+      updateCell(primarySelectedCell.x, primarySelectedCell.y, newValue);
+      saveAndCalculate();
+      _editingMode = false;
     }
   }
 
   void cancelEditing() {
-    _editingCell = null;
+    _editingMode = false;
     notifyListeners();
   }
 }

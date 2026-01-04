@@ -18,7 +18,7 @@ class SpreadsheetWidget extends StatefulWidget {
 }
 
 class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
-  final FocusNode _focusNode = FocusNode();
+  final FocusNode _focusNode = FocusNode(); 
   final ScrollController _verticalController = ScrollController();
   final ScrollController _horizontalController = ScrollController();
   StreamSubscription? _scrollSubscription;
@@ -131,12 +131,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<SpreadsheetController>();
-
+    
     if (controller.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // 1. Wrap everything in LayoutBuilder to get dimensions
     return LayoutBuilder(
       builder: (context, constraints) {
         // 2. Determine the available size
@@ -222,24 +221,36 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     KeyEvent event,
     SpreadsheetController ctrl,
   ) {
+    // If a cell is currently editing, we ignore the main Grid keyboard events
+    // because the TextField inside the cell handles its own keys.
+    if (ctrl.isEditing) return;
+
     if (event is! KeyDownEvent) return;
 
-    final key = event.logicalKey.keyLabel.toLowerCase();
-    final isControl =
-        HardwareKeyboard.instance.isControlPressed ||
+    final keyLabel = event.logicalKey.keyLabel.toLowerCase();
+    final logicalKey = event.logicalKey;
+    final isControl = HardwareKeyboard.instance.isControlPressed ||
         HardwareKeyboard.instance.isMetaPressed;
 
-    if (isControl && key == 'c') {
+    // ENTER KEY LOGIC
+    if (logicalKey == LogicalKeyboardKey.enter || logicalKey == LogicalKeyboardKey.numpadEnter) {
+      ctrl.startEditing();
+      return;
+    }
+
+    if (logicalKey == LogicalKeyboardKey.escape) {
+      ctrl.cancelEditing();
+      return;
+    }
+
+    if (isControl && keyLabel == 'c') {
       ctrl.copySelectionToClipboard();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Selection copied'),
-          duration: Duration(milliseconds: 500),
-        ),
+        const SnackBar(content: Text('Selection copied'), duration: Duration(milliseconds: 500)),
       );
-    } else if (isControl && key == 'v') {
+    } else if (isControl && keyLabel == 'v') {
       ctrl.pasteSelection();
-    } else if (key == 'delete') {
+    } else if (keyLabel == 'delete') {
       ctrl.clearSelection();
     }
   }
@@ -291,13 +302,25 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return SpreadsheetRowHeader(rowIndex: r - 1);
     }
 
+    final int dataRow = r - 1;
+    final int dataCol = c - 1;
+
     return SpreadsheetDataCell(
-      row: r - 1,
-      col: c - 1,
-      content: controller.getContent(r - 1, c - 1),
-      isSelected: controller.isCellSelected(r - 1, c - 1),
+      row: dataRow,
+      col: dataCol,
+      content: controller.getContent(dataRow, dataCol),
+      isSelected: controller.isCellSelected(dataRow, dataCol),
+      // Check if this specific cell is in edit mode
+      isEditing: controller.isCellEditing(dataRow, dataCol),
       onTap: () {
-        controller.selectCell(r - 1, c - 1);
+        controller.selectCell(dataRow, dataCol);
+        // Important: Ensure focus is on the grid when tapping cells (unless editing)
+        _focusNode.requestFocus(); 
+      },
+      onSave: (newValue) {
+        // Save the data via controller
+        controller.saveEdit(newValue);
+        // CRITICAL: Return focus to the main Grid so arrow keys work again
         _focusNode.requestFocus();
       },
     );
