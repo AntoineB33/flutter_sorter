@@ -283,12 +283,21 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 
   TableSpan _buildRowSpan(int index) {
+    final controller = context.read<SpreadsheetController>();
+    
+    // Index 0 is the Header Row
+    if (index == 0) {
+      return const TableSpan(
+        extent: FixedTableSpanExtent(PageConstants.defaultColHeaderHeight),
+      );
+    }
+    
+    // Data Rows (index 1 maps to data row 0)
+    final int dataRowIndex = index - 1;
+    final double rowHeight = controller.getTargetTop(dataRowIndex) - controller.getTargetTop(dataRowIndex - 1);
+
     return TableSpan(
-      extent: FixedTableSpanExtent(
-        index == 0
-            ? PageConstants.defaultColHeaderHeight
-            : PageConstants.defaultFontHeight,
-      ),
+      extent: FixedTableSpanExtent(rowHeight),
     );
   }
 

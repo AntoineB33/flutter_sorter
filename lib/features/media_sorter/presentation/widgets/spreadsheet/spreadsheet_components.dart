@@ -165,8 +165,10 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
           controller: _textController,
           focusNode: _editFocusNode,
           autofocus: true,
+          maxLines: null, // Allow multiline editing
+          minLines: 1,
           decoration: const InputDecoration(
-            contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+            contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 4), // Added vertical padding
             border: InputBorder.none,
             isDense: true,
           ),
@@ -180,9 +182,9 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
     // 2. View Mode
     return InkWell(
       onTap: _handleTap,
-      child: Container(
-        alignment: Alignment.centerLeft, // Align left usually looks better for data
-        padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Container(// Changed to topLeft so multiline text starts correctly
+        alignment: Alignment.topLeft, 
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4), // Add vertical padding
         decoration: BoxDecoration(
           color: widget.isPrimarySelectedCell ? Colors.blue.shade300 : (widget.isSelected ? Colors.blue.shade100 : Colors.white),
           border: Border(
@@ -192,8 +194,8 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
         ),
         child: Text(
           widget.content,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+          // Removed maxLines: 1 and overflow ellipsis
+          style: const TextStyle(fontSize: 14),
         ),
       ),
     );

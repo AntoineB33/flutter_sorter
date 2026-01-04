@@ -321,7 +321,39 @@ class SpreadsheetController extends ChangeNotifier {
     return worker.run();
   }
 
+  // --- Logic to Measure Text Wrapping ---
+  double _calculateRequiredRowHeight(String text) {
+    if (text.isEmpty) return 0.0;
+
+    // Use TextPainter to measure how the text will wrap
+    final TextPainter textPainter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: const TextStyle(fontSize: 14), // Must match the widget style
+      ),
+      textDirection: TextDirection.ltr,
+      maxLines: null,
+    );
+
+    // Constrain width to cell width minus padding
+    // Assuming EdgeInsets.symmetric(horizontal: 4) => 8.0 total horizontal padding
+    const double horizontalPadding = 8.0; 
+    const double verticalPadding = 8.0; // Top + Bottom padding
+
+    textPainter.layout(
+      minWidth: 0, 
+      maxWidth: PageConstants.defaultCellWidth - horizontalPadding
+    );
+
+    return textPainter.height + verticalPadding;
+  }
+
+  double getDefaultRowHeight() {
+    return PageConstants.defaultFontHeight + 2 * PageConstants.defaultHeightPadding;
+  }
+
   void updateCell(int row, int col, String newValue) {
+    String prevValue = '';
     if (newValue.isNotEmpty || (row < rowCount && col < colCount)) {
       if (row >= rowCount) {
         final needed = row + 1 - rowCount;
@@ -333,8 +365,11 @@ class SpreadsheetController extends ChangeNotifier {
         );
       }
       increaseColumnCount(col);
+      prevValue = sheet.table[row][col];
       sheet.table[row][col] = newValue;
     }
+    
+    // Clean up empty rows/cols at the end
     if (newValue.isEmpty &&
         row < rowCount &&
         col < colCount &&
@@ -343,60 +378,47 @@ class SpreadsheetController extends ChangeNotifier {
       decreaseRowCount(row);
       decreaseColumnCount(col);
     }
-
-    int newLines = '\n'.allMatches(newValue).length + 1;
-    double heightItNeeds =
-        newLines * PageConstants.defaultFontHeight +
-        2 * PageConstants.defaultHeightPadding;
-    if (newLines > 1 && sheet.rowsBottomPos.length <= row) {
+    
+    double heightItNeeds = _calculateRequiredRowHeight(sheet.table[row][col]);
+    if (heightItNeeds > getDefaultRowHeight() && sheet.rowsBottomPos.length <= row) {
       int prevRowsBottomPosLength = sheet.rowsBottomPos.length;
       sheet.rowsBottomPos.addAll(
         List.filled(row + 1 - sheet.rowsBottomPos.length, 0),
       );
       for (int i = prevRowsBottomPosLength; i <= row; i++) {
         sheet.rowsBottomPos[i] = i == 0
-            ? PageConstants.defaultFontHeight +
-                  2 * PageConstants.defaultHeightPadding
-            : sheet.rowsBottomPos[i - 1] +
-                  PageConstants.defaultFontHeight +
-                  2 * PageConstants.defaultHeightPadding;
+            ? getDefaultRowHeight()
+            : sheet.rowsBottomPos[i - 1] + getDefaultRowHeight();
       }
     }
     if (row < sheet.rowsBottomPos.length) {
       if (sheet.rowsManuallyAdjustedHeight.length <= row ||
           !sheet.rowsManuallyAdjustedHeight[row]) {
         if (heightItNeeds < sheet.rowsBottomPos[row]) {
-          int prevLinesNb = '\n'.allMatches(sheet.table[row][col]).length + 1;
-          double heightItNeeded =
-              prevLinesNb * PageConstants.defaultFontHeight +
-              2 * PageConstants.defaultHeightPadding;
+          double heightItNeeded = _calculateRequiredRowHeight(prevValue);
           if (heightItNeeded == sheet.rowsBottomPos[row]) {
-            int maxLinesNb = newLines;
+            double newHeight = heightItNeeds;
             for (int j = 0; j <= colCount; j++) {
               if (j == col) continue;
-              maxLinesNb = max(
-                '\n'.allMatches(sheet.table[row][j]).length + 1,
-                maxLinesNb,
+              newHeight = max(
+                _calculateRequiredRowHeight(sheet.table[row][j]),
+                newHeight,
               );
-              if (maxLinesNb == prevLinesNb) break;
+              if (newHeight == heightItNeeded) break;
             }
-            if (maxLinesNb < prevLinesNb) {
-              double newHeight =
-                  maxLinesNb * PageConstants.defaultFontHeight +
-                  2 * PageConstants.defaultHeightPadding;
+            if (newHeight < heightItNeeded) {
               double heightDiff = sheet.rowsBottomPos[row] - newHeight;
               for (int r = row; r < sheet.rowsBottomPos.length; r++) {
                 sheet.rowsBottomPos[r] = sheet.rowsBottomPos[r] - heightDiff;
               }
-              if (maxLinesNb == 1) {
+              if (newHeight == getDefaultRowHeight()) {
                 int removeFrom = sheet.rowsBottomPos.length;
                 for (int r = sheet.rowsBottomPos.length - 1; r >= 0; r--) {
                   if (r < sheet.rowsManuallyAdjustedHeight.length &&
                           sheet.rowsManuallyAdjustedHeight[r] ||
                       sheet.rowsBottomPos[r] >
                           (r == 0 ? 0 : sheet.rowsBottomPos[r - 1]) +
-                              PageConstants.defaultFontHeight +
-                              2 * PageConstants.defaultHeightPadding) {
+                              getDefaultRowHeight()) {
                     break;
                   }
                   removeFrom--;
