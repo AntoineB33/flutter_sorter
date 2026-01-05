@@ -228,7 +228,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return KeyEventResult.ignored;
     }
 
-    // 2. We only care about KeyDownEvent for navigation
+    // 2. We only care about KeyDownEvent
     if (event is! KeyDownEvent) {
        return KeyEventResult.ignored;
     }
@@ -237,11 +237,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     final logicalKey = event.logicalKey;
     final isControl = HardwareKeyboard.instance.isControlPressed ||
         HardwareKeyboard.instance.isMetaPressed;
+    final isAlt = HardwareKeyboard.instance.isAltPressed;
 
     // ENTER KEY LOGIC
     if (logicalKey == LogicalKeyboardKey.enter ||
         logicalKey == LogicalKeyboardKey.numpadEnter) {
-      ctrl.startEditing();
+      ctrl.startEditing(); // Normal start editing (keeps existing text)
       return KeyEventResult.handled;
     }
 
@@ -286,13 +287,27 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return KeyEventResult.handled;
     }
 
-    // 3. If we didn't handle it (e.g., user typed a letter while NOT in edit mode),
-    // return ignored.
+    // 3. TYPING TO EDIT LOGIC (New)
+    // Check if it's a printable character and not a modifier combo
+    final bool isPrintable = event.character != null && 
+                             event.character!.isNotEmpty && 
+                             !isControl && 
+                             !isAlt && 
+                             // Filter out non-printable unicode control characters if necessary, 
+                             // though character!=null usually handles this well for standard keys.
+                             logicalKey.keyId > 32; 
+
+    if (isPrintable) {
+      // Pass the character to startEditing
+      ctrl.startEditing(initialInput: event.character); 
+      return KeyEventResult.handled;
+    }
+
     return KeyEventResult.ignored;
   }
 
   TableSpan _buildColumnSpan(int index) {
-    return TableSpan(
+      return TableSpan(
       extent: FixedTableSpanExtent(
         index == 0
             ? PageConstants.defaultRowHeaderWidth
@@ -300,12 +315,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       ),
     );
   }
-
+  
   TableSpan _buildRowSpan(int index) {
     final controller = context.read<SpreadsheetController>();
     
     // Index 0 is the Header Row
-    if (index == 0) {
+      if (index == 0) {
       return const TableSpan(
         extent: FixedTableSpanExtent(PageConstants.defaultColHeaderHeight),
       );
@@ -349,6 +364,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
     final int dataRow = r - 1;
     final int dataCol = c - 1;
+    
+    // Check if this cell is currently being edited
+    final bool isEditingCell = controller.isCellEditing(dataRow, dataCol);
 
     return SpreadsheetDataCell(
       row: dataRow,
@@ -356,8 +374,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       content: controller.getContent(dataRow, dataCol),
       isPrimarySelectedCell: controller.isPrimarySelectedCell(dataRow, dataCol),
       isSelected: controller.isCellSelected(dataRow, dataCol),
-      // Check if this specific cell is in edit mode
-      isEditing: controller.isCellEditing(dataRow, dataCol),
+      isEditing: isEditingCell,
+      // 4. Pass the initial input ONLY if this is the editing cell
+      initialEditText: isEditingCell ? controller.currentInitialInput : null,
       onTap: () {
         if (controller.primarySelectedCell.x != dataRow ||
             controller.primarySelectedCell.y != dataCol) {
@@ -367,12 +386,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         _focusNode.requestFocus();
       },
       onDoubleTap: () {
-        controller.startEditing();
+        controller.startEditing(); // Standard edit (no initial input)
       },
-      // UPDATED Callback here
       onSave: (newValue, {bool moveUp = false}) {
-        // Pass the moveUp flag to your controller
-        // Ensure your controller.saveEdit signature accepts this named argument
         controller.saveEdit(newValue);
         if (moveUp) {
           controller.selectCell(max(0, dataRow - 1), dataCol, false);

@@ -650,6 +650,28 @@ class SpreadsheetController extends ChangeNotifier {
     _scrollToCellController.add(Point(row, col));
   }
 
+  String? currentInitialInput; // Add this field
+
+  void startEditing({String? initialInput}) {
+    currentInitialInput = initialInput; // Store it
+    editingMode = true;
+    notifyListeners();
+  }
+
+  void saveEdit(String newValue) {
+    updateCell(primarySelectedCell.x, primarySelectedCell.y, newValue);
+    notifyListeners();
+    saveAndCalculate();
+    currentInitialInput = null;
+    editingMode = false;
+  }
+
+  void cancelEditing() {
+    editingMode = false;
+    currentInitialInput = null;
+    notifyListeners();
+  }
+
   bool editingMode = false;
 
   bool isCellEditing(int row, int col) =>
@@ -657,22 +679,4 @@ class SpreadsheetController extends ChangeNotifier {
       primarySelectedCell.x == row &&
       primarySelectedCell.y == col;
 
-  void startEditing() {
-    editingMode = true;
-    notifyListeners();
-  }
-
-  void saveEdit(String newValue) {
-    if (editingMode) {
-      updateCell(primarySelectedCell.x, primarySelectedCell.y, newValue);
-      notifyListeners();
-      saveAndCalculate();
-      editingMode = false;
-    }
-  }
-
-  void cancelEditing() {
-    editingMode = false;
-    notifyListeners();
-  }
 }

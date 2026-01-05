@@ -84,8 +84,10 @@ class SpreadsheetDataCell extends StatefulWidget {
   final bool isPrimarySelectedCell;
   final bool isSelected;
   final bool isEditing;
+  final String? initialEditText;
   final VoidCallback onTap;
   final VoidCallback onDoubleTap;
+  final ValueChanged<String>? onChanged;
   final void Function(String value, {bool moveUp}) onSave;
 
   const SpreadsheetDataCell({
@@ -96,8 +98,10 @@ class SpreadsheetDataCell extends StatefulWidget {
     required this.isPrimarySelectedCell,
     required this.isSelected,
     required this.isEditing,
+    this.initialEditText,
     required this.onTap,
     required this.onDoubleTap,
+    this.onChanged,
     required this.onSave,
   });
 
@@ -116,7 +120,13 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
   @override
   void initState() {
     super.initState();
-    _textController = TextEditingController(text: widget.content);
+    // 3. Determine initial text: If initialEditText is provided, use it (overwrite). 
+    // Otherwise use existing content (append/edit).
+    final String startText = (widget.isEditing && widget.initialEditText != null)
+        ? widget.initialEditText!
+        : widget.content;
+
+    _textController = TextEditingController(text: startText);
     
     if (widget.isEditing) {
       _editFocusNode.requestFocus();
@@ -126,9 +136,23 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
   @override
   void didUpdateWidget(SpreadsheetDataCell oldWidget) {
     super.didUpdateWidget(oldWidget);
+    
+    // 4. Handle transition into Edit Mode
     if (widget.isEditing && !oldWidget.isEditing) {
-      _textController.text = widget.content;
+      // If we have specific initial text (e.g. user typed 'A'), use that.
+      // Otherwise, keep the old content.
+      if (widget.initialEditText != null) {
+        _textController.text = widget.initialEditText!;
+      } else {
+        _textController.text = widget.content;
+      }
+
       _editFocusNode.requestFocus();
+      
+      // Ensure cursor is at the end of the text
+      _textController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _textController.text.length),
+      );
     }
   }
 
