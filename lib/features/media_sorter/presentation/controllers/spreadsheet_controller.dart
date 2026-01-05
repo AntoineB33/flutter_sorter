@@ -380,12 +380,15 @@ class SpreadsheetController extends ChangeNotifier {
         row < rowCount &&
         col < colCount &&
         (row == rowCount - 1 || col == colCount - 1) &&
-        sheet.table[row][col].isNotEmpty) {
+        prevValue.isNotEmpty) {
       decreaseRowCount(row);
       decreaseColumnCount(col);
     }
     
-    double heightItNeeds = _calculateRequiredRowHeight(sheet.table[row][col]);
+    if (row >= rowCount || col >= colCount) {
+      return;
+    }
+    double heightItNeeds = _calculateRequiredRowHeight(newValue);
     if (heightItNeeds > getDefaultRowHeight() && sheet.rowsBottomPos.length <= row) {
       int prevRowsBottomPosLength = sheet.rowsBottomPos.length;
       sheet.rowsBottomPos.addAll(

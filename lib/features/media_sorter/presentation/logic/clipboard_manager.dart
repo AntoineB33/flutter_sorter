@@ -92,6 +92,11 @@ class ClipboardManager {
     for (Point<int> cell in _controller.selection.selectedCells) {
       _controller.updateCell(cell.x, cell.y, '');
     }
+    _controller.updateCell(
+      _controller.primarySelectedCell.x,
+      _controller.primarySelectedCell.y,
+      '',
+    );
     _controller.notify();
     _controller.saveAndCalculate();
   }
