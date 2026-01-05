@@ -195,42 +195,30 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Edit Mode
     if (widget.isEditing) {
       return Container(
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(color: Colors.blue, width: 2.0),
         ),
-        // 2. Wrap TextField in CallbackShortcuts
         child: CallbackShortcuts(
           bindings: {
-            // 1. Ctrl + Enter: Insert New Line
-            const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
-              _insertNewline();
-            },
-            // 2. Shift + Enter: Save and Move Up
-            const SingleActivator(LogicalKeyboardKey.enter, shift: true): () {
-              widget.onSave(_textController.text, moveUp: true);
-            },
-            // 3. Enter (No Modifiers): Save (defaults to moving down)
-            const SingleActivator(LogicalKeyboardKey.enter): () {
-              widget.onSave(_textController.text, moveUp: false);
-            },
+             // ... (Keep existing bindings)
           },
           child: TextField(
             controller: _textController,
             focusNode: _editFocusNode,
             autofocus: true,
-            maxLines: null, 
+            maxLines: null,
             minLines: 1,
+            // 3. Hook up the onChanged callback here
+            onChanged: widget.onChanged, 
             decoration: const InputDecoration(
               contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               border: InputBorder.none,
               isDense: true,
             ),
             style: const TextStyle(fontSize: 14),
-            // This acts as a fallback or for mobile "Done" buttons
             onSubmitted: (value) => widget.onSave(value),
           ),
         ),

@@ -19,7 +19,7 @@ class SpreadsheetWidget extends StatefulWidget {
 }
 
 class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
-  final FocusNode _focusNode = FocusNode(); 
+  final FocusNode _focusNode = FocusNode();
   final ScrollController _verticalController = ScrollController();
   final ScrollController _horizontalController = ScrollController();
   StreamSubscription? _scrollSubscription;
@@ -132,7 +132,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<SpreadsheetController>();
-    
+
     // if (controller.isLoading) {
     //   return const Center(child: CircularProgressIndicator());
     // }
@@ -223,21 +223,34 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     KeyEvent event,
     SpreadsheetController ctrl,
   ) {
-    // 1. If Editing: Return 'ignored' so the TextField inside the cell receives the key.
-    if (ctrl.editingMode) {
-      return KeyEventResult.ignored;
-    }
 
-    // 2. We only care about KeyDownEvent
     if (event is! KeyDownEvent) {
-       return KeyEventResult.ignored;
+      return KeyEventResult.ignored;
     }
 
     final keyLabel = event.logicalKey.keyLabel.toLowerCase();
     final logicalKey = event.logicalKey;
-    final isControl = HardwareKeyboard.instance.isControlPressed ||
+    final isControl =
+        HardwareKeyboard.instance.isControlPressed ||
         HardwareKeyboard.instance.isMetaPressed;
     final isAlt = HardwareKeyboard.instance.isAltPressed;
+    final isShift = HardwareKeyboard.instance.isShiftPressed;
+    
+
+    if (ctrl.editingMode) {
+      if (logicalKey == LogicalKeyboardKey.escape) {
+        ctrl.updateCell(ctrl.primarySelectedCell.x, ctrl.primarySelectedCell.y, '');
+        ctrl.stopEditing();
+        return KeyEventResult.handled;
+      // } else if (logicalKey == LogicalKeyboardKey.enter ||
+      //   logicalKey == LogicalKeyboardKey.numpadEnter) {
+      //   if (isShift) {
+          
+      //   }
+      } else {
+        return KeyEventResult.ignored;
+      }
+    }
 
     // ENTER KEY LOGIC
     if (logicalKey == LogicalKeyboardKey.enter ||
@@ -246,27 +259,34 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return KeyEventResult.handled;
     }
 
-    if (logicalKey == LogicalKeyboardKey.escape) {
-      ctrl.cancelEditing();
-      return KeyEventResult.handled;
-    }
-
     // NAVIGATION LOGIC
     if (logicalKey == LogicalKeyboardKey.arrowUp) {
       ctrl.selectCell(
-          max(ctrl.primarySelectedCell.x - 1, 0), ctrl.primarySelectedCell.y, false);
+        max(ctrl.primarySelectedCell.x - 1, 0),
+        ctrl.primarySelectedCell.y,
+        false,
+      );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowDown) {
       ctrl.selectCell(
-          ctrl.primarySelectedCell.x + 1, ctrl.primarySelectedCell.y, false);
+        ctrl.primarySelectedCell.x + 1,
+        ctrl.primarySelectedCell.y,
+        false,
+      );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowLeft) {
       ctrl.selectCell(
-          ctrl.primarySelectedCell.x, max(0, ctrl.primarySelectedCell.y - 1), false);
+        ctrl.primarySelectedCell.x,
+        max(0, ctrl.primarySelectedCell.y - 1),
+        false,
+      );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowRight) {
       ctrl.selectCell(
-          ctrl.primarySelectedCell.x, ctrl.primarySelectedCell.y + 1, false);
+        ctrl.primarySelectedCell.x,
+        ctrl.primarySelectedCell.y + 1,
+        false,
+      );
       return KeyEventResult.handled;
     }
 
@@ -275,8 +295,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       ctrl.copySelectionToClipboard();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Selection copied'),
-            duration: Duration(milliseconds: 500)),
+          content: Text('Selection copied'),
+          duration: Duration(milliseconds: 500),
+        ),
       );
       return KeyEventResult.handled;
     } else if (isControl && keyLabel == 'v') {
@@ -289,17 +310,18 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
     // 3. TYPING TO EDIT LOGIC (New)
     // Check if it's a printable character and not a modifier combo
-    final bool isPrintable = event.character != null && 
-                             event.character!.isNotEmpty && 
-                             !isControl && 
-                             !isAlt && 
-                             // Filter out non-printable unicode control characters if necessary, 
-                             // though character!=null usually handles this well for standard keys.
-                             logicalKey.keyId > 32; 
+    final bool isPrintable =
+        event.character != null &&
+        event.character!.isNotEmpty &&
+        !isControl &&
+        !isAlt &&
+        // Filter out non-printable unicode control characters if necessary,
+        // though character!=null usually handles this well for standard keys.
+        logicalKey.keyId > 32;
 
     if (isPrintable) {
       // Pass the character to startEditing
-      ctrl.startEditing(initialInput: event.character); 
+      ctrl.startEditing(initialInput: event.character);
       return KeyEventResult.handled;
     }
 
@@ -307,7 +329,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 
   TableSpan _buildColumnSpan(int index) {
-      return TableSpan(
+    return TableSpan(
       extent: FixedTableSpanExtent(
         index == 0
             ? PageConstants.defaultRowHeaderWidth
@@ -315,24 +337,22 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       ),
     );
   }
-  
+
   TableSpan _buildRowSpan(int index) {
     final controller = context.read<SpreadsheetController>();
-    
+
     // Index 0 is the Header Row
-      if (index == 0) {
+    if (index == 0) {
       return const TableSpan(
         extent: FixedTableSpanExtent(PageConstants.defaultColHeaderHeight),
       );
     }
-    
+
     // Data Rows (index 1 maps to data row 0)
     final int dataRowIndex = index - 1;
     final double rowHeight = controller.getRowHeight(dataRowIndex);
 
-    return TableSpan(
-      extent: FixedTableSpanExtent(rowHeight),
-    );
+    return TableSpan(extent: FixedTableSpanExtent(rowHeight));
   }
 
   Widget _buildCellDispatcher(
@@ -364,8 +384,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
     final int dataRow = r - 1;
     final int dataCol = c - 1;
-    
-    // Check if this cell is currently being edited
+
     final bool isEditingCell = controller.isCellEditing(dataRow, dataCol);
 
     return SpreadsheetDataCell(
@@ -375,7 +394,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       isPrimarySelectedCell: controller.isPrimarySelectedCell(dataRow, dataCol),
       isSelected: controller.isCellSelected(dataRow, dataCol),
       isEditing: isEditingCell,
-      // 4. Pass the initial input ONLY if this is the editing cell
       initialEditText: isEditingCell ? controller.currentInitialInput : null,
       onTap: () {
         if (controller.primarySelectedCell.x != dataRow ||
@@ -386,12 +404,17 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         _focusNode.requestFocus();
       },
       onDoubleTap: () {
-        controller.startEditing(); // Standard edit (no initial input)
+        controller.startEditing();
+      },
+      onChanged: (newValue) {
+        controller.saveEdit(newValue);
       },
       onSave: (newValue, {bool moveUp = false}) {
-        controller.saveEdit(newValue);
+        controller.stopEditing();
         if (moveUp) {
           controller.selectCell(max(0, dataRow - 1), dataCol, false);
+        } else {
+          controller.selectCell(dataRow + 1, dataCol, false);
         }
         _focusNode.requestFocus();
       },

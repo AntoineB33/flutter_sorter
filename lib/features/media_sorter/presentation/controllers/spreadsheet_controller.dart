@@ -660,13 +660,10 @@ class SpreadsheetController extends ChangeNotifier {
 
   void saveEdit(String newValue) {
     updateCell(primarySelectedCell.x, primarySelectedCell.y, newValue);
-    notifyListeners();
     saveAndCalculate();
-    currentInitialInput = null;
-    editingMode = false;
   }
 
-  void cancelEditing() {
+  void stopEditing() {
     editingMode = false;
     currentInitialInput = null;
     notifyListeners();
