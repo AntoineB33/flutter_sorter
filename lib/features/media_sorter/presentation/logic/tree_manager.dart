@@ -81,6 +81,10 @@ class TreeManager {
     node.message ??= node.name;
     if (node.defaultOnTap) {
       node.onTap = (n) {
+        if (node.rowId != null) {
+          _controller.selectCell(node.rowId!, 0, false, false);
+          return;
+        }
         List<Cell> cells = [];
         List<MapEntry> entries = [];
         if (node.colId != SpreadsheetConstants.notUsedCst) {
@@ -104,12 +108,12 @@ class TreeManager {
           }
         }
         if (found == -1) {
-          _controller.selectCell(cells[0].rowId, cells[0].colId, false);
+          _controller.selectCell(cells[0].rowId, cells[0].colId, false, false);
         } else {
           _controller.selectCell(
             cells[(found + 1) % cells.length].rowId,
             cells[(found + 1) % cells.length].colId,
-            false
+            false, false
           );
         }
       };
@@ -247,12 +251,12 @@ class TreeManager {
           }
         }
         if (found == -1) {
-          _controller.selectCell(node.cellsToSelect![0].rowId, 0, false);
+          _controller.selectCell(node.cellsToSelect![0].rowId, 0, false, false);
         } else {
           _controller.selectCell(
             node.cellsToSelect![(found + 1) % node.cellsToSelect!.length].rowId,
             node.cellsToSelect![(found + 1) % node.cellsToSelect!.length].colId,
-            false
+            false, false
           );
         }
       };
@@ -297,12 +301,12 @@ class TreeManager {
             }
           }
           if (found == -1) {
-            _controller.selectCell(n.newChildren![0].rowId!, 0, false);
+            _controller.selectCell(n.newChildren![0].rowId!, 0, false, false);
           } else {
             _controller.selectCell(
               n.newChildren![(found + 1) % n.newChildren!.length].rowId!,
               0,
-              false
+              false, false
             );
           }
         };

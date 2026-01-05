@@ -251,28 +251,28 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       ctrl.selectCell(
         max(ctrl.primarySelectedCell.x - 1, 0),
         ctrl.primarySelectedCell.y,
-        false,
+        false, true
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowDown) {
       ctrl.selectCell(
         ctrl.primarySelectedCell.x + 1,
         ctrl.primarySelectedCell.y,
-        false,
+        false, true
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowLeft) {
       ctrl.selectCell(
         ctrl.primarySelectedCell.x,
         max(0, ctrl.primarySelectedCell.y - 1),
-        false,
+        false, true
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowRight) {
       ctrl.selectCell(
         ctrl.primarySelectedCell.x,
         ctrl.primarySelectedCell.y + 1,
-        false,
+        false, true
       );
       return KeyEventResult.handled;
     }
@@ -395,7 +395,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
             controller.primarySelectedCell.y != dataCol) {
           controller.editingMode = false;
         }
-        controller.selectCell(dataRow, dataCol, false);
+        controller.selectCell(dataRow, dataCol, false, true);
         _focusNode.requestFocus();
       },
       onDoubleTap: () {
@@ -406,9 +406,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       },
       onSave: (newValue, {bool moveUp = false}) {
         if (moveUp) {
-          controller.selectCell(max(0, dataRow - 1), dataCol, false);
+          controller.selectCell(max(0, dataRow - 1), dataCol, false, true);
         } else {
-          controller.selectCell(dataRow + 1, dataCol, false);
+          controller.selectCell(dataRow + 1, dataCol, false, true);
         }
         controller.stopEditing();
         _focusNode.requestFocus();

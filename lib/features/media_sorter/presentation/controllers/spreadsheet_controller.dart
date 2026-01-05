@@ -550,8 +550,8 @@ class SpreadsheetController extends ChangeNotifier {
     saveAndCalculate();
   }
 
-  void selectCell(int row, int col, bool keepSelection) {
-    _selectionManager.setPrimarySelection(row, col, keepSelection);
+  void selectCell(int row, int col, bool keepSelection, bool updateMentions) {
+    _selectionManager.setPrimarySelection(row, col, keepSelection, updateMentions);
   }
 
   bool isPrimarySelectedCell(int row, int col) {

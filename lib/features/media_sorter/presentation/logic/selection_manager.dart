@@ -11,7 +11,7 @@ class SelectionManager {
 
   SelectionManager(this._controller);
 
-  void setPrimarySelection(int row, int col, bool keepSelection) {
+  void setPrimarySelection(int row, int col, bool keepSelection, bool updateMentions) {
     if (!keepSelection) {
       selectedCells.clear();
     }
@@ -19,10 +19,12 @@ class SelectionManager {
     _controller.saveLastSelection(_controller.selection);
 
     // Update Mentions
-    _controller.mentionsRoot.newChildren = null;
-    _controller.mentionsRoot.rowId = row;
-    _controller.mentionsRoot.colId = col;
-    _controller.populateTree([_controller.mentionsRoot]);
+    if (updateMentions) {
+      _controller.mentionsRoot.newChildren = null;
+      _controller.mentionsRoot.rowId = row;
+      _controller.mentionsRoot.colId = col;
+      _controller.populateTree([_controller.mentionsRoot]);
+    }
 
     // Request scroll to visible
     _controller.triggerScrollTo(row, col);
@@ -42,6 +44,6 @@ class SelectionManager {
         selectedCells.add(Point(r, c));
       }
     }
-    setPrimarySelection(0, 0, true);
+    setPrimarySelection(0, 0, true, true);
   }
 }
