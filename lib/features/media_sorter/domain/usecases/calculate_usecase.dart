@@ -59,7 +59,6 @@ class CalculateUsecase {
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
   Map<Attribute, Map<int, List<int>>> attToRefFromAttColToCol = {};
-  Map<int, Map<Attribute, int>> rowToAttToCol = {};
 
   /// Maps attribute identifiers (row index or name)
   /// to a map of mentioners (row index) to the column index
@@ -127,7 +126,6 @@ class CalculateUsecase {
     result.pathIndexes = pathIndexes;
     result.attToRefFromAttColToCol = attToRefFromAttColToCol;
     result.attToRefFromDepColToCol = attToRefFromDepColToCol;
-    result.rowToAtt = rowToAttToCol;
     result.toMentioners = attToRefFromDepColToCol;
     result.instrTable = instrTable;
     result.colToAtt = colToAtt;
@@ -239,7 +237,6 @@ class CalculateUsecase {
 
   void dfsIterative(
     Map<Attribute, Map<int, List<int>>> graph,
-    Map<Attribute, Map<int, List<int>>> accumulator,
     String warningMsgPrefix,
   ) {
     final visited = <Attribute>{};
@@ -254,7 +251,7 @@ class CalculateUsecase {
       while (stack.isNotEmpty) {
         Attribute att = stack[stack.length - 1]; // peek
         if (path.isNotEmpty && path[path.length - 1] == att) {
-          Map<int, List<int>> rowsToCol = accumulator[att] ?? {};
+          Map<int, List<int>> rowsToCol = graph[att] ?? {};
 
           for (final rowId in rowsToCol.keys.toList()) {
             Map<int, List<int>>? childRowsToCol = graph[Attribute.row(rowId)];
@@ -518,9 +515,6 @@ class CalculateUsecase {
       }
     }
     tableToAtt[rowId][colId].add(att);
-    if (!fromDep) {
-      rowToAttToCol[rowId]![att] = colId;
-    }
     return att;
   }
 
@@ -561,7 +555,6 @@ class CalculateUsecase {
     List<NodeStruct> children = [];
     attToRefFromAttColToCol = {};
     attToCol = {};
-    rowToAttToCol = {for (var i = 0; i < rowCount; i++) i: {}};
     for (int rowId = 1; rowId < rowCount; rowId++) {
       final row = table[rowId];
       for (int colId = 0; colId < colCount; colId++) {
@@ -686,7 +679,7 @@ class CalculateUsecase {
       );
     }
 
-    dfsIterative(attToRefFromAttColToCol, attToRefFromAttColToCol, "attribute");
+    dfsIterative(attToRefFromAttColToCol, "attribute");
 
     if (errorRoot.newChildren!.isNotEmpty) {
       return;
@@ -1169,7 +1162,21 @@ class CalculateUsecase {
       }
     }
 
-    // dfsIterative(rowToAttToCol, instrTable, "instruction");
+    for (Attribute att in attToRefFromAttColToCol.keys) {
+      if (att.colId == notUsedCst) {
+        continue;
+      }
+      for (final rowId in attToRefFromAttColToCol[att]!.keys) {
+        if (!isMedium[rowId]) {
+          continue;
+        }
+        for (InstrStruct instr in instrTable[att.rowId!].keys) {
+          if (!instrTable[rowId].containsKey(instr)) {
+            instrTable[rowId][instr] = -1;
+          }
+        }
+      }
+    }
 
     // // Detect cycles in instrTable
     // bool hasCycle(instrTable, visited, List<DynAndInt> stack, node, {bool after = true}) {
