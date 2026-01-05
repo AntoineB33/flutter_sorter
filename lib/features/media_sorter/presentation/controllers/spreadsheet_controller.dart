@@ -653,6 +653,8 @@ class SpreadsheetController extends ChangeNotifier {
   String? currentInitialInput; // Add this field
 
   void startEditing({String? initialInput}) {
+    previousContent =
+        getContent(primarySelectedCell.x, primarySelectedCell.y);
     currentInitialInput = initialInput; // Store it
     editingMode = true;
     notifyListeners();
@@ -675,5 +677,7 @@ class SpreadsheetController extends ChangeNotifier {
       editingMode &&
       primarySelectedCell.x == row &&
       primarySelectedCell.y == col;
+  
+  String previousContent = '';
 
 }

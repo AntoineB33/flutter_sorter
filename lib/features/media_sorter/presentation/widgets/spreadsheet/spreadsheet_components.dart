@@ -84,11 +84,13 @@ class SpreadsheetDataCell extends StatefulWidget {
   final bool isPrimarySelectedCell;
   final bool isSelected;
   final bool isEditing;
+  final String previousContent;
   final String? initialEditText;
   final VoidCallback onTap;
   final VoidCallback onDoubleTap;
   final ValueChanged<String>? onChanged;
   final void Function(String value, {bool moveUp}) onSave;
+  final void Function(String previousContent) onEscape;
 
   const SpreadsheetDataCell({
     super.key,
@@ -98,11 +100,13 @@ class SpreadsheetDataCell extends StatefulWidget {
     required this.isPrimarySelectedCell,
     required this.isSelected,
     required this.isEditing,
-    this.initialEditText,
+    required this.previousContent,
+    required this.initialEditText,
     required this.onTap,
     required this.onDoubleTap,
-    this.onChanged,
+    required this.onChanged,
     required this.onSave,
+    required this.onEscape,
   });
 
   @override
@@ -112,7 +116,7 @@ class SpreadsheetDataCell extends StatefulWidget {
 class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
   late TextEditingController _textController;
   final FocusNode _editFocusNode = FocusNode();
-  
+   
   // Variables for manual double-tap detection
   int _lastTapTime = 0;
   static const int _doubleTapTimeout = 300; 
@@ -120,8 +124,6 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
   @override
   void initState() {
     super.initState();
-    // 3. Determine initial text: If initialEditText is provided, use it (overwrite). 
-    // Otherwise use existing content (append/edit).
     final String startText = (widget.isEditing && widget.initialEditText != null)
         ? widget.initialEditText!
         : widget.content;
@@ -137,10 +139,8 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
   void didUpdateWidget(SpreadsheetDataCell oldWidget) {
     super.didUpdateWidget(oldWidget);
     
-    // 4. Handle transition into Edit Mode
+    // Handle transition into Edit Mode
     if (widget.isEditing && !oldWidget.isEditing) {
-      // If we have specific initial text (e.g. user typed 'A'), use that.
-      // Otherwise, keep the old content.
       if (widget.initialEditText != null) {
         _textController.text = widget.initialEditText!;
       } else {
@@ -162,7 +162,7 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
     _editFocusNode.dispose();
     super.dispose();
   }
-  
+   
   void _handleTap() {
     final int now = DateTime.now().millisecondsSinceEpoch;
     
@@ -191,6 +191,8 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
       text: newText,
       selection: TextSelection.collapsed(offset: start + 1), // Move cursor after \n
     );
+    // Trigger onChanged manually since direct controller manipulation doesn't always fire it
+    widget.onChanged?.call(newText);
   }
 
   @override
@@ -201,17 +203,37 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
           color: Colors.white,
           border: Border.all(color: Colors.blue, width: 2.0),
         ),
+        // -------------------------------------------------------------
+        // SHORTCUTS IMPLEMENTATION
+        // -------------------------------------------------------------
         child: CallbackShortcuts(
           bindings: {
-             // ... (Keep existing bindings)
+            // 1. Ctrl + Enter = Insert New Line
+            // (Note: This overrides the default behavior, so we use our helper)
+            const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
+              _insertNewline();
+            },
+            // 2. Shift + Enter = Save & Move Up
+            const SingleActivator(LogicalKeyboardKey.enter, shift: true): () {
+              widget.onSave(_textController.text, moveUp: true);
+            },
+            // 3. Enter (no modifiers) = Save & Move Down
+            // We define this last so modifiers take precedence, though SingleActivator handles matching well.
+            const SingleActivator(LogicalKeyboardKey.enter): () {
+              widget.onSave(_textController.text, moveUp: false);
+            },
+
+            // 4. Escape = Cancel Edit
+            const SingleActivator(LogicalKeyboardKey.escape): () {
+              widget.onEscape(widget.previousContent);
+            },
           },
           child: TextField(
             controller: _textController,
             focusNode: _editFocusNode,
             autofocus: true,
-            maxLines: null,
+            maxLines: null, // Allows multiline
             minLines: 1,
-            // 3. Hook up the onChanged callback here
             onChanged: widget.onChanged, 
             decoration: const InputDecoration(
               contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -219,13 +241,14 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
               isDense: true,
             ),
             style: const TextStyle(fontSize: 14),
-            onSubmitted: (value) => widget.onSave(value),
+            // onSubmitted handles software keyboards (mobile "Done" button)
+            onSubmitted: (value) => widget.onSave(value, moveUp: false),
           ),
         ),
       );
     }
 
-    // 2. View Mode
+    // View Mode
     return InkWell(
       onTap: _handleTap,
       child: Container(

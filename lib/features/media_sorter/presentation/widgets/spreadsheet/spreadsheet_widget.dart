@@ -224,7 +224,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     SpreadsheetController ctrl,
   ) {
 
-    if (event is! KeyDownEvent) {
+    if (ctrl.editingMode) {
+      return KeyEventResult.ignored;
+    }
+
+    if (event is KeyUpEvent) {
       return KeyEventResult.ignored;
     }
 
@@ -234,23 +238,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         HardwareKeyboard.instance.isControlPressed ||
         HardwareKeyboard.instance.isMetaPressed;
     final isAlt = HardwareKeyboard.instance.isAltPressed;
-    final isShift = HardwareKeyboard.instance.isShiftPressed;
-    
-
-    if (ctrl.editingMode) {
-      if (logicalKey == LogicalKeyboardKey.escape) {
-        ctrl.updateCell(ctrl.primarySelectedCell.x, ctrl.primarySelectedCell.y, '');
-        ctrl.stopEditing();
-        return KeyEventResult.handled;
-      // } else if (logicalKey == LogicalKeyboardKey.enter ||
-      //   logicalKey == LogicalKeyboardKey.numpadEnter) {
-      //   if (isShift) {
-          
-      //   }
-      } else {
-        return KeyEventResult.ignored;
-      }
-    }
 
     // ENTER KEY LOGIC
     if (logicalKey == LogicalKeyboardKey.enter ||
@@ -394,6 +381,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       isPrimarySelectedCell: controller.isPrimarySelectedCell(dataRow, dataCol),
       isSelected: controller.isCellSelected(dataRow, dataCol),
       isEditing: isEditingCell,
+      previousContent: controller.previousContent,
       initialEditText: isEditingCell ? controller.currentInitialInput : null,
       onTap: () {
         if (controller.primarySelectedCell.x != dataRow ||
@@ -410,12 +398,17 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         controller.saveEdit(newValue);
       },
       onSave: (newValue, {bool moveUp = false}) {
-        controller.stopEditing();
         if (moveUp) {
           controller.selectCell(max(0, dataRow - 1), dataCol, false);
         } else {
           controller.selectCell(dataRow + 1, dataCol, false);
         }
+        controller.stopEditing();
+        _focusNode.requestFocus();
+      },
+      onEscape: (String previousContent) {
+        controller.updateCell(controller.primarySelectedCell.x, controller.primarySelectedCell.y, previousContent);
+        controller.stopEditing();
         _focusNode.requestFocus();
       },
     );
