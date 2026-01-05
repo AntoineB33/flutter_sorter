@@ -293,6 +293,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     } else if (keyLabel == 'delete') {
       ctrl.delete();
       return KeyEventResult.handled;
+    } else if (isControl && keyLabel == 'z') {
+      ctrl.undo();
+      return KeyEventResult.handled;
+    } else if (isControl && keyLabel == 'y') {
+      ctrl.redo();
+      return KeyEventResult.handled;
     }
 
     // 3. TYPING TO EDIT LOGIC (New)
@@ -357,6 +363,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return SpreadsheetColumnHeader(
         label: controller.getColumnLabel(c - 1),
         colIndex: c - 1,
+        backgroundColor: controller.getColumnType(c - 1).color,
         onContextMenu: (details) => _showColumnContextMenu(
           context,
           controller,
@@ -421,7 +428,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     int col,
   ) async {
     final currentType = controller.getColumnType(col);
-    final result = await showMenu<String>(
+    final result = await showMenu<ColumnType>(
       context: context,
       position: RelativeRect.fromLTRB(
         position.dx,
@@ -430,9 +437,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         position.dy,
       ),
       items: ColumnType.values.map((entry) {
-        return CheckedPopupMenuItem<String>(
-          value: entry.name,
-          checked: entry.name == currentType,
+        return CheckedPopupMenuItem<ColumnType>(
+          value: entry,
+          checked: entry == currentType,
           child: Row(
             children: [
               Icon(Icons.circle, color: ColumnTypeX(entry).color, size: 12),

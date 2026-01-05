@@ -19,6 +19,7 @@ class SelectionManager {
     _controller.saveLastSelection(_controller.selection);
 
     // Update Mentions
+    _controller.mentionsRoot.newChildren = null;
     _controller.mentionsRoot.rowId = row;
     _controller.mentionsRoot.colId = col;
     _controller.populateTree([_controller.mentionsRoot]);

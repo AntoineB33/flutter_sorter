@@ -25,6 +25,25 @@ import 'package:trying_flutter/features/media_sorter/presentation/constants/page
 import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
 import 'dart:io';
 
+class CellUpdateHistory {
+  Point<int> cell;
+  String previousValue;
+  String newValue;
+  CellUpdateHistory({required this.cell, required this.previousValue, required this.newValue});
+}
+
+class UpdateHistory {
+  static const String updateCellContent = "updateCellContent";
+  static const String updateColumnType = "updateColumnType";
+  final String key;
+  final DateTime timestamp;
+  final List<CellUpdateHistory>? updatedCells = [];
+  int? colId;
+  ColumnType? previousColumnType;
+  ColumnType? newColumnType;
+  UpdateHistory({required this.key, required this.timestamp, this.colId, this.previousColumnType, this.newColumnType});
+}
+
 class SpreadsheetController extends ChangeNotifier {
   int saveDelayMs = 500;
 
@@ -54,37 +73,18 @@ class SpreadsheetController extends ChangeNotifier {
   List<String> availableSheets = [];
   Map<String, SheetModel> loadedSheetsData = {};
   Map<String, SelectionModel> lastSelectedCells = {};
+  UpdateHistory? currentUpdateHistory;
 
   // Dimensions
   bool _isLoading = false;
 
   int all = SpreadsheetConstants.all;
 
-  final NodeStruct errorRoot = NodeStruct(
-    instruction: SpreadsheetConstants.errorMsg,
-    newChildren: [],
-    hideIfEmpty: true,
-  );
-  final NodeStruct warningRoot = NodeStruct(
-    instruction: SpreadsheetConstants.warningMsg,
-    newChildren: [],
-    hideIfEmpty: true,
-  );
   final NodeStruct mentionsRoot = NodeStruct(
-    instruction: SpreadsheetConstants.selectionMsg,
-    newChildren: [],
+    instruction: SpreadsheetConstants.selectionMsg
   );
   final NodeStruct searchRoot = NodeStruct(
-    instruction: SpreadsheetConstants.searchMsg,
-    newChildren: [],
-  );
-  final NodeStruct categoriesRoot = NodeStruct(
-    instruction: SpreadsheetConstants.categoryMsg,
-    newChildren: [],
-  );
-  final NodeStruct distPairsRoot = NodeStruct(
-    instruction: SpreadsheetConstants.distPairsMsg,
-    newChildren: [],
+    instruction: SpreadsheetConstants.searchMsg
   );
 
   /// 2D table of attribute identifiers (row index or name)
@@ -263,28 +263,7 @@ class SpreadsheetController extends ChangeNotifier {
       for (var r = 0; r < rowCount; r++) {
         sheet.table[r].addAll(List.filled(needed, '', growable: true));
       }
-      sheet.columnTypes.addAll(List.filled(needed, ColumnType.attributes.name));
-    }
-  }
-
-  void decreaseColumnCount(col) {
-    if (col == sheet.columnTypes.length - 1) {
-      bool canRemove = true;
-      while (canRemove && col > 0) {
-        for (var r = 0; r < rowCount; r++) {
-          if (sheet.table[r][col].isNotEmpty) {
-            canRemove = false;
-            break;
-          }
-        }
-        if (canRemove) {
-          for (var r = 0; r < rowCount; r++) {
-            sheet.table[r].removeLast();
-          }
-          col--;
-        }
-      }
-      sheet.columnTypes = sheet.columnTypes.sublist(0, col + 1);
+      sheet.columnTypes.addAll(List.filled(needed, ColumnType.attributes));
     }
   }
 
@@ -358,7 +337,7 @@ class SpreadsheetController extends ChangeNotifier {
     return getDefaultRowHeight();
   }
 
-  void updateCell(int row, int col, String newValue) {
+  void updateCell(int row, int col, String newValue, {bool updateHistory = true}) {
     String prevValue = '';
     if (newValue.isNotEmpty || (row < rowCount && col < colCount)) {
       if (row >= rowCount) {
@@ -382,7 +361,34 @@ class SpreadsheetController extends ChangeNotifier {
         (row == rowCount - 1 || col == colCount - 1) &&
         prevValue.isNotEmpty) {
       decreaseRowCount(row);
-      decreaseColumnCount(col);
+      if (col == colCount - 1) {
+        bool canRemove = true;
+        while (canRemove && col > 0) {
+          for (var r = 0; r < rowCount; r++) {
+            if (sheet.table[r][col].isNotEmpty) {
+              canRemove = false;
+              break;
+            }
+          }
+          if (canRemove) {
+            for (var r = 0; r < rowCount; r++) {
+              sheet.table[r].removeLast();
+            }
+            col--;
+          }
+        }
+      }
+    }
+    if (updateHistory) {
+      currentUpdateHistory ??= UpdateHistory(
+          key: UpdateHistory.updateCellContent,
+          timestamp: DateTime.now(),
+        );
+      currentUpdateHistory!.updatedCells!.add(CellUpdateHistory(
+        cell: Point(row, col),
+        previousValue: prevValue,
+        newValue: newValue,
+      ));
     }
     
     if (row >= rowCount || col >= colCount) {
@@ -451,13 +457,20 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   // --- Column Logic ---
-  String getColumnType(int col) {
-    if (col >= colCount) return ColumnType.attributes.name;
+  ColumnType getColumnType(int col) {
+    if (col >= colCount) return ColumnType.attributes;
     return sheet.columnTypes[col];
   }
 
   void saveAndCalculate({bool save = true}) {
     if (save) {
+      if (sheet.historyIndex < sheet.updateHistories.length - 1) {
+        sheet.updateHistories =
+            sheet.updateHistories.sublist(0, sheet.historyIndex + 1);
+      }
+      sheet.updateHistories.add(currentUpdateHistory!);
+      sheet.historyIndex++;
+      currentUpdateHistory = null;
       _saveExecutors[sheetName]!.execute(() async {
         await _saveSheetDataUseCase.saveSheet(sheetName, sheet);
         await Future.delayed(Duration(milliseconds: saveDelayMs));
@@ -476,12 +489,6 @@ class SpreadsheetController extends ChangeNotifier {
       },
       onComplete: (AnalysisResult result) {
         nodesUsecase = NodesUsecase(result);
-        errorRoot.newChildren = result.errorRoot.newChildren;
-        warningRoot.newChildren = result.warningRoot.newChildren;
-        mentionsRoot.newChildren = result.mentionsRoot.newChildren;
-        searchRoot.newChildren = result.searchRoot.newChildren;
-        categoriesRoot.newChildren = result.categoriesRoot.newChildren;
-        distPairsRoot.newChildren = result.distPairsRoot.newChildren;
 
         tableToAtt = result.tableToAtt;
         names = result.names;
@@ -495,15 +502,17 @@ class SpreadsheetController extends ChangeNotifier {
         toMentioners = result.toMentioners;
         instrTable = result.instrTable;
         colToAtt = result.colToAtt;
+        mentionsRoot.newChildren = null;
         mentionsRoot.rowId = _selectionManager.primarySelectedCell.x;
         mentionsRoot.colId = _selectionManager.primarySelectedCell.y;
+        searchRoot.newChildren = null;
         _treeManager.populateTree([
-          errorRoot,
-          warningRoot,
+          nodesUsecase.analysisResult.errorRoot,
+          nodesUsecase.analysisResult.warningRoot,
           mentionsRoot,
           searchRoot,
-          categoriesRoot,
-          distPairsRoot,
+          nodesUsecase.analysisResult.categoriesRoot,
+          nodesUsecase.analysisResult.distPairsRoot,
         ]);
         _isLoading = false;
         notifyListeners();
@@ -511,11 +520,28 @@ class SpreadsheetController extends ChangeNotifier {
     );
   }
 
-  void setColumnType(int col, String type) {
-    if (type == ColumnType.attributes.name) {
+  void setColumnType(int col, ColumnType type, {bool updateHistory = true}) {
+    if (updateHistory) {
+      currentUpdateHistory ??= UpdateHistory(
+          key: UpdateHistory.updateColumnType,
+          timestamp: DateTime.now(),
+          colId: col,
+          previousColumnType: getColumnType(col),
+        newColumnType: type,
+      );
+    }
+    if (type == ColumnType.attributes) {
       if (col < colCount) {
         sheet.columnTypes[col] = type;
-        decreaseColumnCount(col);
+        if (col == sheet.columnTypes.length - 1) {
+          while (col > 0) {
+            col--;
+            if (sheet.columnTypes[col] != ColumnType.attributes) {
+              break;
+            }
+          }
+          sheet.columnTypes = sheet.columnTypes.sublist(0, col + 1);
+        }
       }
     } else {
       increaseColumnCount(col);
@@ -546,6 +572,9 @@ class SpreadsheetController extends ChangeNotifier {
   void toggleNodeExpansion(NodeStruct node, bool isExpanded) {
     // Logic is now in the manager
     node.isExpanded = isExpanded;
+    for (NodeStruct child in node.newChildren ?? []) {
+      child.isExpanded = false;
+    }
     _treeManager.populateTree([node]);
     notifyListeners();
   }
@@ -575,12 +604,58 @@ class SpreadsheetController extends ChangeNotifier {
     await _clipboardManager.pasteSelection();
   }
 
-  Future<void> clearSelection(bool save) async {
-    await _clipboardManager.clearSelection(save);
+  void clearSelection(bool save) {
+    _clipboardManager.clearSelection(save);
   }
 
-  Future<void> delete() async {
-    await _clipboardManager.delete();
+  void delete() {
+    _clipboardManager.delete();
+  }
+
+  void undo() {
+    if (sheet.historyIndex < 0 || sheet.updateHistories.isEmpty) {
+      return;
+    }
+    final lastUpdate = sheet.updateHistories[sheet.historyIndex];
+    if (lastUpdate.key == UpdateHistory.updateCellContent) {
+      for (var cellUpdate in lastUpdate.updatedCells!) {
+        updateCell(
+          cellUpdate.cell.x,
+          cellUpdate.cell.y,
+          cellUpdate.previousValue,
+          updateHistory: false,
+        );
+      }
+    } else if (lastUpdate.key == UpdateHistory.updateColumnType) {
+      if (lastUpdate.colId != null && lastUpdate.previousColumnType != null) {
+        setColumnType(lastUpdate.colId!, lastUpdate.previousColumnType!, updateHistory: false);
+      }
+    }
+    sheet.historyIndex--;
+    saveAndCalculate();
+  }
+
+  void redo() {
+    if (sheet.historyIndex + 1 >= sheet.updateHistories.length) {
+      return;
+    }
+    final nextUpdate = sheet.updateHistories[sheet.historyIndex + 1];
+    if (nextUpdate.key == UpdateHistory.updateCellContent) {
+      for (var cellUpdate in nextUpdate.updatedCells!) {
+        updateCell(
+          cellUpdate.cell.x,
+          cellUpdate.cell.y,
+          cellUpdate.newValue,
+          updateHistory: false,
+        );
+      }
+    } else if (nextUpdate.key == UpdateHistory.updateColumnType) {
+      if (nextUpdate.colId != null && nextUpdate.newColumnType != null) {
+        setColumnType(nextUpdate.colId!, nextUpdate.newColumnType!, updateHistory: false);
+      }
+    }
+    sheet.historyIndex++;
+    saveAndCalculate();
   }
 
   void selectAll() {

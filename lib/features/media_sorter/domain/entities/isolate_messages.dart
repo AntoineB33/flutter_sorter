@@ -1,8 +1,9 @@
 import 'dart:isolate';
+import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 
 /// A sealed class to ensure type safety when sending messages to the Isolate.
 sealed class IsolateMessage {
-  final List<String> columnTypes;
+  final List<ColumnType> columnTypes;
   const IsolateMessage(this.columnTypes);
 }
 
@@ -12,7 +13,7 @@ class RawDataMessage extends IsolateMessage {
   
   const RawDataMessage({
     required this.table, 
-    required List<String> columnTypes
+    required List<ColumnType> columnTypes
   }) : super(columnTypes);
 }
 
@@ -22,6 +23,6 @@ class TransferableDataMessage extends IsolateMessage {
 
   const TransferableDataMessage({
     required this.dataPackage, 
-    required List<String> columnTypes
+    required List<ColumnType> columnTypes
   }) : super(columnTypes);
 }

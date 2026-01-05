@@ -21,12 +21,14 @@ class SpreadsheetSelectAllCorner extends StatelessWidget {
 class SpreadsheetColumnHeader extends StatelessWidget {
   final String label;
   final int colIndex;
+  final Color backgroundColor;
   final Function(TapDownDetails) onContextMenu;
 
   const SpreadsheetColumnHeader({
     super.key,
     required this.label,
     required this.colIndex,
+    required this.backgroundColor,
     required this.onContextMenu,
   });
 
@@ -37,7 +39,7 @@ class SpreadsheetColumnHeader extends StatelessWidget {
       child: Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.grey.shade300,
+          color: backgroundColor,
           border: Border(
             right: BorderSide(color: Colors.grey.shade400),
             bottom: BorderSide(color: Colors.grey.shade400),

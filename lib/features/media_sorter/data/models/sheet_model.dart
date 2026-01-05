@@ -1,9 +1,15 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_controller.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 
 class SheetModel {
+  List<UpdateHistory> updateHistories;
+  int historyIndex;
   List<List<String>> table;
-  List<String> columnTypes;
+  List<ColumnType> columnTypes;
   List<double> rowsBottomPos;
   List<double> colRightPos;
   List<bool> rowsManuallyAdjustedHeight;
@@ -12,6 +18,8 @@ class SheetModel {
   double rowHeaderWidth;
 
   SheetModel({
+    required this.updateHistories,
+    required this.historyIndex,
     required this.table,
     required this.columnTypes,
     required this.rowsBottomPos,
@@ -24,6 +32,8 @@ class SheetModel {
 
   factory SheetModel.empty() {
     return SheetModel(
+      updateHistories: [],
+      historyIndex: -1,
       table: [],
       columnTypes: [],
       rowsBottomPos: [],
@@ -40,6 +50,27 @@ class SheetModel {
     try {
       var rawTable = json['table'] as List;
 
+      var rawUpdateHistories = json['updateHistories'] as List;
+      List<UpdateHistory> parsedUpdateHistories = rawUpdateHistories.map((uh) {
+        var updatedCellsRaw = uh['updatedCells'] as List;
+        List<CellUpdateHistory> parsedUpdatedCells = updatedCellsRaw.map((uch) {
+          var cellPoint = uch['cell'] as Map<String, dynamic>;
+          return CellUpdateHistory(
+            cell: Point<int>(
+              cellPoint['x'] as int,
+              cellPoint['y'] as int,
+            ),
+            previousValue: uch['previousValue'] as String,
+            newValue: uch['newValue'] as String,
+          );
+        }).toList();
+
+        return UpdateHistory(
+          key: uh['key'] as String,
+          timestamp: DateTime.parse(uh['timestamp'] as String),
+        )..updatedCells?.addAll(parsedUpdatedCells);
+      }).toList();
+
       // Safely convert the table, handling non-string values gracefully
       List<List<String>> parsedTable = rawTable.map((row) {
         if (row is List) {
@@ -49,7 +80,7 @@ class SheetModel {
       }).toList();
 
       var rawTypes = json['columnTypes'] as List;
-      List<String> parsedTypes = rawTypes.map((e) => e.toString()).toList();
+      List<ColumnType> parsedTypes = rawTypes.map((e) => ColumnType.values.firstWhere((ct) => ct.toString() == e.toString())).toList();
 
       List<double> parsedHeight =
           (json['rowsBottomPos'] as List).map((e) => e as double).toList();
@@ -65,6 +96,8 @@ class SheetModel {
               .toList();
 
       return SheetModel(
+        updateHistories: parsedUpdateHistories,
+        historyIndex: json['historyIndex'] as int,
         table: parsedTable,
         columnTypes: parsedTypes,
         rowsBottomPos: parsedHeight,
@@ -84,8 +117,22 @@ class SheetModel {
 
   Map<String, dynamic> toJson() {
     return {
+      'updateHistories': updateHistories.map((uh) {
+        return {
+          'key': uh.key,
+          'timestamp': uh.timestamp.toIso8601String(),
+          'updatedCells': uh.updatedCells?.map((uch) {
+            return {
+              'cell': {'x': uch.cell.x, 'y': uch.cell.y},
+              'previousValue': uch.previousValue,
+              'newValue': uch.newValue,
+            };
+          }).toList(),
+        };
+      }).toList(),
+      'historyIndex': historyIndex,
       'table': table,
-      'columnTypes': columnTypes,
+      'columnTypes': columnTypes.map((ct) => ct.toString()).toList(),
       'rowsBottomPos': rowsBottomPos,
       'colRightPos': colRightPos,
       'rowsManuallyAdjustedHeight': rowsManuallyAdjustedHeight,

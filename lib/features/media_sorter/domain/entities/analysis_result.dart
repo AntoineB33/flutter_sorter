@@ -16,14 +16,6 @@ class AnalysisResult {
     newChildren: [],
     hideIfEmpty: true,
   );
-  final NodeStruct mentionsRoot = NodeStruct(
-    instruction: SpreadsheetConstants.selectionMsg,
-    newChildren: [],
-  );
-  final NodeStruct searchRoot = NodeStruct(
-    instruction: SpreadsheetConstants.searchMsg,
-    newChildren: [],
-  );
   final NodeStruct categoriesRoot = NodeStruct(
     instruction: SpreadsheetConstants.categoryMsg,
     newChildren: [],

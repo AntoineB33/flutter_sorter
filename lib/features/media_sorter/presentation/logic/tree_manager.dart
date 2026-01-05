@@ -31,9 +31,9 @@ class TreeManager {
       return;
     }
     node.newChildren = [];
-    if (_controller.sheet.columnTypes[colId] == ColumnType.names.name ||
-        _controller.sheet.columnTypes[colId] == ColumnType.filePath.name ||
-        _controller.sheet.columnTypes[colId] == ColumnType.urls.name) {
+    if (_controller.sheet.columnTypes[colId] == ColumnType.names ||
+        _controller.sheet.columnTypes[colId] == ColumnType.filePath ||
+        _controller.sheet.columnTypes[colId] == ColumnType.urls) {
       node.newChildren!.add(
         NodeStruct(
           message: _controller.sheet.table[rowId][colId],

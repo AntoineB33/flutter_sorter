@@ -78,7 +78,7 @@ class ClipboardManager {
     _controller.saveAndCalculate();
   }
 
-  Future<void> clearSelection(bool save) async {
+  void clearSelection(bool save) {
     for (Point<int> cell in _controller.selection.selectedCells) {
       _controller.updateCell(cell.x, cell.y, '');
     }
@@ -88,7 +88,7 @@ class ClipboardManager {
     }
   }
 
-  Future<void> delete() async {
+  void delete() {
     for (Point<int> cell in _controller.selection.selectedCells) {
       _controller.updateCell(cell.x, cell.y, '');
     }

@@ -18,7 +18,7 @@ class CalculateUsecase {
   late final NodesUsecase nodesUsecase;
 
   List<List<String>> table = [];
-  List<String> columnTypes = [];
+  List<ColumnType> columnTypes = [];
 
   final NodeStruct errorRoot = NodeStruct(
     instruction: SpreadsheetConstants.errorMsg,
@@ -82,10 +82,15 @@ class CalculateUsecase {
     : result = AnalysisResult() {
     nodesUsecase = NodesUsecase(result);
   }
+  
+  ColumnType getColumnType(int col) {
+    if (col >= colCount) return ColumnType.attributes;
+    return columnTypes[col];
+  }
 
   IsolateMessage getMessage(
     List<List<String>> table,
-    List<String> columnTypes,
+    List<ColumnType> columnTypes,
   ) {
     if (table.length < 5000) {
       return RawDataMessage(table: table, columnTypes: columnTypes);
@@ -111,8 +116,6 @@ class CalculateUsecase {
     var result = AnalysisResult();
     result.errorRoot.newChildren = errorRoot.newChildren;
     result.warningRoot.newChildren = warningRoot.newChildren;
-    result.mentionsRoot.newChildren = mentionsRoot.newChildren;
-    result.searchRoot.newChildren = searchRoot.newChildren;
     result.categoriesRoot.newChildren = categoriesRoot.newChildren;
     result.distPairsRoot.newChildren = distPairsRoot.newChildren;
 
@@ -151,11 +154,6 @@ class CalculateUsecase {
     } else {
       throw Exception("Invalid data package type");
     }
-  }
-
-  String getColumnType(int col) {
-    if (col >= colCount) return ColumnType.attributes.name;
-    return columnTypes[col];
   }
 
   List<String> generateUniqueStrings(int n) {
@@ -258,7 +256,7 @@ class CalculateUsecase {
         if (path.isNotEmpty && path[path.length - 1] == att) {
           Map<int, List<int>> rowsToCol = accumulator[att] ?? {};
 
-          for (final rowId in rowsToCol.keys) {
+          for (final rowId in rowsToCol.keys.toList()) {
             Map<int, List<int>>? childRowsToCol = graph[Attribute.row(rowId)];
             if (childRowsToCol != null) {
               for (int childRowId in childRowsToCol.keys) {
@@ -453,9 +451,10 @@ class CalculateUsecase {
       return att;
     }
     var fromDep =
-        columnTypes[colId] != ColumnType.attributes.name &&
-        columnTypes[colId] != ColumnType.sprawl.name;
-    final numK = int.tryParse(name);
+        columnTypes[colId] != ColumnType.attributes &&
+        columnTypes[colId] != ColumnType.sprawl;
+    int? numK = int.tryParse(name);
+    numK ??= names[name]?.rowId;
     if (numK != null) {
       if (attColId != notUsedCst) {
         errorRoot.newChildren!.add(
@@ -479,8 +478,8 @@ class CalculateUsecase {
     } else {
       // TODO: validate attribute name
       if (attColId != notUsedCst) {
-        if (columnTypes[attColId] != ColumnType.attributes.name &&
-            columnTypes[attColId] != ColumnType.sprawl.name) {
+        if (columnTypes[attColId] != ColumnType.attributes &&
+            columnTypes[attColId] != ColumnType.sprawl) {
           errorRoot.newChildren!.add(
             NodeStruct(
               message:
@@ -508,19 +507,19 @@ class CalculateUsecase {
         attColId = colId;
       }
       att = Attribute(name: name, colId: attColId);
+      colToAtt[attColId]!.add(att);
+      if (!attToCol.containsKey(attWritten)) {
+        attToCol[attWritten] = [];
+      }
+      if (attColId != all) {
+        if (attToCol[attWritten]!.contains(attColId) == false) {
+          attToCol[attWritten]!.add(attColId);
+        }
+      }
     }
     tableToAtt[rowId][colId].add(att);
     if (!fromDep) {
       rowToAttToCol[rowId]![att] = colId;
-    }
-    colToAtt[attColId]!.add(att);
-    if (!attToCol.containsKey(attWritten)) {
-      attToCol[attWritten] = [];
-    }
-    if (attColId != all) {
-      if (attToCol[attWritten]!.contains(attColId) == false) {
-        attToCol[attWritten]!.add(attColId);
-      }
     }
     return att;
   }
@@ -538,8 +537,8 @@ class CalculateUsecase {
     isMedium = List<bool>.filled(rowCount, false);
     for (int rowId = 1; rowId < rowCount; rowId++) {
       for (int colId = 0; colId < colCount; colId++) {
-        if (columnTypes[colId] == ColumnType.filePath.name ||
-            columnTypes[colId] == ColumnType.urls.name) {
+        if (columnTypes[colId] == ColumnType.filePath ||
+            columnTypes[colId] == ColumnType.urls) {
           isMedium[rowId] = isMedium[rowId] || table[rowId][colId].isNotEmpty;
         }
       }
@@ -554,8 +553,8 @@ class CalculateUsecase {
     colToAtt[all] = HashSet<Attribute>();
     colToAtt[notUsedCst] = HashSet<Attribute>();
     for (int colId = 0; colId < colCount; colId++) {
-      if (columnTypes[colId] == ColumnType.attributes.name ||
-          columnTypes[colId] == ColumnType.sprawl.name) {
+      if (columnTypes[colId] == ColumnType.attributes ||
+          columnTypes[colId] == ColumnType.sprawl) {
         colToAtt[colId] = HashSet<Attribute>();
       }
     }
@@ -566,12 +565,12 @@ class CalculateUsecase {
     for (int rowId = 1; rowId < rowCount; rowId++) {
       final row = table[rowId];
       for (int colId = 0; colId < colCount; colId++) {
-        final isSprawl = columnTypes[colId] == ColumnType.sprawl.name;
-        if (columnTypes[colId] == ColumnType.attributes.name || isSprawl) {
+        final isSprawl = columnTypes[colId] == ColumnType.sprawl;
+        if (columnTypes[colId] == ColumnType.attributes || isSprawl) {
           if (row[colId].isEmpty) {
             continue;
           }
-          final cellList = row[colId].split("; ");
+          final cellList = row[colId].split(";");
           for (String attWritten in cellList) {
             if (attWritten.isEmpty) {
               errorRoot.newChildren!.add(
@@ -1002,65 +1001,66 @@ class CalculateUsecase {
 
       final row = table[rowId];
       for (int colId = 0; colId < row.length; colId++) {
-        if (columnTypes[colId] == ColumnType.dependencies.name &&
+        if (columnTypes[colId] == ColumnType.dependencies &&
             row[colId].isNotEmpty) {
           // TODO: OR and AND
-          String instr = row[colId];
-          if (instr.isEmpty) continue;
-          final instrSplit = instr.split("_");
-          if (instrSplit.length != depPattern[colId].length - 1 &&
-              depPattern[colId].length > 1) {
-            errorRoot.newChildren!.add(
-              NodeStruct(
-                message:
-                    "$instr does not match dependencies pattern ${depPattern[colId]}",
-                cell: Cell(rowId: rowId, colId: colId),
-              ),
-            );
-            return;
-          }
-
-          if (depPattern[colId].length > 1) {
-            instr =
-                depPattern[colId][0] +
-                instrSplit
-                    .asMap()
-                    .entries
-                    .map((entry) {
-                      final idx = entry.key;
-                      final split = entry.value;
-                      return split + depPattern[colId][idx + 1];
-                    })
-                    .join("");
-          }
-
-          var match = RegExp(patternDistance).firstMatch(instr);
-          List<List<int>> intervals = [];
-          var isConstraint = match == null;
-
-          if (isConstraint) {
-            match = RegExp(patternAreas).firstMatch(instr);
-            if (match == null) {
+          for(String instr in row[colId].split(";")) {
+            if (instr.isEmpty) continue;
+            final instrSplit = instr.split("_");
+            if (instrSplit.length != depPattern[colId].length - 1 &&
+                depPattern[colId].length > 1) {
               errorRoot.newChildren!.add(
                 NodeStruct(
-                  message: "$instr does not match expected format",
+                  message:
+                      "$instr does not match dependencies pattern ${depPattern[colId]}",
                   cell: Cell(rowId: rowId, colId: colId),
                 ),
               );
               return;
             }
-            intervals = getIntervals(instr, rowId, colId);
+
+            if (depPattern[colId].length > 1) {
+              instr =
+                  depPattern[colId][0] +
+                  instrSplit
+                      .asMap()
+                      .entries
+                      .map((entry) {
+                        final idx = entry.key;
+                        final split = entry.value;
+                        return split + depPattern[colId][idx + 1];
+                      })
+                      .join("");
+            }
+
+            var match = RegExp(patternDistance).firstMatch(instr);
+            List<List<int>> intervals = [];
+            var isConstraint = match == null;
+
+            if (isConstraint) {
+              match = RegExp(patternAreas).firstMatch(instr);
+              if (match == null) {
+                errorRoot.newChildren!.add(
+                  NodeStruct(
+                    message: "$instr does not match expected format",
+                    cell: Cell(rowId: rowId, colId: colId),
+                  ),
+                );
+                return;
+              }
+              intervals = getIntervals(instr, rowId, colId);
+              if (errorRoot.newChildren!.isNotEmpty) {
+                return;
+              }
+            }
+
+            Attribute att = getAttAndCol(match.namedGroup('att')!, rowId, colId);
             if (errorRoot.newChildren!.isNotEmpty) {
               return;
             }
+            depCache[rowId] ??= {};
+            depCache[rowId]![colId] = (att, isConstraint, match, intervals);
           }
-
-          Attribute att = getAttAndCol(match.namedGroup('att')!, rowId, colId);
-          if (errorRoot.newChildren!.isNotEmpty) {
-            return;
-          }
-          depCache[rowId] ??= {};
-          depCache[rowId]![colId] = (att, isConstraint, match, intervals);
         }
       }
     }
@@ -1068,7 +1068,7 @@ class CalculateUsecase {
     attToRefFromDepColToCol = {};
     for (var i = 0; i < rowCount; i++) {
       for (var j = 0; j < colCount; j++) {
-        if (columnTypes[j] == ColumnType.dependencies.name) {
+        if (columnTypes[j] == ColumnType.dependencies) {
           for (final n in tableToAtt[i][j]) {
             if (!attToRefFromDepColToCol.containsKey(n)) {
               attToRefFromDepColToCol[n] = {};
@@ -1131,7 +1131,7 @@ class CalculateUsecase {
 
       final row = table[rowId];
       for (int colId = 0; colId < row.length; colId++) {
-        if (columnTypes[colId] == ColumnType.dependencies.name &&
+        if (columnTypes[colId] == ColumnType.dependencies &&
             row[colId].isNotEmpty) {
           var att = depCache[rowId]![colId]!.$1;
           var isConstraint = depCache[rowId]![colId]!.$2;
@@ -1139,9 +1139,13 @@ class CalculateUsecase {
           var intervals = depCache[rowId]![colId]!.$4;
 
           final numbers = [];
-          for (final r in attToRefFromAttColToCol[att]!.keys) {
-            if (isMedium[r]) {
-              numbers.add(r);
+          if (att.rowId != null) {
+            numbers.add(att.rowId);
+          } else {
+            for (int r in attToRefFromAttColToCol[att]?.keys ?? []) {
+              if (isMedium[r]) {
+                numbers.add(r);
+              }
             }
           }
           final mappedNumbers = numbers.map((x) => newIndexes[x]).toList();
@@ -1250,9 +1254,9 @@ class CalculateUsecase {
     pathIndexes = [];
     for (int index = 0; index < colCount; index++) {
       final role = getColumnType(index);
-      if (role == ColumnType.names.name) {
+      if (role == ColumnType.names) {
         nameIndexes.add(index);
-      } else if (role == ColumnType.filePath.name) {
+      } else if (role == ColumnType.filePath) {
         pathIndexes.add(index);
       }
     }

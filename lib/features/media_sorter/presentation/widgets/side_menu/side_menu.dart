@@ -106,12 +106,12 @@ class _SideMenuState extends State<SideMenu> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            AnalysisTreeNode(node: controller.errorRoot, controller: controller),
-                            AnalysisTreeNode(node: controller.warningRoot, controller: controller),
+                            AnalysisTreeNode(node: controller.nodesUsecase.analysisResult.errorRoot, controller: controller),
+                            AnalysisTreeNode(node: controller.nodesUsecase.analysisResult.warningRoot, controller: controller),
                             AnalysisTreeNode(node: controller.mentionsRoot, controller: controller),
                             AnalysisTreeNode(node: controller.searchRoot, controller: controller),
-                            AnalysisTreeNode(node: controller.categoriesRoot, controller: controller),
-                            AnalysisTreeNode(node: controller.distPairsRoot, controller: controller),
+                            AnalysisTreeNode(node: controller.nodesUsecase.analysisResult.categoriesRoot, controller: controller),
+                            AnalysisTreeNode(node: controller.nodesUsecase.analysisResult.distPairsRoot, controller: controller),
                           ],
                         ),
                       ),
