@@ -1163,13 +1163,10 @@ class CalculateUsecase {
     }
 
     for (Attribute att in attToRefFromAttColToCol.keys) {
-      if (att.colId == notUsedCst) {
+      if (att.rowId == null) {
         continue;
       }
       for (final rowId in attToRefFromAttColToCol[att]!.keys) {
-        if (!isMedium[rowId]) {
-          continue;
-        }
         for (InstrStruct instr in instrTable[att.rowId!].keys) {
           if (!instrTable[rowId].containsKey(instr)) {
             instrTable[rowId][instr] = -1;
@@ -1244,6 +1241,49 @@ class CalculateUsecase {
     urls = validRowIndexes.asMap().entries.map((i) {
       return urls[i.value];
     }).toList();
+
+    
+    int n = validRowIndexes.length;
+    final solver = RangeConstraintSolver(n);
+
+    // for (int rowId = 0; rowId < validRowIndexes.length; rowId++) {
+    //   for (final instr in instrTable[rowId].keys) {
+    //     if (!instr.isConstraint) {
+    //       continue;
+    //     }
+    //     for (final target in instr.numbers) {
+    //       solver.addConstraint(
+    //         newIndexes[rowId],
+    //         target,
+    //         (dist) {
+    //           for (final interval in instr.intervals) {
+    //             if (dist >= interval[0] && dist <= interval[1]) {
+    //               return true;
+    //             }
+    //           }
+    //           return false;
+    //         },
+    //       );
+    //     }
+    //   }
+    // }
+
+    // Example constraints:
+    // 0 is 3 places before 2 (dist -3) or 5+ places after (dist 5+)
+    solver.addConstraint(0, 2, (dist) => dist == -3 || dist >= 5);
+
+    // 3 is just before 4 (-1), or anywhere after (> 0)
+    solver.addConstraint(3, 4, (dist) => dist == -1 || dist > 0);
+
+    final results = solver.solve(true);
+    if (results.isEmpty) {
+      errorRoot.newChildren!.add(
+        NodeStruct(
+          message: "No valid ordering found for media",
+        ),
+      );
+      return;
+    }
 
     // TODO: solve sorting pb
     return;
@@ -1354,5 +1394,118 @@ class CalculateUsecase {
       }
     }
     _getCategories();
+  }
+}
+
+
+
+
+
+
+typedef Condition = bool Function(int dist);
+
+class Constraint {
+  final int otherVal;
+  final Condition condition;
+
+  Constraint(this.otherVal, this.condition);
+}
+
+class RangeConstraintSolver {
+  final int n;
+  final Map<int, List<Constraint>> constraints = {};
+  final List<int> pos;
+
+  RangeConstraintSolver(this.n) : pos = List.filled(n, -1) {
+    for (int i = 0; i < n; i++) {
+      constraints[i] = [];
+    }
+  }
+
+  /// Adds a constraint between value [a] and value [b].
+  /// The condition is based on the distance: pos[a] - pos[b].
+  void addConstraint(int a, int b, Condition condition) {
+    // Add forward constraint
+    constraints[a]?.add(Constraint(b, condition));
+
+    // Add inverse constraint: if dist = pos_a - pos_b, 
+    // then inverse dist' = pos_b - pos_a = -dist.
+    constraints[b]?.add(Constraint(a, (int dist) => condition(-dist)));
+  }
+
+  bool _isSafe(int val, int depth) {
+    final relevantConstraints = constraints[val] ?? [];
+    for (var constraint in relevantConstraints) {
+      int otherPos = pos[constraint.otherVal];
+      
+      // If the other value isn't placed yet, the constraint can't be violated.
+      if (otherPos != -1) {
+        int dist = depth - otherPos;
+        if (!constraint.condition(dist)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  List<List<int>> solve(bool justOne) {
+    List<List<int>> solutions = [];
+    List<int> solution = List.filled(n, 0);
+    List<bool> used = List.filled(n, false);
+    List<int> nextCandidate = List.filled(n, 0);
+
+    int depth = 0;
+    while (depth >= 0) {
+      bool placed = false;
+      int startVal = nextCandidate[depth];
+
+      for (int val = startVal; val < n; val++) {
+        if (!used[val]) {
+          if (_isSafe(val, depth)) {
+            // Place value
+            solution[depth] = val;
+            pos[val] = depth;
+            used[val] = true;
+
+            nextCandidate[depth] = val + 1;
+            depth++;
+
+            if (depth < n) {
+              nextCandidate[depth] = 0;
+            }
+            placed = true;
+            break;
+          }
+        }
+      }
+
+      if (placed) {
+        if (depth == n) {
+          // Found a solution: create a copy of the current state
+          solutions.add(List.from(solution));
+          if (justOne) {
+            break;
+          }
+          
+          // Backtrack to find more solutions
+          depth--;
+          int valToRemove = solution[depth];
+          used[valToRemove] = false;
+          pos[valToRemove] = -1;
+        }
+      } else {
+        // Backtrack
+        nextCandidate[depth] = 0;
+        depth--;
+        if (depth >= 0) {
+          int valToRemove = solution[depth];
+          used[valToRemove] = false;
+          pos[valToRemove] = -1;
+        }
+      }
+    }
+
+    return solutions;
   }
 }

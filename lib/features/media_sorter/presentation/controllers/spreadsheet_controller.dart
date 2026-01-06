@@ -46,6 +46,7 @@ class UpdateHistory {
 
 class SpreadsheetController extends ChangeNotifier {
   int saveDelayMs = 500;
+  int historyMaxLength = 100;
 
   late final TreeManager _treeManager;
   late final SelectionManager _selectionManager;
@@ -271,7 +272,6 @@ class SpreadsheetController extends ChangeNotifier {
     if (row == rowCount - 1) {
       while (!sheet.table[row].any((cell) => cell.isNotEmpty) && row > 0) {
         sheet.table.removeLast();
-        sheet.rowsBottomPos.removeLast();
         row--;
       }
     }
@@ -453,6 +453,12 @@ class SpreadsheetController extends ChangeNotifier {
           }
         }
       } // TODO: else
+    } else if (heightItNeeds == getDefaultRowHeight() && row == sheet.rowsBottomPos.length - 1) {
+      int i = row;
+      while (sheet.rowsBottomPos[i] == getDefaultRowHeight() && row > 0) {
+        sheet.rowsBottomPos.removeLast();
+        i--;
+      }
     }
   }
 
@@ -462,14 +468,20 @@ class SpreadsheetController extends ChangeNotifier {
     return sheet.columnTypes[col];
   }
 
-  void saveAndCalculate({bool save = true}) {
+  void saveAndCalculate({bool save = true, bool historyNavigation = false}) {
     if (save) {
-      if (sheet.historyIndex < sheet.updateHistories.length - 1) {
-        sheet.updateHistories =
-            sheet.updateHistories.sublist(0, sheet.historyIndex + 1);
+      if (!historyNavigation) {
+        if (sheet.historyIndex < sheet.updateHistories.length - 1) {
+          sheet.updateHistories =
+              sheet.updateHistories.sublist(0, sheet.historyIndex + 1);
+        }
+        sheet.updateHistories.add(currentUpdateHistory!);
+        sheet.historyIndex++;
+        if (sheet.historyIndex == historyMaxLength) {
+          sheet.updateHistories.removeAt(0);
+          sheet.historyIndex--;
+        }
       }
-      sheet.updateHistories.add(currentUpdateHistory!);
-      sheet.historyIndex++;
       currentUpdateHistory = null;
       _saveExecutors[sheetName]!.execute(() async {
         await _saveSheetDataUseCase.saveSheet(sheetName, sheet);
@@ -632,11 +644,11 @@ class SpreadsheetController extends ChangeNotifier {
       }
     }
     sheet.historyIndex--;
-    saveAndCalculate();
+    saveAndCalculate(historyNavigation: true);
   }
 
   void redo() {
-    if (sheet.historyIndex + 1 >= sheet.updateHistories.length) {
+    if (sheet.historyIndex + 1 == sheet.updateHistories.length) {
       return;
     }
     final nextUpdate = sheet.updateHistories[sheet.historyIndex + 1];
@@ -655,7 +667,7 @@ class SpreadsheetController extends ChangeNotifier {
       }
     }
     sheet.historyIndex++;
-    saveAndCalculate();
+    saveAndCalculate(historyNavigation: true);
   }
 
   void selectAll() {
@@ -731,6 +743,9 @@ class SpreadsheetController extends ChangeNotifier {
     previousContent =
         getContent(primarySelectedCell.x, primarySelectedCell.y);
     currentInitialInput = initialInput; // Store it
+    if (currentInitialInput != null) {
+      saveEdit(currentInitialInput!);
+    }
     editingMode = true;
     notifyListeners();
   }
