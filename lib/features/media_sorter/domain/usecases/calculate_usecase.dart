@@ -1244,7 +1244,7 @@ class CalculateUsecase {
 
     
     int n = validRowIndexes.length;
-    final solver = RangeConstraintSolver(n);
+    final solver = RangeConstraintSolver(8);
 
     // for (int rowId = 0; rowId < validRowIndexes.length; rowId++) {
     //   for (final instr in instrTable[rowId].keys) {
@@ -1269,11 +1269,19 @@ class CalculateUsecase {
     // }
 
     // Example constraints:
-    // 0 is 3 places before 2 (dist -3) or 5+ places after (dist 5+)
-    solver.addConstraint(0, 2, (dist) => dist == -3 || dist >= 5);
+    // 0 is 3 places before 2 (-3), or 5+ places after (5 to maxInt)
+    // Replaces: (dist) => dist == -3 || dist >= 5
+    solver.addConstraint(0, 2, [
+      [-3, -3], 
+      [5, maxInt]
+    ]);
 
-    // 3 is just before 4 (-1), or anywhere after (> 0)
-    solver.addConstraint(3, 4, (dist) => dist == -1 || dist > 0);
+    // 3 is immediately before 4 (-1), or anywhere after (> 0)
+    // Replaces: (dist) => dist == -1 || dist > 0
+    solver.addConstraint(3, 4, [
+      [-1, -1], 
+      [1, maxInt]
+    ]);
 
     final results = solver.solve(true);
     if (results.isEmpty) {
@@ -1402,12 +1410,14 @@ class CalculateUsecase {
 
 
 
-typedef Condition = bool Function(int dist);
+/// Defines the condition function signature used internally
+typedef Condition = bool Function(int);
 
+/// A simple container for the constraint logic
 class Constraint {
   final int otherVal;
   final Condition condition;
-
+  
   Constraint(this.otherVal, this.condition);
 }
 
@@ -1422,15 +1432,31 @@ class RangeConstraintSolver {
     }
   }
 
-  /// Adds a constraint between value [a] and value [b].
-  /// The condition is based on the distance: pos[a] - pos[b].
-  void addConstraint(int a, int b, Condition condition) {
-    // Add forward constraint
-    constraints[a]?.add(Constraint(b, condition));
+  /// Adds a constraint defined by a list of allowed distance intervals.
+  /// 
+  /// [a]: The value being placed.
+  /// [b]: The reference value.
+  /// [intervals]: A list of [min, max] pairs.
+  /// The constraint is satisfied if (pos[a] - pos[b]) falls within ANY of the intervals.
+  void addConstraint(int a, int b, List<List<int>> intervals) {
+    
+    // Helper function that checks if a specific distance falls into any interval
+    bool check(int dist) {
+      for (var interval in intervals) {
+        // interval[0] is min, interval[1] is max
+        if (dist >= interval[0] && dist <= interval[1]) {
+          return true;
+        }
+      }
+      return false;
+    }
 
-    // Add inverse constraint: if dist = pos_a - pos_b, 
-    // then inverse dist' = pos_b - pos_a = -dist.
-    constraints[b]?.add(Constraint(a, (int dist) => condition(-dist)));
+    // Add forward constraint: pos[a] - pos[b] must be in intervals
+    constraints[a]?.add(Constraint(b, check));
+
+    // Add inverse constraint: pos[b] - pos[a] = -(pos[a] - pos[b])
+    // We simply check if (-dist) is inside the original intervals.
+    constraints[b]?.add(Constraint(a, (int dist) => check(-dist)));
   }
 
   bool _isSafe(int val, int depth) {
@@ -1438,7 +1464,6 @@ class RangeConstraintSolver {
     for (var constraint in relevantConstraints) {
       int otherPos = pos[constraint.otherVal];
       
-      // If the other value isn't placed yet, the constraint can't be violated.
       if (otherPos != -1) {
         int dist = depth - otherPos;
         if (!constraint.condition(dist)) {
@@ -1463,7 +1488,6 @@ class RangeConstraintSolver {
       for (int val = startVal; val < n; val++) {
         if (!used[val]) {
           if (_isSafe(val, depth)) {
-            // Place value
             solution[depth] = val;
             pos[val] = depth;
             used[val] = true;
@@ -1482,20 +1506,15 @@ class RangeConstraintSolver {
 
       if (placed) {
         if (depth == n) {
-          // Found a solution: create a copy of the current state
           solutions.add(List.from(solution));
-          if (justOne) {
-            break;
-          }
+          if (justOne) break;
           
-          // Backtrack to find more solutions
           depth--;
           int valToRemove = solution[depth];
           used[valToRemove] = false;
           pos[valToRemove] = -1;
         }
       } else {
-        // Backtrack
         nextCandidate[depth] = 0;
         depth--;
         if (depth >= 0) {
