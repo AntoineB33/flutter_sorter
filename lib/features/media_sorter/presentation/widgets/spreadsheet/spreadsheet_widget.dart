@@ -410,12 +410,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         } else {
           controller.selectCell(dataRow + 1, dataCol, false, true);
         }
-        controller.stopEditing();
+        controller.stopEditing(true);
         _focusNode.requestFocus();
       },
       onEscape: (String previousContent) {
         controller.updateCell(controller.primarySelectedCell.x, controller.primarySelectedCell.y, previousContent);
-        controller.stopEditing();
+        controller.stopEditing(false);
         _focusNode.requestFocus();
       },
     );

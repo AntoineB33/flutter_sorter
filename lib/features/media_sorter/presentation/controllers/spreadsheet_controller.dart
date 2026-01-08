@@ -24,6 +24,7 @@ import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
 import 'dart:io';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sorting_service.dart';
 
 class CellUpdateHistory {
   Point<int> cell;
@@ -66,6 +67,7 @@ class SpreadsheetController extends ChangeNotifier {
   final ManageWaitingTasks<AnalysisResult> _calculateExecutor =
       ManageWaitingTasks<AnalysisResult>();
   NodesUsecase nodesUsecase = NodesUsecase(AnalysisResult());
+  bool calculatedOnce = false;
 
   SheetModel sheet = SheetModel.empty();
   String sheetName = "";
@@ -337,7 +339,7 @@ class SpreadsheetController extends ChangeNotifier {
     return getDefaultRowHeight();
   }
 
-  void updateCell(int row, int col, String newValue, {bool updateHistory = true}) {
+  void updateCell(int row, int col, String newValue, {bool keepPrevious = false, bool updateHistory = true}) {
     String prevValue = '';
     if (newValue.isNotEmpty || (row < rowCount && col < colCount)) {
       if (row >= rowCount) {
@@ -380,6 +382,9 @@ class SpreadsheetController extends ChangeNotifier {
       }
     }
     if (updateHistory) {
+      if (!keepPrevious) {
+        currentUpdateHistory = null;
+      }
       currentUpdateHistory ??= UpdateHistory(
           key: UpdateHistory.updateCellContent,
           timestamp: DateTime.now(),
@@ -468,9 +473,9 @@ class SpreadsheetController extends ChangeNotifier {
     return sheet.columnTypes[col];
   }
 
-  void saveAndCalculate({bool save = true, bool historyNavigation = false}) {
+  void saveAndCalculate({bool save = true, bool updateHistory = false}) {
     if (save) {
-      if (!historyNavigation) {
+      if (updateHistory) {
         if (sheet.historyIndex < sheet.updateHistories.length - 1) {
           sheet.updateHistories =
               sheet.updateHistories.sublist(0, sheet.historyIndex + 1);
@@ -494,10 +499,54 @@ class SpreadsheetController extends ChangeNotifier {
           sheet.table,
           sheet.columnTypes,
         );
-        return await compute(
+        AnalysisResult result = await compute(
           _isolateHandler,
           calculateUsecase.getMessage(sheet.table, sheet.columnTypes),
         );
+        
+
+    
+        final service = SortingService();
+      
+        int nVal = result.instrTable.length;
+        Map<int, List<SortingRule>> myRules = {};
+        for (int rowId = 0; rowId < nVal; rowId++) {
+          myRules[rowId] = [];
+          for (final instr in result.instrTable[rowId].keys) {
+            if (!instr.isConstraint) {
+              continue;
+            }
+            for (int target in instr.numbers) {
+              for (final interval in instr.intervals) {
+                int minVal = interval[0];
+                int maxVal = interval[1];
+                myRules[rowId]!.add(SortingRule(minVal: minVal, maxVal: maxVal, relativeTo: target));
+              }
+            }
+          }
+        }
+        // // Define constraints (mirroring your Python example)
+        // // "0 must be at index 0-1 OR 2 spots behind 5"
+        // Map<int, List<SortingRule>> myRules = {
+        //   0: [
+        //     SortingRule(minVal: 0, maxVal: 1),
+        //     SortingRule(minVal: -2, maxVal: -2, relativeTo: 5),
+        //   ],
+        //   // Add other rules here...
+        // };
+
+
+
+        debugPrint("Sending request...");
+        List<int>? result0 = await service.solveSorting(200, myRules);
+
+        if (result0 != null) {
+          debugPrint("Solution found: $result0");
+          // Update UI state here
+        } else {
+          debugPrint("No solution found.");
+        }
+        return result;
       },
       onComplete: (AnalysisResult result) {
         nodesUsecase = NodesUsecase(result);
@@ -644,7 +693,7 @@ class SpreadsheetController extends ChangeNotifier {
       }
     }
     sheet.historyIndex--;
-    saveAndCalculate(historyNavigation: true);
+    saveAndCalculate(updateHistory: false);
   }
 
   void redo() {
@@ -667,7 +716,7 @@ class SpreadsheetController extends ChangeNotifier {
       }
     }
     sheet.historyIndex++;
-    saveAndCalculate(historyNavigation: true);
+    saveAndCalculate(updateHistory: true);
   }
 
   void selectAll() {
@@ -755,9 +804,12 @@ class SpreadsheetController extends ChangeNotifier {
     saveAndCalculate();
   }
 
-  void stopEditing() {
+  void stopEditing(bool updateHistory) {
     editingMode = false;
     currentInitialInput = null;
+    if (updateHistory) {
+      saveAndCalculate(updateHistory: true);
+    }
     notifyListeners();
   }
 

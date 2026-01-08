@@ -108,7 +108,7 @@ class CalculateUsecase {
     }
   }
 
-  AnalysisResult run() {
+  AnalysisResult run()  {
     _decodeData();
     _getEverything();
 
@@ -1243,55 +1243,48 @@ class CalculateUsecase {
     }).toList();
 
     
-    int n = validRowIndexes.length;
-    final solver = RangeConstraintSolver(8);
 
-    // for (int rowId = 0; rowId < validRowIndexes.length; rowId++) {
-    //   for (final instr in instrTable[rowId].keys) {
-    //     if (!instr.isConstraint) {
-    //       continue;
-    //     }
-    //     for (final target in instr.numbers) {
-    //       solver.addConstraint(
-    //         newIndexes[rowId],
-    //         target,
-    //         (dist) {
-    //           for (final interval in instr.intervals) {
-    //             if (dist >= interval[0] && dist <= interval[1]) {
-    //               return true;
-    //             }
-    //           }
-    //           return false;
-    //         },
-    //       );
-    //     }
-    //   }
+    // final testData = TestGenerator.generateTestCaseRelative(nVal);
+    // final Map<int, List<Rule>> myRules = testData['rules'];
+    
+    // // Manual Override Example
+    // myRules[0] = [Rule(0, 1), Rule(-2, -2, relativeTo: 5)];
+    // myRules[1] = [Rule(0, 1), Rule(-2, -2, relativeTo: 5)];
+
+    // debugPrint("Solving for N=$nVal with Pure Dart Solver...");
+    
+    // final stopwatch = Stopwatch()..start();
+    // final result = ConstrainedSortSolver.solve(nVal, myRules);
+    // stopwatch.stop();
+
+    // if (result != null) {
+    //   debugPrint("Valid result found in ${stopwatch.elapsedMilliseconds}ms.");
+    //   debugPrint("Result: $result");
+    // } else {
+    //   debugPrint("No valid sorting exists.");
     // }
 
-    // Example constraints:
-    // 0 is 3 places before 2 (-3), or 5+ places after (5 to maxInt)
-    // Replaces: (dist) => dist == -3 || dist >= 5
-    solver.addConstraint(0, 2, [
-      [-3, -3], 
-      [5, maxInt]
-    ]);
 
-    // 3 is immediately before 4 (-1), or anywhere after (> 0)
-    // Replaces: (dist) => dist == -1 || dist > 0
-    solver.addConstraint(3, 4, [
-      [-1, -1], 
-      [1, maxInt]
-    ]);
 
-    final results = solver.solve(true);
-    if (results.isEmpty) {
-      errorRoot.newChildren!.add(
-        NodeStruct(
-          message: "No valid ordering found for media",
-        ),
-      );
-      return;
-    }
+
+
+
+
+
+    // // Example constraints:
+    // // 0 is 3 places before 2 (-3), or 5+ places after (5 to maxInt)
+    // // Replaces: (dist) => dist == -3 || dist >= 5
+    // solver.addConstraint(0, 2, [
+    //   [-3, -3], 
+    //   [5, maxInt]
+    // ]);
+
+    // // 3 is immediately before 4 (-1), or anywhere after (> 0)
+    // // Replaces: (dist) => dist == -1 || dist > 0
+    // solver.addConstraint(3, 4, [
+    //   [-1, -1], 
+    //   [1, maxInt]
+    // ]);
 
     // TODO: solve sorting pb
     return;

@@ -322,9 +322,9 @@ class TreeManager {
 
   void populateTree(List<NodeStruct> roots) {
     // TODO keep same expansion if the user just moved, or even if there have been changes
-    // List<int> newRowIndexes = [];
-    // List<int> newColIndexes = [];
-    // Map<String, String> newNameToOldName = {};
+    if (!_controller.calculatedOnce) {
+      return;
+    }
     for (final root in roots) {
       var stack = [root];
       while (stack.isNotEmpty) {
