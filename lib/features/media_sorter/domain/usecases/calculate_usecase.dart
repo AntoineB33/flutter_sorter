@@ -340,85 +340,76 @@ class CalculateUsecase {
 
   List<List<int>> getIntervals(String intervalStr, int row, int col) {
     // First, parse the positions of intervals
-    var intervals = [[], []];
-    var negPos = intervalStr.split("|");
-    var positive = 0;
+    if (row == 304) {
+      debugPrint("debug");
+    }
+    List<List<int>> intervals = [];
+    List<String> negPos = intervalStr.split("|");
+    int? start;
+    int? end;
 
-    for (var negPosPart in [negPos[0], negPos[2]]) {
-      var parts = negPosPart.split("_");
-      for (var part in parts) {
-        if (part.isEmpty) {
-          intervals[positive].add([null, null]);
-        } else if (part.contains(":")) {
-          var [startStr, endStr] = part.split(":");
-
-          var start = int.tryParse(startStr);
-          start ??= maxInt;
-
-          var end = int.tryParse(endStr);
-          end ??= maxInt;
-
-          if (positive == 0) {
-            start = -start;
-            end = -end;
+    for (final (positive, negPosPart)  in [negPos[0], negPos[2]].indexed) {
+      var parts = negPosPart.split("-");
+      for (final (index, part) in parts.indexed) {
+        if (part.isNotEmpty) {
+          List<String> splitPart = part.split("_");
+          if (splitPart.length != 2) {
+            errorRoot.newChildren!.add(
+              NodeStruct(
+                instruction: SpreadsheetConstants.cell,
+                message: "Invalid interval format: missing '_' in \"$part\"",
+                rowId: row,
+                colId: col,
+              ),
+            );
+            return [];
           }
-          intervals[positive].add([start, end]);
-        } else {
-          var num = int.parse(part);
-          intervals[positive].add([num, num]);
+          var [startStr, endStr] = splitPart;
+          start = int.tryParse(startStr);
+          end = int.tryParse(endStr);
+          if (start == null) {
+            if (positive == 0 && index == 0) {
+              start = maxInt;
+            } else if (positive == 1 && index == 0) {
+              start = 1;
+            } else {
+              errorRoot.newChildren!.add(
+                NodeStruct(
+                  instruction: SpreadsheetConstants.cell,
+                  message: "Invalid interval start: $startStr",
+                  rowId: row,
+                  colId: col,
+                ),
+              );
+              return [];
+            }
+          }
+          if (end == null) {
+            if (positive == 0 && index == parts.length - 1) {
+              end = 1;
+            } else if (positive == 1 && index == parts.length - 1) {
+              end = maxInt;
+            } else {
+              errorRoot.newChildren!.add(
+                NodeStruct(
+                  instruction: SpreadsheetConstants.cell,
+                  message: "Invalid interval end: $endStr",
+                  rowId: row,
+                  colId: col,
+                ),
+              );
+              return [];
+            }
+          }
+          if (positive == 0) {
+            intervals.add([-end, -start]);
+          } else {
+            intervals.add([start, end]);
+          }
         }
       }
-      positive = 1;
     }
-
-    // Now calculate underscore intervals
-    List<List<int>> resultList = [];
-    positive = 0;
-
-    for (var negPosPart in intervals) {
-      for (var i = 0; i < negPosPart.length - 1; i++) {
-        var endOfCurrent = negPosPart[i][1];
-        var startOfNext = negPosPart[i + 1][0];
-
-        if (endOfCurrent == null) {
-          if (positive == 0) {
-            endOfCurrent = -maxInt;
-          } else if (resultList.isNotEmpty &&
-              resultList[resultList.length - 1][1] == -1) {
-            endOfCurrent = resultList[resultList.length - 1][0] - 1;
-            resultList.removeLast();
-          } else {
-            endOfCurrent = 0;
-          }
-        }
-
-        if (startOfNext == null) {
-          if (positive == 0) {
-            startOfNext = 0;
-          } else {
-            startOfNext = maxInt;
-          }
-        }
-
-        if (startOfNext - endOfCurrent <= 1) {
-          errorRoot.newChildren!.add(
-            NodeStruct(
-              instruction: SpreadsheetConstants.cell,
-              message:
-                  "Invalid interval: overlapping or adjacent intervals found.",
-              rowId: row,
-              colId: col,
-            ),
-          );
-          return [];
-        }
-
-        resultList.add([endOfCurrent + 1, startOfNext - 1]);
-      }
-      positive = 1;
-    }
-
-    return resultList;
+    return intervals;
   }
 
   Attribute getAttAndCol(String attWritten, int rowId, int colId) {
@@ -860,29 +851,38 @@ class CalculateUsecase {
 
     //TODO: att1 with "att2 -appear_fst" means the first medium with att2 is a att1
     //TODO: att1 with "att2 -fst" means all media with att1 come before other media with att2
-    // for (final MapEntry(key: k, value: vList) in fstCat.entries) {
-    //   if (isMedium[k]) {
-    //     for (final v in vList) {
-    //       var t = v.$1;
-    //       while (fstCat.containsKey(t)) {
-    //         t = fstCat[t.rowId]!.$1;
-    //       }
-    //       for (final i in attToRefFromAttColToCol[t]!.keys) {
-    //         if (i != k) {
-    //           instrTable[i][InstrStruct(
-    //                 true,
-    //                 false,
-    //                 [newIndexes[k]],
-    //                 [
-    //                   [-maxInt, -1],
-    //                 ],
-    //               )] =
-    //               v.$2;
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
+    for (final MapEntry(key: k, value: vList) in fstCat.entries) {
+      if (isMedium[k]) {
+        for (final v in vList) {
+          var t = v.$1;
+          while (fstCat.containsKey(t.rowId)) {
+            t = fstCat[t.rowId]!.$1;
+          }
+          instrTable[k][InstrStruct(
+                true,
+                false,
+                attToRefFromAttColToCol[t]!.keys.where((key) => isMedium[key]).map((entry) => newIndexes[entry]).toList(),
+                [
+                  [1, maxInt],
+                ],
+              )] =
+              v.$2;
+          for (final i in attToRefFromAttColToCol[t]!.keys) {
+            if (i != k) {
+              instrTable[i][InstrStruct(
+                    true,
+                    false,
+                    [newIndexes[k]],
+                    [
+                      [-maxInt, -1],
+                    ],
+                  )] =
+                  v.$2;
+            }
+          }
+        }
+      }
+    }
 
     // for (final MapEntry(key: k, value: v) in lstCat.entries) {
     //   if (isMedium[k]) {
@@ -1132,13 +1132,12 @@ class CalculateUsecase {
           var intervals = depCache[rowId]![colId]!.$4;
 
           final numbers = [];
-          if (att.rowId != null) {
+          if (att.rowId != null && isMedium[att.rowId!]) {
             numbers.add(att.rowId);
-          } else {
-            for (int r in attToRefFromAttColToCol[att]?.keys ?? []) {
-              if (isMedium[r]) {
-                numbers.add(r);
-              }
+          }
+          for (int r in attToRefFromAttColToCol[att]?.keys ?? []) {
+            if (isMedium[r]) {
+              numbers.add(r);
             }
           }
           final mappedNumbers = numbers.map((x) => newIndexes[x]).toList();
@@ -1285,6 +1284,8 @@ class CalculateUsecase {
     //   [-1, -1], 
     //   [1, maxInt]
     // ]);
+
+    instrTable = instrTable.asMap().entries.where((entry) => isMedium[entry.key]).map((entry) => entry.value).toList();
 
     // TODO: solve sorting pb
     return;

@@ -223,7 +223,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     KeyEvent event,
     SpreadsheetController ctrl,
   ) {
-
     if (ctrl.editingMode) {
       return KeyEventResult.ignored;
     }
@@ -251,28 +250,32 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       ctrl.selectCell(
         max(ctrl.primarySelectedCell.x - 1, 0),
         ctrl.primarySelectedCell.y,
-        false, true
+        false,
+        true,
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowDown) {
       ctrl.selectCell(
         ctrl.primarySelectedCell.x + 1,
         ctrl.primarySelectedCell.y,
-        false, true
+        false,
+        true,
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowLeft) {
       ctrl.selectCell(
         ctrl.primarySelectedCell.x,
         max(0, ctrl.primarySelectedCell.y - 1),
-        false, true
+        false,
+        true,
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowRight) {
       ctrl.selectCell(
         ctrl.primarySelectedCell.x,
         ctrl.primarySelectedCell.y + 1,
-        false, true
+        false,
+        true,
       );
       return KeyEventResult.handled;
     }
@@ -393,7 +396,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       onTap: () {
         if (controller.primarySelectedCell.x != dataRow ||
             controller.primarySelectedCell.y != dataCol) {
-          controller.editingMode = false;
+          controller.stopEditing(true);
         }
         controller.selectCell(dataRow, dataCol, false, true);
         _focusNode.requestFocus();
@@ -402,7 +405,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         controller.startEditing();
       },
       onChanged: (newValue) {
-        controller.saveEdit(newValue);
+        controller.onChanged(newValue);
       },
       onSave: (newValue, {bool moveUp = false}) {
         if (moveUp) {
@@ -414,7 +417,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         _focusNode.requestFocus();
       },
       onEscape: (String previousContent) {
-        controller.updateCell(controller.primarySelectedCell.x, controller.primarySelectedCell.y, previousContent);
+        controller.updateCell(
+          controller.primarySelectedCell.x,
+          controller.primarySelectedCell.y,
+          previousContent,
+        );
         controller.stopEditing(false);
         _focusNode.requestFocus();
       },

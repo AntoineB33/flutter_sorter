@@ -30,7 +30,11 @@ class CellUpdateHistory {
   Point<int> cell;
   String previousValue;
   String newValue;
-  CellUpdateHistory({required this.cell, required this.previousValue, required this.newValue});
+  CellUpdateHistory({
+    required this.cell,
+    required this.previousValue,
+    required this.newValue,
+  });
 }
 
 class UpdateHistory {
@@ -42,7 +46,13 @@ class UpdateHistory {
   int? colId;
   ColumnType? previousColumnType;
   ColumnType? newColumnType;
-  UpdateHistory({required this.key, required this.timestamp, this.colId, this.previousColumnType, this.newColumnType});
+  UpdateHistory({
+    required this.key,
+    required this.timestamp,
+    this.colId,
+    this.previousColumnType,
+    this.newColumnType,
+  });
 }
 
 class SpreadsheetController extends ChangeNotifier {
@@ -84,10 +94,10 @@ class SpreadsheetController extends ChangeNotifier {
   int all = SpreadsheetConstants.all;
 
   final NodeStruct mentionsRoot = NodeStruct(
-    instruction: SpreadsheetConstants.selectionMsg
+    instruction: SpreadsheetConstants.selectionMsg,
   );
   final NodeStruct searchRoot = NodeStruct(
-    instruction: SpreadsheetConstants.searchMsg
+    instruction: SpreadsheetConstants.searchMsg,
   );
 
   /// 2D table of attribute identifiers (row index or name)
@@ -290,7 +300,7 @@ class SpreadsheetController extends ChangeNotifier {
     // 2. Run the calculation
     // You must move the logic of 'runCalculator' here, or make runCalculator
     // static and pass 'message' to it.
-    return runCalculator(message); 
+    return runCalculator(message);
   }
 
   static AnalysisResult runCalculator(IsolateMessage message) {
@@ -317,8 +327,9 @@ class SpreadsheetController extends ChangeNotifier {
     );
 
     textPainter.layout(
-      minWidth: 0, 
-      maxWidth: PageConstants.defaultCellWidth - 2 * PageConstants.horizontalPadding,
+      minWidth: 0,
+      maxWidth:
+          PageConstants.defaultCellWidth - 2 * PageConstants.horizontalPadding,
     );
 
     return textPainter.height + 2 * PageConstants.verticalPadding;
@@ -339,7 +350,14 @@ class SpreadsheetController extends ChangeNotifier {
     return getDefaultRowHeight();
   }
 
-  void updateCell(int row, int col, String newValue, {bool keepPrevious = false, bool updateHistory = true}) {
+  void updateCell(
+    int row,
+    int col,
+    String newValue, {
+    bool onChange = false,
+    bool historyNavigation = false,
+    bool keepPrevious = false,
+  }) {
     String prevValue = '';
     if (newValue.isNotEmpty || (row < rowCount && col < colCount)) {
       if (row >= rowCount) {
@@ -355,7 +373,7 @@ class SpreadsheetController extends ChangeNotifier {
       prevValue = sheet.table[row][col];
       sheet.table[row][col] = newValue;
     }
-    
+
     // Clean up empty rows/cols at the end
     if (newValue.isEmpty &&
         row < rowCount &&
@@ -381,26 +399,32 @@ class SpreadsheetController extends ChangeNotifier {
         }
       }
     }
-    if (updateHistory) {
+    if (!historyNavigation) {
+      String previousValue = onChange && currentUpdateHistory != null
+          ? currentUpdateHistory!.updatedCells![0].previousValue
+          : prevValue;
       if (!keepPrevious) {
         currentUpdateHistory = null;
       }
       currentUpdateHistory ??= UpdateHistory(
-          key: UpdateHistory.updateCellContent,
-          timestamp: DateTime.now(),
-        );
-      currentUpdateHistory!.updatedCells!.add(CellUpdateHistory(
-        cell: Point(row, col),
-        previousValue: prevValue,
-        newValue: newValue,
-      ));
+        key: UpdateHistory.updateCellContent,
+        timestamp: DateTime.now(),
+      );
+      currentUpdateHistory!.updatedCells!.add(
+        CellUpdateHistory(
+          cell: Point(row, col),
+          previousValue: previousValue,
+          newValue: newValue,
+        ),
+      );
     }
-    
+
     if (row >= rowCount || col >= colCount) {
       return;
     }
     double heightItNeeds = _calculateRequiredRowHeight(newValue);
-    if (heightItNeeds > getDefaultRowHeight() && sheet.rowsBottomPos.length <= row) {
+    if (heightItNeeds > getDefaultRowHeight() &&
+        sheet.rowsBottomPos.length <= row) {
       int prevRowsBottomPosLength = sheet.rowsBottomPos.length;
       sheet.rowsBottomPos.addAll(
         List.filled(row + 1 - sheet.rowsBottomPos.length, 0),
@@ -458,7 +482,8 @@ class SpreadsheetController extends ChangeNotifier {
           }
         }
       } // TODO: else
-    } else if (heightItNeeds == getDefaultRowHeight() && row == sheet.rowsBottomPos.length - 1) {
+    } else if (heightItNeeds == getDefaultRowHeight() &&
+        row == sheet.rowsBottomPos.length - 1) {
       int i = row;
       while (sheet.rowsBottomPos[i] == getDefaultRowHeight() && row > 0) {
         sheet.rowsBottomPos.removeLast();
@@ -477,8 +502,10 @@ class SpreadsheetController extends ChangeNotifier {
     if (save) {
       if (updateHistory) {
         if (sheet.historyIndex < sheet.updateHistories.length - 1) {
-          sheet.updateHistories =
-              sheet.updateHistories.sublist(0, sheet.historyIndex + 1);
+          sheet.updateHistories = sheet.updateHistories.sublist(
+            0,
+            sheet.historyIndex + 1,
+          );
         }
         sheet.updateHistories.add(currentUpdateHistory!);
         sheet.historyIndex++;
@@ -486,8 +513,8 @@ class SpreadsheetController extends ChangeNotifier {
           sheet.updateHistories.removeAt(0);
           sheet.historyIndex--;
         }
+        currentUpdateHistory = null;
       }
-      currentUpdateHistory = null;
       _saveExecutors[sheetName]!.execute(() async {
         await _saveSheetDataUseCase.saveSheet(sheetName, sheet);
         await Future.delayed(Duration(milliseconds: saveDelayMs));
@@ -503,11 +530,15 @@ class SpreadsheetController extends ChangeNotifier {
           _isolateHandler,
           calculateUsecase.getMessage(sheet.table, sheet.columnTypes),
         );
-        
+        // AnalysisResult result = _isolateHandler(
+        //   calculateUsecase.getMessage(sheet.table, sheet.columnTypes),
+        // );
 
-    
+        if (result.errorRoot.newChildren!.isNotEmpty) {
+          return result;
+        }
         final service = SortingService();
-      
+
         int nVal = result.instrTable.length;
         Map<int, List<SortingRule>> myRules = {};
         for (int rowId = 0; rowId < nVal; rowId++) {
@@ -520,7 +551,13 @@ class SpreadsheetController extends ChangeNotifier {
               for (final interval in instr.intervals) {
                 int minVal = interval[0];
                 int maxVal = interval[1];
-                myRules[rowId]!.add(SortingRule(minVal: minVal, maxVal: maxVal, relativeTo: target));
+                myRules[rowId]!.add(
+                  SortingRule(
+                    minVal: minVal,
+                    maxVal: maxVal,
+                    relativeTo: target,
+                  ),
+                );
               }
             }
           }
@@ -535,8 +572,6 @@ class SpreadsheetController extends ChangeNotifier {
         //   // Add other rules here...
         // };
 
-
-
         debugPrint("Sending request...");
         List<int>? result0 = await service.solveSorting(200, myRules);
 
@@ -549,6 +584,7 @@ class SpreadsheetController extends ChangeNotifier {
         return result;
       },
       onComplete: (AnalysisResult result) {
+        calculatedOnce = true;
         nodesUsecase = NodesUsecase(result);
 
         tableToAtt = result.tableToAtt;
@@ -584,10 +620,10 @@ class SpreadsheetController extends ChangeNotifier {
   void setColumnType(int col, ColumnType type, {bool updateHistory = true}) {
     if (updateHistory) {
       currentUpdateHistory ??= UpdateHistory(
-          key: UpdateHistory.updateColumnType,
-          timestamp: DateTime.now(),
-          colId: col,
-          previousColumnType: getColumnType(col),
+        key: UpdateHistory.updateColumnType,
+        timestamp: DateTime.now(),
+        colId: col,
+        previousColumnType: getColumnType(col),
         newColumnType: type,
       );
     }
@@ -608,11 +644,17 @@ class SpreadsheetController extends ChangeNotifier {
       increaseColumnCount(col);
       sheet.columnTypes[col] = type;
     }
-    saveAndCalculate();
+    notifyListeners();
+    saveAndCalculate(updateHistory: true);
   }
 
   void selectCell(int row, int col, bool keepSelection, bool updateMentions) {
-    _selectionManager.setPrimarySelection(row, col, keepSelection, updateMentions);
+    _selectionManager.setPrimarySelection(
+      row,
+      col,
+      keepSelection,
+      updateMentions,
+    );
   }
 
   bool isPrimarySelectedCell(int row, int col) {
@@ -665,10 +707,6 @@ class SpreadsheetController extends ChangeNotifier {
     await _clipboardManager.pasteSelection();
   }
 
-  void clearSelection(bool save) {
-    _clipboardManager.clearSelection(save);
-  }
-
   void delete() {
     _clipboardManager.delete();
   }
@@ -684,16 +722,21 @@ class SpreadsheetController extends ChangeNotifier {
           cellUpdate.cell.x,
           cellUpdate.cell.y,
           cellUpdate.previousValue,
-          updateHistory: false,
+          historyNavigation: true,
         );
       }
     } else if (lastUpdate.key == UpdateHistory.updateColumnType) {
       if (lastUpdate.colId != null && lastUpdate.previousColumnType != null) {
-        setColumnType(lastUpdate.colId!, lastUpdate.previousColumnType!, updateHistory: false);
+        setColumnType(
+          lastUpdate.colId!,
+          lastUpdate.previousColumnType!,
+          updateHistory: false,
+        );
       }
     }
     sheet.historyIndex--;
-    saveAndCalculate(updateHistory: false);
+    notifyListeners();
+    saveAndCalculate();
   }
 
   void redo() {
@@ -707,16 +750,21 @@ class SpreadsheetController extends ChangeNotifier {
           cellUpdate.cell.x,
           cellUpdate.cell.y,
           cellUpdate.newValue,
-          updateHistory: false,
+          historyNavigation: true,
         );
       }
     } else if (nextUpdate.key == UpdateHistory.updateColumnType) {
       if (nextUpdate.colId != null && nextUpdate.newColumnType != null) {
-        setColumnType(nextUpdate.colId!, nextUpdate.newColumnType!, updateHistory: false);
+        setColumnType(
+          nextUpdate.colId!,
+          nextUpdate.newColumnType!,
+          updateHistory: false,
+        );
       }
     }
     sheet.historyIndex++;
-    saveAndCalculate(updateHistory: true);
+    notifyListeners();
+    saveAndCalculate();
   }
 
   void selectAll() {
@@ -789,28 +837,34 @@ class SpreadsheetController extends ChangeNotifier {
   String? currentInitialInput; // Add this field
 
   void startEditing({String? initialInput}) {
-    previousContent =
-        getContent(primarySelectedCell.x, primarySelectedCell.y);
+    previousContent = getContent(primarySelectedCell.x, primarySelectedCell.y);
     currentInitialInput = initialInput; // Store it
     if (currentInitialInput != null) {
-      saveEdit(currentInitialInput!);
+      onChanged(currentInitialInput!);
     }
     editingMode = true;
     notifyListeners();
   }
 
-  void saveEdit(String newValue) {
-    updateCell(primarySelectedCell.x, primarySelectedCell.y, newValue);
+  void onChanged(String newValue) {
+    updateCell(
+      primarySelectedCell.x,
+      primarySelectedCell.y,
+      newValue,
+      onChange: true,
+    );
+    notifyListeners();
     saveAndCalculate();
   }
 
   void stopEditing(bool updateHistory) {
     editingMode = false;
     currentInitialInput = null;
-    if (updateHistory) {
+    notifyListeners();
+    if (updateHistory && currentUpdateHistory != null) {
       saveAndCalculate(updateHistory: true);
     }
-    notifyListeners();
+    currentUpdateHistory = null;
   }
 
   bool editingMode = false;
@@ -819,7 +873,6 @@ class SpreadsheetController extends ChangeNotifier {
       editingMode &&
       primarySelectedCell.x == row &&
       primarySelectedCell.y == col;
-  
-  String previousContent = '';
 
+  String previousContent = '';
 }

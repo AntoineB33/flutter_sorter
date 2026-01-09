@@ -79,26 +79,17 @@ class ClipboardManager {
     _controller.saveAndCalculate(updateHistory: true);
   }
 
-  void clearSelection(bool save) {
-    for (Point<int> cell in _controller.selection.selectedCells) {
-      _controller.updateCell(cell.x, cell.y, '');
-    }
-    if (save) {
-      _controller.notify();
-      _controller.saveAndCalculate();
-    }
-  }
-
   void delete() {
     for (Point<int> cell in _controller.selection.selectedCells) {
-      _controller.updateCell(cell.x, cell.y, '');
+      _controller.updateCell(cell.x, cell.y, '', keepPrevious: true);
     }
     _controller.updateCell(
       _controller.primarySelectedCell.x,
       _controller.primarySelectedCell.y,
       '',
+      keepPrevious: true,
     );
     _controller.notify();
-    _controller.saveAndCalculate();
+    _controller.saveAndCalculate(updateHistory: true);
   }
 }

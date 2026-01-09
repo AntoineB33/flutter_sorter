@@ -27,6 +27,12 @@ class TreeManager {
         node.message = '${_controller.getColumnLabel(colId)}$rowId: ${_controller.sheet.table[rowId][colId]}';
       }
     }
+    if (node.defaultOnTap) {
+      node.onTap = (n) {
+        _controller.selectCell(node.rowId!, node.colId!, false, false);
+      };
+      node.defaultOnTap = false;
+    }
     if (!populateChildren) {
       return;
     }
