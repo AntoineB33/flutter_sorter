@@ -36,16 +36,15 @@ class NodeStruct {
     this.newChildren,
     this.hideIfEmpty = false,
     this.startOpen = false,
-  }) : rowId = att?.rowId ?? cell?.rowId ?? rowId,
-       colId = att?.colId ?? cell?.colId ?? colId,
+  }) : rowId = att?.rowId ?? cell?.rowId ?? cells?.first.rowId ?? rowId,
+       colId = att?.colId ?? cell?.colId ?? cells?.first.colId ?? colId,
        name = att?.name ?? name,
        message = message ?? instruction {
     if (this.rowId != null) {
       if (this.colId != null) {
         this.cell ??= Cell(rowId: this.rowId!, colId: this.colId!);
-      } else {
-        this.att ??= Attribute.row(this.rowId!);
       }
+      this.att ??= Attribute.row(this.rowId!);
     } else {
       if (this.colId != null) {
         this.att ??= Attribute(colId: this.colId, name: this.name);
@@ -55,7 +54,6 @@ class NodeStruct {
         }
       }
     }
-    this.cell ??= cells != null && cells.isNotEmpty ? cells.first : null;
     this.cells ??= cell != null ? [cell] : null;
   }
 

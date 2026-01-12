@@ -48,6 +48,10 @@ class TreeManager {
       );
       return;
     }
+    if (_controller.tableToAtt.length <= rowId ||
+        _controller.tableToAtt[rowId].length <= colId) {
+      return;
+    }
     for (Attribute att in _controller.tableToAtt[rowId][colId]) {
       node.newChildren!.add(NodeStruct(att: att));
     }
@@ -129,7 +133,7 @@ class TreeManager {
 
   void populateRowNode(NodeStruct node, bool populateChildren) {
     int rowId = node.rowId!;
-    node.message ??= _controller.nodesUsecase.getRowName(rowId);
+    node.message ??= _controller.getRowName(rowId);
     if (!populateChildren) {
       return;
     }
@@ -227,22 +231,22 @@ class TreeManager {
     }
     if (node.defaultOnTap) {
       if (node.cellsToSelect == null) {
-        List<Cell> cells = [];
-        for (final child in node.children) {
-          if (child.rowId != null) {
-            if (child.colId != null) {
-              cells.add(Cell(rowId: child.rowId!, colId: child.colId!));
-            } else {
-              cells.add(Cell(rowId: child.rowId!, colId: 0));
+        node.cellsToSelect = node.cells;
+        if (node.cellsToSelect == null || node.cellsToSelect!.isEmpty) {
+          List<Cell> cells = [];
+          for (final child in node.newChildren??[]) {
+            if (child.rowId != null) {
+              if (child.colId != null) {
+                cells.add(Cell(rowId: child.rowId!, colId: child.colId!));
+              } else {
+                cells.add(Cell(rowId: child.rowId!, colId: 0));
+              }
+            } else if (child.colId != null) {
+              cells.add(Cell(rowId: 0, colId: child.colId!));
             }
-          } else if (child.colId != null) {
-            cells.add(Cell(rowId: 0, colId: child.colId!));
           }
+          node.cellsToSelect = cells;
         }
-        if (cells.isEmpty) {
-          return;
-        }
-        node.cellsToSelect = cells;
       }
       node.onTap = (n) {
         if (node.cellsToSelect == null || node.cellsToSelect!.isEmpty) {
@@ -292,9 +296,6 @@ class TreeManager {
         break;
       case SpreadsheetConstants.nodeAttributeMsg:
         populateAttributeNode(node, populateChildren);
-        break;
-      case SpreadsheetConstants.cell:
-        populateCellNode(node, populateChildren);
         break;
       case SpreadsheetConstants.cycleDetected:
         node.onTap = (n) {

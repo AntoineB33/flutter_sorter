@@ -16,7 +16,6 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_mes
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/nodes_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/tree_manager.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/selection_manager.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/clipboard_manager.dart';
@@ -25,6 +24,7 @@ import 'package:trying_flutter/features/media_sorter/presentation/constants/page
 import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
 import 'dart:io';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sorting_service.dart';
+import 'package:trying_flutter/features/media_sorter/domain/mixins/get_names.dart';
 
 class CellUpdateHistory {
   Point<int> cell;
@@ -55,7 +55,7 @@ class UpdateHistory {
   });
 }
 
-class SpreadsheetController extends ChangeNotifier {
+class SpreadsheetController extends ChangeNotifier with GetNames {
   int saveDelayMs = 500;
   int historyMaxLength = 100;
 
@@ -63,6 +63,9 @@ class SpreadsheetController extends ChangeNotifier {
   late final SelectionManager _selectionManager;
   late final ClipboardManager _clipboardManager;
   Size _visibleWindowSize = Size.zero;
+
+  @override
+  get columnTypes => sheet.columnTypes;
 
   // --- Scroll Stream Controller ---
   final StreamController<Point<int>> _scrollToCellController =
@@ -76,7 +79,7 @@ class SpreadsheetController extends ChangeNotifier {
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
   final ManageWaitingTasks<AnalysisResult> _calculateExecutor =
       ManageWaitingTasks<AnalysisResult>();
-  NodesUsecase nodesUsecase = NodesUsecase(AnalysisResult());
+  AnalysisResult analysisResult = AnalysisResult();
   bool calculatedOnce = false;
 
   SheetModel sheet = SheetModel.empty();
@@ -102,9 +105,11 @@ class SpreadsheetController extends ChangeNotifier {
 
   /// 2D table of attribute identifiers (row index or name)
   /// mentioned in each cell.
+  @override
   List<List<HashSet<Attribute>>> tableToAtt = [];
   Map<String, Cell> names = {};
   Map<String, List<int>> attToCol = {};
+  @override
   List<int> nameIndexes = [];
   List<int> pathIndexes = [];
 
@@ -118,7 +123,7 @@ class SpreadsheetController extends ChangeNotifier {
   /// Maps attribute identifiers (row index or name)
   /// to a map of mentioners (row index) to the column index
   Map<Attribute, Map<int, List<int>>> toMentioners = {};
-  List<Map<InstrStruct, int>> instrTable = [];
+  List<Map<InstrStruct, Cell>> instrTable = [];
   Map<int, HashSet<Attribute>> colToAtt = {};
 
   SelectionModel get selection => _selectionManager.selection;
@@ -212,6 +217,7 @@ class SpreadsheetController extends ChangeNotifier {
   // Getters
   bool get isLoading => _isLoading;
   int get rowCount => sheet.table.length;
+  @override
   int get colCount => rowCount > 0 ? sheet.table[0].length : 0;
 
   Future<void> loadSheetByName(String name, {bool init = false}) async {
@@ -282,7 +288,7 @@ class SpreadsheetController extends ChangeNotifier {
 
   void decreaseRowCount(int row) {
     if (row == rowCount - 1) {
-      while (!sheet.table[row].any((cell) => cell.isNotEmpty) && row > 0) {
+      while (row >= 0 && !sheet.table[row].any((cell) => cell.isNotEmpty)) {
         sheet.table.removeLast();
         row--;
       }
@@ -382,10 +388,11 @@ class SpreadsheetController extends ChangeNotifier {
         prevValue.isNotEmpty) {
       decreaseRowCount(row);
       if (col == colCount - 1) {
+        int colId = col;
         bool canRemove = true;
-        while (canRemove && col > 0) {
+        while (canRemove && colId >= 0) {
           for (var r = 0; r < rowCount; r++) {
-            if (sheet.table[r][col].isNotEmpty) {
+            if (sheet.table[r][colId].isNotEmpty) {
               canRemove = false;
               break;
             }
@@ -394,7 +401,7 @@ class SpreadsheetController extends ChangeNotifier {
             for (var r = 0; r < rowCount; r++) {
               sheet.table[r].removeLast();
             }
-            col--;
+            colId--;
           }
         }
       }
@@ -492,12 +499,6 @@ class SpreadsheetController extends ChangeNotifier {
     }
   }
 
-  // --- Column Logic ---
-  ColumnType getColumnType(int col) {
-    if (col >= colCount) return ColumnType.attributes;
-    return sheet.columnTypes[col];
-  }
-
   void saveAndCalculate({bool save = true, bool updateHistory = false}) {
     if (save) {
       if (updateHistory) {
@@ -534,12 +535,12 @@ class SpreadsheetController extends ChangeNotifier {
         //   calculateUsecase.getMessage(sheet.table, sheet.columnTypes),
         // );
 
-        if (result.errorRoot.newChildren!.isNotEmpty) {
+        int nVal = result.instrTable.length;
+        if (result.errorRoot.newChildren!.isNotEmpty || nVal == 0) {
           return result;
         }
         final service = SortingService();
 
-        int nVal = result.instrTable.length;
         Map<int, List<SortingRule>> myRules = {};
         for (int rowId = 0; rowId < nVal; rowId++) {
           myRules[rowId] = [];
@@ -573,19 +574,19 @@ class SpreadsheetController extends ChangeNotifier {
         // };
 
         debugPrint("Sending request...");
-        List<int>? result0 = await service.solveSorting(200, myRules);
+        // List<int>? result0 = await service.solveSorting(nVal, myRules);
 
-        if (result0 != null) {
-          debugPrint("Solution found: $result0");
-          // Update UI state here
-        } else {
-          debugPrint("No solution found.");
-        }
+        // if (result0 != null) {
+        //   debugPrint("Solution found: $result0");
+        //   // Update UI state here
+        // } else {
+        //   debugPrint("No solution found.");
+        // }
         return result;
       },
       onComplete: (AnalysisResult result) {
+        analysisResult = result;
         calculatedOnce = true;
-        nodesUsecase = NodesUsecase(result);
 
         tableToAtt = result.tableToAtt;
         names = result.names;
@@ -604,12 +605,12 @@ class SpreadsheetController extends ChangeNotifier {
         mentionsRoot.colId = _selectionManager.primarySelectedCell.y;
         searchRoot.newChildren = null;
         _treeManager.populateTree([
-          nodesUsecase.analysisResult.errorRoot,
-          nodesUsecase.analysisResult.warningRoot,
+          result.errorRoot,
+          result.warningRoot,
           mentionsRoot,
           searchRoot,
-          nodesUsecase.analysisResult.categoriesRoot,
-          nodesUsecase.analysisResult.distPairsRoot,
+          result.categoriesRoot,
+          result.distPairsRoot,
         ]);
         _isLoading = false;
         notifyListeners();
@@ -666,10 +667,6 @@ class SpreadsheetController extends ChangeNotifier {
     return selection.selectedCells.any(
       (cell) => cell.x == row && cell.y == col,
     );
-  }
-
-  String getColumnLabel(int col) {
-    return nodesUsecase.getColumnLabel(col);
   }
 
   void toggleNodeExpansion(NodeStruct node, bool isExpanded) {

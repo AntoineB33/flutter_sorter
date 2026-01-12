@@ -16,6 +16,10 @@ class Attribute {
     return Attribute._(rowId: rowId);
   }
 
+  bool isRow() {
+    return rowId != null;
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;

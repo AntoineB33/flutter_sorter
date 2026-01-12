@@ -43,6 +43,6 @@ class AnalysisResult {
   /// Maps attribute identifiers (row index or name)
   /// to a map of mentioners (row index) to the column index
   Map<Attribute, Map<int, List<int>>> toMentioners = {};
-  List<Map<InstrStruct, int>> instrTable = [];
+  List<Map<InstrStruct, Cell>> instrTable = [];
   Map<int, HashSet<Attribute>> colToAtt = {};
 }

@@ -10,14 +10,14 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_mes
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/nodes_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/mixins/get_names.dart';
 
-class CalculateUsecase {
+class CalculateUsecase with GetNames {
   final Object dataPackage;
   final AnalysisResult result;
-  late final NodesUsecase nodesUsecase;
 
   List<List<String>> table = [];
+  @override
   List<ColumnType> columnTypes = [];
 
   final NodeStruct errorRoot = NodeStruct(
@@ -49,9 +49,11 @@ class CalculateUsecase {
 
   /// 2D table of attribute identifiers (row index or name)
   /// mentioned in each cell.
+  @override
   List<List<HashSet<Attribute>>> tableToAtt = [];
   Map<String, Cell> names = {};
   Map<String, List<int>> attToCol = {};
+  @override
   List<int> nameIndexes = [];
   List<int> pathIndexes = [];
 
@@ -63,7 +65,7 @@ class CalculateUsecase {
   /// Maps attribute identifiers (row index or name)
   /// to a map of mentioners (row index) to the column index
   Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol = {};
-  List<Map<InstrStruct, int>> instrTable = [];
+  List<Map<InstrStruct, Cell>> instrTable = [];
   Map<int, HashSet<Attribute>> colToAtt = {};
   List<bool> isMedium = [];
 
@@ -75,17 +77,11 @@ class CalculateUsecase {
   static const List<int> added = [];
 
   int get rowCount => table.length;
+  @override
   int get colCount => rowCount > 0 ? table[0].length : 0;
 
   CalculateUsecase(this.dataPackage, this.columnTypes)
-    : result = AnalysisResult() {
-    nodesUsecase = NodesUsecase(result);
-  }
-  
-  ColumnType getColumnType(int col) {
-    if (col >= colCount) return ColumnType.attributes;
-    return columnTypes[col];
-  }
+    : result = AnalysisResult();
 
   IsolateMessage getMessage(
     List<List<String>> table,
@@ -214,7 +210,7 @@ class CalculateUsecase {
     Attribute att = start;
     List<List<Cell>> path = [];
     while (true) {
-      if (graph[att]![end] != added) {
+      if (graph[att]![end] != added && att != start) {
         List<Cell> cells = graph[att]![end]!
             .map((colId) => Cell(rowId: end, colId: colId))
             .toList();
@@ -223,7 +219,7 @@ class CalculateUsecase {
       }
       for (final rowId in graph[att]!.keys) {
         Attribute childAtt = Attribute.row(rowId);
-        if (graph[childAtt]!.containsKey(end)) {
+        if (graph.containsKey(childAtt) && graph[childAtt]!.containsKey(end)) {
           List<Cell> cells = graph[att]![rowId]!
               .map((colId) => Cell(rowId: rowId, colId: colId))
               .toList();
@@ -236,8 +232,7 @@ class CalculateUsecase {
   }
 
   void dfsIterative(
-    Map<Attribute, Map<int, List<int>>> graph,
-    String warningMsgPrefix,
+    Map<Attribute, Map<int, List<int>>> graph
   ) {
     final visited = <Attribute>{};
     final completed = <Attribute>{};
@@ -260,18 +255,18 @@ class CalculateUsecase {
                 if (!rowsToCol.containsKey(childRowId)) {
                   rowsToCol[childRowId] = added;
                 } else if (rowsToCol[childRowId] != added) {
-                  var newPath = findPath(graph, Attribute.row(childRowId), rowId)
-                    .map(
+                  List<NodeStruct> newPath = findPath(graph, att, childRowId).map(
                       (k) => NodeStruct(
-                        instruction: SpreadsheetConstants.cell,
                         cells: k,
                       ),
                     ).toList();
+                  for (int nodeId = 0; nodeId < newPath.length; nodeId++) {
+                    newPath[nodeId].message = "${getAttName(newPath[nodeId].att!)} points to row ${getAttName(nodeId < newPath.length - 1 ? newPath[nodeId + 1].att! : att)}";
+                  }
                   redundantRef.add(
                     NodeStruct(
-                      instruction: SpreadsheetConstants.cell,
                       message:
-                          "$warningMsgPrefix \"$childRowId\" already pointed",
+                          "${getAttName(att)} already pointed",
                       cells: rowsToCol[childRowId]!
                           .map((colId) => Cell(rowId: childRowId, colId: colId))
                           .toList(),
@@ -356,7 +351,6 @@ class CalculateUsecase {
           if (splitPart.length != 2) {
             errorRoot.newChildren!.add(
               NodeStruct(
-                instruction: SpreadsheetConstants.cell,
                 message: "Invalid interval format: missing '_' in \"$part\"",
                 rowId: row,
                 colId: col,
@@ -375,7 +369,6 @@ class CalculateUsecase {
             } else {
               errorRoot.newChildren!.add(
                 NodeStruct(
-                  instruction: SpreadsheetConstants.cell,
                   message: "Invalid interval start: $startStr",
                   rowId: row,
                   colId: col,
@@ -392,7 +385,6 @@ class CalculateUsecase {
             } else {
               errorRoot.newChildren!.add(
                 NodeStruct(
-                  instruction: SpreadsheetConstants.cell,
                   message: "Invalid interval end: $endStr",
                   rowId: row,
                   colId: col,
@@ -471,7 +463,7 @@ class CalculateUsecase {
           errorRoot.newChildren!.add(
             NodeStruct(
               message:
-                  "Column ${nodesUsecase.getColumnLabel(attColId)} is not an attribute column",
+                  "Column ${getColumnLabel(attColId)} is not an attribute column",
               cell: Cell(rowId: rowId, colId: colId),
             ),
           );
@@ -486,7 +478,7 @@ class CalculateUsecase {
           warningRoot.newChildren!.add(
             NodeStruct(
               message:
-                  "Attribute column ${nodesUsecase.getColumnLabel(attColId)} differs from current column ${nodesUsecase.getColumnLabel(colId)}",
+                  "Attribute column ${getColumnLabel(attColId)} differs from current column ${getColumnLabel(colId)}",
               cell: Cell(rowId: rowId, colId: colId),
             ),
           );
@@ -531,10 +523,10 @@ class CalculateUsecase {
 
     colToAtt = {};
     Map<Attribute, List<int>> attToDist = {};
-    Cell? firstElement;
-    Cell? lastElement;
-    final Map<int, List<(Attribute, int)>> fstCat = {};
-    final Map<int, List<(Attribute, int)>> lstCat = {};
+    final Map<int, Map<Attribute, Cell>> isFstToAppear = {};
+    final Map<int, Map<Attribute, Cell>> isLstToAppear = {};
+    final Map<int, Map<Attribute, Cell>> beforeAllOthers = {};
+    final Map<int, Map<Attribute, Cell>> afterAllOthers = {};
     colToAtt[all] = HashSet<Attribute>();
     colToAtt[notUsedCst] = HashSet<Attribute>();
     for (int colId = 0; colId < colCount; colId++) {
@@ -556,6 +548,7 @@ class CalculateUsecase {
           }
           final cellList = row[colId].split(";");
           for (String attWritten in cellList) {
+            attWritten = attWritten.trim();
             if (attWritten.isEmpty) {
               errorRoot.newChildren!.add(
                 NodeStruct(
@@ -566,61 +559,29 @@ class CalculateUsecase {
               return;
             }
 
-            bool isFst = attWritten.endsWith("-appear_fst");
-            bool isLst = attWritten.endsWith("-appear_lst");
-
-            if (isFst) {
+            bool isAppearFst = attWritten.endsWith("-appear_fst");
+            bool isAppearLst = attWritten.endsWith("-appear_lst");
+            bool isFst = attWritten.endsWith("-fst");
+            bool isLst = attWritten.endsWith("-lst");
+            Cell cell = Cell(rowId: rowId, colId: colId);
+            if (isAppearFst || isAppearLst) {
+              attWritten = attWritten
+                  .substring(0, attWritten.length - 11)
+                  .trim();
+            } else if (isFst || isLst) {
               attWritten = attWritten
                   .substring(0, attWritten.length - 4)
                   .trim();
             } else if (attWritten == "fst") {
-              if (firstElement != null) {
-                errorRoot.newChildren!.add(
-                  NodeStruct(
-                    message: "multiple 'fst' found",
-                    newChildren: [
-                      NodeStruct(cell: firstElement),
-                      NodeStruct(
-                        cell: Cell(rowId: rowId, colId: colId),
-                      ),
-                    ],
-                  ),
-                );
-                return;
-              }
-              firstElement = Cell(rowId: rowId, colId: colId);
+              beforeAllOthers[rowId] ??= {};
+              beforeAllOthers[rowId]![Attribute.row(all)] = cell;
               continue;
-            } else if (isLst) {
-              attWritten = attWritten
-                  .substring(0, attWritten.length - 4)
-                  .trim();
             } else if (attWritten == "lst") {
-              if (lastElement != null) {
-                errorRoot.newChildren!.add(
-                  NodeStruct(
-                    message: "multiple 'lst' found",
-                    newChildren: [
-                      NodeStruct(cell: lastElement),
-                      NodeStruct(
-                        cell: Cell(rowId: rowId, colId: colId),
-                      ),
-                    ],
-                  ),
-                );
-                return;
-              }
-              lastElement = Cell(rowId: rowId, colId: colId);
+              afterAllOthers[rowId] ??= {};
+              afterAllOthers[rowId]![Attribute.row(all)] = cell;
               continue;
-            } else if (attWritten.contains("-appear_fst")) {
-              errorRoot.newChildren!.add(
-                NodeStruct(
-                  message: "'-appear_fst' is not at the end of $attWritten",
-                  cell: Cell(rowId: rowId, colId: colId),
-                ),
-              );
-              return;
             }
-
+            
             Attribute att = getAttAndCol(attWritten, rowId, colId);
             if (errorRoot.newChildren!.isNotEmpty) {
               return;
@@ -651,11 +612,18 @@ class CalculateUsecase {
                 NodeStruct(rowId: rowId, colId: colId)
               );
             }
-
-            if (isFst) {
-              fstCat[rowId]!.add((att, colId));
+            if (isAppearFst) {
+              isFstToAppear[rowId] ??= {};
+              isFstToAppear[rowId]![att] = cell;
+            } else if (isAppearLst) {
+              isLstToAppear[rowId] ??= {};
+              isLstToAppear[rowId]![att] = cell;
+            } else if (isFst) {
+              beforeAllOthers[rowId] ??= {};
+              beforeAllOthers[rowId]![att] = cell;
             } else if (isLst) {
-              lstCat[rowId]!.add((att, colId));
+              afterAllOthers[rowId] ??= {};
+              afterAllOthers[rowId]![att] = cell;
             }
           }
         }
@@ -670,7 +638,7 @@ class CalculateUsecase {
       );
     }
 
-    dfsIterative(attToRefFromAttColToCol, "attribute");
+    dfsIterative(attToRefFromAttColToCol);
 
     if (errorRoot.newChildren!.isNotEmpty) {
       return;
@@ -808,7 +776,7 @@ class CalculateUsecase {
               final d = entry.value;
               return NodeStruct(
                 message:
-                    "($d) ${nodesUsecase.getRowName(rowsList[idx])} - ${nodesUsecase.getRowName(rowsList[idx + 1])}",
+                    "($d) ${getRowName(rowsList[idx])} - ${getRowName(rowsList[idx + 1])}",
                 newChildren: [
                   NodeStruct(att: Attribute.row(rowsList[idx])),
                   NodeStruct(att: Attribute.row(rowsList[idx + 1])),
@@ -851,34 +819,164 @@ class CalculateUsecase {
 
     //TODO: att1 with "att2 -appear_fst" means the first medium with att2 is a att1
     //TODO: att1 with "att2 -fst" means all media with att1 come before other media with att2
-    for (final MapEntry(key: k, value: vList) in fstCat.entries) {
+    List<Attribute> stack = [];
+    for (final MapEntry(key: k, value: vMap) in isFstToAppear.entries) {
+      for (Attribute a in isFstToAppear[k]?.keys ?? []) {
+        if (a.rowId == all && isFstToAppear[k]!.keys.length > 1) {
+          warningRoot.newChildren!.add(
+            NodeStruct(
+              message:
+                  "useless 'appear_fst' since it is first to all others",
+              cell: isFstToAppear[k]![a]!
+            ),
+          );
+        }
+      }
       if (isMedium[k]) {
-        for (final v in vList) {
-          var t = v.$1;
-          while (fstCat.containsKey(t.rowId)) {
-            t = fstCat[t.rowId]!.$1;
-          }
-          instrTable[k][InstrStruct(
-                true,
-                false,
-                attToRefFromAttColToCol[t]!.keys.where((key) => isMedium[key]).map((entry) => newIndexes[entry]).toList(),
-                [
-                  [1, maxInt],
-                ],
-              )] =
-              v.$2;
-          for (final i in attToRefFromAttColToCol[t]!.keys) {
-            if (i != k) {
-              instrTable[i][InstrStruct(
-                    true,
-                    false,
-                    [newIndexes[k]],
-                    [
-                      [-maxInt, -1],
-                    ],
-                  )] =
-                  v.$2;
+        for (Attribute a in isFstToAppear[k]?.keys ?? []) {
+          stack.add(a);
+        }
+        while (stack.isNotEmpty) {
+          Attribute currAtt = stack.removeLast();
+          if (isFstToAppear[currAtt.rowId]?.keys != null) {
+            for (Attribute a in isFstToAppear[currAtt.rowId]?.keys ?? []) {
+              stack.add(a);
             }
+          } else if (currAtt.rowId == all) {
+            instrTable[k][InstrStruct(
+              true,
+              false,
+              validRowIndexes.where((entry) => entry != newIndexes[k]).map((entry) => newIndexes[entry]).toList(),
+              [
+                [-maxInt, -1],
+              ],
+            )] = vMap.values.first;
+          } else {
+            instrTable[k][InstrStruct(
+              true,
+              false,
+              attToRefFromAttColToCol[currAtt]!.keys.where((key) => isMedium[key]).map((entry) => newIndexes[entry]).toList(),
+              [
+                [-maxInt, -1],
+              ],
+            )] = vMap.values.first;
+          }
+        }
+      }
+    }
+    stack = [];
+    for (final MapEntry(key: k, value: vMap) in isLstToAppear.entries) {
+      for (Attribute a in isLstToAppear[k]?.keys ?? []) {
+        if (a.rowId == all && isLstToAppear[k]!.keys.length > 1) {
+          warningRoot.newChildren!.add(
+            NodeStruct(
+              message:
+                  "useless 'appear_lst' since it is last to all others",
+              cell: isLstToAppear[k]![a]!
+            ),
+          );
+        }
+      }
+      if (isMedium[k]) {
+        for (Attribute a in isLstToAppear[k]?.keys ?? []) {
+          stack.add(a);
+        }
+        while (stack.isNotEmpty) {
+          Attribute currAtt = stack.removeLast();
+          if (isLstToAppear[currAtt.rowId]?.keys != null) {
+            for (Attribute a in isLstToAppear[currAtt.rowId]?.keys ?? []) {
+              stack.add(a);
+            }
+          } else if (currAtt.rowId == all) {
+            instrTable[k][InstrStruct(
+              true,
+              false,
+              validRowIndexes.where((entry) => entry != newIndexes[k]).map((entry) => newIndexes[entry]).toList(),
+              [
+                [1, maxInt],
+              ],
+            )] = vMap.values.first;
+          } else {
+            instrTable[k][InstrStruct(
+              true,
+              false,
+              attToRefFromAttColToCol[currAtt]!.keys.where((key) => isMedium[key]).map((entry) => newIndexes[entry]).toList(),
+              [
+                [1, maxInt],
+              ],
+            )] = vMap.values.first;
+          }
+        }
+      }
+    }
+    for (final MapEntry(key: k, value: vMap) in beforeAllOthers.entries) {
+      for (Attribute a in beforeAllOthers[k]?.keys ?? []) {
+        if (a.rowId == all && beforeAllOthers[k]!.keys.length > 1) {
+          warningRoot.newChildren!.add(
+            NodeStruct(
+              message:
+                  "useless 'fst' since it is before all others",
+              cell: beforeAllOthers[k]![a]!
+            ),
+          );
+        }
+      }
+      if (isMedium[k]) {
+        for (Attribute a in beforeAllOthers[k]?.keys ?? []) {
+          if (a.rowId == all) {
+            instrTable[k][InstrStruct(
+              true,
+              false,
+              validRowIndexes.where((entry) => entry != newIndexes[k]).map((entry) => newIndexes[entry]).toList(),
+              [
+                [-maxInt, -1],
+              ],
+            )] = vMap.values.first;
+          } else {
+            instrTable[k][InstrStruct(
+              true,
+              false,
+              attToRefFromAttColToCol[a]!.keys.where((key) => isMedium[key]).map((entry) => newIndexes[entry]).toList(),
+              [
+                [-maxInt, -1],
+              ],
+            )] = vMap.values.first;
+          }
+        }
+      }
+    }
+    for (final MapEntry(key: k, value: vMap) in afterAllOthers.entries) {
+      for (Attribute a in afterAllOthers[k]?.keys ?? []) {
+        if (a.rowId == all && afterAllOthers[k]!.keys.length > 1) {
+          warningRoot.newChildren!.add(
+            NodeStruct(
+              message:
+                  "useless 'lst' since it is after all others",
+              cell: afterAllOthers[k]![a]!
+            ),
+          );
+        }
+      }
+      if (isMedium[k]) {
+        for (Attribute a in afterAllOthers[k]?.keys ?? []) {
+          if (a.rowId == all) {
+            instrTable[k][InstrStruct(
+              true,
+              false,
+              validRowIndexes.where((entry) => entry != newIndexes[k]).map((entry) => newIndexes[entry]).toList(),
+              [
+                [1, maxInt],
+              ],
+            )] = vMap.values.first;
+          } else {
+            instrTable[k][InstrStruct(
+              true,
+              false,
+              attToRefFromAttColToCol[a]!.keys.where((key) => isMedium[key]).map((entry) => newIndexes[entry]).toList(),
+              [
+                [1, maxInt],
+              ],
+            )] = vMap.values.first;
           }
         }
       }
@@ -1148,31 +1246,38 @@ class CalculateUsecase {
             intervals,
           );
           if (instrTable[rowId].containsKey(instruction)) {
-            errorRoot.newChildren!.add(
+            warningRoot.newChildren!.add(
               NodeStruct(
                 message: "duplicate instruction",
-                cell: Cell(rowId: rowId, colId: colId),
+                newChildren: [
+                  NodeStruct(
+                    cell: instrTable[rowId][instruction],
+                  ),
+                  NodeStruct(
+                    cell: Cell(rowId: rowId, colId: colId),
+                  ),
+                ],
               ),
             );
           } else {
-            instrTable[rowId][instruction] = colId;
+            instrTable[rowId][instruction] = Cell(rowId: rowId, colId: colId);
           }
         }
       }
     }
 
-    for (Attribute att in attToRefFromAttColToCol.keys) {
-      if (att.rowId == null) {
-        continue;
-      }
-      for (final rowId in attToRefFromAttColToCol[att]!.keys) {
-        for (InstrStruct instr in instrTable[att.rowId!].keys) {
-          if (!instrTable[rowId].containsKey(instr)) {
-            instrTable[rowId][instr] = -1;
-          }
-        }
-      }
-    }
+    // for (Attribute att in attToRefFromAttColToCol.keys) {
+    //   if (att.rowId == null) {
+    //     continue;
+    //   }
+    //   for (final rowId in attToRefFromAttColToCol[att]!.keys) {
+    //     for (InstrStruct instr in instrTable[att.rowId!].keys) {
+    //       if (!instrTable[rowId].containsKey(instr)) {
+    //         instrTable[rowId][instr] = Cell(rowId: all, colId: all);
+    //       }
+    //     }
+    //   }
+    // }
 
     // // Detect cycles in instrTable
     // bool hasCycle(instrTable, visited, List<DynAndInt> stack, node, {bool after = true}) {
