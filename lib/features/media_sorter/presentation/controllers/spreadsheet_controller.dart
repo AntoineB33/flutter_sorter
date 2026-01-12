@@ -25,6 +25,8 @@ import 'package:trying_flutter/features/media_sorter/data/models/selection_model
 import 'dart:io';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sorting_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/mixins/get_names.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/layout_calculator.dart';
+import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 
 class CellUpdateHistory {
   Point<int> cell;
@@ -74,6 +76,9 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
 
   final GetSheetDataUseCase _getDataUseCase;
   final SaveSheetDataUseCase _saveSheetDataUseCase;
+  final SpreadsheetLayoutCalculator _layoutCalculator =
+      SpreadsheetLayoutCalculator();
+  CalculationService calculationService = CalculationService();
   final ManageWaitingTasks<void> _saveLastSelectionExecutor =
       ManageWaitingTasks<void>();
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
@@ -151,7 +156,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     _isLoading = true;
     notifyListeners();
 
-    // await _saveSheetDataUseCase.clearAllData();
+    await _saveSheetDataUseCase.clearAllData();
     await _saveSheetDataUseCase.initialize();
     try {
       sheetName = await _getDataUseCase.getLastOpenedSheetName();
@@ -295,50 +300,15 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     }
   }
 
-  // This must be a static method or a top-level function.
-  // It cannot be a normal instance method.
-  static AnalysisResult _isolateHandler(IsolateMessage message) {
-    // 1. Handle Debug Delay (Synchronously)
-    // Inside an isolate, use sleep() instead of Future.delayed to block execution
-    // without returning a Future.
-    sleep(Duration(milliseconds: SpreadsheetConstants.debugDelayMs));
-
-    // 2. Run the calculation
-    // You must move the logic of 'runCalculator' here, or make runCalculator
-    // static and pass 'message' to it.
-    return runCalculator(message);
+  double getColumnWidth(int col) {
+    return getTargetLeft(col + 1) - getTargetLeft(col);
   }
 
-  static AnalysisResult runCalculator(IsolateMessage message) {
-    final Object dataPackage = switch (message) {
-      RawDataMessage m => m.table,
-      TransferableDataMessage m => m.dataPackage,
-    };
-    final worker = CalculateUsecase(dataPackage, message.columnTypes);
-    return worker.run();
-  }
-
-  // --- Logic to Measure Text Wrapping ---
-  double _calculateRequiredRowHeight(String text) {
-    if (text.isEmpty) return getDefaultRowHeight();
-
-    // Use TextPainter to measure how the text will wrap
-    final TextPainter textPainter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: const TextStyle(fontSize: 14), // Must match the widget style
-      ),
-      textDirection: TextDirection.ltr,
-      maxLines: null,
-    );
-
-    textPainter.layout(
-      minWidth: 0,
-      maxWidth:
-          PageConstants.defaultCellWidth - 2 * PageConstants.horizontalPadding,
-    );
-
-    return textPainter.height + 2 * PageConstants.verticalPadding;
+  double calculateRequiredRowHeight(String text, int colId) {
+    // 2. Determine the width available for the actual text
+    final double availableWidth =
+        getColumnWidth(colId) - PageConstants.horizontalPadding;
+    return _layoutCalculator.calculateRowHeight(text, availableWidth);
   }
 
   double getDefaultRowHeight() {
@@ -426,10 +396,10 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
       );
     }
 
-    if (row >= rowCount || col >= colCount) {
+    if (row >= sheet.rowsBottomPos.length && row >= rowCount) {
       return;
     }
-    double heightItNeeds = _calculateRequiredRowHeight(newValue);
+    double heightItNeeds = calculateRequiredRowHeight(newValue, col);
     if (heightItNeeds > getDefaultRowHeight() &&
         sheet.rowsBottomPos.length <= row) {
       int prevRowsBottomPosLength = sheet.rowsBottomPos.length;
@@ -447,13 +417,13 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
           !sheet.rowsManuallyAdjustedHeight[row]) {
         double currentHeight = getRowHeight(row);
         if (heightItNeeds < currentHeight) {
-          double heightItNeeded = _calculateRequiredRowHeight(prevValue);
+          double heightItNeeded = calculateRequiredRowHeight(prevValue, col);
           if (heightItNeeded == currentHeight) {
             double newHeight = heightItNeeds;
             for (int j = 0; j < colCount; j++) {
               if (j == col) continue;
               newHeight = max(
-                _calculateRequiredRowHeight(sheet.table[row][j]),
+                calculateRequiredRowHeight(sheet.table[row][j], j),
                 newHeight,
               );
               if (newHeight == heightItNeeded) break;
@@ -523,17 +493,10 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     }
     _calculateExecutor.execute(
       () async {
-        final calculateUsecase = CalculateUsecase(
+        AnalysisResult result = await calculationService.runCalculation(
           sheet.table,
           sheet.columnTypes,
         );
-        AnalysisResult result = await compute(
-          _isolateHandler,
-          calculateUsecase.getMessage(sheet.table, sheet.columnTypes),
-        );
-        // AnalysisResult result = _isolateHandler(
-        //   calculateUsecase.getMessage(sheet.table, sheet.columnTypes),
-        // );
 
         int nVal = result.instrTable.length;
         if (result.errorRoot.newChildren!.isNotEmpty || nVal == 0) {

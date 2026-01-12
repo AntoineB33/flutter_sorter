@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 
 class SpreadsheetSelectAllCorner extends StatelessWidget {
   final VoidCallback onTap;
@@ -242,7 +243,7 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
               border: InputBorder.none,
               isDense: true,
             ),
-            style: const TextStyle(fontSize: 14),
+            style: PageConstants.cellStyle,
             // onSubmitted handles software keyboards (mobile "Done" button)
             onSubmitted: (value) => widget.onSave(value, moveUp: false),
           ),

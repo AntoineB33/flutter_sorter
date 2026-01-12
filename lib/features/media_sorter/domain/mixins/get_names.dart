@@ -43,7 +43,7 @@ mixin GetNames {
   }
 
   ColumnType getColumnType(int col) {
-    if (col >= colCount) return ColumnType.attributes;
+    if (col >= columnTypes.length) return ColumnType.attributes;
     return columnTypes[col];
   }
 }

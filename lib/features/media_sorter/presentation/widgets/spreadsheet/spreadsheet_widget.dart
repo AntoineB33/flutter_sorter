@@ -1,4 +1,4 @@
-import 'dart:async'; // Added for StreamSubscription
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,13 +27,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   @override
   void initState() {
     super.initState();
-
-    // Defer the subscription until after build to access the Provider safely
-    // or just assume access if this widget is always under a Provider.
-    // However, usually safest to access Provider in didChangeDependencies or build.
-    // For simplicity with ChangeNotifierProvider, we can hook it up in addPostFrameCallback
-    // or rely on didChangeDependencies.
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
       _subscribeToScrollEvents();
@@ -74,15 +67,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     double? newVerticalOffset;
 
     if (targetTop < currentVerticalOffset) {
-      // Cell is above the current view
       newVerticalOffset = targetTop;
     } else if (targetBottom > currentVerticalOffset + verticalViewport) {
-      // Cell is below the current view
       newVerticalOffset = targetBottom - verticalViewport;
     }
 
     if (newVerticalOffset != null) {
-      // Clamp logic is usually handled by the controller, but good to be safe
       final double maxScroll = _verticalController.position.maxScrollExtent;
       final double clampedOffset = math.min(
         math.max(newVerticalOffset, 0),
@@ -107,10 +97,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     double? newHorizontalOffset;
 
     if (targetLeft < currentHorizontalOffset) {
-      // Cell is to the left
       newHorizontalOffset = targetLeft;
     } else if (targetRight > currentHorizontalOffset + horizontalViewport) {
-      // Cell is to the right
       newHorizontalOffset = targetRight - horizontalViewport;
     }
 
@@ -133,16 +121,10 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   Widget build(BuildContext context) {
     final controller = context.watch<SpreadsheetController>();
 
-    // if (controller.isLoading) {
-    //   return const Center(child: CircularProgressIndicator());
-    // }
-
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 2. Determine the available size
         final Size currentSize = constraints.biggest;
 
-        // 3. Update controller if size has changed.
         if (controller.visibleWindowSize != currentSize) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             controller.updateVisibleWindowSize(currentSize);
@@ -155,24 +137,49 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           onKeyEvent: (node, event) {
             return _handleKeyboard(context, event, controller);
           },
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (notification) =>
-                _handleScrollNotification(notification, controller),
-            child: TableView.builder(
-              verticalDetails: ScrollableDetails.vertical(
-                controller: _verticalController,
+          // --------------------------------------------------------
+          // SCROLLBAR CONFIGURATION
+          // --------------------------------------------------------
+          // 1. Vertical Scrollbar
+          child: Scrollbar(
+            controller: _verticalController,
+            thumbVisibility: true,
+            trackVisibility: true, // Makes it look like a desktop app
+            // Important: Only react to Vertical updates
+            notificationPredicate: (notification) =>
+                notification.depth == 0 &&
+                notification.metrics.axis == Axis.vertical,
+            
+            // 2. Horizontal Scrollbar
+            child: Scrollbar(
+              controller: _horizontalController,
+              thumbVisibility: true,
+              trackVisibility: true,
+              // Important: Only react to Horizontal updates
+              notificationPredicate: (notification) =>
+                  notification.depth == 0 &&
+                  notification.metrics.axis == Axis.horizontal,
+                  
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) =>
+                    _handleScrollNotification(notification, controller),
+                child: TableView.builder(
+                  verticalDetails: ScrollableDetails.vertical(
+                    controller: _verticalController,
+                  ),
+                  horizontalDetails: ScrollableDetails.horizontal(
+                    controller: _horizontalController,
+                  ),
+                  pinnedRowCount: 1,
+                  pinnedColumnCount: 1,
+                  rowCount: controller.tableViewRows + 1,
+                  columnCount: controller.tableViewCols + 1,
+                  columnBuilder: (index) => _buildColumnSpan(index),
+                  rowBuilder: (index) => _buildRowSpan(index),
+                  cellBuilder: (context, vicinity) =>
+                      _buildCellDispatcher(context, vicinity, controller),
+                ),
               ),
-              horizontalDetails: ScrollableDetails.horizontal(
-                controller: _horizontalController,
-              ),
-              pinnedRowCount: 1,
-              pinnedColumnCount: 1,
-              rowCount: controller.tableViewRows + 1,
-              columnCount: controller.tableViewCols + 1,
-              columnBuilder: (index) => _buildColumnSpan(index),
-              rowBuilder: (index) => _buildRowSpan(index),
-              cellBuilder: (context, vicinity) =>
-                  _buildCellDispatcher(context, vicinity, controller),
             ),
           ),
         );
@@ -184,7 +191,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     ScrollNotification notification,
     SpreadsheetController controller,
   ) {
-    // We only care about vertical scrolling on the TableView
+    // We only care about vertical scrolling on the TableView for Infinite Loading
     if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
       return false;
     }
@@ -198,7 +205,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
     final int requiredRows = rawRowsNeeded.floor() + 1;
 
-    // Apply minimum constraint
     final int targetRows = math.max(controller.minRows, requiredRows);
 
     if (notification is ScrollUpdateNotification) {
@@ -215,9 +221,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       }
     }
 
+    // Return false so the notification bubbles up to the Vertical Scrollbar
     return false;
   }
 
+  // ... (Rest of the class: _handleKeyboard, _buildColumnSpan, _buildRowSpan, etc. remains unchanged)
+  
   KeyEventResult _handleKeyboard(
     BuildContext context,
     KeyEvent event,
@@ -238,14 +247,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         HardwareKeyboard.instance.isMetaPressed;
     final isAlt = HardwareKeyboard.instance.isAltPressed;
 
-    // ENTER KEY LOGIC
     if (logicalKey == LogicalKeyboardKey.enter ||
         logicalKey == LogicalKeyboardKey.numpadEnter) {
-      ctrl.startEditing(); // Normal start editing (keeps existing text)
+      ctrl.startEditing(); 
       return KeyEventResult.handled;
     }
 
-    // NAVIGATION LOGIC
     if (logicalKey == LogicalKeyboardKey.arrowUp) {
       ctrl.selectCell(
         max(ctrl.primarySelectedCell.x - 1, 0),
@@ -280,7 +287,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return KeyEventResult.handled;
     }
 
-    // SHORTCUTS
     if (isControl && keyLabel == 'c') {
       ctrl.copySelectionToClipboard();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -304,19 +310,14 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return KeyEventResult.handled;
     }
 
-    // 3. TYPING TO EDIT LOGIC (New)
-    // Check if it's a printable character and not a modifier combo
     final bool isPrintable =
         event.character != null &&
         event.character!.isNotEmpty &&
         !isControl &&
         !isAlt &&
-        // Filter out non-printable unicode control characters if necessary,
-        // though character!=null usually handles this well for standard keys.
         logicalKey.keyId > 32;
 
     if (isPrintable) {
-      // Pass the character to startEditing
       ctrl.startEditing(initialInput: event.character);
       return KeyEventResult.handled;
     }
@@ -337,14 +338,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   TableSpan _buildRowSpan(int index) {
     final controller = context.read<SpreadsheetController>();
 
-    // Index 0 is the Header Row
     if (index == 0) {
       return const TableSpan(
         extent: FixedTableSpanExtent(PageConstants.defaultColHeaderHeight),
       );
     }
 
-    // Data Rows (index 1 maps to data row 0)
     final int dataRowIndex = index - 1;
     final double rowHeight = controller.getRowHeight(dataRowIndex);
 
