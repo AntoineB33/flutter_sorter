@@ -1,18 +1,15 @@
 import 'dart:async'; // Add this import
 import 'dart:math';
 import 'dart:collection';
-import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
 import '../../domain/usecases/get_sheet_data_usecase.dart';
 import '../../domain/usecases/save_sheet_data_usecase.dart'; // Assume created
 import '../../domain/entities/column_type.dart';
 import '../../domain/usecases/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import '../../domain/usecases/manage_waiting_tasks.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_messages.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
@@ -22,48 +19,19 @@ import 'package:trying_flutter/features/media_sorter/presentation/logic/clipboar
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
-import 'dart:io';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sorting_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/mixins/get_names.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/layout_calculator.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
-
-class CellUpdateHistory {
-  Point<int> cell;
-  String previousValue;
-  String newValue;
-  CellUpdateHistory({
-    required this.cell,
-    required this.previousValue,
-    required this.newValue,
-  });
-}
-
-class UpdateHistory {
-  static const String updateCellContent = "updateCellContent";
-  static const String updateColumnType = "updateColumnType";
-  final String key;
-  final DateTime timestamp;
-  final List<CellUpdateHistory>? updatedCells = [];
-  int? colId;
-  ColumnType? previousColumnType;
-  ColumnType? newColumnType;
-  UpdateHistory({
-    required this.key,
-    required this.timestamp,
-    this.colId,
-    this.previousColumnType,
-    this.newColumnType,
-  });
-}
+import 'package:trying_flutter/features/media_sorter/presentation/logic/history_manager.dart';
 
 class SpreadsheetController extends ChangeNotifier with GetNames {
   int saveDelayMs = 500;
-  int historyMaxLength = 100;
 
   late final TreeManager _treeManager;
   late final SelectionManager _selectionManager;
   late final ClipboardManager _clipboardManager;
+  late final HistoryManager _historyManager;
   Size _visibleWindowSize = Size.zero;
 
   @override
@@ -94,7 +62,6 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   List<String> availableSheets = [];
   Map<String, SheetModel> loadedSheetsData = {};
   Map<String, SelectionModel> lastSelectedCells = {};
-  UpdateHistory? currentUpdateHistory;
 
   // Dimensions
   bool _isLoading = false;
@@ -142,9 +109,14 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     _treeManager = TreeManager(this);
     _selectionManager = SelectionManager(this);
     _clipboardManager = ClipboardManager(this);
+    _historyManager = HistoryManager(this);
     init();
   }
 
+  void discardCurrent() {
+    _historyManager.discardCurrent();
+  }
+  
   bool isValidSheetName(String name) {
     return name.isNotEmpty &&
         !name.contains(RegExp(r'[\\/:*?"<>|]')) &&
@@ -156,7 +128,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     _isLoading = true;
     notifyListeners();
 
-    await _saveSheetDataUseCase.clearAllData();
+    // await _saveSheetDataUseCase.clearAllData();
     await _saveSheetDataUseCase.initialize();
     try {
       sheetName = await _getDataUseCase.getLastOpenedSheetName();
@@ -377,22 +349,13 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
       }
     }
     if (!historyNavigation) {
-      String previousValue = onChange && currentUpdateHistory != null
-          ? currentUpdateHistory!.updatedCells![0].previousValue
-          : prevValue;
-      if (!keepPrevious) {
-        currentUpdateHistory = null;
-      }
-      currentUpdateHistory ??= UpdateHistory(
-        key: UpdateHistory.updateCellContent,
-        timestamp: DateTime.now(),
-      );
-      currentUpdateHistory!.updatedCells!.add(
-        CellUpdateHistory(
-          cell: Point(row, col),
-          previousValue: previousValue,
-          newValue: newValue,
-        ),
+      _historyManager.recordCellChange(
+        row,
+        col,
+        prevValue,
+        newValue,
+        onChange,
+        keepPrevious,
       );
     }
 
@@ -472,19 +435,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   void saveAndCalculate({bool save = true, bool updateHistory = false}) {
     if (save) {
       if (updateHistory) {
-        if (sheet.historyIndex < sheet.updateHistories.length - 1) {
-          sheet.updateHistories = sheet.updateHistories.sublist(
-            0,
-            sheet.historyIndex + 1,
-          );
-        }
-        sheet.updateHistories.add(currentUpdateHistory!);
-        sheet.historyIndex++;
-        if (sheet.historyIndex == historyMaxLength) {
-          sheet.updateHistories.removeAt(0);
-          sheet.historyIndex--;
-        }
-        currentUpdateHistory = null;
+        _historyManager.commit();
       }
       _saveExecutors[sheetName]!.execute(() async {
         await _saveSheetDataUseCase.saveSheet(sheetName, sheet);
@@ -583,12 +534,10 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
 
   void setColumnType(int col, ColumnType type, {bool updateHistory = true}) {
     if (updateHistory) {
-      currentUpdateHistory ??= UpdateHistory(
-        key: UpdateHistory.updateColumnType,
-        timestamp: DateTime.now(),
-        colId: col,
-        previousColumnType: getColumnType(col),
-        newColumnType: type,
+      _historyManager.recordColumnTypeChange(
+        col,
+        getColumnType(col),
+        type,
       );
     }
     if (type == ColumnType.attributes) {
@@ -610,6 +559,14 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     }
     notifyListeners();
     saveAndCalculate(updateHistory: true);
+  }
+
+  void applyDefaultColumnSequence() {
+    setColumnType(0, ColumnType.names);
+    setColumnType(1, ColumnType.dependencies);
+    setColumnType(2, ColumnType.dependencies);
+    setColumnType(3, ColumnType.dependencies);
+    setColumnType(7, ColumnType.urls);
   }
 
   void selectCell(int row, int col, bool keepSelection, bool updateMentions) {
@@ -669,62 +626,6 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
 
   void delete() {
     _clipboardManager.delete();
-  }
-
-  void undo() {
-    if (sheet.historyIndex < 0 || sheet.updateHistories.isEmpty) {
-      return;
-    }
-    final lastUpdate = sheet.updateHistories[sheet.historyIndex];
-    if (lastUpdate.key == UpdateHistory.updateCellContent) {
-      for (var cellUpdate in lastUpdate.updatedCells!) {
-        updateCell(
-          cellUpdate.cell.x,
-          cellUpdate.cell.y,
-          cellUpdate.previousValue,
-          historyNavigation: true,
-        );
-      }
-    } else if (lastUpdate.key == UpdateHistory.updateColumnType) {
-      if (lastUpdate.colId != null && lastUpdate.previousColumnType != null) {
-        setColumnType(
-          lastUpdate.colId!,
-          lastUpdate.previousColumnType!,
-          updateHistory: false,
-        );
-      }
-    }
-    sheet.historyIndex--;
-    notifyListeners();
-    saveAndCalculate();
-  }
-
-  void redo() {
-    if (sheet.historyIndex + 1 == sheet.updateHistories.length) {
-      return;
-    }
-    final nextUpdate = sheet.updateHistories[sheet.historyIndex + 1];
-    if (nextUpdate.key == UpdateHistory.updateCellContent) {
-      for (var cellUpdate in nextUpdate.updatedCells!) {
-        updateCell(
-          cellUpdate.cell.x,
-          cellUpdate.cell.y,
-          cellUpdate.newValue,
-          historyNavigation: true,
-        );
-      }
-    } else if (nextUpdate.key == UpdateHistory.updateColumnType) {
-      if (nextUpdate.colId != null && nextUpdate.newColumnType != null) {
-        setColumnType(
-          nextUpdate.colId!,
-          nextUpdate.newColumnType!,
-          updateHistory: false,
-        );
-      }
-    }
-    sheet.historyIndex++;
-    notifyListeners();
-    saveAndCalculate();
   }
 
   void selectAll() {
@@ -821,10 +722,18 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     editingMode = false;
     currentInitialInput = null;
     notifyListeners();
-    if (updateHistory && currentUpdateHistory != null) {
+    if (updateHistory && _historyManager.currentUpdateHistory != null) {
       saveAndCalculate(updateHistory: true);
     }
-    currentUpdateHistory = null;
+    discardCurrent();
+  }
+
+  void undo() {
+    _historyManager.undo();
+  }
+
+  void redo() {
+    _historyManager.redo();
   }
 
   bool editingMode = false;

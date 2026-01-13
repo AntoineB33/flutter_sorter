@@ -22,6 +22,6 @@ class SpreadsheetLayoutCalculator {
     // 5. Return the text height plus the vertical padding
     // We use math.max to ensure the row never shrinks below a standard single line
     // (approx 17px for font size 14) + padding.
-    return (textPainter.height + PageConstants.verticalPadding);
+    return (textPainter.height + PageConstants.verticalPadding * 2);
   }
 }

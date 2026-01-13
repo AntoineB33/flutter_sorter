@@ -434,7 +434,34 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     int col,
   ) async {
     final currentType = controller.getColumnType(col);
-    final result = await showMenu<ColumnType>(
+    final List<PopupMenuEntry<dynamic>> items = ColumnType.values.map<PopupMenuEntry<dynamic>>((entry) {
+      return CheckedPopupMenuItem<ColumnType>(
+        value: entry,
+        checked: entry == currentType,
+        child: Row(
+          children: [
+            Icon(Icons.circle, color: ColumnTypeX(entry).color, size: 12),
+            const SizedBox(width: 8),
+            Text(entry.name),
+          ],
+        ),
+      );
+    }).toList();
+    items.add(const PopupMenuDivider());
+    items.add(
+      const PopupMenuItem<String>(
+        value: 'default_sequence',
+        child: Row(
+          children: [
+            Icon(Icons.restore, size: 16), // Use a relevant icon
+            SizedBox(width: 8),
+            Text('Default Sequence'),
+          ],
+        ),
+      ),
+    );
+
+    final result = await showMenu<dynamic>(
       context: context,
       position: RelativeRect.fromLTRB(
         position.dx,
@@ -442,23 +469,17 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         position.dx,
         position.dy,
       ),
-      items: ColumnType.values.map((entry) {
-        return CheckedPopupMenuItem<ColumnType>(
-          value: entry,
-          checked: entry == currentType,
-          child: Row(
-            children: [
-              Icon(Icons.circle, color: ColumnTypeX(entry).color, size: 12),
-              const SizedBox(width: 8),
-              Text(entry.name),
-            ],
-          ),
-        );
-      }).toList(),
+      items: items,
     );
 
     if (result != null) {
-      controller.setColumnType(col, result);
+      if (result is ColumnType) {
+        controller.setColumnType(col, result);
+      } else if (result == 'default_sequence') {
+        // Call the method on your controller to reset the sequence
+        // Ensure this method exists in your SpreadsheetController
+        controller.applyDefaultColumnSequence(); 
+      }
     }
   }
 
@@ -477,9 +498,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         position.dy,
       ),
       items: [
-        const PopupMenuItem(value: 'sort_asc', child: Text('Sort A-Z')),
-        const PopupMenuItem(value: 'sort_desc', child: Text('Sort Z-A')),
-        const PopupMenuDivider(),
         const PopupMenuItem(value: 'change_type', child: Text('Change Type ▶')),
       ],
     );

@@ -71,7 +71,7 @@ class ClipboardManager {
     );
 
     // 2. Update UI & Persist
-    _controller.currentUpdateHistory = null;
+    _controller.discardCurrent();
     for (var update in updates) {
       _controller.updateCell(update.row, update.col, update.value, keepPrevious: true);
     }
