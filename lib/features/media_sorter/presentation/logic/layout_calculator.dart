@@ -5,23 +5,29 @@ class SpreadsheetLayoutCalculator {
   // Pure function: takes text and width, returns height.
   // Does NOT depend on the Controller state.
   double calculateRowHeight(String text, double availableWidth) {
-    // Sanity check: If column is collapsed or too small, return a default minimum
     if (availableWidth <= 0) return 30.0;
+    
+    const double horizontalPadding = PageConstants.horizontalPadding * 2; // Left + Right padding
+    const double borderWidth = PageConstants.borderWidth * 2;       // Left + Right border
 
-    // 3. Create a TextPainter
+    // 1. Adjust available width for text wrapping
+    final double textLayoutWidth = availableWidth - horizontalPadding - borderWidth;
+
+    if (textLayoutWidth <= 0) return 30.0;
+
     final TextPainter textPainter = TextPainter(
       text: TextSpan(text: text, style: PageConstants.cellStyle),
-      textDirection: TextDirection.ltr, // Or match your app's directionality
-      // Use textScaler if available to respect user's font size settings
+      textDirection: TextDirection.ltr,
       textScaler: TextScaler.noScaling,
     );
 
-    // 4. Layout the text to calculate dimensions
-    textPainter.layout(minWidth: 0, maxWidth: availableWidth);
+    // 2. Layout using the constricted width
+    textPainter.layout(minWidth: 0, maxWidth: textLayoutWidth);
 
-    // 5. Return the text height plus the vertical padding
-    // We use math.max to ensure the row never shrinks below a standard single line
-    // (approx 17px for font size 14) + padding.
-    return (textPainter.height + PageConstants.verticalPadding * 2);
+    // 3. Add Vertical Spacing
+    const double verticalPaddingTotal = PageConstants.verticalPadding * 2; 
+    const double verticalBorderTotal = PageConstants.borderWidth * 2;
+
+    return textPainter.height + verticalPaddingTotal + verticalBorderTotal;
   }
 }
