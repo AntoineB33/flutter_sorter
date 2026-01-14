@@ -144,7 +144,6 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
   void didUpdateWidget(SpreadsheetDataCell oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Handle transition into Edit Mode
     if (widget.isEditing && !oldWidget.isEditing) {
       if (widget.initialEditText != null) {
         _textController.text = widget.initialEditText!;
@@ -154,7 +153,6 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
 
       _editFocusNode.requestFocus();
 
-      // Ensure cursor is at the end of the text
       _textController.selection = TextSelection.fromPosition(
         TextPosition(offset: _textController.text.length),
       );
@@ -170,61 +168,50 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
 
   void _handleTap() {
     final int now = DateTime.now().millisecondsSinceEpoch;
-
     if (now - _lastTapTime < _doubleTapTimeout) {
       widget.onDoubleTap();
     } else {
       widget.onTap();
     }
-
     _lastTapTime = now;
   }
 
-  /// Manually inserts a newline at the current cursor position
   void _insertNewline() {
     final text = _textController.text;
     final selection = _textController.selection;
-
-    // Fallback if selection is invalid (rare)
     final int start = selection.start >= 0 ? selection.start : text.length;
     final int end = selection.end >= 0 ? selection.end : text.length;
-
-    // Replace selected text (or insert at cursor) with \n
     final newText = text.replaceRange(start, end, '\n');
 
     _textController.value = TextEditingValue(
       text: newText,
-      selection: TextSelection.collapsed(offset: start + 1), // Move cursor after \n
+      selection: TextSelection.collapsed(offset: start + 1),
     );
-    // Trigger onChanged manually since direct controller manipulation doesn't always fire it
     widget.onChanged?.call(newText);
   }
 
   @override
   Widget build(BuildContext context) {
+    // -------------------------------------------------------------------------
+    // EDIT MODE
+    // -------------------------------------------------------------------------
     if (widget.isEditing) {
       return Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          // 1. The border takes up 2 pixels of space on all sides
+          // Border takes 2px
           border: Border.all(color: Colors.blue, width: 2.0),
         ),
         child: CallbackShortcuts(
           bindings: {
-            const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
-              _insertNewline();
-            },
-            const SingleActivator(LogicalKeyboardKey.enter, shift: true): () {
-              widget.onSave(_textController.text, moveUp: true);
-            },
-            const SingleActivator(LogicalKeyboardKey.enter): () {
-              widget.onSave(_textController.text, moveUp: false);
-            },
-            const SingleActivator(LogicalKeyboardKey.escape): () {
-              widget.onEscape(widget.previousContent);
-            },
+            const SingleActivator(LogicalKeyboardKey.enter, control: true): () => _insertNewline(),
+            const SingleActivator(LogicalKeyboardKey.enter, shift: true): () =>
+                widget.onSave(_textController.text, moveUp: true),
+            const SingleActivator(LogicalKeyboardKey.enter): () =>
+                widget.onSave(_textController.text, moveUp: false),
+            const SingleActivator(LogicalKeyboardKey.escape): () =>
+                widget.onEscape(widget.previousContent),
           },
-          // 2. Wrap in ScrollConfiguration to remove the scrollbar
           child: ScrollConfiguration(
             behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
             child: TextField(
@@ -234,16 +221,23 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
               maxLines: null,
               minLines: 1,
               onChanged: widget.onChanged,
+              
+              // FIX 1: Align text to the top to match View Mode's Alignment.topLeft
+              textAlignVertical: TextAlignVertical.top,
+
+              // FIX 2: Force StrutStyle. This ensures the line height and vertical 
+              // metrics exactly match a standard Text widget, preventing the "bigger" look.
+              strutStyle: StrutStyle.fromTextStyle(PageConstants.cellStyle),
+
+              style: PageConstants.cellStyle,
               decoration: const InputDecoration(
-                // 3. Compensation Padding:
-                // View Mode Padding (4px) - Edit Border Width (2px) = 2px
-                // This ensures the text starts at the exact same pixel coordinate.
-                contentPadding: EdgeInsets.all(2),
+                // FIX 3: Precise Padding Math
+                // View Mode Padding (4px) - Edit Border (2px) = 2px required.
+                // We use 3px horizontal to ensure the cursor doesn't overlap the border visually.
+                contentPadding: EdgeInsets.fromLTRB(3, 2, 2, 2),
                 border: InputBorder.none,
                 isDense: true,
               ),
-              // Ensure this matches the View Mode style exactly
-              style: PageConstants.cellStyle, 
               onSubmitted: (value) => widget.onSave(value, moveUp: false),
             ),
           ),
@@ -251,13 +245,17 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
       );
     }
 
-    // View Mode
+    // -------------------------------------------------------------------------
+    // VIEW MODE
+    // -------------------------------------------------------------------------
     return InkWell(
       onTap: _handleTap,
       child: Container(
         alignment: Alignment.topLeft,
-        // 4. View Mode has 4px padding
-        padding: const EdgeInsets.symmetric(horizontal: PageConstants.horizontalPadding, vertical: PageConstants.verticalPadding),
+        padding: const EdgeInsets.symmetric(
+          horizontal: PageConstants.horizontalPadding, 
+          vertical: PageConstants.verticalPadding
+        ),
         decoration: BoxDecoration(
           color: widget.isPrimarySelectedCell
               ? Colors.blue.shade300
@@ -269,8 +267,7 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
         ),
         child: Text(
           widget.content,
-          // 5. Updated to use PageConstants.cellStyle to match Edit Mode font exactly
-          style: PageConstants.cellStyle, 
+          style: PageConstants.cellStyle,
         ),
       ),
     );
