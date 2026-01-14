@@ -421,7 +421,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
             sheet.rowsBottomPos[r] = sheet.rowsBottomPos[r] + heightDiff;
           }
         }
-      } // TODO: else
+      }
     } else if (heightItNeeds == getDefaultRowHeight() &&
         row == sheet.rowsBottomPos.length - 1) {
       int i = row;

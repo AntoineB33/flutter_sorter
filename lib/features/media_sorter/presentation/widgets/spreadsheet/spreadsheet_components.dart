@@ -150,9 +150,7 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
       } else {
         _textController.text = widget.content;
       }
-
       _editFocusNode.requestFocus();
-
       _textController.selection = TextSelection.fromPosition(
         TextPosition(offset: _textController.text.length),
       );
@@ -177,17 +175,17 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
   }
 
   void _insertNewline() {
-    final text = _textController.text;
-    final selection = _textController.selection;
-    final int start = selection.start >= 0 ? selection.start : text.length;
-    final int end = selection.end >= 0 ? selection.end : text.length;
-    final newText = text.replaceRange(start, end, '\n');
+      final text = _textController.text;
+      final selection = _textController.selection;
+      final int start = selection.start >= 0 ? selection.start : text.length;
+      final int end = selection.end >= 0 ? selection.end : text.length;
+      final newText = text.replaceRange(start, end, '\n');
 
-    _textController.value = TextEditingValue(
-      text: newText,
-      selection: TextSelection.collapsed(offset: start + 1),
-    );
-    widget.onChanged?.call(newText);
+      _textController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: start + 1),
+      );
+      widget.onChanged?.call(newText);
   }
 
   @override
@@ -196,11 +194,22 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
     // EDIT MODE
     // -------------------------------------------------------------------------
     if (widget.isEditing) {
+      const double borderWidth = 2.0;
+
       return Container(
+        alignment: Alignment.topLeft,
         decoration: BoxDecoration(
           color: Colors.white,
-          // Border takes 2px
-          border: Border.all(color: Colors.blue, width: 2.0),
+          border: Border.all(color: Colors.blue, width: borderWidth),
+        ),
+        // FIX 1: MATH COMPENSATION
+        // ViewPadding - BorderWidth = EditPadding.
+        // This ensures the Text starts at the exact same pixel coordinate.
+        padding: const EdgeInsets.fromLTRB(
+          PageConstants.horizontalPadding - borderWidth, 
+          PageConstants.verticalPadding - borderWidth,
+          PageConstants.horizontalPadding - borderWidth,
+          PageConstants.verticalPadding - borderWidth,
         ),
         child: CallbackShortcuts(
           bindings: {
@@ -222,21 +231,26 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
               minLines: 1,
               onChanged: widget.onChanged,
               
-              // FIX 1: Align text to the top to match View Mode's Alignment.topLeft
+              // FIX 2: ALIGNMENT
+              // Ensure we don't center vertically if the cell is tall
               textAlignVertical: TextAlignVertical.top,
 
-              // FIX 2: Force StrutStyle. This ensures the line height and vertical 
-              // metrics exactly match a standard Text widget, preventing the "bigger" look.
+              // FIX 3: STRUT STYLE
+              // Force the line height to match the Text widget exactly
               strutStyle: StrutStyle.fromTextStyle(PageConstants.cellStyle),
-
               style: PageConstants.cellStyle,
+              
+              // FIX 4: ZERO DECORATION
+              // We remove all internal padding from the TextField and let 
+              // the Container above handle the positioning.
               decoration: const InputDecoration(
-                // FIX 3: Precise Padding Math
-                // View Mode Padding (4px) - Edit Border (2px) = 2px required.
-                // We use 3px horizontal to ensure the cursor doesn't overlap the border visually.
-                contentPadding: EdgeInsets.fromLTRB(3, 2, 2, 2),
-                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
                 isDense: true,
+                border: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
               ),
               onSubmitted: (value) => widget.onSave(value, moveUp: false),
             ),
