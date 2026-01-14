@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class User {
   double weightKg;
   double heightCm; // You'll need to input this
@@ -55,8 +57,8 @@ void main() {
   // Example: 24yo Male, 82.2kg, Est 180cm, Moderately Active (workout 3-4x/week)
   User me = User(82.2, 180, 24, 'male', 1.55);
 
-  print("--- DAILY TARGETS ---");
-  print(me.macros);
+  debugPrint("--- DAILY TARGETS ---");
+  debugPrint(me.macros.toString());
   
   // Example Logic: Find a dinner that fits remaining macros
   // You would iterate through your database here to find the closest match

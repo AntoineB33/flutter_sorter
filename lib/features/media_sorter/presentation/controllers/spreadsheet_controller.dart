@@ -453,7 +453,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
         if (result.errorRoot.newChildren!.isNotEmpty || nVal == 0) {
           return result;
         }
-        final service = SortingService();
+        // final service = SortingService();
 
         Map<int, List<SortingRule>> myRules = {};
         for (int rowId = 0; rowId < nVal; rowId++) {

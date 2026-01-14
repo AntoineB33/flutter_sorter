@@ -6,6 +6,11 @@ class SpreadsheetConstants {
       r'^(?<prefix>as far as possible from )(?<any>any)?(?<att>.+)$';
   static const patternAreas =
       r'^(?<prefix>.*\|)(?<any>any)?(?<att>.+)(?<suffix>\|.*)$';
+  static const appearFirst = "-appear_fst";
+  static const appearLast = "-appear_lst";
+  static const first = "-fst";
+  static const last = "-lst";
+
   static const all = -1;
   static const notUsedCst = -2;
 

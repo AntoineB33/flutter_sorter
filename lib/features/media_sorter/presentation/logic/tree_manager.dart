@@ -261,7 +261,7 @@ class TreeManager {
           }
         }
         if (found == -1) {
-          _controller.selectCell(node.cellsToSelect![0].rowId, 0, false, false);
+          _controller.selectCell(node.cellsToSelect![0].rowId, node.cellsToSelect![0].colId, false, false);
         } else {
           _controller.selectCell(
             node.cellsToSelect![(found + 1) % node.cellsToSelect!.length].rowId,
@@ -308,11 +308,11 @@ class TreeManager {
             }
           }
           if (found == -1) {
-            _controller.selectCell(n.newChildren![0].rowId!, 0, false, false);
+            _controller.selectCell(n.newChildren![0].rowId!, n.newChildren![0].colId!, false, false);
           } else {
             _controller.selectCell(
               n.newChildren![(found + 1) % n.newChildren!.length].rowId!,
-              0,
+              n.newChildren![(found + 1) % n.newChildren!.length].colId!,
               false, false
             );
           }
@@ -328,7 +328,6 @@ class TreeManager {
   }
 
   void populateTree(List<NodeStruct> roots) {
-    // TODO keep same expansion if the user just moved, or even if there have been changes
     if (!_controller.calculatedOnce) {
       return;
     }

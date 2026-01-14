@@ -90,10 +90,7 @@ class CalculateUsecase with GetNames {
     if (table.length < 5000) {
       return RawDataMessage(table: table, columnTypes: columnTypes);
     } else {
-      // TODO: Handle edge cases for data containing ';;;' or '|||'
-      // Optimization: Using a safer separator or standard JSON
-      // But keeping your logic for the example:
-      final String combined = table.map((row) => row.join(';;;')).join('|||');
+      final String combined = jsonEncode(table);
       final Uint8List bytes = utf8.encode(combined);
       final transferable = TransferableTypedData.fromList([bytes]);
 
@@ -104,7 +101,7 @@ class CalculateUsecase with GetNames {
     }
   }
 
-  AnalysisResult run()  {
+  AnalysisResult run() {
     _decodeData();
     _getEverything();
 
@@ -130,19 +127,11 @@ class CalculateUsecase with GetNames {
 
   void _decodeData() {
     if (dataPackage is TransferableTypedData) {
-      // 1. Materialize bytes and decode to String
-      // We synchronize execution here to get the raw bytes out of the transferable wrapper
-      final Uint8List bytes = (dataPackage as TransferableTypedData)
+      final Uint8List receivedBytes = (dataPackage as TransferableTypedData)
           .materialize()
           .asUint8List();
-      final String giantString = utf8.decode(bytes);
-
-      // 2. Reconstruct List<List<String>>
-      // First split by Row Delimiter (|||), then by Cell Delimiter (;;;)
-      table = giantString
-          .split('|||')
-          .map((rowString) => rowString.split(';;;'))
-          .toList();
+      final List<dynamic> decodedTable = jsonDecode(utf8.decode(receivedBytes));
+      table = decodedTable.map((row) => (row as List).cast<String>()).toList();
     } else if (dataPackage is List<List<String>>) {
       table = dataPackage as List<List<String>>;
     } else {
@@ -231,9 +220,7 @@ class CalculateUsecase with GetNames {
     }
   }
 
-  void dfsIterative(
-    Map<Attribute, Map<int, List<int>>> graph
-  ) {
+  void dfsIterative(Map<Attribute, Map<int, List<int>>> graph) {
     final visited = <Attribute>{};
     final completed = <Attribute>{};
     List<Attribute> path = [];
@@ -255,18 +242,18 @@ class CalculateUsecase with GetNames {
                 if (!rowsToCol.containsKey(childRowId)) {
                   rowsToCol[childRowId] = added;
                 } else if (rowsToCol[childRowId] != added) {
-                  List<NodeStruct> newPath = findPath(graph, att, childRowId).map(
-                      (k) => NodeStruct(
-                        cells: k,
-                      ),
-                    ).toList();
+                  List<NodeStruct> newPath = findPath(
+                    graph,
+                    att,
+                    childRowId,
+                  ).map((k) => NodeStruct(cells: k)).toList();
                   for (int nodeId = 0; nodeId < newPath.length; nodeId++) {
-                    newPath[nodeId].message = "${getAttName(newPath[nodeId].att!)} points to row ${getAttName(nodeId < newPath.length - 1 ? newPath[nodeId + 1].att! : att)}";
+                    newPath[nodeId].message =
+                        "${getAttName(newPath[nodeId].att!)} points to row ${getAttName(nodeId < newPath.length - 1 ? newPath[nodeId + 1].att! : att)}";
                   }
                   redundantRef.add(
                     NodeStruct(
-                      message:
-                          "${getAttName(att)} already pointed",
+                      message: "${getAttName(att)} already pointed",
                       cells: rowsToCol[childRowId]!
                           .map((colId) => Cell(rowId: childRowId, colId: colId))
                           .toList(),
@@ -304,10 +291,8 @@ class CalculateUsecase with GetNames {
             final cycle = path.sublist(path.indexOf(childAtt));
             final cyclePathNodes = cycle
                 .map(
-                  (k) => NodeStruct(
-                    instruction: SpreadsheetConstants.row,
-                    att: k,
-                  ),
+                  (k) =>
+                      NodeStruct(instruction: SpreadsheetConstants.row, att: k),
                 )
                 .toList();
             errorRoot.newChildren!.add(
@@ -343,7 +328,7 @@ class CalculateUsecase with GetNames {
     int? start;
     int? end;
 
-    for (final (positive, negPosPart)  in [negPos[0], negPos[2]].indexed) {
+    for (final (positive, negPosPart) in [negPos[0], negPos[2]].indexed) {
       var parts = negPosPart.split("-");
       for (final (index, part) in parts.indexed) {
         if (part.isNotEmpty) {
@@ -404,6 +389,17 @@ class CalculateUsecase with GetNames {
     return intervals;
   }
 
+  bool isValidAttName(String attName) {
+    if (attName.contains(SpreadsheetConstants.appearFirst) ||
+        attName.contains(SpreadsheetConstants.appearLast) ||
+        attName.contains(SpreadsheetConstants.first) ||
+        attName.contains(SpreadsheetConstants.last) ||
+        attName.trim().isEmpty) {
+      return false;
+    }
+    return true;
+  }
+
   Attribute getAttAndCol(String attWritten, int rowId, int colId) {
     Attribute att = Attribute();
     List<String> splitStr = attWritten.split(".");
@@ -456,7 +452,15 @@ class CalculateUsecase with GetNames {
       }
       att = Attribute.row(numK);
     } else {
-      // TODO: validate attribute name
+      if (!isValidAttName(name)) {
+        errorRoot.newChildren!.add(
+          NodeStruct(
+            message: "Invalid attribute name: \"$name\"",
+            rowId: rowId, colId: colId,
+          ),
+        );
+        return att;
+      }
       if (attColId != notUsedCst) {
         if (columnTypes[attColId] != ColumnType.attributes &&
             columnTypes[attColId] != ColumnType.sprawl) {
@@ -559,10 +563,14 @@ class CalculateUsecase with GetNames {
               return;
             }
 
-            bool isAppearFst = attWritten.endsWith("-appear_fst");
-            bool isAppearLst = attWritten.endsWith("-appear_lst");
-            bool isFst = attWritten.endsWith("-fst");
-            bool isLst = attWritten.endsWith("-lst");
+            bool isAppearFst = attWritten.endsWith(
+              SpreadsheetConstants.appearFirst,
+            );
+            bool isAppearLst = attWritten.endsWith(
+              SpreadsheetConstants.appearLast,
+            );
+            bool isFst = attWritten.endsWith(SpreadsheetConstants.first);
+            bool isLst = attWritten.endsWith(SpreadsheetConstants.last);
             Cell cell = Cell(rowId: rowId, colId: colId);
             if (isAppearFst || isAppearLst) {
               attWritten = attWritten
@@ -581,7 +589,7 @@ class CalculateUsecase with GetNames {
               afterAllOthers[rowId]![Attribute.row(all)] = cell;
               continue;
             }
-            
+
             Attribute att = getAttAndCol(attWritten, rowId, colId);
             if (errorRoot.newChildren!.isNotEmpty) {
               return;
@@ -600,16 +608,14 @@ class CalculateUsecase with GetNames {
                 attToDist[att]!.add(rowId);
               }
             } else {
-              if (children.isEmpty || children[children.length - 1].att != att || children[children.length - 1].newChildren![0].rowId != rowId) {
-                children.add(
-                  NodeStruct(
-                    att: att,
-                    newChildren: [],
-                  ),
-                );
+              if (children.isEmpty ||
+                  children[children.length - 1].att != att ||
+                  children[children.length - 1].newChildren![0].rowId !=
+                      rowId) {
+                children.add(NodeStruct(att: att, newChildren: []));
               }
               children[children.length - 1].newChildren!.add(
-                NodeStruct(rowId: rowId, colId: colId)
+                NodeStruct(rowId: rowId, colId: colId),
               );
             }
             if (isAppearFst) {
@@ -665,12 +671,17 @@ class CalculateUsecase with GetNames {
                     message: "path 1",
                     startOpen: true,
                     newChildren:
-                        findPath(attToRefFromAttColToCol, Attribute.row(urlFrom[k]), k)
+                        findPath(
+                              attToRefFromAttColToCol,
+                              Attribute.row(urlFrom[k]),
+                              k,
+                            )
                             .map(
                               (x) => NodeStruct(
                                 cells: x
                                     .map(
-                                      (y) => Cell(rowId: y.rowId, colId: y.colId),
+                                      (y) =>
+                                          Cell(rowId: y.rowId, colId: y.colId),
                                     )
                                     .toList(),
                               ),
@@ -680,17 +691,19 @@ class CalculateUsecase with GetNames {
                   NodeStruct(
                     message: "path 2",
                     startOpen: true,
-                    newChildren: findPath(attToRefFromAttColToCol, Attribute.row(i), k)
-                        .map(
-                          (x) => NodeStruct(
-                            cells: x
-                                .map(
-                                  (y) => Cell(rowId: y.rowId, colId: y.colId),
-                                )
-                                .toList(),
-                          ),
-                        )
-                        .toList(),
+                    newChildren:
+                        findPath(attToRefFromAttColToCol, Attribute.row(i), k)
+                            .map(
+                              (x) => NodeStruct(
+                                cells: x
+                                    .map(
+                                      (y) =>
+                                          Cell(rowId: y.rowId, colId: y.colId),
+                                    )
+                                    .toList(),
+                              ),
+                            )
+                            .toList(),
                   ),
                 ],
               ),
@@ -748,9 +761,7 @@ class CalculateUsecase with GetNames {
         }
         var rowsList = attToDist[attr]!;
         if (rowsList.length == 1) {
-          onlyOneMediumDist.add(
-            NodeStruct(att: attr),
-          );
+          onlyOneMediumDist.add(NodeStruct(att: attr));
           continue;
         }
         rowsList = rowsList..sort();
@@ -808,8 +819,7 @@ class CalculateUsecase with GetNames {
     if (onlyOneMediumDist.isNotEmpty) {
       warningRoot.newChildren!.add(
         NodeStruct(
-          message:
-              "Attributes with only one medium in sprawl columns found",
+          message: "Attributes with only one medium in sprawl columns found",
           newChildren: onlyOneMediumDist,
         ),
       );
@@ -817,8 +827,6 @@ class CalculateUsecase with GetNames {
 
     instrTable = List.generate(rowCount, (_) => {});
 
-    //TODO: att1 with "att2 -appear_fst" means the first medium with att2 is a att1
-    //TODO: att1 with "att2 -fst" means all media with att1 come before other media with att2
     List<Attribute> stack = [];
     for (final MapEntry(key: k, value: vMap) in isFstToAppear.entries) {
       for (Attribute a in isFstToAppear[k]?.keys ?? []) {
@@ -826,8 +834,8 @@ class CalculateUsecase with GetNames {
           warningRoot.newChildren!.add(
             NodeStruct(
               message:
-                  "useless 'appear_fst' since it is first to all others",
-              cell: isFstToAppear[k]![a]!
+                  "useless '${SpreadsheetConstants.appearFirst}' since it is first to all others",
+              cell: isFstToAppear[k]![a]!,
             ),
           );
         }
@@ -844,22 +852,30 @@ class CalculateUsecase with GetNames {
             }
           } else if (currAtt.rowId == all) {
             instrTable[k][InstrStruct(
-              true,
-              false,
-              validRowIndexes.where((entry) => entry != newIndexes[k]).map((entry) => newIndexes[entry]).toList(),
-              [
-                [-maxInt, -1],
-              ],
-            )] = vMap.values.first;
+                  true,
+                  false,
+                  validRowIndexes
+                      .where((entry) => entry != newIndexes[k])
+                      .map((entry) => newIndexes[entry])
+                      .toList(),
+                  [
+                    [-maxInt, -1],
+                  ],
+                )] =
+                vMap.values.first;
           } else {
             instrTable[k][InstrStruct(
-              true,
-              false,
-              attToRefFromAttColToCol[currAtt]!.keys.where((key) => isMedium[key]).map((entry) => newIndexes[entry]).toList(),
-              [
-                [-maxInt, -1],
-              ],
-            )] = vMap.values.first;
+                  true,
+                  false,
+                  attToRefFromAttColToCol[currAtt]!.keys
+                      .where((key) => isMedium[key])
+                      .map((entry) => newIndexes[entry])
+                      .toList(),
+                  [
+                    [-maxInt, -1],
+                  ],
+                )] =
+                vMap.values.first;
           }
         }
       }
@@ -871,8 +887,8 @@ class CalculateUsecase with GetNames {
           warningRoot.newChildren!.add(
             NodeStruct(
               message:
-                  "useless 'appear_lst' since it is last to all others",
-              cell: isLstToAppear[k]![a]!
+                  "useless '${SpreadsheetConstants.appearLast}' since it is last to all others",
+              cell: isLstToAppear[k]![a]!,
             ),
           );
         }
@@ -889,22 +905,30 @@ class CalculateUsecase with GetNames {
             }
           } else if (currAtt.rowId == all) {
             instrTable[k][InstrStruct(
-              true,
-              false,
-              validRowIndexes.where((entry) => entry != newIndexes[k]).map((entry) => newIndexes[entry]).toList(),
-              [
-                [1, maxInt],
-              ],
-            )] = vMap.values.first;
+                  true,
+                  false,
+                  validRowIndexes
+                      .where((entry) => entry != newIndexes[k])
+                      .map((entry) => newIndexes[entry])
+                      .toList(),
+                  [
+                    [1, maxInt],
+                  ],
+                )] =
+                vMap.values.first;
           } else {
             instrTable[k][InstrStruct(
-              true,
-              false,
-              attToRefFromAttColToCol[currAtt]!.keys.where((key) => isMedium[key]).map((entry) => newIndexes[entry]).toList(),
-              [
-                [1, maxInt],
-              ],
-            )] = vMap.values.first;
+                  true,
+                  false,
+                  attToRefFromAttColToCol[currAtt]!.keys
+                      .where((key) => isMedium[key])
+                      .map((entry) => newIndexes[entry])
+                      .toList(),
+                  [
+                    [1, maxInt],
+                  ],
+                )] =
+                vMap.values.first;
           }
         }
       }
@@ -915,8 +939,8 @@ class CalculateUsecase with GetNames {
           warningRoot.newChildren!.add(
             NodeStruct(
               message:
-                  "useless 'fst' since it is before all others",
-              cell: beforeAllOthers[k]![a]!
+                  "useless '${SpreadsheetConstants.first}' since it is before all others",
+              cell: beforeAllOthers[k]![a]!,
             ),
           );
         }
@@ -925,22 +949,30 @@ class CalculateUsecase with GetNames {
         for (Attribute a in beforeAllOthers[k]?.keys ?? []) {
           if (a.rowId == all) {
             instrTable[k][InstrStruct(
-              true,
-              false,
-              validRowIndexes.where((entry) => entry != newIndexes[k]).map((entry) => newIndexes[entry]).toList(),
-              [
-                [-maxInt, -1],
-              ],
-            )] = vMap.values.first;
+                  true,
+                  false,
+                  validRowIndexes
+                      .where((entry) => entry != newIndexes[k])
+                      .map((entry) => newIndexes[entry])
+                      .toList(),
+                  [
+                    [-maxInt, -1],
+                  ],
+                )] =
+                vMap.values.first;
           } else {
             instrTable[k][InstrStruct(
-              true,
-              false,
-              attToRefFromAttColToCol[a]!.keys.where((key) => isMedium[key]).map((entry) => newIndexes[entry]).toList(),
-              [
-                [-maxInt, -1],
-              ],
-            )] = vMap.values.first;
+                  true,
+                  false,
+                  attToRefFromAttColToCol[a]!.keys
+                      .where((key) => isMedium[key])
+                      .map((entry) => newIndexes[entry])
+                      .toList(),
+                  [
+                    [-maxInt, -1],
+                  ],
+                )] =
+                vMap.values.first;
           }
         }
       }
@@ -951,8 +983,8 @@ class CalculateUsecase with GetNames {
           warningRoot.newChildren!.add(
             NodeStruct(
               message:
-                  "useless 'lst' since it is after all others",
-              cell: afterAllOthers[k]![a]!
+                  "useless '${SpreadsheetConstants.last}' since it is after all others",
+              cell: afterAllOthers[k]![a]!,
             ),
           );
         }
@@ -961,22 +993,30 @@ class CalculateUsecase with GetNames {
         for (Attribute a in afterAllOthers[k]?.keys ?? []) {
           if (a.rowId == all) {
             instrTable[k][InstrStruct(
-              true,
-              false,
-              validRowIndexes.where((entry) => entry != newIndexes[k]).map((entry) => newIndexes[entry]).toList(),
-              [
-                [1, maxInt],
-              ],
-            )] = vMap.values.first;
+                  true,
+                  false,
+                  validRowIndexes
+                      .where((entry) => entry != newIndexes[k])
+                      .map((entry) => newIndexes[entry])
+                      .toList(),
+                  [
+                    [1, maxInt],
+                  ],
+                )] =
+                vMap.values.first;
           } else {
             instrTable[k][InstrStruct(
-              true,
-              false,
-              attToRefFromAttColToCol[a]!.keys.where((key) => isMedium[key]).map((entry) => newIndexes[entry]).toList(),
-              [
-                [1, maxInt],
-              ],
-            )] = vMap.values.first;
+                  true,
+                  false,
+                  attToRefFromAttColToCol[a]!.keys
+                      .where((key) => isMedium[key])
+                      .map((entry) => newIndexes[entry])
+                      .toList(),
+                  [
+                    [1, maxInt],
+                  ],
+                )] =
+                vMap.values.first;
           }
         }
       }
@@ -1094,8 +1134,7 @@ class CalculateUsecase with GetNames {
       for (int colId = 0; colId < row.length; colId++) {
         if (columnTypes[colId] == ColumnType.dependencies &&
             row[colId].isNotEmpty) {
-          // TODO: OR and AND
-          for(String instr in row[colId].split(";")) {
+          for (String instr in row[colId].split(";")) {
             if (instr.isEmpty) continue;
             final instrSplit = instr.split("_");
             if (instrSplit.length != depPattern[colId].length - 1 &&
@@ -1145,7 +1184,11 @@ class CalculateUsecase with GetNames {
               }
             }
 
-            Attribute att = getAttAndCol(match.namedGroup('att')!, rowId, colId);
+            Attribute att = getAttAndCol(
+              match.namedGroup('att')!,
+              rowId,
+              colId,
+            );
             if (errorRoot.newChildren!.isNotEmpty) {
               return;
             }
@@ -1250,9 +1293,7 @@ class CalculateUsecase with GetNames {
               NodeStruct(
                 message: "duplicate instruction",
                 newChildren: [
-                  NodeStruct(
-                    cell: instrTable[rowId][instruction],
-                  ),
+                  NodeStruct(cell: instrTable[rowId][instruction]),
                   NodeStruct(
                     cell: Cell(rowId: rowId, colId: colId),
                   ),
@@ -1346,17 +1387,15 @@ class CalculateUsecase with GetNames {
       return urls[i.value];
     }).toList();
 
-    
-
     // final testData = TestGenerator.generateTestCaseRelative(nVal);
     // final Map<int, List<Rule>> myRules = testData['rules'];
-    
+
     // // Manual Override Example
     // myRules[0] = [Rule(0, 1), Rule(-2, -2, relativeTo: 5)];
     // myRules[1] = [Rule(0, 1), Rule(-2, -2, relativeTo: 5)];
 
     // debugPrint("Solving for N=$nVal with Pure Dart Solver...");
-    
+
     // final stopwatch = Stopwatch()..start();
     // final result = ConstrainedSortSolver.solve(nVal, myRules);
     // stopwatch.stop();
@@ -1368,31 +1407,27 @@ class CalculateUsecase with GetNames {
     //   debugPrint("No valid sorting exists.");
     // }
 
-
-
-
-
-
-
-
     // // Example constraints:
     // // 0 is 3 places before 2 (-3), or 5+ places after (5 to maxInt)
     // // Replaces: (dist) => dist == -3 || dist >= 5
     // solver.addConstraint(0, 2, [
-    //   [-3, -3], 
+    //   [-3, -3],
     //   [5, maxInt]
     // ]);
 
     // // 3 is immediately before 4 (-1), or anywhere after (> 0)
     // // Replaces: (dist) => dist == -1 || dist > 0
     // solver.addConstraint(3, 4, [
-    //   [-1, -1], 
+    //   [-1, -1],
     //   [1, maxInt]
     // ]);
 
-    instrTable = instrTable.asMap().entries.where((entry) => isMedium[entry.key]).map((entry) => entry.value).toList();
-
-    // TODO: solve sorting pb
+    instrTable = instrTable
+        .asMap()
+        .entries
+        .where((entry) => isMedium[entry.key])
+        .map((entry) => entry.value)
+        .toList();
     return;
   }
 

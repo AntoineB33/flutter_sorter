@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class SortingRule {
@@ -51,10 +52,10 @@ class SortingService {
           return List<int>.from(data['solution']);
         }
       }
-      print('Server Error: ${response.body}');
+      debugPrint('Server Error: ${response.body}');
       return null;
     } catch (e) {
-      print('Connection Error: $e');
+      debugPrint('Connection Error: $e');
       return null;
     }
   }

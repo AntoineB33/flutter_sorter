@@ -129,9 +129,10 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
   @override
   void initState() {
     super.initState();
-    final String startText = (widget.isEditing && widget.initialEditText != null)
-        ? widget.initialEditText!
-        : widget.content;
+    final String startText =
+        (widget.isEditing && widget.initialEditText != null)
+            ? widget.initialEditText!
+            : widget.content;
 
     _textController = TextEditingController(text: startText);
 
@@ -175,21 +176,34 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
   }
 
   void _insertNewline() {
-      final text = _textController.text;
-      final selection = _textController.selection;
-      final int start = selection.start >= 0 ? selection.start : text.length;
-      final int end = selection.end >= 0 ? selection.end : text.length;
-      final newText = text.replaceRange(start, end, '\n');
+    final text = _textController.text;
+    final selection = _textController.selection;
+    final int start = selection.start >= 0 ? selection.start : text.length;
+    final int end = selection.end >= 0 ? selection.end : text.length;
+    final newText = text.replaceRange(start, end, '\n');
 
-      _textController.value = TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(offset: start + 1),
-      );
-      widget.onChanged?.call(newText);
+    _textController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: start + 1),
+    );
+    widget.onChanged?.call(newText);
   }
 
   @override
   Widget build(BuildContext context) {
+    // -------------------------------------------------------------------------
+    // STYLE NORMALIZATION
+    // -------------------------------------------------------------------------
+    
+    // We also use the StrutStyle in both View and Edit modes to ensure
+    // vertical metrics (line height) are identical.
+    final StrutStyle effectiveStrut = StrutStyle(
+      fontSize: PageConstants.cellStyle.fontSize,
+      height: PageConstants.cellStyle.height, 
+      leading: 0, 
+      forceStrutHeight: true,
+    );
+
     // -------------------------------------------------------------------------
     // EDIT MODE
     // -------------------------------------------------------------------------
@@ -202,18 +216,17 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
           color: Colors.white,
           border: Border.all(color: Colors.blue, width: borderWidth),
         ),
-        // FIX 1: MATH COMPENSATION
-        // ViewPadding - BorderWidth = EditPadding.
-        // This ensures the Text starts at the exact same pixel coordinate.
+        // FIX: Math Compensation matches view padding exactly
         padding: const EdgeInsets.fromLTRB(
-          PageConstants.horizontalPadding - borderWidth, 
+          PageConstants.horizontalPadding - borderWidth,
           PageConstants.verticalPadding - borderWidth,
           PageConstants.horizontalPadding - borderWidth,
           PageConstants.verticalPadding - borderWidth,
         ),
         child: CallbackShortcuts(
           bindings: {
-            const SingleActivator(LogicalKeyboardKey.enter, control: true): () => _insertNewline(),
+            const SingleActivator(LogicalKeyboardKey.enter, control: true): () =>
+                _insertNewline(),
             const SingleActivator(LogicalKeyboardKey.enter, shift: true): () =>
                 widget.onSave(_textController.text, moveUp: true),
             const SingleActivator(LogicalKeyboardKey.enter): () =>
@@ -230,19 +243,13 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
               maxLines: null,
               minLines: 1,
               onChanged: widget.onChanged,
-              
-              // FIX 2: ALIGNMENT
-              // Ensure we don't center vertically if the cell is tall
               textAlignVertical: TextAlignVertical.top,
-
-              // FIX 3: STRUT STYLE
-              // Force the line height to match the Text widget exactly
-              strutStyle: StrutStyle.fromTextStyle(PageConstants.cellStyle),
-              style: PageConstants.cellStyle,
               
-              // FIX 4: ZERO DECORATION
-              // We remove all internal padding from the TextField and let 
-              // the Container above handle the positioning.
+              // FIX: Use unified StrutStyle
+              strutStyle: effectiveStrut, 
+              // FIX: Use unified TextStyle with fixed letterSpacing
+              style: PageConstants.cellStyle,      
+              
               decoration: const InputDecoration(
                 contentPadding: EdgeInsets.zero,
                 isDense: true,
@@ -267,8 +274,8 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
       child: Container(
         alignment: Alignment.topLeft,
         padding: const EdgeInsets.symmetric(
-          horizontal: PageConstants.horizontalPadding, 
-          vertical: PageConstants.verticalPadding
+          horizontal: PageConstants.horizontalPadding,
+          vertical: PageConstants.verticalPadding,
         ),
         decoration: BoxDecoration(
           color: widget.isPrimarySelectedCell
@@ -281,6 +288,9 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
         ),
         child: Text(
           widget.content,
+          // FIX: Use the exact same StrutStyle as the TextField
+          strutStyle: effectiveStrut, 
+          // FIX: Use the exact same Style as the TextField
           style: PageConstants.cellStyle,
         ),
       ),
