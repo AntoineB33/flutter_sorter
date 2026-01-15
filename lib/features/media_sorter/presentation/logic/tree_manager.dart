@@ -12,7 +12,6 @@ class TreeManager {
   final SpreadsheetController _controller;
 
   TreeManager(this._controller);
-  
 
   void populateCellNode(NodeStruct node, bool populateChildren) {
     int rowId = node.rowId!;
@@ -24,12 +23,13 @@ class TreeManager {
         node.message =
             '${_controller.getColumnLabel(colId)}$rowId selected: ${_controller.sheet.table[rowId][colId]}';
       } else {
-        node.message = '${_controller.getColumnLabel(colId)}$rowId: ${_controller.sheet.table[rowId][colId]}';
+        node.message =
+            '${_controller.getColumnLabel(colId)}$rowId: ${_controller.sheet.table[rowId][colId]}';
       }
     }
     if (node.defaultOnTap) {
       node.onTap = (n) {
-        _controller.selectCell(node.rowId!, node.colId!, false, false);
+        _controller.setPrimarySelection(node.rowId!, node.colId!, false, false);
       };
       node.defaultOnTap = false;
     }
@@ -68,9 +68,7 @@ class TreeManager {
         );
       } else {
         node.newChildren!.add(
-          NodeStruct(
-            message: 'No references from attribute columns found',
-          ),
+          NodeStruct(message: 'No references from attribute columns found'),
         );
       }
       if (_controller.attToRefFromDepColToCol.containsKey(node.att)) {
@@ -82,9 +80,7 @@ class TreeManager {
         );
       } else {
         node.newChildren!.add(
-          NodeStruct(
-            message: 'No references from dependence columns found',
-          ),
+          NodeStruct(message: 'No references from dependence columns found'),
         );
       }
     }
@@ -92,17 +88,20 @@ class TreeManager {
     if (node.defaultOnTap) {
       node.onTap = (n) {
         if (node.rowId != null) {
-          _controller.selectCell(node.rowId!, 0, false, false);
+          _controller.setPrimarySelection(node.rowId!, 0, false, false);
           return;
         }
         List<Cell> cells = [];
         List<MapEntry> entries = [];
         if (node.colId != SpreadsheetConstants.notUsedCst) {
-          entries = _controller.attToRefFromAttColToCol[node.att]!.entries.toList();
+          entries = _controller.attToRefFromAttColToCol[node.att]!.entries
+              .toList();
         }
         if (node.instruction !=
             SpreadsheetConstants.moveToUniqueMentionSprawlCol) {
-          entries.addAll(_controller.attToRefFromDepColToCol[node.att]!.entries.toList());
+          entries.addAll(
+            _controller.attToRefFromDepColToCol[node.att]!.entries.toList(),
+          );
         }
         for (final MapEntry(key: rowId, value: colIds) in entries) {
           for (final colId in colIds) {
@@ -112,18 +111,25 @@ class TreeManager {
         int found = -1;
         for (int i = 0; i < cells.length; i++) {
           final child = cells[i];
-          if (_controller.primarySelectedCell.x == child.rowId && _controller.primarySelectedCell.y == child.colId) {
+          if (_controller.primarySelectedCell.x == child.rowId &&
+              _controller.primarySelectedCell.y == child.colId) {
             found = i;
             break;
           }
         }
         if (found == -1) {
-          _controller.selectCell(cells[0].rowId, cells[0].colId, false, false);
+          _controller.setPrimarySelection(
+            cells[0].rowId,
+            cells[0].colId,
+            false,
+            false,
+          );
         } else {
-          _controller.selectCell(
+          _controller.setPrimarySelection(
             cells[(found + 1) % cells.length].rowId,
             cells[(found + 1) % cells.length].colId,
-            false, false
+            false,
+            false,
           );
         }
       };
@@ -171,7 +177,9 @@ class TreeManager {
       return;
     }
     for (final rowId
-        in _controller.attToRefFromDepColToCol[Attribute(name: node.name)]!.keys) {
+        in _controller
+            .attToRefFromDepColToCol[Attribute(name: node.name)]!
+            .keys) {
       node.newChildren!.add(NodeStruct(rowId: rowId));
     }
   }
@@ -205,7 +213,8 @@ class TreeManager {
       } else {
         if (node.name != null) {
           if (_controller.attToCol.containsKey(node.name)) {
-            if (_controller.attToCol[node.name]! != [SpreadsheetConstants.notUsedCst]) {
+            if (_controller.attToCol[node.name]! !=
+                [SpreadsheetConstants.notUsedCst]) {
               node.newChildren!.add(
                 NodeStruct(
                   instruction: SpreadsheetConstants.attToRefFromDepCol,
@@ -234,7 +243,7 @@ class TreeManager {
         node.cellsToSelect = node.cells;
         if (node.cellsToSelect == null || node.cellsToSelect!.isEmpty) {
           List<Cell> cells = [];
-          for (final child in node.newChildren??[]) {
+          for (final child in node.newChildren ?? []) {
             if (child.rowId != null) {
               if (child.colId != null) {
                 cells.add(Cell(rowId: child.rowId!, colId: child.colId!));
@@ -255,18 +264,25 @@ class TreeManager {
         int found = -1;
         for (int i = 0; i < node.cellsToSelect!.length; i++) {
           final child = node.cellsToSelect![i];
-          if (_controller.primarySelectedCell.x == child.rowId && _controller.primarySelectedCell.y == child.colId) {
+          if (_controller.primarySelectedCell.x == child.rowId &&
+              _controller.primarySelectedCell.y == child.colId) {
             found = i;
             break;
           }
         }
         if (found == -1) {
-          _controller.selectCell(node.cellsToSelect![0].rowId, node.cellsToSelect![0].colId, false, false);
+          _controller.setPrimarySelection(
+            node.cellsToSelect![0].rowId,
+            node.cellsToSelect![0].colId,
+            false,
+            false,
+          );
         } else {
-          _controller.selectCell(
+          _controller.setPrimarySelection(
             node.cellsToSelect![(found + 1) % node.cellsToSelect!.length].rowId,
             node.cellsToSelect![(found + 1) % node.cellsToSelect!.length].colId,
-            false, false
+            false,
+            false,
           );
         }
       };
@@ -282,14 +298,16 @@ class TreeManager {
     switch (node.instruction) {
       case SpreadsheetConstants.refFromAttColMsg:
         if (populateChildren) {
-          for (int pointerRowId in _controller.attToRefFromAttColToCol[node.att]!.keys) {
+          for (int pointerRowId
+              in _controller.attToRefFromAttColToCol[node.att]!.keys) {
             node.newChildren!.add(NodeStruct(rowId: pointerRowId));
           }
         }
         break;
       case SpreadsheetConstants.refFromDepColMsg:
         if (populateChildren) {
-          for (int pointerRowId in _controller.attToRefFromDepColToCol[node.att]!.keys) {
+          for (int pointerRowId
+              in _controller.attToRefFromDepColToCol[node.att]!.keys) {
             node.newChildren!.add(NodeStruct(rowId: pointerRowId));
           }
         }
@@ -308,12 +326,18 @@ class TreeManager {
             }
           }
           if (found == -1) {
-            _controller.selectCell(n.newChildren![0].rowId!, n.newChildren![0].colId!, false, false);
+            _controller.setPrimarySelection(
+              n.newChildren![0].rowId!,
+              n.newChildren![0].colId!,
+              false,
+              false,
+            );
           } else {
-            _controller.selectCell(
+            _controller.setPrimarySelection(
               n.newChildren![(found + 1) % n.newChildren!.length].rowId!,
               n.newChildren![(found + 1) % n.newChildren!.length].colId!,
-              false, false
+              false,
+              false,
             );
           }
         };

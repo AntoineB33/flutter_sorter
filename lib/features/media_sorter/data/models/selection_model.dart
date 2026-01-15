@@ -2,17 +2,23 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 class SelectionModel {
-  List<Point<int>> selectedCells;
-  Point<int> primarySelectedCell;
+  List<Point<int>> selectedCells = [];
+  Point<int> primarySelectedCell = Point<int>(0, 0);
+  double scrollOffsetX = 0.0;
+  double scrollOffsetY = 0.0;
+  int rowCount = 0;
+  int colCount = 0;
 
   SelectionModel({
     required this.selectedCells,
     required this.primarySelectedCell,
+    required this.scrollOffsetX,
+    required this.scrollOffsetY,
+    required this.rowCount,
+    required this.colCount,
   });
 
-  SelectionModel.empty()
-      : selectedCells = [],
-        primarySelectedCell = Point<int>(0, 0);
+  SelectionModel.empty();
 
   factory SelectionModel.fromJson(Map<String, dynamic> json) {
     try {
@@ -27,6 +33,10 @@ class SelectionModel {
       return SelectionModel(
         primarySelectedCell: primaryCell,
         selectedCells: selectedList,
+        scrollOffsetX: (json['scrollOffsetX'] as num).toDouble(),
+        scrollOffsetY: (json['scrollOffsetY'] as num).toDouble(),
+        rowCount: json['rowCount'] as int,
+        colCount: json['colCount'] as int,
       );
     } catch (e) {
       debugPrint("Error parsing SelectionModel from JSON: $e");
@@ -46,6 +56,10 @@ class SelectionModel {
                 'y': point.y,
               })
           .toList(),
+      'scrollOffsetX': scrollOffsetX,
+      'scrollOffsetY': scrollOffsetY,
+      'rowCount': rowCount,
+      'colCount': colCount,
     };
   }
 }

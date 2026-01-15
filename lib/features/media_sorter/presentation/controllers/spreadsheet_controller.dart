@@ -25,6 +25,19 @@ import 'package:trying_flutter/features/media_sorter/presentation/logic/layout_c
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/history_manager.dart';
 
+class SpreadsheetScrollRequest {
+  final Point<int>? cell;
+  final double? offsetX;
+  final double? offsetY;
+  final bool animate;
+
+  SpreadsheetScrollRequest.toCell(this.cell) 
+      : offsetX = null, offsetY = null, animate = true;
+
+  SpreadsheetScrollRequest.toOffset({this.offsetX, this.offsetY, this.animate = false}) 
+      : cell = null;
+}
+
 class SpreadsheetController extends ChangeNotifier with GetNames {
   int saveDelayMs = 500;
 
@@ -32,15 +45,16 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   late final SelectionManager _selectionManager;
   late final ClipboardManager _clipboardManager;
   late final HistoryManager _historyManager;
-  Size _visibleWindowSize = Size.zero;
 
   @override
   get columnTypes => sheet.columnTypes;
 
   // --- Scroll Stream Controller ---
-  final StreamController<Point<int>> _scrollToCellController =
-      StreamController<Point<int>>.broadcast();
-  Stream<Point<int>> get scrollToCellStream => _scrollToCellController.stream;
+  final StreamController<SpreadsheetScrollRequest> _scrollController =
+      StreamController<SpreadsheetScrollRequest>.broadcast();
+  Stream<SpreadsheetScrollRequest> get scrollStream => _scrollController.stream;
+  double visibleWindowHeight = 0.0;
+  double visibleWindowWidth = 0.0;
 
   final GetSheetDataUseCase _getDataUseCase;
   final SaveSheetDataUseCase _saveSheetDataUseCase;
@@ -57,8 +71,6 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
 
   SheetModel sheet = SheetModel.empty();
   String sheetName = "";
-  int tableViewRows = 50;
-  int tableViewCols = 50;
   List<String> availableSheets = [];
   Map<String, SheetModel> loadedSheetsData = {};
   Map<String, SelectionModel> lastSelectedCells = {};
@@ -116,7 +128,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   void discardCurrent() {
     _historyManager.discardCurrent();
   }
-  
+
   bool isValidSheetName(String name) {
     return name.isNotEmpty &&
         !name.contains(RegExp(r'[\\/:*?"<>|]')) &&
@@ -187,7 +199,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
 
   @override
   void dispose() {
-    _scrollToCellController.close();
+    _scrollController.close();
     super.dispose();
   }
 
@@ -241,6 +253,12 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     }
     loadedSheetsData[name] = sheet;
     sheetName = name;
+    updateRowColCount(visibleHeight: visibleWindowHeight, visibleWidth: visibleWindowWidth, notify: false);
+    scrollToOffset(
+      x: _selectionManager.selection.scrollOffsetX,
+      y: _selectionManager.selection.scrollOffsetY,
+      animate: false,
+    );
     saveAndCalculate(save: false);
     notifyListeners();
   }
@@ -285,6 +303,10 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
 
   double getDefaultRowHeight() {
     return PageConstants.defaultFontHeight + 2 * PageConstants.verticalPadding;
+  }
+
+  double getDefaultCellWidth() {
+    return PageConstants.defaultCellWidth + 2 * PageConstants.horizontalPadding;
   }
 
   double getRowHeight(int row) {
@@ -534,11 +556,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
 
   void setColumnType(int col, ColumnType type, {bool updateHistory = true}) {
     if (updateHistory) {
-      _historyManager.recordColumnTypeChange(
-        col,
-        getColumnType(col),
-        type,
-      );
+      _historyManager.recordColumnTypeChange(col, getColumnType(col), type);
     }
     if (type == ColumnType.attributes) {
       if (col < colCount) {
@@ -569,7 +587,12 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     setColumnType(7, ColumnType.urls);
   }
 
-  void selectCell(int row, int col, bool keepSelection, bool updateMentions) {
+  void setPrimarySelection(
+    int row,
+    int col,
+    bool keepSelection,
+    bool updateMentions,
+  ) {
     _selectionManager.setPrimarySelection(
       row,
       col,
@@ -636,10 +659,28 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     notifyListeners();
   }
 
-  void updateRowCount(int newCount) {
-    if (tableViewRows == newCount) return;
-    tableViewRows = newCount;
-    notifyListeners();
+  int get tableViewRows => _selectionManager.selection.rowCount;
+  int get tableViewCols => _selectionManager.selection.colCount;
+
+  void updateRowColCount({double? visibleHeight, double? visibleWidth, bool notify = true}) {
+    int targetRows = tableViewRows;
+    int targetCols = tableViewCols;
+    if (visibleHeight != null) {
+      visibleWindowHeight = visibleHeight - PageConstants.defaultColHeaderHeight;
+      targetRows = minRows(visibleWindowHeight);
+    }
+    if (visibleWidth != null) {
+      visibleWindowWidth =
+          visibleWidth - PageConstants.defaultRowHeaderWidth;
+      targetCols = minCols(visibleWindowWidth);
+    }
+    if (targetRows != tableViewRows || targetCols != tableViewCols) {
+      _selectionManager.selection.rowCount = targetRows;
+      _selectionManager.selection.colCount = targetCols;
+      if (notify) {
+        notifyListeners();
+      }
+    }
   }
 
   double getTargetTop(int row) {
@@ -657,7 +698,6 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
 
   double getTargetLeft(int col) {
     if (col <= 0) return 0.0;
-    const double cellWidth = PageConstants.defaultCellWidth;
     final int nbKnownRightPos = sheet.colRightPos.length;
     var columnsRightPos = sheet.colRightPos;
     final int tableWidth = nbKnownRightPos == 0
@@ -665,34 +705,37 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
         : columnsRightPos.last.toInt();
     final double targetRight = col - 1 < nbKnownRightPos
         ? columnsRightPos[col - 1].toDouble()
-        : tableWidth + (col - nbKnownRightPos) * cellWidth;
+        : tableWidth + (col - nbKnownRightPos) * getDefaultCellWidth();
     return targetRight;
   }
 
-  int get minRows {
+  int minRows(double height) {
     double tableHeight = getTargetTop(rowCount - 1);
-    if (sheet.rowsBottomPos.isNotEmpty &&
-        _visibleWindowSize.height > tableHeight) {
+    if (height >= tableHeight) {
       return sheet.rowsBottomPos.length +
-          (_visibleWindowSize.height - tableHeight) ~/
-              PageConstants.defaultFontHeight;
+          (height - getTargetTop(sheet.rowsBottomPos.length - 1)) ~/ getDefaultRowHeight() + 1;
     }
     return rowCount;
   }
 
-  Size get visibleWindowSize => _visibleWindowSize;
-
-  void updateVisibleWindowSize(Size newSize) {
-    // PREVENT INFINITE LOOP: Only notify if the size actually changed
-    if (_visibleWindowSize != newSize) {
-      _visibleWindowSize = newSize;
-      notifyListeners();
+  int minCols(double width) {
+    double tableWidth = getTargetLeft(colCount - 1);
+    if (width >= tableWidth) {
+      return sheet.colRightPos.length +
+          (width - getTargetLeft(sheet.colRightPos.length - 1)) ~/ getDefaultCellWidth() + 1;
     }
+    return colCount;
   }
 
   /// Triggers a visual scroll event to the Widget via the Stream
   void triggerScrollTo(int row, int col) {
-    _scrollToCellController.add(Point(row, col));
+    _scrollController.add(SpreadsheetScrollRequest.toCell(Point(row, col)));
+  }
+  
+  void scrollToOffset({double? x, double? y, bool animate = false}) {
+    _scrollController.add(
+      SpreadsheetScrollRequest.toOffset(offsetX: x, offsetY: y, animate: animate),
+    );
   }
 
   String? currentInitialInput; // Add this field

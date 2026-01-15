@@ -10,6 +10,7 @@ import 'package:trying_flutter/features/media_sorter/presentation/utils/column_t
 import 'spreadsheet_components.dart';
 import 'dart:math' as math;
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
+import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 
 class SpreadsheetWidget extends StatefulWidget {
   const SpreadsheetWidget({super.key});
@@ -23,20 +24,66 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   final ScrollController _verticalController = ScrollController();
   final ScrollController _horizontalController = ScrollController();
   StreamSubscription? _scrollSubscription;
+  bool _initialLayoutDone = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
-      _subscribeToScrollEvents();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // This ensures we subscribe as soon as the widget is linked to the Provider
+    _subscribeToScrollEvents();
   }
 
   void _subscribeToScrollEvents() {
     final controller = context.read<SpreadsheetController>();
-    _scrollSubscription?.cancel();
-    _scrollSubscription = controller.scrollToCellStream.listen(_revealCell);
+    // Prevent multiple subscriptions if dependencies change
+    if (_scrollSubscription != null) return;
+    // Listen to the new stream name and type
+    _scrollSubscription = controller.scrollStream.listen(_handleScrollRequest);
+  }
+
+  // 2. CREATE A DISPATCHER METHOD
+  void _handleScrollRequest(SpreadsheetScrollRequest request) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Case A: Scroll to specific Cell (Your existing logic)
+      if (request.cell != null) {
+        _revealCell(request.cell!);
+        return;
+      }
+
+      // Case B: Scroll to specific Pixel Offset (New logic)
+      if (request.offsetX != null && _horizontalController.hasClients) {
+        _safelyScroll(_horizontalController, request.offsetX!, request.animate);
+      }
+
+      if (request.offsetY != null && _verticalController.hasClients) {
+        _safelyScroll(_verticalController, request.offsetY!, request.animate);
+      }
+    });
+  }
+
+  // 3. HELPER FOR SAFE SCROLLING
+  void _safelyScroll(ScrollController controller, double offset, bool animate) {
+    final double maxScroll = controller.position.maxScrollExtent;
+    final double clampedOffset = math.min(math.max(offset, 0), maxScroll);
+
+    if (animate) {
+      controller.animateTo(
+        clampedOffset,
+        duration: const Duration(milliseconds: SpreadsheetConstants.animationDurationMs),
+        curve: Curves.easeOut,
+      );
+    } else {
+      controller.jumpTo(clampedOffset);
+    }
   }
 
   @override
@@ -79,10 +126,10 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         maxScroll,
       );
 
-      _verticalController.animateTo(
+      _safelyScroll(
+        _verticalController,
         clampedOffset,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOut,
+        true,
       );
     }
 
@@ -109,10 +156,10 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         maxScroll,
       );
 
-      _horizontalController.animateTo(
+      _safelyScroll(
+        _horizontalController,
         clampedOffset,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOut,
+        true,
       );
     }
   }
@@ -123,11 +170,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final Size currentSize = constraints.biggest;
-
-        if (controller.visibleWindowSize != currentSize) {
+        if (!_initialLayoutDone) {
+          _initialLayoutDone = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            controller.updateVisibleWindowSize(currentSize);
+            if (context.mounted) {
+              controller.updateRowColCount(visibleHeight: constraints.maxHeight, visibleWidth: constraints.maxWidth);
+            }
           });
         }
 
@@ -149,7 +197,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
             notificationPredicate: (notification) =>
                 notification.depth == 0 &&
                 notification.metrics.axis == Axis.vertical,
-            
+
             // 2. Horizontal Scrollbar
             child: Scrollbar(
               controller: _horizontalController,
@@ -159,7 +207,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
               notificationPredicate: (notification) =>
                   notification.depth == 0 &&
                   notification.metrics.axis == Axis.horizontal,
-                  
+
               child: NotificationListener<ScrollNotification>(
                 onNotification: (notification) =>
                     _handleScrollNotification(notification, controller),
@@ -192,41 +240,29 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     SpreadsheetController controller,
   ) {
     // We only care about vertical scrolling on the TableView for Infinite Loading
-    if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
+    if (notification.depth != 0 || notification is! ScrollUpdateNotification) {
       return false;
     }
-
     final metrics = notification.metrics;
-
-    final double visibleBottomEdge = metrics.pixels + metrics.viewportDimension;
-    final double rawRowsNeeded =
-        (visibleBottomEdge - PageConstants.defaultColHeaderHeight) /
-        PageConstants.defaultFontHeight;
-
-    final int requiredRows = rawRowsNeeded.floor() + 1;
-
-    final int targetRows = math.max(controller.minRows, requiredRows);
-
-    if (notification is ScrollUpdateNotification) {
-      if (targetRows > controller.tableViewRows) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          controller.updateRowCount(targetRows);
-        });
-      }
-    } else if (notification is ScrollEndNotification) {
-      if (controller.tableViewRows > targetRows) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          controller.updateRowCount(targetRows);
-        });
-      }
+    final double visibleEdge = metrics.pixels + metrics.viewportDimension;
+    if (notification.metrics.axis == Axis.vertical) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          controller.updateRowColCount(visibleHeight: visibleEdge);
+        }
+      });
+    } else if (notification.metrics.axis == Axis.horizontal) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          controller.updateRowColCount(visibleWidth: visibleEdge);
+        }
+      });
     }
 
     // Return false so the notification bubbles up to the Vertical Scrollbar
     return false;
   }
 
-  // ... (Rest of the class: _handleKeyboard, _buildColumnSpan, _buildRowSpan, etc. remains unchanged)
-  
   KeyEventResult _handleKeyboard(
     BuildContext context,
     KeyEvent event,
@@ -249,12 +285,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
     if (logicalKey == LogicalKeyboardKey.enter ||
         logicalKey == LogicalKeyboardKey.numpadEnter) {
-      ctrl.startEditing(); 
+      ctrl.startEditing();
       return KeyEventResult.handled;
     }
 
     if (logicalKey == LogicalKeyboardKey.arrowUp) {
-      ctrl.selectCell(
+      ctrl.setPrimarySelection(
         max(ctrl.primarySelectedCell.x - 1, 0),
         ctrl.primarySelectedCell.y,
         false,
@@ -262,7 +298,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowDown) {
-      ctrl.selectCell(
+      ctrl.setPrimarySelection(
         ctrl.primarySelectedCell.x + 1,
         ctrl.primarySelectedCell.y,
         false,
@@ -270,7 +306,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowLeft) {
-      ctrl.selectCell(
+      ctrl.setPrimarySelection(
         ctrl.primarySelectedCell.x,
         max(0, ctrl.primarySelectedCell.y - 1),
         false,
@@ -278,7 +314,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowRight) {
-      ctrl.selectCell(
+      ctrl.setPrimarySelection(
         ctrl.primarySelectedCell.x,
         ctrl.primarySelectedCell.y + 1,
         false,
@@ -326,11 +362,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 
   TableSpan _buildColumnSpan(int index) {
+    final controller = context.read<SpreadsheetController>();
     return TableSpan(
       extent: FixedTableSpanExtent(
         index == 0
             ? PageConstants.defaultRowHeaderWidth
-            : PageConstants.defaultCellWidth,
+            : controller.getDefaultCellWidth(),
       ),
     );
   }
@@ -397,7 +434,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
             controller.primarySelectedCell.y != dataCol) {
           controller.stopEditing(true);
         }
-        controller.selectCell(dataRow, dataCol, false, true);
+        controller.setPrimarySelection(dataRow, dataCol, false, true);
         _focusNode.requestFocus();
       },
       onDoubleTap: () {
@@ -408,9 +445,14 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       },
       onSave: (newValue, {bool moveUp = false}) {
         if (moveUp) {
-          controller.selectCell(max(0, dataRow - 1), dataCol, false, true);
+          controller.setPrimarySelection(
+            max(0, dataRow - 1),
+            dataCol,
+            false,
+            true,
+          );
         } else {
-          controller.selectCell(dataRow + 1, dataCol, false, true);
+          controller.setPrimarySelection(dataRow + 1, dataCol, false, true);
         }
         controller.stopEditing(true);
         _focusNode.requestFocus();
@@ -434,19 +476,21 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     int col,
   ) async {
     final currentType = controller.getColumnType(col);
-    final List<PopupMenuEntry<dynamic>> items = ColumnType.values.map<PopupMenuEntry<dynamic>>((entry) {
-      return CheckedPopupMenuItem<ColumnType>(
-        value: entry,
-        checked: entry == currentType,
-        child: Row(
-          children: [
-            Icon(Icons.circle, color: ColumnTypeX(entry).color, size: 12),
-            const SizedBox(width: 8),
-            Text(entry.name),
-          ],
-        ),
-      );
-    }).toList();
+    final List<PopupMenuEntry<dynamic>> items = ColumnType.values
+        .map<PopupMenuEntry<dynamic>>((entry) {
+          return CheckedPopupMenuItem<ColumnType>(
+            value: entry,
+            checked: entry == currentType,
+            child: Row(
+              children: [
+                Icon(Icons.circle, color: ColumnTypeX(entry).color, size: 12),
+                const SizedBox(width: 8),
+                Text(entry.name),
+              ],
+            ),
+          );
+        })
+        .toList();
     items.add(const PopupMenuDivider());
     items.add(
       const PopupMenuItem<String>(
@@ -478,7 +522,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       } else if (result == 'default_sequence') {
         // Call the method on your controller to reset the sequence
         // Ensure this method exists in your SpreadsheetController
-        controller.applyDefaultColumnSequence(); 
+        controller.applyDefaultColumnSequence();
       }
     }
   }

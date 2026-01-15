@@ -11,7 +11,7 @@ class SelectionManager {
 
   SelectionManager(this._controller);
 
-  void setPrimarySelection(int row, int col, bool keepSelection, bool updateMentions) {
+  void setPrimarySelection(int row, int col, bool keepSelection, bool updateMentions, {bool scrollTo = true}) {
     if (!keepSelection) {
       selectedCells.clear();
     }
@@ -27,7 +27,9 @@ class SelectionManager {
     }
 
     // Request scroll to visible
-    _controller.triggerScrollTo(row, col);
+    if (scrollTo) {
+      _controller.triggerScrollTo(row, col);
+    }
     _controller.notify();
   }
 
