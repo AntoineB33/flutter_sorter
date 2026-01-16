@@ -24,6 +24,7 @@ import 'package:trying_flutter/features/media_sorter/domain/mixins/get_names.dar
 import 'package:trying_flutter/features/media_sorter/presentation/logic/layout_calculator.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/history_manager.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
 
 class SpreadsheetScrollRequest {
   final Point<int>? cell;
@@ -100,7 +101,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
-  Map<Attribute, Map<int, List<int>>> attToRefFromAttColToCol = {};
+  Map<Attribute, Map<int, Cols>> attToRefFromAttColToCol = {};
   Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol = {};
   Map<int, Map<Attribute, int>> rowToAtt = {};
 
@@ -382,6 +383,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     }
 
     if (row >= sheet.rowsBottomPos.length && row >= rowCount) {
+      updateRowColCount(visibleHeight: visibleWindowHeight, visibleWidth: visibleWindowWidth, notify: false);
       return;
     }
     double heightItNeeds = calculateRequiredRowHeight(newValue, col);
@@ -452,6 +454,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
         i--;
       }
     }
+    updateRowColCount(visibleHeight: visibleWindowHeight, visibleWidth: visibleWindowWidth, notify: false);
   }
 
   void saveAndCalculate({bool save = true, bool updateHistory = false}) {
@@ -475,7 +478,6 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
         if (result.errorRoot.newChildren!.isNotEmpty || nVal == 0) {
           return result;
         }
-        // final service = SortingService();
 
         Map<int, List<SortingRule>> myRules = {};
         for (int rowId = 0; rowId < nVal; rowId++) {
@@ -510,14 +512,16 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
         // };
 
         debugPrint("Sending request...");
-        // List<int>? result0 = await service.solveSorting(nVal, myRules);
+        final service = SortingService();
+        List<int>? result0 = await service.solveSorting(nVal, myRules);
 
-        // if (result0 != null) {
-        //   debugPrint("Solution found: $result0");
-        //   // Update UI state here
-        // } else {
-        //   debugPrint("No solution found.");
-        // }
+        if (result0 == null) {
+          result.errorRoot.newChildren!.add(
+            NodeStruct(
+              message: "Could not find a valid sorting satisfying all constraints.",
+            ),
+          );
+        }
         return result;
       },
       onComplete: (AnalysisResult result) {
@@ -585,6 +589,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     setColumnType(2, ColumnType.dependencies);
     setColumnType(3, ColumnType.dependencies);
     setColumnType(7, ColumnType.urls);
+    setColumnType(8, ColumnType.dependencies);
   }
 
   void setPrimarySelection(
@@ -666,12 +671,11 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     int targetRows = tableViewRows;
     int targetCols = tableViewCols;
     if (visibleHeight != null) {
-      visibleWindowHeight = visibleHeight - PageConstants.defaultColHeaderHeight;
+      visibleWindowHeight = visibleHeight;
       targetRows = minRows(visibleWindowHeight);
     }
     if (visibleWidth != null) {
-      visibleWindowWidth =
-          visibleWidth - PageConstants.defaultRowHeaderWidth;
+      visibleWindowWidth = visibleWidth;
       targetCols = minCols(visibleWindowWidth);
     }
     if (targetRows != tableViewRows || targetCols != tableViewCols) {

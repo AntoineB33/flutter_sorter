@@ -4,6 +4,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
 
 class AnalysisResult {
   final NodeStruct errorRoot = NodeStruct(
@@ -36,7 +37,7 @@ class AnalysisResult {
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
-  Map<Attribute, Map<int, List<int>>> attToRefFromAttColToCol = {};
+  Map<Attribute, Map<int, Cols>> attToRefFromAttColToCol = {};
   Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol = {};
   Map<int, Map<Attribute, int>> rowToAtt = {};
 

@@ -174,7 +174,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           _initialLayoutDone = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) {
-              controller.updateRowColCount(visibleHeight: constraints.maxHeight, visibleWidth: constraints.maxWidth);
+              controller.updateRowColCount(visibleHeight: constraints.maxHeight - controller.sheet.colHeaderHeight, visibleWidth: constraints.maxWidth - controller.sheet.rowHeaderWidth);
             }
           });
         }
@@ -248,13 +248,13 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     if (notification.metrics.axis == Axis.vertical) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
-          controller.updateRowColCount(visibleHeight: visibleEdge);
+          controller.updateRowColCount(visibleHeight: visibleEdge - controller.sheet.colHeaderHeight);
         }
       });
     } else if (notification.metrics.axis == Axis.horizontal) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
-          controller.updateRowColCount(visibleWidth: visibleEdge);
+          controller.updateRowColCount(visibleWidth: visibleEdge - controller.sheet.rowHeaderWidth);
         }
       });
     }
@@ -376,8 +376,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     final controller = context.read<SpreadsheetController>();
 
     if (index == 0) {
-      return const TableSpan(
-        extent: FixedTableSpanExtent(PageConstants.defaultColHeaderHeight),
+      return TableSpan(
+        extent: FixedTableSpanExtent(controller.sheet.colHeaderHeight),
       );
     }
 

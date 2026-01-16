@@ -12,6 +12,16 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/mixins/get_names.dart';
 
+class Cols {
+  final List<int> colIndexes = [];
+  bool toInformFstDep = false;
+  Cols([int? colId]) {
+    if (colId != null) {
+      colIndexes.add(colId);
+    }
+  }
+}
+
 class CalculateUsecase with GetNames {
   final Object dataPackage;
   final AnalysisResult result;
@@ -60,7 +70,7 @@ class CalculateUsecase with GetNames {
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
-  Map<Attribute, Map<int, List<int>>> attToRefFromAttColToCol = {};
+  Map<Attribute, Map<int, Cols>> attToRefFromAttColToCol = {};
 
   /// Maps attribute identifiers (row index or name)
   /// to a map of mentioners (row index) to the column index
@@ -74,7 +84,7 @@ class CalculateUsecase with GetNames {
   static const patternAreas = SpreadsheetConstants.patternAreas;
   static const all = SpreadsheetConstants.all;
   static const notUsedCst = SpreadsheetConstants.notUsedCst;
-  static const List<int> added = [];
+  static Cols added = Cols();
 
   int get rowCount => table.length;
   @override
@@ -191,7 +201,7 @@ class CalculateUsecase with GetNames {
   }
 
   List<List<Cell>> findPath(
-    Map<Attribute, Map<int, List<int>>> graph,
+    Map<Attribute, Map<int, Cols>> graph,
     Attribute start,
     int end, {
     bool reverse = true,
@@ -200,7 +210,7 @@ class CalculateUsecase with GetNames {
     List<List<Cell>> path = [];
     while (true) {
       if (graph[att]![end] != added && att != start) {
-        List<Cell> cells = graph[att]![end]!
+        List<Cell> cells = graph[att]![end]!.colIndexes
             .map((colId) => Cell(rowId: end, colId: colId))
             .toList();
         path.add(cells);
@@ -210,6 +220,7 @@ class CalculateUsecase with GetNames {
         Attribute childAtt = Attribute.row(rowId);
         if (graph.containsKey(childAtt) && graph[childAtt]!.containsKey(end)) {
           List<Cell> cells = graph[att]![rowId]!
+              .colIndexes
               .map((colId) => Cell(rowId: rowId, colId: colId))
               .toList();
           path.add(cells);
@@ -220,7 +231,7 @@ class CalculateUsecase with GetNames {
     }
   }
 
-  void dfsIterative(Map<Attribute, Map<int, List<int>>> graph) {
+  void dfsIterative(Map<Attribute, Map<int, Cols>> graph) {
     final visited = <Attribute>{};
     final completed = <Attribute>{};
     List<Attribute> path = [];
@@ -233,10 +244,10 @@ class CalculateUsecase with GetNames {
       while (stack.isNotEmpty) {
         Attribute att = stack[stack.length - 1]; // peek
         if (path.isNotEmpty && path[path.length - 1] == att) {
-          Map<int, List<int>> rowsToCol = graph[att] ?? {};
+          Map<int, Cols> rowsToCol = graph[att] ?? {};
 
           for (final rowId in rowsToCol.keys.toList()) {
-            Map<int, List<int>>? childRowsToCol = graph[Attribute.row(rowId)];
+            Map<int, Cols>? childRowsToCol = graph[Attribute.row(rowId)];
             if (childRowsToCol != null) {
               for (int childRowId in childRowsToCol.keys) {
                 if (!rowsToCol.containsKey(childRowId)) {
@@ -255,6 +266,7 @@ class CalculateUsecase with GetNames {
                     NodeStruct(
                       message: "${getAttName(att)} already pointed",
                       cells: rowsToCol[childRowId]!
+                          .colIndexes
                           .map((colId) => Cell(rowId: childRowId, colId: colId))
                           .toList(),
                       newChildren: newPath,
@@ -603,11 +615,12 @@ class CalculateUsecase with GetNames {
             }
 
             if (!attToRefFromAttColToCol[att]!.containsKey(rowId)) {
-              attToRefFromAttColToCol[att]![rowId] = [colId];
+              attToRefFromAttColToCol[att]![rowId] = Cols(colId);
               if (isSprawl) {
                 attToDist[att]!.add(rowId);
               }
             } else {
+              attToRefFromAttColToCol[att]![rowId]!.colIndexes.add(colId);
               if (children.isEmpty ||
                   children[children.length - 1].att != att ||
                   children[children.length - 1].newChildren![0].rowId !=
