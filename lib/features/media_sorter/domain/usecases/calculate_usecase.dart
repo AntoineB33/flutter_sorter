@@ -14,12 +14,8 @@ import 'package:trying_flutter/features/media_sorter/domain/mixins/get_names.dar
 
 class Cols {
   final List<int> colIndexes = [];
-  bool toInformFstDep = false;
-  Cols([int? colId]) {
-    if (colId != null) {
-      colIndexes.add(colId);
-    }
-  }
+  final List<bool> toInformFstDep = [];
+  Cols();
 }
 
 class CalculateUsecase with GetNames {
@@ -252,7 +248,8 @@ class CalculateUsecase with GetNames {
               for (int childRowId in childRowsToCol.keys) {
                 if (!rowsToCol.containsKey(childRowId)) {
                   rowsToCol[childRowId] = added;
-                } else if (rowsToCol[childRowId] != added) {
+                } else if (rowsToCol[childRowId] != added && 
+                    rowsToCol[childRowId]!.toInformFstDep.contains(false)) {
                   List<NodeStruct> newPath = findPath(
                     graph,
                     att,
@@ -267,6 +264,7 @@ class CalculateUsecase with GetNames {
                       message: "${getAttName(att)} already pointed",
                       cells: rowsToCol[childRowId]!
                           .colIndexes
+                          .where((colId) => !rowsToCol[childRowId]!.toInformFstDep[colId])
                           .map((colId) => Cell(rowId: childRowId, colId: colId))
                           .toList(),
                       newChildren: newPath,
@@ -332,9 +330,6 @@ class CalculateUsecase with GetNames {
 
   List<List<int>> getIntervals(String intervalStr, int row, int col) {
     // First, parse the positions of intervals
-    if (row == 304) {
-      debugPrint("debug");
-    }
     List<List<int>> intervals = [];
     List<String> negPos = intervalStr.split("|");
     int? start;
@@ -615,12 +610,11 @@ class CalculateUsecase with GetNames {
             }
 
             if (!attToRefFromAttColToCol[att]!.containsKey(rowId)) {
-              attToRefFromAttColToCol[att]![rowId] = Cols(colId);
+              attToRefFromAttColToCol[att]![rowId] = Cols();
               if (isSprawl) {
                 attToDist[att]!.add(rowId);
               }
             } else {
-              attToRefFromAttColToCol[att]![rowId]!.colIndexes.add(colId);
               if (children.isEmpty ||
                   children[children.length - 1].att != att ||
                   children[children.length - 1].newChildren![0].rowId !=
@@ -631,6 +625,7 @@ class CalculateUsecase with GetNames {
                 NodeStruct(rowId: rowId, colId: colId),
               );
             }
+            attToRefFromAttColToCol[att]![rowId]!.colIndexes.add(colId);
             if (isAppearFst) {
               isFstToAppear[rowId] ??= {};
               isFstToAppear[rowId]![att] = cell;
@@ -644,6 +639,7 @@ class CalculateUsecase with GetNames {
               afterAllOthers[rowId] ??= {};
               afterAllOthers[rowId]![att] = cell;
             }
+            attToRefFromAttColToCol[att]![rowId]!.toInformFstDep.add(isAppearFst || isAppearLst || isFst || isLst);
           }
         }
       }
@@ -881,7 +877,7 @@ class CalculateUsecase with GetNames {
                   true,
                   false,
                   attToRefFromAttColToCol[currAtt]!.keys
-                      .where((key) => isMedium[key])
+                      .where((key) => isMedium[key] && key != k)
                       .map((entry) => newIndexes[entry])
                       .toList(),
                   [
@@ -934,7 +930,7 @@ class CalculateUsecase with GetNames {
                   true,
                   false,
                   attToRefFromAttColToCol[currAtt]!.keys
-                      .where((key) => isMedium[key])
+                      .where((key) => isMedium[key] && key != k)
                       .map((entry) => newIndexes[entry])
                       .toList(),
                   [
@@ -978,7 +974,7 @@ class CalculateUsecase with GetNames {
                   true,
                   false,
                   attToRefFromAttColToCol[a]!.keys
-                      .where((key) => isMedium[key])
+                      .where((key) => isMedium[key] && key != k)
                       .map((entry) => newIndexes[entry])
                       .toList(),
                   [
@@ -1022,7 +1018,7 @@ class CalculateUsecase with GetNames {
                   true,
                   false,
                   attToRefFromAttColToCol[a]!.keys
-                      .where((key) => isMedium[key])
+                      .where((key) => isMedium[key] && key != k)
                       .map((entry) => newIndexes[entry])
                       .toList(),
                   [
