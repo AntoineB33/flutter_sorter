@@ -41,7 +41,6 @@ class SpreadsheetScrollRequest {
 }
 
 class SpreadsheetController extends ChangeNotifier with GetNames {
-  int saveDelayMs = 500;
 
   late final TreeManager _treeManager;
   late final SelectionManager _selectionManager;
@@ -71,8 +70,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
 
   SheetModel sheet = SheetModel.empty();
   String sheetName = "";
-  List<String> availableSheets = [];
-  Map<String, SheetModel> loadedSheetsData = {};
+  List<String> get availableSheets => _sheetDataManager.availableSheets;
   Map<String, SelectionModel> lastSelectedCells = {};
 
   // Dimensions
@@ -144,68 +142,6 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     await loadSheetByName(sheetName, init: true);
   }
 
-  // --- Initialization Logic ---
-  Future<void> init() async {
-    _isLoading = true;
-    notifyListeners();
-
-    // await _saveSheetDataUseCase.clearAllData();
-    await _saveSheetDataUseCase.initialize();
-    try {
-      sheetName = await _getDataUseCase.getLastOpenedSheetName();
-    } catch (e) {
-      await _saveSheetDataUseCase.saveLastOpenedSheetName(sheetName);
-    }
-    try {
-      await _getDataUseCase.getLastSelection();
-    } catch (e) {
-      await saveLastSelection(SelectionModel.empty());
-    }
-
-    availableSheets = await _getDataUseCase.getAllSheetNames();
-    if (!isValidSheetName(sheetName)) {
-      if (availableSheets.isNotEmpty) {
-        sheetName = availableSheets[0];
-      } else {
-        sheetName = SpreadsheetConstants.defaultSheetName;
-      }
-      _saveSheetDataUseCase.saveLastOpenedSheetName(sheetName);
-    }
-    bool availableSheetsChanged = false;
-    if (!availableSheets.contains(sheetName)) {
-      availableSheets.add(sheetName);
-      availableSheetsChanged = true;
-      debugPrint(
-        "Last opened sheet $sheetName not found in available sheets, adding it.",
-      );
-    }
-    lastSelectedCells = await _getDataUseCase.getAllLastSelected();
-    bool changed = false;
-    for (var name in availableSheets) {
-      if (!lastSelectedCells.containsKey(name)) {
-        lastSelectedCells[name] = SelectionModel.empty();
-        changed = true;
-        debugPrint(
-          "No last selected cell for sheet $name, defaulting to (0,0)",
-        );
-      }
-    }
-    if (changed) {
-      _saveSheetDataUseCase.saveAllLastSelected(lastSelectedCells);
-    }
-    for (var name in lastSelectedCells.keys) {
-      if (!availableSheets.contains(name)) {
-        availableSheets.add(name);
-        availableSheetsChanged = true;
-      }
-    }
-    if (availableSheetsChanged) {
-      _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
-    }
-
-    await loadSheetByName(sheetName, init: true);
-  }
-
   @override
   void dispose() {
     _scrollController.close();
@@ -225,53 +161,39 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     }
 
     if (!init) {
-      lastSelectedCells[sheetName] = _selectionManager.selection;
-      _saveSheetDataUseCase.saveAllLastSelected(lastSelectedCells);
-      _saveSheetDataUseCase.saveLastOpenedSheetName(name);
+      _sheetDataManager.setLastSelectedCells(sheetName, _selectionManager.selection);
+      _sheetDataManager.saveAllLastSelected(lastSelectedCells);
+      _sheetDataManager.saveLastOpenedSheetName(name);
     }
 
-    if (availableSheets.contains(name)) {
-      if (loadedSheetsData.containsKey(name)) {
-        sheet = loadedSheetsData[name]!;
-        _selectionManager.selection = lastSelectedCells[name]!;
-      } else {
-        _saveExecutors[name] = ManageWaitingTasks<void>();
-        try {
-          sheet = await _getDataUseCase.loadSheet(name);
-          if (init) {
-            _selectionManager.selection = await _getDataUseCase
-                .getLastSelection();
-          } else {
-            _selectionManager.selection = lastSelectedCells[name]!;
-          }
-        } catch (e) {
-          debugPrint("Error parsing sheet data for $name: $e");
-          sheet = SheetModel.empty();
-          _selectionManager.selection = SelectionModel.empty();
-        }
-      }
-    } else {
-      sheet = SheetModel.empty();
-      _selectionManager.selection = SelectionModel.empty();
-      availableSheets.add(name);
-      _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
-      _saveExecutors[name] = ManageWaitingTasks<void>();
-    }
-    if (!init) {
-      await saveLastSelection(selection);
-    }
-    loadedSheetsData[name] = sheet;
+    // Load Data via Manager
+    sheet = await _sheetDataManager.loadSheet(name);
     sheetName = name;
-    updateRowColCount(visibleHeight: visibleWindowHeight, visibleWidth: visibleWindowWidth, notify: false);
+
+    // Restore Selection
+    if (init) {
+        // On very first app load, we might want the exact last state from disk
+        _selectionManager.selection = await _sheetDataManager.fetchLatestSelectionFromDisk();
+    } else {
+        _selectionManager.selection = _sheetDataManager.getLastSelectionFor(name);
+    }
+
+    updateRowColCount(
+        visibleHeight: visibleWindowHeight, 
+        visibleWidth: visibleWindowWidth, 
+        notify: false
+    );
+    
     scrollToOffset(
       x: _selectionManager.selection.scrollOffsetX,
       y: _selectionManager.selection.scrollOffsetY,
       animate: false,
     );
+
+    // Initial Calculation (don't save immediately on load)
     saveAndCalculate(save: false);
     notifyListeners();
   }
-
   // --- Content Access ---
   String getContent(int row, int col) {
     if (row < rowCount && col < colCount) {

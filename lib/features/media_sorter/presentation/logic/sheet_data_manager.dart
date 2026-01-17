@@ -30,77 +30,102 @@ class SheetDataManager {
   /// Initializes storage, validates names, and returns the name of the sheet to load.
   Future<String> initialize() async {
     await _saveSheetDataUseCase.initialize();
-    
-    String sheetName;
+
+    // await _saveSheetDataUseCase.clearAllData();
+    await _saveSheetDataUseCase.initialize();
+    String sheetName = SpreadsheetConstants.defaultSheetName;
     try {
       sheetName = await _getDataUseCase.getLastOpenedSheetName();
     } catch (e) {
-      sheetName = ""; // Will be corrected below
+      await _saveSheetDataUseCase.saveLastOpenedSheetName(sheetName);
+    }
+    try {
+      await _getDataUseCase.getLastSelection();
+    } catch (e) {
+      await saveLastSelection(SelectionModel.empty());
     }
 
-    // Load available sheets
     availableSheets = await _getDataUseCase.getAllSheetNames();
-
-    // Validate Sheet Name
     if (!_isValidSheetName(sheetName)) {
       if (availableSheets.isNotEmpty) {
         sheetName = availableSheets[0];
       } else {
         sheetName = SpreadsheetConstants.defaultSheetName;
       }
-      await _saveSheetDataUseCase.saveLastOpenedSheetName(sheetName);
+      _saveSheetDataUseCase.saveLastOpenedSheetName(sheetName);
     }
-
-    // Ensure sheet is in the list
+    bool availableSheetsChanged = false;
     if (!availableSheets.contains(sheetName)) {
       availableSheets.add(sheetName);
-      await _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
+      availableSheetsChanged = true;
+      debugPrint(
+        "Last opened sheet $sheetName not found in available sheets, adding it.",
+      );
     }
-
-    // Initialize Selections
     _lastSelectedCells = await _getDataUseCase.getAllLastSelected();
-    bool selectionChanged = false;
+    bool changed = false;
     for (var name in availableSheets) {
       if (!_lastSelectedCells.containsKey(name)) {
         _lastSelectedCells[name] = SelectionModel.empty();
-        selectionChanged = true;
+        changed = true;
+        debugPrint(
+          "No last selected cell for sheet $name, defaulting to (0,0)",
+        );
       }
     }
-    if (selectionChanged) {
-      await _saveSheetDataUseCase.saveAllLastSelected(_lastSelectedCells);
+    if (changed) {
+      _saveSheetDataUseCase.saveAllLastSelected(_lastSelectedCells);
+    }
+    for (var name in _lastSelectedCells.keys) {
+      if (!availableSheets.contains(name)) {
+        availableSheets.add(name);
+        availableSheetsChanged = true;
+      }
+    }
+    if (availableSheetsChanged) {
+      _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
     }
 
     return sheetName;
   }
 
+  Future<void> saveLastSelection(SelectionModel selection) async {
+    _saveLastSelectionExecutor.execute(() async {
+      await _saveSheetDataUseCase.saveLastSelection(selection);
+      await Future.delayed(Duration(milliseconds: _saveDelayMs));
+    });
+  }
+
   /// Returns a SheetModel from cache or disk.
   Future<SheetModel> loadSheet(String name) async {
-    // Ensure executor exists for this sheet
-    if (!_saveExecutors.containsKey(name)) {
+    SheetModel sheet;
+    if (availableSheets.contains(name)) {
+      if (_loadedSheetsCache.containsKey(name)) {
+        sheet = _loadedSheetsCache[name]!;
+        _selectionManager.selection = lastSelectedCells[name]!;
+      } else {
+        _saveExecutors[name] = ManageWaitingTasks<void>();
+        try {
+          sheet = await _getDataUseCase.loadSheet(name);
+          if (init) {
+            _selectionManager.selection = await _getDataUseCase
+                .getLastSelection();
+          } else {
+            _selectionManager.selection = lastSelectedCells[name]!;
+          }
+        } catch (e) {
+          debugPrint("Error parsing sheet data for $name: $e");
+          sheet = SheetModel.empty();
+          _selectionManager.selection = SelectionModel.empty();
+        }
+      }
+    } else {
+      sheet = SheetModel.empty();
+      _selectionManager.selection = SelectionModel.empty();
+      availableSheets.add(name);
+      _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
       _saveExecutors[name] = ManageWaitingTasks<void>();
     }
-
-    // Ensure name is in available list
-    if (!availableSheets.contains(name)) {
-      availableSheets.add(name);
-      await _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
-    }
-
-    // Check Cache
-    if (_loadedSheetsCache.containsKey(name)) {
-      return _loadedSheetsCache[name]!;
-    }
-
-    // Load from Disk
-    SheetModel sheet;
-    try {
-      sheet = await _getDataUseCase.loadSheet(name);
-    } catch (e) {
-      debugPrint("Error parsing sheet data for $name: $e");
-      sheet = SheetModel.empty();
-    }
-
-    _loadedSheetsCache[name] = sheet;
     return sheet;
   }
 
@@ -118,6 +143,10 @@ class SheetDataManager {
     }
   }
 
+  void setLastSelectedCells(String currentSheetName, SelectionModel selection) {
+    _lastSelectedCells[currentSheetName] = selection;
+  }
+
   /// Saves the last selection with throttling.
   void scheduleSelectionSave(SelectionModel selection, String currentSheetName) {
     // Update local cache
@@ -132,6 +161,10 @@ class SheetDataManager {
 
   Future<void> saveLastOpenedSheetName(String name) async {
     await _saveSheetDataUseCase.saveLastOpenedSheetName(name);
+  }
+
+  saveAllLastSelected(Map<String, SelectionModel> cells) {
+    _saveSheetDataUseCase.saveAllLastSelected(cells);
   }
 
   SelectionModel getLastSelectionFor(String name) {
