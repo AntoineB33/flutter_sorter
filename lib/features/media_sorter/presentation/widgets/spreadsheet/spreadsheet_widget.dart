@@ -11,6 +11,7 @@ import 'spreadsheet_components.dart';
 import 'dart:math' as math;
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_manager.dart';
 
 class SpreadsheetWidget extends StatefulWidget {
   const SpreadsheetWidget({super.key});

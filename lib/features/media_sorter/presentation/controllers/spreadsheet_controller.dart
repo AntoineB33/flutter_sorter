@@ -17,29 +17,15 @@ import 'package:trying_flutter/features/media_sorter/presentation/logic/tree_man
 import 'package:trying_flutter/features/media_sorter/presentation/logic/selection_manager.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/clipboard_manager.dart';
 import 'package:flutter/material.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sorting_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/mixins/get_names.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/layout_calculator.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/history_manager.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
-// Add the import for the new manager
 import 'package:trying_flutter/features/media_sorter/presentation/logic/sheet_data_manager.dart';
-
-class SpreadsheetScrollRequest {
-  final Point<int>? cell;
-  final double? offsetX;
-  final double? offsetY;
-  final bool animate;
-
-  SpreadsheetScrollRequest.toCell(this.cell) 
-      : offsetX = null, offsetY = null, animate = true;
-
-  SpreadsheetScrollRequest.toOffset({this.offsetX, this.offsetY, this.animate = false}) 
-      : cell = null;
-}
+// Add the import for the new grid manager
+import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_manager.dart';
 
 class SpreadsheetController extends ChangeNotifier with GetNames {
   int saveDelayMs = 500;
@@ -49,6 +35,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   late final ClipboardManager _clipboardManager;
   late final HistoryManager _historyManager;
   late final SheetDataManager _dataManager;
+  late final GridManager _gridManager;
 
   // Proxy getters for DataManager properties to maintain API compatibility
   SheetModel get sheet => _dataManager.sheet;
@@ -60,15 +47,11 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   @override
   get columnTypes => sheet.columnTypes;
 
-  // --- Scroll Stream Controller ---
-  final StreamController<SpreadsheetScrollRequest> _scrollController =
-      StreamController<SpreadsheetScrollRequest>.broadcast();
-  Stream<SpreadsheetScrollRequest> get scrollStream => _scrollController.stream;
-  double visibleWindowHeight = 0.0;
-  double visibleWindowWidth = 0.0;
+  // --- Grid Manager Proxy Getters ---
+  Stream<SpreadsheetScrollRequest> get scrollStream => _gridManager.scrollStream;
+  double get visibleWindowHeight => _gridManager.visibleWindowHeight;
+  double get visibleWindowWidth => _gridManager.visibleWindowWidth;
 
-  final SpreadsheetLayoutCalculator _layoutCalculator =
-      SpreadsheetLayoutCalculator();
   CalculationService calculationService = CalculationService();
   
   final ManageWaitingTasks<AnalysisResult> _calculateExecutor =
@@ -127,6 +110,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
       getDataUseCase: getDataUseCase,
       saveSheetDataUseCase: saveSheetDataUseCase,
     );
+    _gridManager = GridManager(this);
     init();
   }
 
@@ -145,7 +129,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
 
   @override
   void dispose() {
-    _scrollController.close();
+    _gridManager.dispose();
     super.dispose();
   }
 
@@ -179,52 +163,31 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   }
 
   void increaseColumnCount(int col) {
-    if (col >= colCount) {
-      final needed = col + 1 - colCount;
-      for (var r = 0; r < rowCount; r++) {
-        sheet.table[r].addAll(List.filled(needed, '', growable: true));
-      }
-      sheet.columnTypes.addAll(List.filled(needed, ColumnType.attributes));
-    }
+    _gridManager.increaseColumnCount(col);
   }
 
   void decreaseRowCount(int row) {
-    if (row == rowCount - 1) {
-      while (row >= 0 && !sheet.table[row].any((cell) => cell.isNotEmpty)) {
-        sheet.table.removeLast();
-        row--;
-      }
-    }
+    _gridManager.decreaseRowCount(row);
   }
 
   double getColumnWidth(int col) {
-    return getTargetLeft(col + 1) - getTargetLeft(col);
+    return _gridManager.getColumnWidth(col);
   }
 
   double calculateRequiredRowHeight(String text, int colId) {
-    // 2. Determine the width available for the actual text
-    final double availableWidth =
-        getColumnWidth(colId) - PageConstants.horizontalPadding;
-    return _layoutCalculator.calculateRowHeight(text, availableWidth);
+    return _gridManager.calculateRequiredRowHeight(text, colId);
   }
 
   double getDefaultRowHeight() {
-    return PageConstants.defaultFontHeight + 2 * PageConstants.verticalPadding;
+    return _gridManager.getDefaultRowHeight();
   }
 
   double getDefaultCellWidth() {
-    return PageConstants.defaultCellWidth + 2 * PageConstants.horizontalPadding;
+    return _gridManager.getDefaultCellWidth();
   }
 
   double getRowHeight(int row) {
-    if (row < sheet.rowsBottomPos.length) {
-      if (row == 0) {
-        return sheet.rowsBottomPos[0];
-      } else {
-        return sheet.rowsBottomPos[row] - sheet.rowsBottomPos[row - 1];
-      }
-    }
-    return getDefaultRowHeight();
+    return _gridManager.getRowHeight(row);
   }
 
   void updateCell(
@@ -288,79 +251,8 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
       );
     }
 
-    if (row >= sheet.rowsBottomPos.length && row >= rowCount) {
-      updateRowColCount(visibleHeight: visibleWindowHeight, visibleWidth: visibleWindowWidth, notify: false);
-      return;
-    }
-    double heightItNeeds = calculateRequiredRowHeight(newValue, col);
-    if (heightItNeeds > getDefaultRowHeight() &&
-        sheet.rowsBottomPos.length <= row) {
-      int prevRowsBottomPosLength = sheet.rowsBottomPos.length;
-      sheet.rowsBottomPos.addAll(
-        List.filled(row + 1 - sheet.rowsBottomPos.length, 0),
-      );
-      for (int i = prevRowsBottomPosLength; i <= row; i++) {
-        sheet.rowsBottomPos[i] = i == 0
-            ? getDefaultRowHeight()
-            : sheet.rowsBottomPos[i - 1] + getDefaultRowHeight();
-      }
-    }
-    if (row < sheet.rowsBottomPos.length) {
-      if (sheet.rowsManuallyAdjustedHeight.length <= row ||
-          !sheet.rowsManuallyAdjustedHeight[row]) {
-        double currentHeight = getRowHeight(row);
-        if (heightItNeeds < currentHeight) {
-          double heightItNeeded = calculateRequiredRowHeight(prevValue, col);
-          if (heightItNeeded == currentHeight) {
-            double newHeight = heightItNeeds;
-            for (int j = 0; j < colCount; j++) {
-              if (j == col) continue;
-              newHeight = max(
-                calculateRequiredRowHeight(sheet.table[row][j], j),
-                newHeight,
-              );
-              if (newHeight == heightItNeeded) break;
-            }
-            if (newHeight < heightItNeeded) {
-              double heightDiff = currentHeight - newHeight;
-              for (int r = row; r < sheet.rowsBottomPos.length; r++) {
-                sheet.rowsBottomPos[r] -= heightDiff;
-              }
-              if (newHeight == getDefaultRowHeight()) {
-                int removeFrom = sheet.rowsBottomPos.length;
-                for (int r = sheet.rowsBottomPos.length - 1; r >= 0; r--) {
-                  if (r < sheet.rowsManuallyAdjustedHeight.length &&
-                          sheet.rowsManuallyAdjustedHeight[r] ||
-                      sheet.rowsBottomPos[r] >
-                          (r == 0 ? 0 : sheet.rowsBottomPos[r - 1]) +
-                              getDefaultRowHeight()) {
-                    break;
-                  }
-                  removeFrom--;
-                }
-                sheet.rowsBottomPos = sheet.rowsBottomPos.sublist(
-                  0,
-                  removeFrom,
-                );
-              }
-            }
-          }
-        } else if (heightItNeeds > currentHeight) {
-          double heightDiff = heightItNeeds - currentHeight;
-          for (int r = row; r < sheet.rowsBottomPos.length; r++) {
-            sheet.rowsBottomPos[r] = sheet.rowsBottomPos[r] + heightDiff;
-          }
-        }
-      }
-    } else if (heightItNeeds == getDefaultRowHeight() &&
-        row == sheet.rowsBottomPos.length - 1) {
-      int i = row;
-      while (sheet.rowsBottomPos[i] == getDefaultRowHeight() && row > 0) {
-        sheet.rowsBottomPos.removeLast();
-        i--;
-      }
-    }
-    updateRowColCount(visibleHeight: visibleWindowHeight, visibleWidth: visibleWindowWidth, notify: false);
+    // Delegate layout calculation to GridManager
+    _gridManager.adjustRowHeightAfterUpdate(row, col, newValue, prevValue);
   }
 
   void saveAndCalculate({bool save = true, bool updateHistory = false}) {
@@ -559,78 +451,36 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   int get tableViewCols => _selectionManager.selection.colCount;
 
   void updateRowColCount({double? visibleHeight, double? visibleWidth, bool notify = true}) {
-    int targetRows = tableViewRows;
-    int targetCols = tableViewCols;
-    if (visibleHeight != null) {
-      visibleWindowHeight = visibleHeight;
-      targetRows = minRows(visibleWindowHeight);
-    }
-    if (visibleWidth != null) {
-      visibleWindowWidth = visibleWidth;
-      targetCols = minCols(visibleWindowWidth);
-    }
-    if (targetRows != tableViewRows || targetCols != tableViewCols) {
-      _selectionManager.selection.rowCount = targetRows;
-      _selectionManager.selection.colCount = targetCols;
-      if (notify) {
-        notifyListeners();
-      }
-    }
+    _gridManager.updateRowColCount(
+      visibleHeight: visibleHeight,
+      visibleWidth: visibleWidth,
+      notify: notify,
+    );
   }
 
   double getTargetTop(int row) {
-    if (row <= 0) return 0.0;
-    final int nbKnownBottomPos = sheet.rowsBottomPos.length;
-    var rowsBottomPos = sheet.rowsBottomPos;
-    final int tableHeight = nbKnownBottomPos == 0
-        ? 0
-        : rowsBottomPos.last.toInt();
-    final double targetTop = row - 1 < nbKnownBottomPos
-        ? rowsBottomPos[row - 1].toDouble()
-        : tableHeight + (row - nbKnownBottomPos) * getDefaultRowHeight();
-    return targetTop;
+    return _gridManager.getTargetTop(row);
   }
 
   double getTargetLeft(int col) {
-    if (col <= 0) return 0.0;
-    final int nbKnownRightPos = sheet.colRightPos.length;
-    var columnsRightPos = sheet.colRightPos;
-    final int tableWidth = nbKnownRightPos == 0
-        ? 0
-        : columnsRightPos.last.toInt();
-    final double targetRight = col - 1 < nbKnownRightPos
-        ? columnsRightPos[col - 1].toDouble()
-        : tableWidth + (col - nbKnownRightPos) * getDefaultCellWidth();
-    return targetRight;
+    return _gridManager.getTargetLeft(col);
   }
 
   int minRows(double height) {
-    double tableHeight = getTargetTop(rowCount - 1);
-    if (height >= tableHeight) {
-      return sheet.rowsBottomPos.length +
-          (height - getTargetTop(sheet.rowsBottomPos.length - 1)) ~/ getDefaultRowHeight() + 1;
-    }
-    return rowCount;
+    return _gridManager.minRows(height);
   }
 
   int minCols(double width) {
-    double tableWidth = getTargetLeft(colCount - 1);
-    if (width >= tableWidth) {
-      return sheet.colRightPos.length +
-          (width - getTargetLeft(sheet.colRightPos.length - 1)) ~/ getDefaultCellWidth() + 1;
-    }
-    return colCount;
+    return _gridManager.minCols(width);
   }
 
   /// Triggers a visual scroll event to the Widget via the Stream
   void triggerScrollTo(int row, int col) {
-    _scrollController.add(SpreadsheetScrollRequest.toCell(Point(row, col)));
+    _gridManager.triggerScrollTo(row, col);
   }
-   
+    
   void scrollToOffset({double? x, double? y, bool animate = false}) {
-    _scrollController.add(
-      SpreadsheetScrollRequest.toOffset(offsetX: x, offsetY: y, animate: animate),
-    );
+    _gridManager.scrollToOffset(x: x, y: y, animate: animate);
   }
 
   String? currentInitialInput; // Add this field
