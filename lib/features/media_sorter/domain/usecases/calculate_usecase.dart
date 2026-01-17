@@ -735,10 +735,12 @@ class CalculateUsecase with GetNames {
     final toOldIndexes = [];
     final catRows = [];
     int newIndex = 0;
+    final List<int> newIndexList = [];
     for (int i = 1; i < rowCount; i++) {
       if (isMedium[i]) {
         validRowIndexes.add(i);
         newIndexes[i] = newIndex;
+        newIndexList.add(newIndex);
         newIndex++;
         toOldIndexes.add(i);
       } else {
@@ -863,9 +865,8 @@ class CalculateUsecase with GetNames {
             instrTable[k][InstrStruct(
                   true,
                   false,
-                  validRowIndexes
+                  newIndexList
                       .where((entry) => entry != newIndexes[k])
-                      .map((entry) => newIndexes[entry])
                       .toList(),
                   [
                     [-maxInt, -1],
@@ -916,9 +917,8 @@ class CalculateUsecase with GetNames {
             instrTable[k][InstrStruct(
                   true,
                   false,
-                  validRowIndexes
+                  newIndexList
                       .where((entry) => entry != newIndexes[k])
-                      .map((entry) => newIndexes[entry])
                       .toList(),
                   [
                     [1, maxInt],
@@ -960,9 +960,8 @@ class CalculateUsecase with GetNames {
             instrTable[k][InstrStruct(
                   true,
                   false,
-                  validRowIndexes
+                  newIndexList
                       .where((entry) => entry != newIndexes[k])
-                      .map((entry) => newIndexes[entry])
                       .toList(),
                   [
                     [-maxInt, -1],
@@ -1004,9 +1003,8 @@ class CalculateUsecase with GetNames {
             instrTable[k][InstrStruct(
                   true,
                   false,
-                  validRowIndexes
+                  newIndexList
                       .where((entry) => entry != newIndexes[k])
-                      .map((entry) => newIndexes[entry])
                       .toList(),
                   [
                     [1, maxInt],

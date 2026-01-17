@@ -25,6 +25,7 @@ import 'package:trying_flutter/features/media_sorter/presentation/logic/layout_c
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/history_manager.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/sheet_data_manager.dart';
 
 class SpreadsheetScrollRequest {
   final Point<int>? cell;
@@ -50,15 +51,13 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   @override
   get columnTypes => sheet.columnTypes;
 
-  // --- Scroll Stream Controller ---
+  final SheetDataManager _sheetDataManager;
   final StreamController<SpreadsheetScrollRequest> _scrollController =
       StreamController<SpreadsheetScrollRequest>.broadcast();
   Stream<SpreadsheetScrollRequest> get scrollStream => _scrollController.stream;
   double visibleWindowHeight = 0.0;
   double visibleWindowWidth = 0.0;
 
-  final GetSheetDataUseCase _getDataUseCase;
-  final SaveSheetDataUseCase _saveSheetDataUseCase;
   final SpreadsheetLayoutCalculator _layoutCalculator =
       SpreadsheetLayoutCalculator();
   CalculationService calculationService = CalculationService();
@@ -114,11 +113,9 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   SelectionModel get selection => _selectionManager.selection;
 
   SpreadsheetController({
-    required GetSheetDataUseCase getDataUseCase,
-    required SaveSheetDataUseCase saveSheetDataUseCase,
+    required SheetDataManager sheetDataManager,
     required ParsePasteDataUseCase parsePasteDataUseCase,
-  }) : _getDataUseCase = getDataUseCase,
-       _saveSheetDataUseCase = saveSheetDataUseCase {
+  }) : _sheetDataManager = sheetDataManager {
     _treeManager = TreeManager(this);
     _selectionManager = SelectionManager(this);
     _clipboardManager = ClipboardManager(this);
@@ -134,6 +131,17 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     return name.isNotEmpty &&
         !name.contains(RegExp(r'[\\/:*?"<>|]')) &&
         name != SpreadsheetConstants.noSPNameFound;
+  }
+
+  Future<void> init() async {
+    _isLoading = true;
+    notifyListeners();
+
+    // Delegate complex initialization to Manager
+    sheetName = await _sheetDataManager.initialize();
+
+    // Load the determined sheet
+    await loadSheetByName(sheetName, init: true);
   }
 
   // --- Initialization Logic ---
@@ -501,15 +509,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
             }
           }
         }
-        // // Define constraints (mirroring your Python example)
-        // // "0 must be at index 0-1 OR 2 spots behind 5"
-        // Map<int, List<SortingRule>> myRules = {
-        //   0: [
-        //     SortingRule(minVal: 0, maxVal: 1),
-        //     SortingRule(minVal: -2, maxVal: -2, relativeTo: 5),
-        //   ],
-        //   // Add other rules here...
-        // };
+        
 
         debugPrint("Sending request...");
         final service = SortingService();
