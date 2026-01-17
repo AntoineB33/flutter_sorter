@@ -1,11 +1,11 @@
-import 'dart:async'; // Add this import
+import 'dart:async';
 import 'dart:math';
 import 'dart:collection';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import '../../domain/usecases/get_sheet_data_usecase.dart';
-import '../../domain/usecases/save_sheet_data_usecase.dart'; // Assume created
+import '../../domain/usecases/save_sheet_data_usecase.dart';
 import '../../domain/entities/column_type.dart';
 import '../../domain/usecases/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
@@ -25,6 +25,8 @@ import 'package:trying_flutter/features/media_sorter/presentation/logic/layout_c
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/history_manager.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
+// Add the import for the new manager
+import 'package:trying_flutter/features/media_sorter/presentation/logic/sheet_data_manager.dart';
 
 class SpreadsheetScrollRequest {
   final Point<int>? cell;
@@ -46,6 +48,14 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   late final SelectionManager _selectionManager;
   late final ClipboardManager _clipboardManager;
   late final HistoryManager _historyManager;
+  late final SheetDataManager _dataManager;
+
+  // Proxy getters for DataManager properties to maintain API compatibility
+  SheetModel get sheet => _dataManager.sheet;
+  String get sheetName => _dataManager.sheetName;
+  List<String> get availableSheets => _dataManager.availableSheets;
+  Map<String, SheetModel> get loadedSheetsData => _dataManager.loadedSheetsData;
+  Map<String, SelectionModel> get lastSelectedCells => _dataManager.lastSelectedCells;
 
   @override
   get columnTypes => sheet.columnTypes;
@@ -57,24 +67,14 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   double visibleWindowHeight = 0.0;
   double visibleWindowWidth = 0.0;
 
-  final GetSheetDataUseCase _getDataUseCase;
-  final SaveSheetDataUseCase _saveSheetDataUseCase;
   final SpreadsheetLayoutCalculator _layoutCalculator =
       SpreadsheetLayoutCalculator();
   CalculationService calculationService = CalculationService();
-  final ManageWaitingTasks<void> _saveLastSelectionExecutor =
-      ManageWaitingTasks<void>();
-  final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
+  
   final ManageWaitingTasks<AnalysisResult> _calculateExecutor =
       ManageWaitingTasks<AnalysisResult>();
   AnalysisResult analysisResult = AnalysisResult();
   bool calculatedOnce = false;
-
-  SheetModel sheet = SheetModel.empty();
-  String sheetName = "";
-  List<String> availableSheets = [];
-  Map<String, SheetModel> loadedSheetsData = {};
-  Map<String, SelectionModel> lastSelectedCells = {};
 
   // Dimensions
   bool _isLoading = false;
@@ -117,12 +117,16 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     required GetSheetDataUseCase getDataUseCase,
     required SaveSheetDataUseCase saveSheetDataUseCase,
     required ParsePasteDataUseCase parsePasteDataUseCase,
-  }) : _getDataUseCase = getDataUseCase,
-       _saveSheetDataUseCase = saveSheetDataUseCase {
+  }) {
     _treeManager = TreeManager(this);
     _selectionManager = SelectionManager(this);
     _clipboardManager = ClipboardManager(this);
     _historyManager = HistoryManager(this);
+    _dataManager = SheetDataManager(
+      this,
+      getDataUseCase: getDataUseCase,
+      saveSheetDataUseCase: saveSheetDataUseCase,
+    );
     init();
   }
 
@@ -131,71 +135,12 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   }
 
   bool isValidSheetName(String name) {
-    return name.isNotEmpty &&
-        !name.contains(RegExp(r'[\\/:*?"<>|]')) &&
-        name != SpreadsheetConstants.noSPNameFound;
+    return _dataManager.isValidSheetName(name);
   }
 
   // --- Initialization Logic ---
   Future<void> init() async {
-    _isLoading = true;
-    notifyListeners();
-
-    // await _saveSheetDataUseCase.clearAllData();
-    await _saveSheetDataUseCase.initialize();
-    try {
-      sheetName = await _getDataUseCase.getLastOpenedSheetName();
-    } catch (e) {
-      await _saveSheetDataUseCase.saveLastOpenedSheetName(sheetName);
-    }
-    try {
-      await _getDataUseCase.getLastSelection();
-    } catch (e) {
-      await saveLastSelection(SelectionModel.empty());
-    }
-
-    availableSheets = await _getDataUseCase.getAllSheetNames();
-    if (!isValidSheetName(sheetName)) {
-      if (availableSheets.isNotEmpty) {
-        sheetName = availableSheets[0];
-      } else {
-        sheetName = SpreadsheetConstants.defaultSheetName;
-      }
-      _saveSheetDataUseCase.saveLastOpenedSheetName(sheetName);
-    }
-    bool availableSheetsChanged = false;
-    if (!availableSheets.contains(sheetName)) {
-      availableSheets.add(sheetName);
-      availableSheetsChanged = true;
-      debugPrint(
-        "Last opened sheet $sheetName not found in available sheets, adding it.",
-      );
-    }
-    lastSelectedCells = await _getDataUseCase.getAllLastSelected();
-    bool changed = false;
-    for (var name in availableSheets) {
-      if (!lastSelectedCells.containsKey(name)) {
-        lastSelectedCells[name] = SelectionModel.empty();
-        changed = true;
-        debugPrint(
-          "No last selected cell for sheet $name, defaulting to (0,0)",
-        );
-      }
-    }
-    if (changed) {
-      _saveSheetDataUseCase.saveAllLastSelected(lastSelectedCells);
-    }
-    for (var name in lastSelectedCells.keys) {
-      if (!availableSheets.contains(name)) {
-        availableSheets.add(name);
-        availableSheetsChanged = true;
-      }
-    }
-    if (availableSheetsChanged) {
-      _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
-    }
-
-    await loadSheetByName(sheetName, init: true);
+    await _dataManager.init();
   }
 
   @override
@@ -210,58 +155,19 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   @override
   int get colCount => rowCount > 0 ? sheet.table[0].length : 0;
 
-  Future<void> loadSheetByName(String name, {bool init = false}) async {
-    if (!_isLoading) {
-      _isLoading = true;
-      notifyListeners();
-    }
-
-    if (!init) {
-      lastSelectedCells[sheetName] = _selectionManager.selection;
-      _saveSheetDataUseCase.saveAllLastSelected(lastSelectedCells);
-      _saveSheetDataUseCase.saveLastOpenedSheetName(name);
-    }
-
-    if (availableSheets.contains(name)) {
-      if (loadedSheetsData.containsKey(name)) {
-        sheet = loadedSheetsData[name]!;
-        _selectionManager.selection = lastSelectedCells[name]!;
-      } else {
-        _saveExecutors[name] = ManageWaitingTasks<void>();
-        try {
-          sheet = await _getDataUseCase.loadSheet(name);
-          if (init) {
-            _selectionManager.selection = await _getDataUseCase
-                .getLastSelection();
-          } else {
-            _selectionManager.selection = lastSelectedCells[name]!;
-          }
-        } catch (e) {
-          debugPrint("Error parsing sheet data for $name: $e");
-          sheet = SheetModel.empty();
-          _selectionManager.selection = SelectionModel.empty();
-        }
-      }
-    } else {
-      sheet = SheetModel.empty();
-      _selectionManager.selection = SelectionModel.empty();
-      availableSheets.add(name);
-      _saveSheetDataUseCase.saveAllSheetNames(availableSheets);
-      _saveExecutors[name] = ManageWaitingTasks<void>();
-    }
-    if (!init) {
-      await saveLastSelection(selection);
-    }
-    loadedSheetsData[name] = sheet;
-    sheetName = name;
-    updateRowColCount(visibleHeight: visibleWindowHeight, visibleWidth: visibleWindowWidth, notify: false);
-    scrollToOffset(
-      x: _selectionManager.selection.scrollOffsetX,
-      y: _selectionManager.selection.scrollOffsetY,
-      animate: false,
-    );
-    saveAndCalculate(save: false);
+  // Internal helper for DataManager to update loading state
+  void setLoading(bool loading) {
+    _isLoading = loading;
     notifyListeners();
+  }
+
+  // Internal helper for DataManager to set selection
+  void setSelection(SelectionModel newSelection) {
+    _selectionManager.selection = newSelection;
+  }
+
+  Future<void> loadSheetByName(String name, {bool init = false}) async {
+    await _dataManager.loadSheetByName(name, init: init);
   }
 
   // --- Content Access ---
@@ -462,10 +368,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
       if (updateHistory) {
         _historyManager.commit();
       }
-      _saveExecutors[sheetName]!.execute(() async {
-        await _saveSheetDataUseCase.saveSheet(sheetName, sheet);
-        await Future.delayed(Duration(milliseconds: saveDelayMs));
-      });
+      _dataManager.scheduleSheetSave(saveDelayMs);
     }
     _calculateExecutor.execute(
       () async {
@@ -619,14 +522,11 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   }
 
   Future<void> saveLastSelection(SelectionModel selection) async {
-    _saveLastSelectionExecutor.execute(() async {
-      await _saveSheetDataUseCase.saveLastSelection(selection);
-      await Future.delayed(Duration(milliseconds: saveDelayMs));
-    });
+    await _dataManager.saveLastSelection(selection);
   }
 
   Future<void> saveSheet(String sheetName, SheetModel sheet) async {
-    await _saveSheetDataUseCase.saveSheet(sheetName, sheet);
+    await _dataManager.saveSheetDirect(sheetName, sheet);
   }
 
   void populateTree(List<NodeStruct> nodes) {
@@ -726,7 +626,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   void triggerScrollTo(int row, int col) {
     _scrollController.add(SpreadsheetScrollRequest.toCell(Point(row, col)));
   }
-  
+   
   void scrollToOffset({double? x, double? y, bool animate = false}) {
     _scrollController.add(
       SpreadsheetScrollRequest.toOffset(offsetX: x, offsetY: y, animate: animate),

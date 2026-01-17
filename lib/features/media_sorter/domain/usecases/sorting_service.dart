@@ -63,6 +63,7 @@ class SortingService {
   }
 
   /// Helper to save the JSON string to a file for Python debugging
+  // ignore: unused_element
   Future<void> _saveDebugFile(String jsonContent) async {
     try {
       // 1. Get a valid directory (Works on Android/iOS/Desktop)
