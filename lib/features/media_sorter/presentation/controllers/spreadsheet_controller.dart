@@ -501,15 +501,6 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
             }
           }
         }
-        // // Define constraints (mirroring your Python example)
-        // // "0 must be at index 0-1 OR 2 spots behind 5"
-        // Map<int, List<SortingRule>> myRules = {
-        //   0: [
-        //     SortingRule(minVal: 0, maxVal: 1),
-        //     SortingRule(minVal: -2, maxVal: -2, relativeTo: 5),
-        //   ],
-        //   // Add other rules here...
-        // };
 
         debugPrint("Sending request...");
         final service = SortingService();

@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io'; // Import dart:io
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart'; // Import path_provider
 
 class SortingRule {
   final int minVal;
@@ -21,15 +23,11 @@ class SortingRule {
 }
 
 class SortingService {
-  // NOTE: If using Android Emulator, use '10.0.2.2'. 
-  // If on real device, use your PC's local IP (e.g., '192.168.1.x').
-  // If iOS Simulator, use 'localhost'.
   static const String baseUrl = 'http://127.0.0.1:8000';
 
   Future<List<int>?> solveSorting(int n, Map<int, List<SortingRule>> rules) async {
     final url = Uri.parse('$baseUrl/solve');
 
-    // Convert integer keys to strings for JSON
     final rulesJson = rules.map((key, value) => 
       MapEntry(key.toString(), value.map((e) => e.toJson()).toList())
     );
@@ -38,6 +36,10 @@ class SortingService {
       'n': n,
       'rules': rulesJson,
     });
+
+    // --- DEBUG: Save body to file ---
+    // await _saveDebugFile(body); 
+    // --------------------------------
 
     try {
       final response = await http.post(
@@ -57,6 +59,26 @@ class SortingService {
     } catch (e) {
       debugPrint('Connection Error: $e');
       return null;
+    }
+  }
+
+  /// Helper to save the JSON string to a file for Python debugging
+  Future<void> _saveDebugFile(String jsonContent) async {
+    try {
+      // 1. Get a valid directory (Works on Android/iOS/Desktop)
+      final directory = await getApplicationDocumentsDirectory();
+      
+      // 2. Define the path
+      final path = '${directory.path}/debug_payload.json';
+      final file = File(path);
+
+      // 3. Write the file
+      await file.writeAsString(jsonContent);
+
+      // 4. Print location so you can find it
+      debugPrint('>>> DEBUG JSON SAVED AT: $path');
+    } catch (e) {
+      debugPrint('>>> FAILED TO SAVE DEBUG JSON: $e');
     }
   }
 }
