@@ -63,13 +63,9 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   bool _isLoading = false;
 
   int all = SpreadsheetConstants.all;
-
-  final NodeStruct mentionsRoot = NodeStruct(
-    instruction: SpreadsheetConstants.selectionMsg,
-  );
-  final NodeStruct searchRoot = NodeStruct(
-    instruction: SpreadsheetConstants.searchMsg,
-  );
+  
+  NodeStruct get mentionsRoot => _treeManager.mentionsRoot;
+  NodeStruct get searchRoot => _treeManager.searchRoot;
 
   /// 2D table of attribute identifiers (row index or name)
   /// mentioned in each cell.
@@ -79,20 +75,20 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   Map<String, List<int>> attToCol = {};
   @override
   List<int> nameIndexes = [];
-  List<int> pathIndexes = [];
+  List<int> get pathIndexes => _treeManager.pathIndexes;
 
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
-  Map<Attribute, Map<int, Cols>> attToRefFromAttColToCol = {};
-  Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol = {};
-  Map<int, Map<Attribute, int>> rowToAtt = {};
+  Map<Attribute, Map<int, Cols>> get attToRefFromAttColToCol => _treeManager.attToRefFromAttColToCol;
+  Map<Attribute, Map<int, List<int>>> get attToRefFromDepColToCol => _treeManager.attToRefFromDepColToCol;
+  Map<int, Map<Attribute, int>> get rowToAtt => _treeManager.rowToAtt;
 
   /// Maps attribute identifiers (row index or name)
   /// to a map of mentioners (row index) to the column index
-  Map<Attribute, Map<int, List<int>>> toMentioners = {};
-  List<Map<InstrStruct, Cell>> instrTable = [];
-  Map<int, HashSet<Attribute>> colToAtt = {};
+  Map<Attribute, Map<int, List<int>>> get toMentioners => _treeManager.toMentioners;
+  List<Map<InstrStruct, Cell>> get instrTable => _treeManager.instrTable;
+  Map<int, HashSet<Attribute>> get colToAtt => _treeManager.colToAtt;
 
   SelectionModel get selection => _selectionManager.selection;
 
@@ -254,7 +250,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     // Delegate layout calculation to GridManager
     _gridManager.adjustRowHeightAfterUpdate(row, col, newValue, prevValue);
   }
-
+  
   void saveAndCalculate({bool save = true, bool updateHistory = false}) {
     if (save) {
       if (updateHistory) {
@@ -314,36 +310,22 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
         analysisResult = result;
         calculatedOnce = true;
 
+        // Update local controller state (needed for GetNames mixin etc)
         tableToAtt = result.tableToAtt;
         names = result.names;
         attToCol = result.attToCol;
         nameIndexes = result.nameIndexes;
+        // ... update other local maps if needed for formula logic
 
-        pathIndexes = result.pathIndexes;
-        attToRefFromAttColToCol = result.attToRefFromAttColToCol;
-        attToRefFromDepColToCol = result.attToRefFromDepColToCol;
-        rowToAtt = result.rowToAtt;
-        toMentioners = result.toMentioners;
-        instrTable = result.instrTable;
-        colToAtt = result.colToAtt;
-        mentionsRoot.newChildren = null;
-        mentionsRoot.rowId = _selectionManager.primarySelectedCell.x;
-        mentionsRoot.colId = _selectionManager.primarySelectedCell.y;
-        searchRoot.newChildren = null;
-        _treeManager.populateTree([
-          result.errorRoot,
-          result.warningRoot,
-          mentionsRoot,
-          searchRoot,
-          result.categoriesRoot,
-          result.distPairsRoot,
-        ]);
+        // DELEGATE TREE UPDATES TO MANAGER
+        // This is the key change:
+        _treeManager.onAnalysisComplete(result);
+        
         _isLoading = false;
         notifyListeners();
       },
     );
   }
-
   void setColumnType(int col, ColumnType type, {bool updateHistory = true}) {
     if (updateHistory) {
       _historyManager.recordColumnTypeChange(col, getColumnType(col), type);
@@ -404,12 +386,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   }
 
   void toggleNodeExpansion(NodeStruct node, bool isExpanded) {
-    // Logic is now in the manager
-    node.isExpanded = isExpanded;
-    for (NodeStruct child in node.newChildren ?? []) {
-      child.isExpanded = false;
-    }
-    _treeManager.populateTree([node]);
+    _treeManager.toggleNodeExpansion(node, isExpanded);
     notifyListeners();
   }
 

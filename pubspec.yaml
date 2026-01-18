@@ -53,6 +53,7 @@ dependencies:
   # Comparison utilities (useful for value equality in classes)
   equatable: ^2.0.5
   http: ^1.0.0
+  logger: ^1.2.2
 
 dev_dependencies:
   flutter_test:

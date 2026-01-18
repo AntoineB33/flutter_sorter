@@ -458,6 +458,7 @@ class CalculateUsecase with GetNames {
         );
       }
       att = Attribute.row(numK);
+      attColId = all;
     } else {
       if (!isValidAttName(name)) {
         errorRoot.newChildren!.add(
@@ -498,7 +499,6 @@ class CalculateUsecase with GetNames {
         attColId = colId;
       }
       att = Attribute(name: name, colId: attColId);
-      colToAtt[attColId]!.add(att);
       if (!attToCol.containsKey(attWritten)) {
         attToCol[attWritten] = [];
       }
@@ -508,6 +508,7 @@ class CalculateUsecase with GetNames {
         }
       }
     }
+    colToAtt[attColId]!.add(att);
     tableToAtt[rowId][colId].add(att);
     return att;
   }
