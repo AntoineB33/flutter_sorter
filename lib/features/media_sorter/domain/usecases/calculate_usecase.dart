@@ -6,11 +6,12 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_messages.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/domain/mixins/get_names.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
+import 'package:fpdart/fpdart.dart';
 
 class Cols {
   final List<int> colIndexes = [];
@@ -18,61 +19,42 @@ class Cols {
   Cols();
 }
 
-class CalculateUsecase with GetNames {
-  final Object dataPackage;
-  final AnalysisResult result;
+class CalculateUsecase {
+  final Either<TransferableTypedData, List<List<String>>> dataPackage;
+  final AnalysisResult result = AnalysisResult.empty();
+  final GetNames getNames = GetNames();
 
-  List<List<String>> table = [];
-  @override
-  List<ColumnType> columnTypes = [];
+  SheetContent? _sheetContent;
+  List<List<String>> get table => _sheetContent!.table;
+  List<ColumnType> get columnTypes => _sheetContent!.columnTypes;
 
-  final NodeStruct errorRoot = NodeStruct(
-    instruction: SpreadsheetConstants.errorMsg,
-    newChildren: [],
-    hideIfEmpty: true,
-  );
-  final NodeStruct warningRoot = NodeStruct(
-    instruction: SpreadsheetConstants.warningMsg,
-    newChildren: [],
-    hideIfEmpty: true,
-  );
-  final NodeStruct mentionsRoot = NodeStruct(
-    instruction: SpreadsheetConstants.selectionMsg,
-    newChildren: [],
-  );
-  final NodeStruct searchRoot = NodeStruct(
-    instruction: SpreadsheetConstants.searchMsg,
-    newChildren: [],
-  );
-  final NodeStruct categoriesRoot = NodeStruct(
-    instruction: SpreadsheetConstants.categoryMsg,
-    newChildren: [],
-  );
-  final NodeStruct distPairsRoot = NodeStruct(
-    instruction: SpreadsheetConstants.distPairsMsg,
-    newChildren: [],
-  );
+  NodeStruct get errorRoot => result.errorRoot;
+  NodeStruct get warningRoot => result.warningRoot;
+  NodeStruct get categoriesRoot => result.categoriesRoot;
+  NodeStruct get distPairsRoot => result.distPairsRoot;
+  List<List<HashSet<Attribute>>> get tableToAtt => result.tableToAtt;
 
-  /// 2D table of attribute identifiers (row index or name)
-  /// mentioned in each cell.
-  @override
-  List<List<HashSet<Attribute>>> tableToAtt = [];
-  Map<String, Cell> names = {};
-  Map<String, List<int>> attToCol = {};
-  @override
-  List<int> nameIndexes = [];
-  List<int> pathIndexes = [];
+  Map<String, Cell> get names => result.names;
+  Map<String, List<int>> get attToCol => result.attToCol;
+  List<int> get nameIndexes => result.nameIndexes;
+  List<int> get pathIndexes => result.pathIndexes;
 
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
-  Map<Attribute, Map<int, Cols>> attToRefFromAttColToCol = {};
+  Map<Attribute, Map<int, Cols>> get attToRefFromAttColToCol =>
+      result.attToRefFromAttColToCol;
+  Map<Attribute, Map<int, List<int>>> get attToRefFromDepColToCol =>
+      result.attToRefFromDepColToCol;
 
   /// Maps attribute identifiers (row index or name)
   /// to a map of mentioners (row index) to the column index
-  Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol = {};
-  List<Map<InstrStruct, Cell>> instrTable = [];
-  Map<int, HashSet<Attribute>> colToAtt = {};
+  Map<Attribute, Map<int, List<int>>> get toMentioners => result.toMentioners;
+  List<Map<InstrStruct, Cell>> get instrTable => result.instrTable;
+  set instrTable(List<Map<InstrStruct, Cell>> value) {
+    result.instrTable = value;
+  }
+  Map<int, HashSet<Attribute>> get colToAtt => result.colToAtt;
   List<bool> isMedium = [];
 
   static const int maxInt = -1 >>> 1;
@@ -82,67 +64,40 @@ class CalculateUsecase with GetNames {
   static const notUsedCst = SpreadsheetConstants.notUsedCst;
   static Cols added = Cols();
 
-  int get rowCount => table.length;
-  @override
-  int get colCount => rowCount > 0 ? table[0].length : 0;
+  int get rowCount => _sheetContent!.table.length;
+  int get colCount => rowCount > 0 ? _sheetContent!.table[0].length : 0;
 
-  CalculateUsecase(this.dataPackage, this.columnTypes)
-    : result = AnalysisResult();
+  final List<ColumnType> columnTypes0;
 
-  IsolateMessage getMessage(
-    List<List<String>> table,
-    List<ColumnType> columnTypes,
-  ) {
-    if (table.length < 5000) {
-      return RawDataMessage(table: table, columnTypes: columnTypes);
-    } else {
-      final String combined = jsonEncode(table);
-      final Uint8List bytes = utf8.encode(combined);
-      final transferable = TransferableTypedData.fromList([bytes]);
-
-      return TransferableDataMessage(
-        dataPackage: transferable,
-        columnTypes: columnTypes,
-      );
-    }
-  }
+  CalculateUsecase(this.dataPackage, this.columnTypes0);
 
   AnalysisResult run() {
-    _decodeData();
+    _decodeData(dataPackage);
     _getEverything();
-
-    var result = AnalysisResult();
-    result.errorRoot.newChildren = errorRoot.newChildren;
-    result.warningRoot.newChildren = warningRoot.newChildren;
-    result.categoriesRoot.newChildren = categoriesRoot.newChildren;
-    result.distPairsRoot.newChildren = distPairsRoot.newChildren;
-
-    result.tableToAtt = tableToAtt;
-    result.names = names;
-    result.attToCol = attToCol;
-    result.nameIndexes = nameIndexes;
-
-    result.pathIndexes = pathIndexes;
-    result.attToRefFromAttColToCol = attToRefFromAttColToCol;
-    result.attToRefFromDepColToCol = attToRefFromDepColToCol;
-    result.toMentioners = attToRefFromDepColToCol;
-    result.instrTable = instrTable;
-    result.colToAtt = colToAtt;
     return result;
   }
 
-  void _decodeData() {
-    if (dataPackage is TransferableTypedData) {
-      final Uint8List receivedBytes = (dataPackage as TransferableTypedData)
-          .materialize()
-          .asUint8List();
-      final List<dynamic> decodedTable = jsonDecode(utf8.decode(receivedBytes));
-      table = decodedTable.map((row) => (row as List).cast<String>()).toList();
-    } else if (dataPackage is List<List<String>>) {
-      table = dataPackage as List<List<String>>;
-    } else {
-      throw Exception("Invalid data package type");
-    }
+  void _decodeData(
+    Either<TransferableTypedData, List<List<String>>> dataPackage,
+  ) {
+    List<List<String>> table = [];
+    dataPackage.fold(
+      (transferable) {
+        final Uint8List receivedBytes = transferable
+            .materialize()
+            .asUint8List();
+        final List<dynamic> decodedTable = jsonDecode(
+          utf8.decode(receivedBytes),
+        );
+        table = decodedTable
+            .map((row) => (row as List).cast<String>())
+            .toList();
+      },
+      (rawTable) {
+        table = rawTable;
+      },
+    );
+    _sheetContent = SheetContent(table: table, columnTypes: columnTypes0);
   }
 
   List<String> generateUniqueStrings(int n) {
@@ -215,8 +170,7 @@ class CalculateUsecase with GetNames {
       for (final rowId in graph[att]!.keys) {
         Attribute childAtt = Attribute.row(rowId);
         if (graph.containsKey(childAtt) && graph[childAtt]!.containsKey(end)) {
-          List<Cell> cells = graph[att]![rowId]!
-              .colIndexes
+          List<Cell> cells = graph[att]![rowId]!.colIndexes
               .map((colId) => Cell(rowId: rowId, colId: colId))
               .toList();
           path.add(cells);
@@ -248,7 +202,7 @@ class CalculateUsecase with GetNames {
               for (int childRowId in childRowsToCol.keys) {
                 if (!rowsToCol.containsKey(childRowId)) {
                   rowsToCol[childRowId] = added;
-                } else if (rowsToCol[childRowId] != added && 
+                } else if (rowsToCol[childRowId] != added &&
                     rowsToCol[childRowId]!.toInformFstDep.contains(false)) {
                   List<NodeStruct> newPath = findPath(
                     graph,
@@ -257,14 +211,16 @@ class CalculateUsecase with GetNames {
                   ).map((k) => NodeStruct(cells: k)).toList();
                   for (int nodeId = 0; nodeId < newPath.length; nodeId++) {
                     newPath[nodeId].message =
-                        "${getAttName(newPath[nodeId].att!)} points to row ${getAttName(nodeId < newPath.length - 1 ? newPath[nodeId + 1].att! : att)}";
+                        "${getNames.getAttName(result, newPath[nodeId].att!)} points to row ${getNames.getAttName(result, nodeId < newPath.length - 1 ? newPath[nodeId + 1].att! : att)}";
                   }
                   redundantRef.add(
                     NodeStruct(
-                      message: "${getAttName(att)} already pointed",
-                      cells: rowsToCol[childRowId]!
-                          .colIndexes
-                          .where((colId) => !rowsToCol[childRowId]!.toInformFstDep[colId])
+                      message: "${getNames.getAttName(result, att)} already pointed",
+                      cells: rowsToCol[childRowId]!.colIndexes
+                          .where(
+                            (colId) =>
+                                !rowsToCol[childRowId]!.toInformFstDep[colId],
+                          )
                           .map((colId) => Cell(rowId: childRowId, colId: colId))
                           .toList(),
                       newChildren: newPath,
@@ -464,7 +420,8 @@ class CalculateUsecase with GetNames {
         errorRoot.newChildren!.add(
           NodeStruct(
             message: "Invalid attribute name: \"$name\"",
-            rowId: rowId, colId: colId,
+            rowId: rowId,
+            colId: colId,
           ),
         );
         return att;
@@ -475,7 +432,7 @@ class CalculateUsecase with GetNames {
           errorRoot.newChildren!.add(
             NodeStruct(
               message:
-                  "Column ${getColumnLabel(attColId)} is not an attribute column",
+                  "Column ${getNames.getColumnLabel(attColId)} is not an attribute column",
               cell: Cell(rowId: rowId, colId: colId),
             ),
           );
@@ -490,7 +447,7 @@ class CalculateUsecase with GetNames {
           warningRoot.newChildren!.add(
             NodeStruct(
               message:
-                  "Attribute column ${getColumnLabel(attColId)} differs from current column ${getColumnLabel(colId)}",
+                  "Attribute column ${getNames.getColumnLabel(attColId)} differs from current column ${getNames.getColumnLabel(colId)}",
               cell: Cell(rowId: rowId, colId: colId),
             ),
           );
@@ -533,7 +490,7 @@ class CalculateUsecase with GetNames {
       }
     }
 
-    colToAtt = {};
+    colToAtt.clear();
     Map<Attribute, List<int>> attToDist = {};
     final Map<int, Map<Attribute, Cell>> isFstToAppear = {};
     final Map<int, Map<Attribute, Cell>> isLstToAppear = {};
@@ -548,8 +505,8 @@ class CalculateUsecase with GetNames {
       }
     }
     List<NodeStruct> children = [];
-    attToRefFromAttColToCol = {};
-    attToCol = {};
+    attToRefFromAttColToCol.clear();
+    attToCol.clear();
     for (int rowId = 1; rowId < rowCount; rowId++) {
       final row = table[rowId];
       for (int colId = 0; colId < colCount; colId++) {
@@ -640,7 +597,9 @@ class CalculateUsecase with GetNames {
               afterAllOthers[rowId] ??= {};
               afterAllOthers[rowId]![att] = cell;
             }
-            attToRefFromAttColToCol[att]![rowId]!.toInformFstDep.add(isAppearFst || isAppearLst || isFst || isLst);
+            attToRefFromAttColToCol[att]![rowId]!.toInformFstDep.add(
+              isAppearFst || isAppearLst || isFst || isLst,
+            );
           }
         }
       }
@@ -799,7 +758,7 @@ class CalculateUsecase with GetNames {
               final d = entry.value;
               return NodeStruct(
                 message:
-                    "($d) ${getRowName(rowsList[idx])} - ${getRowName(rowsList[idx + 1])}",
+                    "($d) ${getNames.getRowName(result, rowsList[idx])} - ${getNames.getRowName(result, rowsList[idx + 1])}",
                 newChildren: [
                   NodeStruct(att: Attribute.row(rowsList[idx])),
                   NodeStruct(att: Attribute.row(rowsList[idx + 1])),
@@ -837,7 +796,9 @@ class CalculateUsecase with GetNames {
       );
     }
 
-    instrTable = List.generate(rowCount, (_) => {});
+    instrTable
+      ..clear()
+      ..addAll(List.generate(rowCount, (_) => {}));
 
     List<Attribute> stack = [];
     for (final MapEntry(key: k, value: vMap) in isFstToAppear.entries) {
@@ -864,16 +825,15 @@ class CalculateUsecase with GetNames {
             }
           } else if (currAtt.rowId == all) {
             instrTable[k][InstrStruct(
-                  true,
-                  false,
-                  newIndexList
-                      .where((entry) => entry != newIndexes[k])
-                      .toList(),
-                  [
-                    [-maxInt, -1],
-                  ],
-                )] =
-                vMap.values.first;
+              true,
+              false,
+              newIndexList.where((entry) => entry != newIndexes[k]).toList(),
+              [
+                [-maxInt, -1],
+              ],
+            )] = vMap
+                .values
+                .first;
           } else {
             instrTable[k][InstrStruct(
                   true,
@@ -916,16 +876,15 @@ class CalculateUsecase with GetNames {
             }
           } else if (currAtt.rowId == all) {
             instrTable[k][InstrStruct(
-                  true,
-                  false,
-                  newIndexList
-                      .where((entry) => entry != newIndexes[k])
-                      .toList(),
-                  [
-                    [1, maxInt],
-                  ],
-                )] =
-                vMap.values.first;
+              true,
+              false,
+              newIndexList.where((entry) => entry != newIndexes[k]).toList(),
+              [
+                [1, maxInt],
+              ],
+            )] = vMap
+                .values
+                .first;
           } else {
             instrTable[k][InstrStruct(
                   true,
@@ -959,16 +918,15 @@ class CalculateUsecase with GetNames {
         for (Attribute a in beforeAllOthers[k]?.keys ?? []) {
           if (a.rowId == all) {
             instrTable[k][InstrStruct(
-                  true,
-                  false,
-                  newIndexList
-                      .where((entry) => entry != newIndexes[k])
-                      .toList(),
-                  [
-                    [-maxInt, -1],
-                  ],
-                )] =
-                vMap.values.first;
+              true,
+              false,
+              newIndexList.where((entry) => entry != newIndexes[k]).toList(),
+              [
+                [-maxInt, -1],
+              ],
+            )] = vMap
+                .values
+                .first;
           } else {
             instrTable[k][InstrStruct(
                   true,
@@ -1002,16 +960,15 @@ class CalculateUsecase with GetNames {
         for (Attribute a in afterAllOthers[k]?.keys ?? []) {
           if (a.rowId == all) {
             instrTable[k][InstrStruct(
-                  true,
-                  false,
-                  newIndexList
-                      .where((entry) => entry != newIndexes[k])
-                      .toList(),
-                  [
-                    [1, maxInt],
-                  ],
-                )] =
-                vMap.values.first;
+              true,
+              false,
+              newIndexList.where((entry) => entry != newIndexes[k]).toList(),
+              [
+                [1, maxInt],
+              ],
+            )] = vMap
+                .values
+                .first;
           } else {
             instrTable[k][InstrStruct(
                   true,
@@ -1207,7 +1164,7 @@ class CalculateUsecase with GetNames {
       }
     }
 
-    attToRefFromDepColToCol = {};
+    attToRefFromDepColToCol.clear();
     for (var i = 0; i < rowCount; i++) {
       for (var j = 0; j < colCount; j++) {
         if (columnTypes[j] == ColumnType.dependencies) {
@@ -1447,20 +1404,22 @@ class CalculateUsecase with GetNames {
         row[idx] = row[idx].trim().toLowerCase();
       }
     }
-    nameIndexes = [];
-    pathIndexes = [];
+    nameIndexes.clear();
+    pathIndexes.clear();
     for (int index = 0; index < colCount; index++) {
-      final role = getColumnType(index);
+      final role = getNames.getColumnType(_sheetContent!, index);
       if (role == ColumnType.names) {
         nameIndexes.add(index);
       } else if (role == ColumnType.filePath) {
         pathIndexes.add(index);
       }
     }
-    tableToAtt = List.generate(
-      rowCount,
-      (_) => List.generate(colCount, (_) => HashSet<Attribute>()),
-    );
+    tableToAtt
+      ..clear()
+      ..addAll(List.generate(
+        rowCount,
+        (_) => List.generate(colCount, (_) => HashSet<Attribute>()),
+      ));
     for (int i = 1; i < rowCount; i++) {
       for (int j in nameIndexes) {
         var cellElements = table[i][j].split(";");

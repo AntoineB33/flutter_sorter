@@ -6,11 +6,11 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/sp
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/parse_paste_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 
 final sl = GetIt.instance; // sl = Service Locator
 
 Future<void> init() async {
-
   // --- Data Layer ---
   sl.registerLazySingleton(() => FileSheetLocalDataSource());
   sl.registerLazySingleton<SheetRepository>(
@@ -24,5 +24,12 @@ Future<void> init() async {
 
   // --- Presentation Layer ---
   // Factory means "create a new instance every time I ask"
-  sl.registerFactory(() => SpreadsheetController(getDataUseCase: sl(), saveSheetDataUseCase: sl(), parsePasteDataUseCase: sl()));
+  sl.registerFactory(
+    () => SpreadsheetController(
+      getDataUseCase: sl(),
+      saveSheetDataUseCase: sl(),
+      parsePasteDataUseCase: sl(),
+    ),
+  );
+  sl.registerFactory(() => TreeController(sl()));
 }

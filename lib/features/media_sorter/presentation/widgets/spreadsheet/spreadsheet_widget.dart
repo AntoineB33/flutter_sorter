@@ -12,6 +12,7 @@ import 'dart:math' as math;
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_manager.dart';
+import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 
 class SpreadsheetWidget extends StatefulWidget {
   const SpreadsheetWidget({super.key});
@@ -24,6 +25,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   final FocusNode _focusNode = FocusNode();
   final ScrollController _verticalController = ScrollController();
   final ScrollController _horizontalController = ScrollController();
+  final GetNames _getNames = GetNames();
   StreamSubscription? _scrollSubscription;
   bool _initialLayoutDone = false;
 
@@ -401,7 +403,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     }
     if (r == 0) {
       return SpreadsheetColumnHeader(
-        label: controller.getColumnLabel(c - 1),
+        label: _getNames.getColumnLabel(c - 1),
         colIndex: c - 1,
         backgroundColor: controller.getColumnType(c - 1).color,
         onContextMenu: (details) => _showColumnContextMenu(

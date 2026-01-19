@@ -9,41 +9,86 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_u
 class AnalysisResult {
   final NodeStruct errorRoot = NodeStruct(
     instruction: SpreadsheetConstants.errorMsg,
-    newChildren: [],
     hideIfEmpty: true,
   );
   final NodeStruct warningRoot = NodeStruct(
     instruction: SpreadsheetConstants.warningMsg,
-    newChildren: [],
     hideIfEmpty: true,
   );
   final NodeStruct categoriesRoot = NodeStruct(
     instruction: SpreadsheetConstants.categoryMsg,
-    newChildren: [],
   );
   final NodeStruct distPairsRoot = NodeStruct(
     instruction: SpreadsheetConstants.distPairsMsg,
-    newChildren: [],
   );
 
   /// 2D table of attribute identifiers (row index or name)
   /// mentioned in each cell.
-  List<List<HashSet<Attribute>>> tableToAtt = [];
-  Map<String, Cell> names = {};
-  Map<String, List<int>> attToCol = {};
-  List<int> nameIndexes = [];
-  List<int> pathIndexes = [];
+  List<List<HashSet<Attribute>>> tableToAtt;
+  Map<String, Cell> names;
+  Map<String, List<int>> attToCol;
+  List<int> nameIndexes;
+  List<int> pathIndexes;
 
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
-  Map<Attribute, Map<int, Cols>> attToRefFromAttColToCol = {};
-  Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol = {};
-  Map<int, Map<Attribute, int>> rowToAtt = {};
+  Map<Attribute, Map<int, Cols>> attToRefFromAttColToCol;
+  Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol;
 
   /// Maps attribute identifiers (row index or name)
   /// to a map of mentioners (row index) to the column index
-  Map<Attribute, Map<int, List<int>>> toMentioners = {};
-  List<Map<InstrStruct, Cell>> instrTable = [];
-  Map<int, HashSet<Attribute>> colToAtt = {};
+  Map<Attribute, Map<int, List<int>>> toMentioners;
+  List<Map<InstrStruct, Cell>> instrTable;
+  Map<int, HashSet<Attribute>> colToAtt;
+
+  int rowCount;
+  int colCount;
+
+  bool noResult = true;
+
+  AnalysisResult({
+    required List<NodeStruct> errorChildren,
+    required List<NodeStruct> warningChildren,
+    required List<NodeStruct> categoryChildren,
+    required List<NodeStruct> distPairChildren,
+    required this.tableToAtt,
+    required this.names,
+    required this.attToCol,
+    required this.nameIndexes,
+    required this.pathIndexes,
+    required this.attToRefFromAttColToCol,
+    required this.attToRefFromDepColToCol,
+    required this.toMentioners,
+    required this.instrTable,
+    required this.colToAtt,
+    required this.rowCount,
+    required this.colCount,
+  }) {
+    errorRoot.newChildren = errorChildren;
+    warningRoot.newChildren = warningChildren;
+    categoriesRoot.newChildren = categoryChildren;
+    distPairsRoot.newChildren = distPairChildren;
+  }
+
+  factory AnalysisResult.empty() {
+    return AnalysisResult(
+      errorChildren: [],
+      warningChildren: [],
+      categoryChildren: [],
+      distPairChildren: [],
+      tableToAtt: [],
+      names: {},
+      attToCol: {},
+      nameIndexes: [],
+      pathIndexes: [],
+      attToRefFromAttColToCol: {},
+      attToRefFromDepColToCol: {},
+      toMentioners: {},
+      instrTable: [],
+      colToAtt: {},
+      rowCount: 0,
+      colCount: 0,
+    );
+  }
 }

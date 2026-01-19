@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import '../../domain/entities/column_type.dart';
@@ -5,17 +7,19 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart'; // Import AnalysisResult
-import '../controllers/spreadsheet_controller.dart';
+import 'spreadsheet_controller.dart';
 import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
+import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 
-class TreeManager {
+class TreeController extends ChangeNotifier {
   final SpreadsheetController _controller;
+  final GetNames _getNames = GetNames();
 
   // --- STATE HELD BY MANAGER ---
-  AnalysisResult? _lastAnalysis;
+  AnalysisResult _lastAnalysis = AnalysisResult.empty();
 
   final NodeStruct mentionsRoot = NodeStruct(
     instruction: SpreadsheetConstants.selectionMsg,
@@ -25,28 +29,46 @@ class TreeManager {
     instruction: SpreadsheetConstants.searchMsg,
   );
 
-  List<int> get pathIndexes => _lastAnalysis?.pathIndexes ?? [];
-  
-  Map<Attribute, Map<int, Cols>> get attToRefFromAttColToCol => _lastAnalysis?.attToRefFromAttColToCol ?? {};
-  Map<Attribute, Map<int, List<int>>> get attToRefFromDepColToCol => _lastAnalysis?.attToRefFromDepColToCol ?? {};
-  Map<int, Map<Attribute, int>> get rowToAtt => _lastAnalysis?.rowToAtt ?? {};
+  NodeStruct get errorRoot => _lastAnalysis.errorRoot;
+  NodeStruct get warningRoot => _lastAnalysis.warningRoot;
+  NodeStruct get categoriesRoot => _lastAnalysis.categoriesRoot;
+  NodeStruct get distPairsRoot => _lastAnalysis.distPairsRoot;
+
+  List<int> get pathIndexes => _lastAnalysis.pathIndexes;
+
+  Map<Attribute, Map<int, Cols>> get attToRefFromAttColToCol =>
+      _lastAnalysis.attToRefFromAttColToCol;
+  Map<Attribute, Map<int, List<int>>> get attToRefFromDepColToCol =>
+      _lastAnalysis.attToRefFromDepColToCol;
+
   /// Maps attribute identifiers (row index or name)
   /// to a map of mentioners (row index) to the column index
-  Map<Attribute, Map<int, List<int>>> get toMentioners => _lastAnalysis?.toMentioners ?? {};
-  List<Map<InstrStruct, Cell>> get instrTable => _lastAnalysis?.instrTable ?? [];
-  Map<int, HashSet<Attribute>> get colToAtt => _lastAnalysis?.colToAtt ?? {};
+  Map<Attribute, Map<int, List<int>>> get toMentioners =>
+      _lastAnalysis.toMentioners;
+  List<Map<InstrStruct, Cell>> get instrTable => _lastAnalysis.instrTable;
+  Map<int, HashSet<Attribute>> get colToAtt => _lastAnalysis.colToAtt;
 
-  TreeManager(this._controller);
+  int rowCount = 0;
+  int colCount = 0;
+
+  TreeController(this._controller);
 
   /// Call this when the Controller finishes a calculation.
   /// The Manager takes ownership of updating the tree state.
-  void onAnalysisComplete(AnalysisResult result) {
+  void onAnalysisComplete(
+    AnalysisResult result,
+    Point<int> primarySelectedCell,
+    int rowCount,
+    int colCount,
+  ) {
     _lastAnalysis = result;
+    this.rowCount = rowCount;
+    this.colCount = colCount;
 
     // Reset specific roots
     mentionsRoot.newChildren = null;
-    mentionsRoot.rowId = _controller.primarySelectedCell.x;
-    mentionsRoot.colId = _controller.primarySelectedCell.y;
+    mentionsRoot.rowId = primarySelectedCell.x;
+    mentionsRoot.colId = primarySelectedCell.y;
     searchRoot.newChildren = null;
 
     // Populate the full tree using the new result
@@ -67,15 +89,15 @@ class TreeManager {
     int colId = node.colId!;
     node.cellsToSelect = node.cells;
 
-    if (rowId >= _controller.rowCount || colId >= _controller.colCount) return;
+    if (rowId >= rowCount || colId >= colCount) return;
 
     if (node.message == null) {
       if (node.instruction == SpreadsheetConstants.selectionMsg) {
         node.message =
-            '${_controller.getColumnLabel(colId)}$rowId selected: ${_controller.sheet.table[rowId][colId]}';
+            '${_getNames.getColumnLabel(colId)}$rowId selected: ${_controller.sheetContent.table[rowId][colId]}';
       } else {
         node.message =
-            '${_controller.getColumnLabel(colId)}$rowId: ${_controller.sheet.table[rowId][colId]}';
+            '${_getNames.getColumnLabel(colId)}$rowId: ${_controller.sheetContent.table[rowId][colId]}';
       }
     }
 
@@ -91,12 +113,12 @@ class TreeManager {
     node.newChildren = [];
 
     // Simple column types (names, files, urls) don't need deep analysis data
-    if (_controller.sheet.columnTypes[colId] == ColumnType.names ||
-        _controller.sheet.columnTypes[colId] == ColumnType.filePath ||
-        _controller.sheet.columnTypes[colId] == ColumnType.urls) {
+    if (_controller.sheetContent.columnTypes[colId] == ColumnType.names ||
+        _controller.sheetContent.columnTypes[colId] == ColumnType.filePath ||
+        _controller.sheetContent.columnTypes[colId] == ColumnType.urls) {
       node.newChildren!.add(
         NodeStruct(
-          message: _controller.sheet.table[rowId][colId],
+          message: _controller.sheetContent.table[rowId][colId],
           att: Attribute.row(rowId),
         ),
       );
@@ -104,19 +126,19 @@ class TreeManager {
     }
 
     // Use LOCAL _lastAnalysis state instead of _controller lookup
-    if (_lastAnalysis!.tableToAtt.length <= rowId ||
-        _lastAnalysis!.tableToAtt[rowId].length <= colId) {
+    if (_lastAnalysis.tableToAtt.length <= rowId ||
+        _lastAnalysis.tableToAtt[rowId].length <= colId) {
       return;
     }
 
-    for (Attribute att in _lastAnalysis!.tableToAtt[rowId][colId]) {
+    for (Attribute att in _lastAnalysis.tableToAtt[rowId][colId]) {
       node.newChildren!.add(NodeStruct(att: att));
     }
   }
 
   void populateAttributeNode(NodeStruct node, bool populateChildren) {
     if (populateChildren) {
-      if (_lastAnalysis!.attToRefFromAttColToCol.containsKey(node.att)) {
+      if (_lastAnalysis.attToRefFromAttColToCol.containsKey(node.att)) {
         node.newChildren!.add(
           NodeStruct(
             instruction: SpreadsheetConstants.refFromAttColMsg,
@@ -128,7 +150,7 @@ class TreeManager {
           NodeStruct(message: 'No references from attribute columns found'),
         );
       }
-      if (_lastAnalysis!.attToRefFromDepColToCol.containsKey(node.att)) {
+      if (_lastAnalysis.attToRefFromDepColToCol.containsKey(node.att)) {
         node.newChildren!.add(
           NodeStruct(
             instruction: SpreadsheetConstants.refFromDepColMsg,
@@ -155,14 +177,14 @@ class TreeManager {
         List<MapEntry> entries = [];
 
         if (node.colId != SpreadsheetConstants.notUsedCst) {
-          entries = _lastAnalysis!.attToRefFromAttColToCol[node.att]!.entries
+          entries = _lastAnalysis.attToRefFromAttColToCol[node.att]!.entries
               .toList();
         }
 
         if (node.instruction !=
             SpreadsheetConstants.moveToUniqueMentionSprawlCol) {
           entries.addAll(
-            _lastAnalysis!.attToRefFromDepColToCol[node.att]!.entries.toList(),
+            _lastAnalysis.attToRefFromDepColToCol[node.att]!.entries.toList(),
           );
         }
 
@@ -202,12 +224,12 @@ class TreeManager {
 
   void populateRowNode(NodeStruct node, bool populateChildren) {
     int rowId = node.rowId!;
-    node.message ??= _controller.getRowName(rowId);
+    node.message ??= _getNames.getRowName(_lastAnalysis, rowId);
     if (!populateChildren) return;
 
     List<NodeStruct> rowCells = [];
     for (int colId = 0; colId < _controller.colCount; colId++) {
-      if (_controller.sheet.table[rowId][colId].isNotEmpty) {
+      if (_controller.sheetContent.table[rowId][colId].isNotEmpty) {
         rowCells.add(
           NodeStruct(
             cell: Cell(rowId: rowId, colId: colId),
@@ -225,12 +247,13 @@ class TreeManager {
   }
 
   void populateColumnNode(NodeStruct node, bool populateChildren) {
-    node.message ??= node.colId == -1 ? "Rows" : 
-        'Column ${_controller.getColumnLabel(node.colId!)} "${_controller.sheet.table[0][node.colId!]}"';
+    node.message ??= node.colId == -1
+        ? "Rows"
+        : 'Column ${_getNames.getColumnLabel(node.colId!)} "${_controller.sheetContent.table[0][node.colId!]}"';
     if (!populateChildren) return;
 
-    if (_lastAnalysis!.colToAtt.containsKey(node.colId)) {
-      for (final attCol in _lastAnalysis!.colToAtt[node.colId]!) {
+    if (_lastAnalysis.colToAtt.containsKey(node.colId)) {
+      for (final attCol in _lastAnalysis.colToAtt[node.colId]!) {
         node.newChildren!.add(NodeStruct(att: attCol));
       }
     }
@@ -241,7 +264,7 @@ class TreeManager {
 
     final attribute = Attribute(name: node.name);
     for (final rowId
-        in _lastAnalysis!.attToRefFromDepColToCol[attribute]!.keys) {
+        in _lastAnalysis.attToRefFromDepColToCol[attribute]!.keys) {
       node.newChildren!.add(NodeStruct(rowId: rowId));
     }
   }
@@ -274,8 +297,8 @@ class TreeManager {
         }
       } else {
         if (node.name != null) {
-          if (_lastAnalysis!.attToCol.containsKey(node.name)) {
-            if (_lastAnalysis!.attToCol[node.name]! !=
+          if (_lastAnalysis.attToCol.containsKey(node.name)) {
+            if (_lastAnalysis.attToCol[node.name]! !=
                 [SpreadsheetConstants.notUsedCst]) {
               node.newChildren!.add(
                 NodeStruct(
@@ -362,7 +385,7 @@ class TreeManager {
       case SpreadsheetConstants.refFromAttColMsg:
         if (populateChildren) {
           for (int pointerRowId
-              in _lastAnalysis!.attToRefFromAttColToCol[node.att]!.keys) {
+              in _lastAnalysis.attToRefFromAttColToCol[node.att]!.keys) {
             node.newChildren!.add(NodeStruct(rowId: pointerRowId));
           }
         }
@@ -370,7 +393,7 @@ class TreeManager {
       case SpreadsheetConstants.refFromDepColMsg:
         if (populateChildren) {
           for (int pointerRowId
-              in _lastAnalysis!.attToRefFromDepColToCol[node.att]!.keys) {
+              in _lastAnalysis.attToRefFromDepColToCol[node.att]!.keys) {
             node.newChildren!.add(NodeStruct(rowId: pointerRowId));
           }
         }
@@ -415,7 +438,7 @@ class TreeManager {
   }
 
   void populateTree(List<NodeStruct> roots) {
-    if (_lastAnalysis == null) return;
+    if (_lastAnalysis.noResult) return;
 
     for (final root in roots) {
       var stack = [root];

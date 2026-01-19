@@ -1,0 +1,109 @@
+|   app.dart
+|   injection_container.dart
+|   main.dart
+|   main2.dart
+|   
++---core
+|   +---constants
+|   |       route_constants.dart
+|   |
+|   \---services
+|           storage_service.dart
+|
++---features
+|   +---home
+|   |       home_page.dart
+|   |
+|   +---media_sorter
+|   |   +---data
+|   |   |   +---datasources
+|   |   |   |       file_sheet_local_datasource.dart
+|   |   |   |       i_file_sheet_local_datasource.dart
+|   |   |   |
+|   |   |   +---models
+|   |   |   |       selection_model.dart
+|   |   |   |       sheet_model.dart
+|   |   |   |
+|   |   |   +---repositories
+|   |   |   |       sheet_repository_impl.dart
+|   |   |   |
+|   |   |   \---utils
+|   |   +---domain
+|   |   |   +---constants
+|   |   |   |       spreadsheet_constants.dart
+|   |   |   |
+|   |   |   +---entities
+|   |   |   |       analysis_result.dart
+|   |   |   |       attribute.dart
+|   |   |   |       cell.dart
+|   |   |   |       column_type.dart
+|   |   |   |       instr_struct.dart
+|   |   |   |       isolate_messages.dart
+|   |   |   |       node_struct.dart
+|   |   |   |       spreadsheet_cell.dart
+|   |   |   |
+|   |   |   +---mixins
+|   |   |   |       get_names.dart
+|   |   |   |
+|   |   |   +---repositories
+|   |   |   |       sheet_repository.dart
+|   |   |   |
+|   |   |   +---services
+|   |   |   |       calculation_service.dart
+|   |   |   |       sorting_service.dart
+|   |   |   |
+|   |   |   \---usecases
+|   |   |           calculate_usecase.dart
+|   |   |           get_sheet_data_usecase.dart
+|   |   |           manage_waiting_tasks.dart
+|   |   |           parse_paste_data_usecase.dart
+|   |   |           save_sheet_data_usecase.dart
+|   |   |
+|   |   \---presentation
+|   |       +---constants
+|   |       |       page_constants.dart
+|   |       |
+|   |       +---controllers
+|   |       |       spreadsheet_controller.dart
+|   |       |
+|   |       +---logic
+|   |       |       clipboard_manager.dart
+|   |       |       grid_manager.dart
+|   |       |       history_manager.dart
+|   |       |       layout_calculator.dart
+|   |       |       selection_manager.dart
+|   |       |       sheet_data_manager.dart
+|   |       |       tree_manager.dart
+|   |       |
+|   |       +---pages
+|   |       |       media_sorter_page.dart
+|   |       |
+|   |       +---utils
+|   |       |       column_type_extensions.dart
+|   |       |
+|   |       \---widgets
+|   |           +---side_menu
+|   |           |       analysis_tree_node.dart
+|   |           |       side_menu.dart
+|   |           |
+|   |           \---spreadsheet
+|   |                   spreadsheet_components.dart
+|   |                   spreadsheet_widget.dart
+|   |
+|   \---scheduler
+|       +---data
+|       |   \---repositories
+|       +---domain
+|       |   \---usecases
+|       |           user.dart
+|       |
+|       \---presentation
+|               scheduler_page.dart
+|
++---shared
+|   \---widgets
+|           navigation_dropdown.dart
+|           resizable_split_view.dart
+|
+\---utils
+        logger.dart

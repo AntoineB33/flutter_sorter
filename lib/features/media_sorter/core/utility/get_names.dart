@@ -1,17 +1,14 @@
-import 'dart:collection';
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 
-mixin GetNames {
-  List<int> get nameIndexes;
-  List<List<HashSet<Attribute>>> get tableToAtt;
-  List<ColumnType> get columnTypes;
-  int get colCount;
 
-  String getRowName(row) {
+class GetNames {
+  String getRowName(AnalysisResult analysisResult, int row) {
     List<String> rowNames = [];
-    for (final index in nameIndexes) {
-      for (final name in tableToAtt[row][index]) {
+    for (final index in analysisResult.nameIndexes) {
+      for (final name in analysisResult.tableToAtt[row][index]) {
         if (name.name != null) {
           rowNames.add(name.name!);
         }
@@ -34,16 +31,16 @@ mixin GetNames {
     return columnLabel;
   }
 
-  String getAttName(Attribute att) {
+  String getAttName(AnalysisResult analysisResult, Attribute att) {
     if (att.isRow()) {
-      return getRowName(att.rowId!);
+      return getRowName(analysisResult, att.rowId!);
     } else {
       return "${getColumnLabel(att.colId!)}.${att.name}";
     }
   }
 
-  ColumnType getColumnType(int col) {
-    if (col >= columnTypes.length) return ColumnType.attributes;
-    return columnTypes[col];
+  ColumnType getColumnType(SheetContent sheetContent, int col) {
+    if (col >= sheetContent.columnTypes.length) return ColumnType.attributes;
+    return sheetContent.columnTypes[col];
   }
 }

@@ -2,8 +2,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'analysis_tree_node.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_controller.dart';
 
 class SideMenu extends StatefulWidget {
   const SideMenu({super.key});
@@ -51,10 +52,11 @@ class _SideMenuState extends State<SideMenu> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<SpreadsheetController>();
+    final SpreadsheetController spreadsheetController = context.watch<SpreadsheetController>();
+    final TreeController treeController = context.watch<TreeController>();
 
-    if (_textEditingController.text != controller.sheetName && !controller.isLoading) {
-      _textEditingController.text = controller.sheetName;
+    if (_textEditingController.text != spreadsheetController.sheetName && !spreadsheetController.isLoading) {
+      _textEditingController.text = spreadsheetController.sheetName;
     }
 
     return Container(
@@ -70,7 +72,7 @@ class _SideMenuState extends State<SideMenu> {
           const SizedBox(height: 16),
 
           // --- Autocomplete Input Field ---
-          _buildSheetAutocomplete(controller),
+          _buildSheetAutocomplete(spreadsheetController),
 
           const SizedBox(height: 20),
           const Divider(),
@@ -106,12 +108,12 @@ class _SideMenuState extends State<SideMenu> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            AnalysisTreeNode(node: controller.analysisResult.errorRoot, controller: controller),
-                            AnalysisTreeNode(node: controller.analysisResult.warningRoot, controller: controller),
-                            AnalysisTreeNode(node: controller.mentionsRoot, controller: controller),
-                            AnalysisTreeNode(node: controller.searchRoot, controller: controller),
-                            AnalysisTreeNode(node: controller.analysisResult.categoriesRoot, controller: controller),
-                            AnalysisTreeNode(node: controller.analysisResult.distPairsRoot, controller: controller),
+                            AnalysisTreeNode(node: treeController.errorRoot, controller: spreadsheetController),
+                            AnalysisTreeNode(node: treeController.warningRoot, controller: spreadsheetController),
+                            AnalysisTreeNode(node: treeController.mentionsRoot, controller: spreadsheetController),
+                            AnalysisTreeNode(node: treeController.searchRoot, controller: spreadsheetController),
+                            AnalysisTreeNode(node: treeController.categoriesRoot, controller: spreadsheetController),
+                            AnalysisTreeNode(node: treeController.distPairsRoot, controller: spreadsheetController),
                           ],
                         ),
                       ),
@@ -126,13 +128,13 @@ class _SideMenuState extends State<SideMenu> {
     );
   }
 
-  Widget _buildSheetAutocomplete(SpreadsheetController controller) {
+  Widget _buildSheetAutocomplete(SpreadsheetController spreadsheetController) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Autocomplete<String>(
           optionsBuilder: (TextEditingValue textEditingValue) {
             final query = textEditingValue.text.toLowerCase();
-            final allSheets = controller.availableSheets;
+            final allSheets = spreadsheetController.availableSheets;
             if (query.isEmpty) {
               final sorted = List<String>.from(allSheets);
               sorted.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
@@ -202,7 +204,7 @@ class _SideMenuState extends State<SideMenu> {
             );
           },
           onSelected: (String selection) {
-            controller.loadSheetByName(selection);
+            spreadsheetController.loadSheetByName(selection);
           },
           fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
             if (textController.text != _textEditingController.text) {
@@ -217,7 +219,7 @@ class _SideMenuState extends State<SideMenu> {
                 suffixIcon: Icon(Icons.table_chart),
               ),
               onSubmitted: (String value) {
-                controller.loadSheetByName(value.trim());
+                spreadsheetController.loadSheetByName(value.trim());
               },
             );
           },

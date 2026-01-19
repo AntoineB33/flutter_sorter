@@ -7,8 +7,9 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_d
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_controller.dart';
+import 'package:trying_flutter/utils/logger.dart';
 
-class SheetDataManager {
+class SheetDataController extends ChangeNotifier {
   final SpreadsheetController controller;
   final GetSheetDataUseCase _getDataUseCase;
   final SaveSheetDataUseCase _saveSheetDataUseCase;
@@ -22,7 +23,7 @@ class SheetDataManager {
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
   final ManageWaitingTasks<void> _saveLastSelectionExecutor = ManageWaitingTasks<void>();
 
-  SheetDataManager(
+  SheetDataController(
     this.controller, {
     required GetSheetDataUseCase getDataUseCase,
     required SaveSheetDataUseCase saveSheetDataUseCase,
@@ -120,7 +121,7 @@ class SheetDataManager {
             controller.setSelection(lastSelectedCells[name]!);
           }
         } catch (e) {
-          debugPrint("Error parsing sheet data for $name: $e");
+          logger.e("Error parsing sheet data for $name: $e");
           sheet = SheetModel.empty();
           controller.setSelection(SelectionModel.empty());
         }

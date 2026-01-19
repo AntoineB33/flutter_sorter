@@ -1,41 +1,40 @@
+import 'dart:convert';
+import 'dart:isolate';
+
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_messages.dart';
 import 'dart:io';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_message.dart';
 
 class CalculationService {
   Future<AnalysisResult> runCalculation(List<List<String>> table, List<ColumnType> types) async {
-    final calculateUsecase = CalculateUsecase(
-      table,
-      types,
-    );
     return compute(
       _isolateHandler,
-      calculateUsecase.getMessage(table, types),
+      getMessage(table, types),
     );
   }
-   
-  static AnalysisResult runCalculator(IsolateMessage message) {
-    final Object dataPackage = switch (message) {
-      RawDataMessage m => m.table,
-      TransferableDataMessage m => m.dataPackage,
-    };
-    final worker = CalculateUsecase(dataPackage, message.columnTypes);
-    return worker.run();
+  
+  IsolateMessage getMessage(
+    List<List<String>> table,
+    List<ColumnType> columnTypes,
+  ) {
+    if (table.length < 5000) {
+      return IsolateMessage(Right(table), columnTypes);
+    } else {
+      final String combined = jsonEncode(table);
+      final Uint8List bytes = utf8.encode(combined);
+      final transferable = TransferableTypedData.fromList([bytes]);
+      return IsolateMessage(Left(transferable), columnTypes);
+    }
   }
 
   static AnalysisResult _isolateHandler(IsolateMessage message) {
-    // 1. Handle Debug Delay (Synchronously)
-    // Inside an isolate, use sleep() instead of Future.delayed to block execution
-    // without returning a Future.
     sleep(Duration(milliseconds: SpreadsheetConstants.debugDelayMs));
-
-    // 2. Run the calculation
-    // You must move the logic of 'runCalculator' here, or make runCalculator
-    // static and pass 'message' to it.
-    return runCalculator(message);
+    final worker = CalculateUsecase(message.table, message.columnTypes);
+    return worker.run();
   }
 }

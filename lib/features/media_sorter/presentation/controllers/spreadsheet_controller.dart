@@ -4,6 +4,7 @@ import 'dart:collection';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import '../../domain/usecases/get_sheet_data_usecase.dart';
 import '../../domain/usecases/save_sheet_data_usecase.dart';
 import '../../domain/entities/column_type.dart';
@@ -13,80 +14,77 @@ import '../../domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/tree_manager.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/selection_manager.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/clipboard_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sorting_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/mixins/get_names.dart';
+import 'package:trying_flutter/features/media_sorter/domain/services/sorting_service.dart';
+import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/history_manager.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/sheet_data_manager.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 // Add the import for the new grid manager
 import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_manager.dart';
 
-class SpreadsheetController extends ChangeNotifier with GetNames {
+class SpreadsheetController extends ChangeNotifier {
   int saveDelayMs = 500;
 
-  late final TreeManager _treeManager;
+  late final TreeController _treeManager;
   late final SelectionManager _selectionManager;
   late final ClipboardManager _clipboardManager;
   late final HistoryManager _historyManager;
-  late final SheetDataManager _dataManager;
+  late final SheetDataController _dataManager;
   late final GridManager _gridManager;
+  final GetNames _getNames = GetNames();
+  SheetContent get sheetContent => _dataManager.sheet.sheetContent;
 
   // Proxy getters for DataManager properties to maintain API compatibility
   SheetModel get sheet => _dataManager.sheet;
   String get sheetName => _dataManager.sheetName;
   List<String> get availableSheets => _dataManager.availableSheets;
   Map<String, SheetModel> get loadedSheetsData => _dataManager.loadedSheetsData;
-  Map<String, SelectionModel> get lastSelectedCells => _dataManager.lastSelectedCells;
+  Map<String, SelectionModel> get lastSelectedCells =>
+      _dataManager.lastSelectedCells;
 
-  @override
-  get columnTypes => sheet.columnTypes;
+  List<List<HashSet<Attribute>>> get tableToAtt => analysisResult!.tableToAtt;
+  get columnTypes => sheetContent.columnTypes;
 
   // --- Grid Manager Proxy Getters ---
-  Stream<SpreadsheetScrollRequest> get scrollStream => _gridManager.scrollStream;
+  Stream<SpreadsheetScrollRequest> get scrollStream =>
+      _gridManager.scrollStream;
   double get visibleWindowHeight => _gridManager.visibleWindowHeight;
   double get visibleWindowWidth => _gridManager.visibleWindowWidth;
 
   CalculationService calculationService = CalculationService();
-  
+
   final ManageWaitingTasks<AnalysisResult> _calculateExecutor =
       ManageWaitingTasks<AnalysisResult>();
-  AnalysisResult analysisResult = AnalysisResult();
-  bool calculatedOnce = false;
+  AnalysisResult? analysisResult;
 
   // Dimensions
   bool _isLoading = false;
 
   int all = SpreadsheetConstants.all;
-  
+
   NodeStruct get mentionsRoot => _treeManager.mentionsRoot;
   NodeStruct get searchRoot => _treeManager.searchRoot;
-
-  /// 2D table of attribute identifiers (row index or name)
-  /// mentioned in each cell.
-  @override
-  List<List<HashSet<Attribute>>> tableToAtt = [];
-  Map<String, Cell> names = {};
-  Map<String, List<int>> attToCol = {};
-  @override
   List<int> nameIndexes = [];
   List<int> get pathIndexes => _treeManager.pathIndexes;
 
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
-  Map<Attribute, Map<int, Cols>> get attToRefFromAttColToCol => _treeManager.attToRefFromAttColToCol;
-  Map<Attribute, Map<int, List<int>>> get attToRefFromDepColToCol => _treeManager.attToRefFromDepColToCol;
-  Map<int, Map<Attribute, int>> get rowToAtt => _treeManager.rowToAtt;
+  Map<Attribute, Map<int, Cols>> get attToRefFromAttColToCol =>
+      _treeManager.attToRefFromAttColToCol;
+  Map<Attribute, Map<int, List<int>>> get attToRefFromDepColToCol =>
+      _treeManager.attToRefFromDepColToCol;
 
   /// Maps attribute identifiers (row index or name)
   /// to a map of mentioners (row index) to the column index
-  Map<Attribute, Map<int, List<int>>> get toMentioners => _treeManager.toMentioners;
+  Map<Attribute, Map<int, List<int>>> get toMentioners =>
+      _treeManager.toMentioners;
   List<Map<InstrStruct, Cell>> get instrTable => _treeManager.instrTable;
   Map<int, HashSet<Attribute>> get colToAtt => _treeManager.colToAtt;
 
@@ -97,11 +95,11 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     required SaveSheetDataUseCase saveSheetDataUseCase,
     required ParsePasteDataUseCase parsePasteDataUseCase,
   }) {
-    _treeManager = TreeManager(this);
+    _treeManager = TreeController(this);
     _selectionManager = SelectionManager(this);
     _clipboardManager = ClipboardManager(this);
     _historyManager = HistoryManager(this);
-    _dataManager = SheetDataManager(
+    _dataManager = SheetDataController(
       this,
       getDataUseCase: getDataUseCase,
       saveSheetDataUseCase: saveSheetDataUseCase,
@@ -131,9 +129,8 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
 
   // Getters
   bool get isLoading => _isLoading;
-  int get rowCount => sheet.table.length;
-  @override
-  int get colCount => rowCount > 0 ? sheet.table[0].length : 0;
+  int get rowCount => sheetContent.table.length;
+  int get colCount => rowCount > 0 ? sheetContent.table[0].length : 0;
 
   // Internal helper for DataManager to update loading state
   void setLoading(bool loading) {
@@ -153,7 +150,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   // --- Content Access ---
   String getContent(int row, int col) {
     if (row < rowCount && col < colCount) {
-      return sheet.table[row][col];
+      return sheetContent.table[row][col];
     }
     return '';
   }
@@ -198,7 +195,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     if (newValue.isNotEmpty || (row < rowCount && col < colCount)) {
       if (row >= rowCount) {
         final needed = row + 1 - rowCount;
-        sheet.table.addAll(
+        sheetContent.table.addAll(
           List.generate(
             needed,
             (_) => List.filled(colCount, '', growable: true),
@@ -206,8 +203,8 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
         );
       }
       increaseColumnCount(col);
-      prevValue = sheet.table[row][col];
-      sheet.table[row][col] = newValue;
+      prevValue = sheetContent.table[row][col];
+      sheetContent.table[row][col] = newValue;
     }
 
     // Clean up empty rows/cols at the end
@@ -222,14 +219,14 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
         bool canRemove = true;
         while (canRemove && colId >= 0) {
           for (var r = 0; r < rowCount; r++) {
-            if (sheet.table[r][colId].isNotEmpty) {
+            if (sheetContent.table[r][colId].isNotEmpty) {
               canRemove = false;
               break;
             }
           }
           if (canRemove) {
             for (var r = 0; r < rowCount; r++) {
-              sheet.table[r].removeLast();
+              sheetContent.table[r].removeLast();
             }
             colId--;
           }
@@ -250,7 +247,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     // Delegate layout calculation to GridManager
     _gridManager.adjustRowHeightAfterUpdate(row, col, newValue, prevValue);
   }
-  
+
   void saveAndCalculate({bool save = true, bool updateHistory = false}) {
     if (save) {
       if (updateHistory) {
@@ -261,8 +258,8 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
     _calculateExecutor.execute(
       () async {
         AnalysisResult result = await calculationService.runCalculation(
-          sheet.table,
-          sheet.columnTypes,
+          sheetContent.table,
+          sheetContent.columnTypes,
         );
 
         int nVal = result.instrTable.length;
@@ -300,52 +297,57 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
         if (result0 == null) {
           result.errorRoot.newChildren!.add(
             NodeStruct(
-              message: "Could not find a valid sorting satisfying all constraints.",
+              message:
+                  "Could not find a valid sorting satisfying all constraints.",
             ),
           );
         }
         return result;
       },
       onComplete: (AnalysisResult result) {
+        result.noResult = false;
         analysisResult = result;
-        calculatedOnce = true;
 
-        // Update local controller state (needed for GetNames mixin etc)
-        tableToAtt = result.tableToAtt;
-        names = result.names;
-        attToCol = result.attToCol;
-        nameIndexes = result.nameIndexes;
-        // ... update other local maps if needed for formula logic
+        _treeManager.onAnalysisComplete(
+          result,
+          primarySelectedCell,
+          rowCount,
+          colCount,
+        );
 
-        // DELEGATE TREE UPDATES TO MANAGER
-        // This is the key change:
-        _treeManager.onAnalysisComplete(result);
-        
         _isLoading = false;
         notifyListeners();
       },
     );
   }
+
+  ColumnType getColumnType(int col) {
+    return _getNames.getColumnType(sheetContent, col);
+  }
+
   void setColumnType(int col, ColumnType type, {bool updateHistory = true}) {
     if (updateHistory) {
       _historyManager.recordColumnTypeChange(col, getColumnType(col), type);
     }
     if (type == ColumnType.attributes) {
       if (col < colCount) {
-        sheet.columnTypes[col] = type;
-        if (col == sheet.columnTypes.length - 1) {
+        sheetContent.columnTypes[col] = type;
+        if (col == sheetContent.columnTypes.length - 1) {
           while (col > 0) {
             col--;
-            if (sheet.columnTypes[col] != ColumnType.attributes) {
+            if (sheetContent.columnTypes[col] != ColumnType.attributes) {
               break;
             }
           }
-          sheet.columnTypes = sheet.columnTypes.sublist(0, col + 1);
+          sheetContent.columnTypes = sheetContent.columnTypes.sublist(
+            0,
+            col + 1,
+          );
         }
       }
     } else {
       increaseColumnCount(col);
-      sheet.columnTypes[col] = type;
+      sheetContent.columnTypes[col] = type;
     }
     notifyListeners();
     saveAndCalculate(updateHistory: true);
@@ -427,7 +429,11 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   int get tableViewRows => _selectionManager.selection.rowCount;
   int get tableViewCols => _selectionManager.selection.colCount;
 
-  void updateRowColCount({double? visibleHeight, double? visibleWidth, bool notify = true}) {
+  void updateRowColCount({
+    double? visibleHeight,
+    double? visibleWidth,
+    bool notify = true,
+  }) {
     _gridManager.updateRowColCount(
       visibleHeight: visibleHeight,
       visibleWidth: visibleWidth,
@@ -455,7 +461,7 @@ class SpreadsheetController extends ChangeNotifier with GetNames {
   void triggerScrollTo(int row, int col) {
     _gridManager.triggerScrollTo(row, col);
   }
-    
+
   void scrollToOffset({double? x, double? y, bool animate = false}) {
     _gridManager.scrollToOffset(x: x, y: y, animate: animate);
   }

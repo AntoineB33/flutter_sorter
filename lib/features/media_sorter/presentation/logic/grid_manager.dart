@@ -44,9 +44,9 @@ class GridManager {
     if (col >= controller.colCount) {
       final needed = col + 1 - controller.colCount;
       for (var r = 0; r < controller.rowCount; r++) {
-        controller.sheet.table[r].addAll(List.filled(needed, '', growable: true));
+        controller.sheetContent.table[r].addAll(List.filled(needed, '', growable: true));
       }
-      controller.sheet.columnTypes.addAll(List.filled(needed, ColumnType.attributes));
+      controller.sheetContent.columnTypes.addAll(List.filled(needed, ColumnType.attributes));
     }
   }
 
@@ -56,8 +56,8 @@ class GridManager {
   
   void decreaseRowCount(int row) {
     if (row == controller.rowCount - 1) {
-      while (row >= 0 && !controller.sheet.table[row].any((cell) => cell.isNotEmpty)) {
-        controller.sheet.table.removeLast();
+      while (row >= 0 && !controller.sheetContent.table[row].any((cell) => cell.isNotEmpty)) {
+        controller.sheetContent.table.removeLast();
         row--;
       }
     }
@@ -130,7 +130,7 @@ class GridManager {
             for (int j = 0; j < controller.colCount; j++) {
               if (j == col) continue;
               newHeight = max(
-                calculateRequiredRowHeight(controller.sheet.table[row][j], j),
+                calculateRequiredRowHeight(controller.sheetContent.table[row][j], j),
                 newHeight,
               );
               if (newHeight == heightItNeeded) break;
