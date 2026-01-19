@@ -15,41 +15,35 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struc
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 
 class TreeController extends ChangeNotifier {
-  final SpreadsheetController _controller;
-  final GetNames _getNames = GetNames();
 
-  // --- STATE HELD BY MANAGER ---
+  // --- states ---
   AnalysisResult _lastAnalysis = AnalysisResult.empty();
-
   final NodeStruct mentionsRoot = NodeStruct(
     instruction: SpreadsheetConstants.selectionMsg,
   );
-
   final NodeStruct searchRoot = NodeStruct(
     instruction: SpreadsheetConstants.searchMsg,
   );
 
+  // --- helpers ---
+  final SpreadsheetController _controller;
+  final GetNames _getNames = GetNames();
+
+  // --- getters ---
   NodeStruct get errorRoot => _lastAnalysis.errorRoot;
   NodeStruct get warningRoot => _lastAnalysis.warningRoot;
   NodeStruct get categoriesRoot => _lastAnalysis.categoriesRoot;
   NodeStruct get distPairsRoot => _lastAnalysis.distPairsRoot;
-
+  List<List<HashSet<Attribute>>> get tableToAtt => _lastAnalysis.tableToAtt;
   List<int> get pathIndexes => _lastAnalysis.pathIndexes;
-
   Map<Attribute, Map<int, Cols>> get attToRefFromAttColToCol =>
       _lastAnalysis.attToRefFromAttColToCol;
   Map<Attribute, Map<int, List<int>>> get attToRefFromDepColToCol =>
       _lastAnalysis.attToRefFromDepColToCol;
-
-  /// Maps attribute identifiers (row index or name)
-  /// to a map of mentioners (row index) to the column index
   Map<Attribute, Map<int, List<int>>> get toMentioners =>
       _lastAnalysis.toMentioners;
   List<Map<InstrStruct, Cell>> get instrTable => _lastAnalysis.instrTable;
   Map<int, HashSet<Attribute>> get colToAtt => _lastAnalysis.colToAtt;
-
-  int rowCount = 0;
-  int colCount = 0;
 
   TreeController(this._controller);
 
@@ -62,8 +56,8 @@ class TreeController extends ChangeNotifier {
     int colCount,
   ) {
     _lastAnalysis = result;
-    this.rowCount = rowCount;
-    this.colCount = colCount;
+    _lastAnalysis.rowCount = rowCount;
+    _lastAnalysis.colCount = colCount;
 
     // Reset specific roots
     mentionsRoot.newChildren = null;
@@ -89,7 +83,7 @@ class TreeController extends ChangeNotifier {
     int colId = node.colId!;
     node.cellsToSelect = node.cells;
 
-    if (rowId >= rowCount || colId >= colCount) return;
+    if (rowId >= _lastAnalysis.rowCount || colId >= _lastAnalysis.colCount) return;
 
     if (node.message == null) {
       if (node.instruction == SpreadsheetConstants.selectionMsg) {

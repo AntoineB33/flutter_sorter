@@ -29,8 +29,16 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/sh
 import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_manager.dart';
 
 class SpreadsheetController extends ChangeNotifier {
+  // configurations
   int saveDelayMs = 500;
 
+  // states
+  bool _isLoading = false;
+  String? currentInitialInput;
+  bool editingMode = false;
+  String previousContent = '';
+
+  // helpers
   late final TreeController _treeManager;
   late final SelectionManager _selectionManager;
   late final ClipboardManager _clipboardManager;
@@ -38,76 +46,48 @@ class SpreadsheetController extends ChangeNotifier {
   late final SheetDataController _dataManager;
   late final GridManager _gridManager;
   final GetNames _getNames = GetNames();
-  SheetContent get sheetContent => _dataManager.sheet.sheetContent;
+  CalculationService calculationService = CalculationService();
+  final ManageWaitingTasks<AnalysisResult> _calculateExecutor =
+      ManageWaitingTasks<AnalysisResult>();
 
-  // Proxy getters for DataManager properties to maintain API compatibility
+  // getters
+  bool get isLoading => _isLoading;
+  int get rowCount => sheetContent.table.length;
+  int get colCount => rowCount > 0 ? sheetContent.table[0].length : 0;
+
+  // redirection getters
+  List<List<HashSet<Attribute>>> get tableToAtt => _treeManager.tableToAtt;
+  SheetContent get sheetContent => _dataManager.sheet.sheetContent;
   SheetModel get sheet => _dataManager.sheet;
   String get sheetName => _dataManager.sheetName;
   List<String> get availableSheets => _dataManager.availableSheets;
   Map<String, SheetModel> get loadedSheetsData => _dataManager.loadedSheetsData;
   Map<String, SelectionModel> get lastSelectedCells =>
       _dataManager.lastSelectedCells;
-
-  List<List<HashSet<Attribute>>> get tableToAtt => analysisResult!.tableToAtt;
   get columnTypes => sheetContent.columnTypes;
-
-  // --- Grid Manager Proxy Getters ---
-  Stream<SpreadsheetScrollRequest> get scrollStream =>
-      _gridManager.scrollStream;
   double get visibleWindowHeight => _gridManager.visibleWindowHeight;
   double get visibleWindowWidth => _gridManager.visibleWindowWidth;
-
-  CalculationService calculationService = CalculationService();
-
-  final ManageWaitingTasks<AnalysisResult> _calculateExecutor =
-      ManageWaitingTasks<AnalysisResult>();
-  AnalysisResult? analysisResult;
-
-  // Dimensions
-  bool _isLoading = false;
-
-  int all = SpreadsheetConstants.all;
-
   NodeStruct get mentionsRoot => _treeManager.mentionsRoot;
   NodeStruct get searchRoot => _treeManager.searchRoot;
-  List<int> nameIndexes = [];
   List<int> get pathIndexes => _treeManager.pathIndexes;
-
-  /// Maps attribute identifiers (row index or name)
-  /// to a map of pointers (row index) to the column index,
-  /// in this direction so it is easy to diffuse characteristics to pointers.
   Map<Attribute, Map<int, Cols>> get attToRefFromAttColToCol =>
       _treeManager.attToRefFromAttColToCol;
   Map<Attribute, Map<int, List<int>>> get attToRefFromDepColToCol =>
       _treeManager.attToRefFromDepColToCol;
-
-  /// Maps attribute identifiers (row index or name)
-  /// to a map of mentioners (row index) to the column index
   Map<Attribute, Map<int, List<int>>> get toMentioners =>
       _treeManager.toMentioners;
   List<Map<InstrStruct, Cell>> get instrTable => _treeManager.instrTable;
   Map<int, HashSet<Attribute>> get colToAtt => _treeManager.colToAtt;
-
   SelectionModel get selection => _selectionManager.selection;
+  Point<int> get primarySelectedCell => _selectionManager.primarySelectedCell;
+  int get tableViewRows => _selectionManager.selection.rowCount;
+  int get tableViewCols => _selectionManager.selection.colCount;
 
-  SpreadsheetController({
-    required GetSheetDataUseCase getDataUseCase,
-    required SaveSheetDataUseCase saveSheetDataUseCase,
-    required ParsePasteDataUseCase parsePasteDataUseCase,
-  }) {
-    _treeManager = TreeController(this);
-    _selectionManager = SelectionManager(this);
-    _clipboardManager = ClipboardManager(this);
-    _historyManager = HistoryManager(this);
-    _dataManager = SheetDataController(
-      this,
-      getDataUseCase: getDataUseCase,
-      saveSheetDataUseCase: saveSheetDataUseCase,
-    );
-    _gridManager = GridManager(this);
-    init();
-  }
+  // --- Grid Manager Proxy Getters ---
+  Stream<SpreadsheetScrollRequest> get scrollStream =>
+      _gridManager.scrollStream;
 
+  // redirection functions
   void discardCurrent() {
     _historyManager.discardCurrent();
   }
@@ -116,43 +96,12 @@ class SpreadsheetController extends ChangeNotifier {
     return _dataManager.isValidSheetName(name);
   }
 
-  // --- Initialization Logic ---
   Future<void> init() async {
     await _dataManager.init();
   }
 
-  @override
-  void dispose() {
-    _gridManager.dispose();
-    super.dispose();
-  }
-
-  // Getters
-  bool get isLoading => _isLoading;
-  int get rowCount => sheetContent.table.length;
-  int get colCount => rowCount > 0 ? sheetContent.table[0].length : 0;
-
-  // Internal helper for DataManager to update loading state
-  void setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
-  }
-
-  // Internal helper for DataManager to set selection
-  void setSelection(SelectionModel newSelection) {
-    _selectionManager.selection = newSelection;
-  }
-
   Future<void> loadSheetByName(String name, {bool init = false}) async {
     await _dataManager.loadSheetByName(name, init: init);
-  }
-
-  // --- Content Access ---
-  String getContent(int row, int col) {
-    if (row < rowCount && col < colCount) {
-      return sheetContent.table[row][col];
-    }
-    return '';
   }
 
   void increaseColumnCount(int col) {
@@ -181,6 +130,149 @@ class SpreadsheetController extends ChangeNotifier {
 
   double getRowHeight(int row) {
     return _gridManager.getRowHeight(row);
+  }
+  
+  ColumnType getColumnType(int col) {
+    return _getNames.getColumnType(sheetContent, col);
+  }
+
+  void setPrimarySelection(
+    int row,
+    int col,
+    bool keepSelection,
+    bool updateMentions,
+  ) {
+    _selectionManager.setPrimarySelection(
+      row,
+      col,
+      keepSelection,
+      updateMentions,
+    );
+  }
+
+  Future<void> saveLastSelection(SelectionModel selection) async {
+    await _dataManager.saveLastSelection(selection);
+  }
+
+  Future<void> saveSheet(String sheetName, SheetModel sheet) async {
+    await _dataManager.saveSheetDirect(sheetName, sheet);
+  }
+
+  void populateTree(List<NodeStruct> nodes) {
+    _treeManager.populateTree(nodes);
+  }
+  Future<void> copySelectionToClipboard() async {
+    await _clipboardManager.copySelectionToClipboard();
+  }
+
+  Future<void> pasteSelection() async {
+    await _clipboardManager.pasteSelection();
+  }
+
+  void delete() {
+    _clipboardManager.delete();
+  }
+
+  void selectAll() {
+    _selectionManager.selectAll();
+  }
+
+  void updateRowColCount({
+    double? visibleHeight,
+    double? visibleWidth,
+    bool notify = true,
+  }) {
+    _gridManager.updateRowColCount(
+      visibleHeight: visibleHeight,
+      visibleWidth: visibleWidth,
+      notify: notify,
+    );
+  }
+
+  double getTargetTop(int row) {
+    return _gridManager.getTargetTop(row);
+  }
+
+  double getTargetLeft(int col) {
+    return _gridManager.getTargetLeft(col);
+  }
+
+  int minRows(double height) {
+    return _gridManager.minRows(height);
+  }
+
+  int minCols(double width) {
+    return _gridManager.minCols(width);
+  }
+
+  /// Triggers a visual scroll event to the Widget via the Stream
+  void triggerScrollTo(int row, int col) {
+    _gridManager.triggerScrollTo(row, col);
+  }
+
+  void scrollToOffset({double? x, double? y, bool animate = false}) {
+    _gridManager.scrollToOffset(x: x, y: y, animate: animate);
+  }
+
+  void undo() {
+    _historyManager.undo();
+  }
+
+  void redo() {
+    _historyManager.redo();
+  }
+
+  // --- outer state manipulation ---
+
+  void setSelection(SelectionModel newSelection) {
+    _selectionManager.selection = newSelection;
+  }
+
+  bool isPrimarySelectedCell(int row, int col) {
+    return row == _selectionManager.primarySelectedCell.x &&
+        col == _selectionManager.primarySelectedCell.y;
+  }
+
+  // --- constants ---
+
+  int all = SpreadsheetConstants.all;
+
+  SpreadsheetController({
+    required GetSheetDataUseCase getDataUseCase,
+    required SaveSheetDataUseCase saveSheetDataUseCase,
+    required ParsePasteDataUseCase parsePasteDataUseCase,
+  }) {
+    _treeManager = TreeController(this);
+    _selectionManager = SelectionManager(this);
+    _clipboardManager = ClipboardManager(this);
+    _historyManager = HistoryManager(this);
+    _dataManager = SheetDataController(
+      this,
+      getDataUseCase: getDataUseCase,
+      saveSheetDataUseCase: saveSheetDataUseCase,
+    );
+    _gridManager = GridManager(this);
+    init();
+  }
+
+  @override
+  void dispose() {
+    _gridManager.dispose();
+    super.dispose();
+  }
+
+  // Internal helper for DataManager to update loading state
+  void setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  // Content Access
+  String getContent(int row, int col) {
+    if (row < rowCount && col < colCount) {
+      return sheetContent.table[row][col];
+    }
+    return '';
   }
 
   void updateCell(
@@ -306,7 +398,6 @@ class SpreadsheetController extends ChangeNotifier {
       },
       onComplete: (AnalysisResult result) {
         result.noResult = false;
-        analysisResult = result;
 
         _treeManager.onAnalysisComplete(
           result,
@@ -319,10 +410,6 @@ class SpreadsheetController extends ChangeNotifier {
         notifyListeners();
       },
     );
-  }
-
-  ColumnType getColumnType(int col) {
-    return _getNames.getColumnType(sheetContent, col);
   }
 
   void setColumnType(int col, ColumnType type, {bool updateHistory = true}) {
@@ -362,25 +449,6 @@ class SpreadsheetController extends ChangeNotifier {
     setColumnType(8, ColumnType.dependencies);
   }
 
-  void setPrimarySelection(
-    int row,
-    int col,
-    bool keepSelection,
-    bool updateMentions,
-  ) {
-    _selectionManager.setPrimarySelection(
-      row,
-      col,
-      keepSelection,
-      updateMentions,
-    );
-  }
-
-  bool isPrimarySelectedCell(int row, int col) {
-    return row == _selectionManager.primarySelectedCell.x &&
-        col == _selectionManager.primarySelectedCell.y;
-  }
-
   bool isCellSelected(int row, int col) {
     return selection.selectedCells.any(
       (cell) => cell.x == row && cell.y == col,
@@ -392,81 +460,9 @@ class SpreadsheetController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveLastSelection(SelectionModel selection) async {
-    await _dataManager.saveLastSelection(selection);
-  }
-
-  Future<void> saveSheet(String sheetName, SheetModel sheet) async {
-    await _dataManager.saveSheetDirect(sheetName, sheet);
-  }
-
-  void populateTree(List<NodeStruct> nodes) {
-    _treeManager.populateTree(nodes);
-  }
-
-  Point<int> get primarySelectedCell => _selectionManager.primarySelectedCell;
-
-  Future<void> copySelectionToClipboard() async {
-    await _clipboardManager.copySelectionToClipboard();
-  }
-
-  Future<void> pasteSelection() async {
-    await _clipboardManager.pasteSelection();
-  }
-
-  void delete() {
-    _clipboardManager.delete();
-  }
-
-  void selectAll() {
-    _selectionManager.selectAll();
-  }
-
   void notify() {
     notifyListeners();
   }
-
-  int get tableViewRows => _selectionManager.selection.rowCount;
-  int get tableViewCols => _selectionManager.selection.colCount;
-
-  void updateRowColCount({
-    double? visibleHeight,
-    double? visibleWidth,
-    bool notify = true,
-  }) {
-    _gridManager.updateRowColCount(
-      visibleHeight: visibleHeight,
-      visibleWidth: visibleWidth,
-      notify: notify,
-    );
-  }
-
-  double getTargetTop(int row) {
-    return _gridManager.getTargetTop(row);
-  }
-
-  double getTargetLeft(int col) {
-    return _gridManager.getTargetLeft(col);
-  }
-
-  int minRows(double height) {
-    return _gridManager.minRows(height);
-  }
-
-  int minCols(double width) {
-    return _gridManager.minCols(width);
-  }
-
-  /// Triggers a visual scroll event to the Widget via the Stream
-  void triggerScrollTo(int row, int col) {
-    _gridManager.triggerScrollTo(row, col);
-  }
-
-  void scrollToOffset({double? x, double? y, bool animate = false}) {
-    _gridManager.scrollToOffset(x: x, y: y, animate: animate);
-  }
-
-  String? currentInitialInput; // Add this field
 
   void startEditing({String? initialInput}) {
     previousContent = getContent(primarySelectedCell.x, primarySelectedCell.y);
@@ -499,20 +495,8 @@ class SpreadsheetController extends ChangeNotifier {
     discardCurrent();
   }
 
-  void undo() {
-    _historyManager.undo();
-  }
-
-  void redo() {
-    _historyManager.redo();
-  }
-
-  bool editingMode = false;
-
   bool isCellEditing(int row, int col) =>
       editingMode &&
       primarySelectedCell.x == row &&
       primarySelectedCell.y == col;
-
-  String previousContent = '';
 }

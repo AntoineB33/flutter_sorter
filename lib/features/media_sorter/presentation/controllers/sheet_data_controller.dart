@@ -10,18 +10,19 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/sp
 import 'package:trying_flutter/utils/logger.dart';
 
 class SheetDataController extends ChangeNotifier {
-  final SpreadsheetController controller;
-  final GetSheetDataUseCase _getDataUseCase;
-  final SaveSheetDataUseCase _saveSheetDataUseCase;
-
+  // --- states ---
   SheetModel sheet = SheetModel.empty();
   String sheetName = "";
   List<String> availableSheets = [];
   Map<String, SheetModel> loadedSheetsData = {};
   Map<String, SelectionModel> lastSelectedCells = {};
-  
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
   final ManageWaitingTasks<void> _saveLastSelectionExecutor = ManageWaitingTasks<void>();
+
+  // --- helpers ---
+  final SpreadsheetController controller;
+  final GetSheetDataUseCase _getDataUseCase;
+  final SaveSheetDataUseCase _saveSheetDataUseCase;
 
   SheetDataController(
     this.controller, {
