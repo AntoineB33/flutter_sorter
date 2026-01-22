@@ -1,14 +1,16 @@
+import 'dart:collection';
+
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 
 
+
 class GetNames {
-  String getRowName(AnalysisResult analysisResult, int row) {
+  String getRowName(List<int> nameIndexes, List<List<HashSet<Attribute>>> tableToAtt, int row) {
     List<String> rowNames = [];
-    for (final index in analysisResult.nameIndexes) {
-      for (final name in analysisResult.tableToAtt[row][index]) {
+    for (final index in nameIndexes) {
+      for (final name in tableToAtt[row][index]) {
         if (name.name != null) {
           rowNames.add(name.name!);
         }
@@ -31,9 +33,9 @@ class GetNames {
     return columnLabel;
   }
 
-  String getAttName(AnalysisResult analysisResult, Attribute att) {
+  String getAttName(List<int> nameIndexes, List<List<HashSet<Attribute>>> tableToAtt, Attribute att) {
     if (att.isRow()) {
-      return getRowName(analysisResult, att.rowId!);
+      return getRowName(nameIndexes, tableToAtt, att.rowId!);
     } else {
       return "${getColumnLabel(att.colId!)}.${att.name}";
     }

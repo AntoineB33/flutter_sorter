@@ -3,15 +3,16 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/spreadsheet_scroll_request.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_history_selection_data_tree_contr_manager.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_controller.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/column_type_extensions.dart';
 import 'spreadsheet_components.dart';
 import 'dart:math' as math;
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_manager.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 
 class SpreadsheetWidget extends StatefulWidget {
@@ -25,7 +26,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   final FocusNode _focusNode = FocusNode();
   final ScrollController _verticalController = ScrollController();
   final ScrollController _horizontalController = ScrollController();
-  final GetNames _getNames = GetNames();
   StreamSubscription? _scrollSubscription;
   bool _initialLayoutDone = false;
 
@@ -45,7 +45,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 
   void _subscribeToScrollEvents() {
-    final controller = context.read<SpreadsheetController>();
+    final controller = context.read<GridHistorySelectionDataTreeContrManager>();
     // Prevent multiple subscriptions if dependencies change
     if (_scrollSubscription != null) return;
     // Listen to the new stream name and type
@@ -81,7 +81,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     if (animate) {
       controller.animateTo(
         clampedOffset,
-        duration: const Duration(milliseconds: SpreadsheetConstants.animationDurationMs),
+        duration: const Duration(
+          milliseconds: SpreadsheetConstants.animationDurationMs,
+        ),
         curve: Curves.easeOut,
       );
     } else {
@@ -104,7 +106,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return;
     }
 
-    final controller = context.read<SpreadsheetController>();
+    final controller = context.read<GridHistorySelectionDataTreeContrManager>();
 
     // Vertical Logic
     final double targetTop = controller.getTargetTop(cell.x);
@@ -129,11 +131,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         maxScroll,
       );
 
-      _safelyScroll(
-        _verticalController,
-        clampedOffset,
-        true,
-      );
+      _safelyScroll(_verticalController, clampedOffset, true);
     }
 
     // Horizontal Logic
@@ -159,17 +157,14 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         maxScroll,
       );
 
-      _safelyScroll(
-        _horizontalController,
-        clampedOffset,
-        true,
-      );
+      _safelyScroll(_horizontalController, clampedOffset, true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<SpreadsheetController>();
+    final controller = context
+        .watch<GridHistorySelectionDataTreeContrManager>();
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -177,7 +172,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           _initialLayoutDone = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) {
-              controller.updateRowColCount(visibleHeight: constraints.maxHeight - controller.sheet.colHeaderHeight, visibleWidth: constraints.maxWidth - controller.sheet.rowHeaderWidth);
+              controller.updateRowColCount(
+                visibleHeight:
+                    constraints.maxHeight - controller.sheet.colHeaderHeight,
+                visibleWidth:
+                    constraints.maxWidth - controller.sheet.rowHeaderWidth,
+              );
             }
           });
         }
@@ -221,8 +221,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                   horizontalDetails: ScrollableDetails.horizontal(
                     controller: _horizontalController,
                   ),
-                  pinnedRowCount: 1,
-                  pinnedColumnCount: 1,
+                  pinnedRowCount: min(2, controller.tableViewRows + 1),
+                  pinnedColumnCount: min(2, controller.tableViewCols + 1),
                   rowCount: controller.tableViewRows + 1,
                   columnCount: controller.tableViewCols + 1,
                   columnBuilder: (index) => _buildColumnSpan(index),
@@ -240,27 +240,73 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   bool _handleScrollNotification(
     ScrollNotification notification,
-    SpreadsheetController controller,
+    GridHistorySelectionDataTreeContrManager controller,
+  ) {
+    // 1. Prediction Logic: Handle "Fling" (User lifts finger with velocity)
+    if (notification is ScrollEndNotification &&
+        notification.dragDetails != null &&
+        notification.metrics.axis == Axis.vertical) {
+      final double velocity = notification.dragDetails!.primaryVelocity ?? 0;
+
+      // Only care if scrolling DOWN (velocity is negative when dragging up)
+      if (velocity < 0) {
+        // Create a physics simulation to predict where the scroll *wants* to go.
+        // We use the inverse of velocity because scroll velocity is opposite to drag velocity.
+        final simulation = ClampingScrollSimulation(
+          position: notification.metrics.pixels,
+          velocity: -velocity,
+          tolerance: Tolerance.defaultTolerance,
+        );
+
+        // Calculate the final offset (where the scroll would stop)
+        final double estimatedFinalOffset = simulation.x(double.infinity);
+        final double currentMaxExtent = notification.metrics.maxScrollExtent;
+
+        // 2. Check if we will hit the wall
+        if (estimatedFinalOffset > currentMaxExtent) {
+          // Calculate the overflow distance
+          final double overflowPixels = estimatedFinalOffset - currentMaxExtent;
+
+          // Estimate row height (use a fixed value or calculate average from controller)
+          const double estimatedRowHeight = 50.0;
+
+          // Calculate "just enough" rows
+          final int rowsNeeded = (overflowPixels / estimatedRowHeight).ceil();
+
+          // Add a small buffer (e.g., +5 rows) to ensure smoothness
+          final int rowsToAdd = rowsNeeded + 5;
+
+          // 3. Add rows synchronously so the scroll continues seamlessly
+          // Note: Ensure your controller notifies listeners immediately.
+          controller.addRows(rowsToAdd);
+        }
+      }
+    }
+
+    // 4. Standard Infinite Scroll Fallback (for slow dragging)
+    // If the user drags slowly to the bottom, the prediction above won't trigger.
+    // We still need to load data if they get close to the edge.
+    if (notification is ScrollUpdateNotification &&
+        notification.metrics.axis == Axis.vertical) {
+      final double triggerThreshold = 500.0; // Load when 500px from bottom
+      if (notification.metrics.extentAfter < triggerThreshold) {
+        // Add a fixed batch of rows for standard scrolling
+        controller.addRows(20);
+      }
+    }
+
+    return false; // Allow notification to bubble up to Scrollbars
+  }
+
+  bool _handleScrollNotification(
+    ScrollNotification notification,
+    GridHistorySelectionDataTreeContrManager controller,
   ) {
     // We only care about vertical scrolling on the TableView for Infinite Loading
     if (notification.depth != 0 || notification is! ScrollUpdateNotification) {
       return false;
     }
-    final metrics = notification.metrics;
-    final double visibleEdge = metrics.pixels + metrics.viewportDimension;
-    if (notification.metrics.axis == Axis.vertical) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) {
-          controller.updateRowColCount(visibleHeight: visibleEdge - controller.sheet.colHeaderHeight);
-        }
-      });
-    } else if (notification.metrics.axis == Axis.horizontal) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) {
-          controller.updateRowColCount(visibleWidth: visibleEdge - controller.sheet.rowHeaderWidth);
-        }
-      });
-    }
+    controller.scroll(notification.metrics, context);
 
     // Return false so the notification bubbles up to the Vertical Scrollbar
     return false;
@@ -269,7 +315,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   KeyEventResult _handleKeyboard(
     BuildContext context,
     KeyEvent event,
-    SpreadsheetController ctrl,
+    GridHistorySelectionDataTreeContrManager ctrl,
   ) {
     if (ctrl.editingMode) {
       return KeyEventResult.ignored;
@@ -365,18 +411,18 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 
   TableSpan _buildColumnSpan(int index) {
-    final controller = context.read<SpreadsheetController>();
+    final GetDefaultSizes getDefaultCellSize = GetDefaultSizes();
     return TableSpan(
       extent: FixedTableSpanExtent(
         index == 0
             ? PageConstants.defaultRowHeaderWidth
-            : controller.getDefaultCellWidth(),
+            : getDefaultCellSize.getDefaultCellWidth(),
       ),
     );
   }
 
   TableSpan _buildRowSpan(int index) {
-    final controller = context.read<SpreadsheetController>();
+    final controller = context.read<GridHistorySelectionDataTreeContrManager>();
 
     if (index == 0) {
       return TableSpan(
@@ -393,8 +439,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   Widget _buildCellDispatcher(
     BuildContext context,
     TableVicinity vicinity,
-    SpreadsheetController controller,
+    GridHistorySelectionDataTreeContrManager controller,
   ) {
+    final GetNames getNames = GetNames();
     final int r = vicinity.row;
     final int c = vicinity.column;
 
@@ -403,9 +450,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     }
     if (r == 0) {
       return SpreadsheetColumnHeader(
-        label: _getNames.getColumnLabel(c - 1),
+        label: getNames.getColumnLabel(c - 1),
         colIndex: c - 1,
-        backgroundColor: controller.getColumnType(c - 1).color,
+        backgroundColor: getNames
+            .getColumnType(controller.sheetContent, c - 1)
+            .color,
         onContextMenu: (details) => _showColumnContextMenu(
           context,
           controller,
@@ -431,7 +480,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       isSelected: controller.isCellSelected(dataRow, dataCol),
       isEditing: isEditingCell,
       previousContent: controller.previousContent,
-      initialEditText: isEditingCell ? controller.currentInitialInput : null,
       onTap: () {
         if (controller.primarySelectedCell.x != dataRow ||
             controller.primarySelectedCell.y != dataCol) {
@@ -474,11 +522,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   Future<void> _showTypeMenu(
     BuildContext context,
-    SpreadsheetController controller,
+    GridHistorySelectionDataTreeContrManager controller,
     Offset position,
     int col,
   ) async {
-    final currentType = controller.getColumnType(col);
+    final GetNames getNames = GetNames();
+    final currentType = getNames.getColumnType(controller.sheetContent, col);
     final List<PopupMenuEntry<dynamic>> items = ColumnType.values
         .map<PopupMenuEntry<dynamic>>((entry) {
           return CheckedPopupMenuItem<ColumnType>(
@@ -532,7 +581,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   void _showColumnContextMenu(
     BuildContext context,
-    SpreadsheetController controller,
+    GridHistorySelectionDataTreeContrManager controller,
     Offset position,
     int col,
   ) async {

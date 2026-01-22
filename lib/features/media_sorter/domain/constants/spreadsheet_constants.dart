@@ -11,6 +11,8 @@ class SpreadsheetConstants {
   static const first = "-fst";
   static const last = "-lst";
   static const animationDurationMs = 100;
+  static const saveDelayMs = 500;
+  static const historyMaxLength = 100;
 
   static const all = -1;
   static const notUsedCst = -2;

@@ -211,11 +211,11 @@ class CalculateUsecase {
                   ).map((k) => NodeStruct(cells: k)).toList();
                   for (int nodeId = 0; nodeId < newPath.length; nodeId++) {
                     newPath[nodeId].message =
-                        "${getNames.getAttName(result, newPath[nodeId].att!)} points to row ${getNames.getAttName(result, nodeId < newPath.length - 1 ? newPath[nodeId + 1].att! : att)}";
+                        "${getNames.getAttName(result.nameIndexes, result.tableToAtt, newPath[nodeId].att!)} points to row ${getNames.getAttName(result.nameIndexes, result.tableToAtt, nodeId < newPath.length - 1 ? newPath[nodeId + 1].att! : att)}";
                   }
                   redundantRef.add(
                     NodeStruct(
-                      message: "${getNames.getAttName(result, att)} already pointed",
+                      message: "${getNames.getAttName(result.nameIndexes, result.tableToAtt, att)} already pointed",
                       cells: rowsToCol[childRowId]!.colIndexes
                           .where(
                             (colId) =>
@@ -758,7 +758,7 @@ class CalculateUsecase {
               final d = entry.value;
               return NodeStruct(
                 message:
-                    "($d) ${getNames.getRowName(result, rowsList[idx])} - ${getNames.getRowName(result, rowsList[idx + 1])}",
+                    "($d) ${getNames.getRowName(result.nameIndexes, result.tableToAtt, rowsList[idx])} - ${getNames.getRowName(result.nameIndexes, result.tableToAtt, rowsList[idx + 1])}",
                 newChildren: [
                   NodeStruct(att: Attribute.row(rowsList[idx])),
                   NodeStruct(att: Attribute.row(rowsList[idx + 1])),

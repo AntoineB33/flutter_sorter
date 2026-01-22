@@ -6,16 +6,18 @@ class SelectionModel {
   Point<int> primarySelectedCell = Point<int>(0, 0);
   double scrollOffsetX = 0.0;
   double scrollOffsetY = 0.0;
-  int rowCount = 0;
-  int colCount = 0;
+  int tableViewRows = 0;
+  int tableViewCols = 0;
+  bool editingMode = false;
+  String previousContent = '';
 
   SelectionModel({
     required this.selectedCells,
     required this.primarySelectedCell,
     required this.scrollOffsetX,
     required this.scrollOffsetY,
-    required this.rowCount,
-    required this.colCount,
+    required this.editingMode,
+    required this.previousContent,
   });
 
   SelectionModel.empty();
@@ -35,8 +37,8 @@ class SelectionModel {
         selectedCells: selectedList,
         scrollOffsetX: (json['scrollOffsetX'] as num).toDouble(),
         scrollOffsetY: (json['scrollOffsetY'] as num).toDouble(),
-        rowCount: json['rowCount'] as int,
-        colCount: json['colCount'] as int,
+        editingMode: json['editingMode'] as bool,
+        previousContent: json['previousContent'] as String,
       );
     } catch (e) {
       debugPrint("Error parsing SelectionModel from JSON: $e");
@@ -58,8 +60,8 @@ class SelectionModel {
           .toList(),
       'scrollOffsetX': scrollOffsetX,
       'scrollOffsetY': scrollOffsetY,
-      'rowCount': rowCount,
-      'colCount': colCount,
+      'editingMode': editingMode,
+      'previousContent': previousContent,
     };
   }
 }

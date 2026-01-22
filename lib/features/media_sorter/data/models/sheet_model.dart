@@ -1,9 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/history_manager.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 
 class SheetModel {

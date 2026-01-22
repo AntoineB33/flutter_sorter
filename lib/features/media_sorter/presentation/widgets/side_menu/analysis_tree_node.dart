@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_controller.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_history_selection_data_tree_contr_manager.dart';
 
 class AnalysisTreeNode extends StatelessWidget {
   final NodeStruct node;
-  final SpreadsheetController controller;
+  final GridHistorySelectionDataTreeContrManager controller;
 
   const AnalysisTreeNode({
     super.key,

@@ -90,7 +90,6 @@ class SpreadsheetDataCell extends StatefulWidget {
   final bool isSelected;
   final bool isEditing;
   final String previousContent;
-  final String? initialEditText;
   final VoidCallback onTap;
   final VoidCallback onDoubleTap;
   final ValueChanged<String>? onChanged;
@@ -106,7 +105,6 @@ class SpreadsheetDataCell extends StatefulWidget {
     required this.isSelected,
     required this.isEditing,
     required this.previousContent,
-    required this.initialEditText,
     required this.onTap,
     required this.onDoubleTap,
     required this.onChanged,
@@ -129,12 +127,8 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
   @override
   void initState() {
     super.initState();
-    final String startText =
-        (widget.isEditing && widget.initialEditText != null)
-            ? widget.initialEditText!
-            : widget.content;
 
-    _textController = TextEditingController(text: startText);
+    _textController = TextEditingController(text: widget.content);
 
     if (widget.isEditing) {
       _editFocusNode.requestFocus();
@@ -146,11 +140,7 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
     super.didUpdateWidget(oldWidget);
 
     if (widget.isEditing && !oldWidget.isEditing) {
-      if (widget.initialEditText != null) {
-        _textController.text = widget.initialEditText!;
-      } else {
-        _textController.text = widget.content;
-      }
+      _textController.text = widget.content;
       _editFocusNode.requestFocus();
       _textController.selection = TextSelection.fromPosition(
         TextPosition(offset: _textController.text.length),
