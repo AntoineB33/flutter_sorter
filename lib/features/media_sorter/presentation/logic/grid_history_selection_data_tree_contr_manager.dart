@@ -246,26 +246,83 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     );
   }
 
-  void scroll(ScrollMetrics metrics, BuildContext context) {
-    final double visibleEdge = metrics.pixels + metrics.viewportDimension;
-    if (metrics.axis == Axis.vertical) {
-      _selectionController.selection.scrollOffsetY = metrics.pixels;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) {
-          updateRowColCount(
-            visibleHeight: visibleEdge - sheet.colHeaderHeight
-          );
+  // void scroll(ScrollMetrics metrics, BuildContext context) {
+  //   final double visibleEdge = metrics.pixels + metrics.viewportDimension;
+  //   if (metrics.axis == Axis.vertical) {
+  //     _selectionController.selection.scrollOffsetY = metrics.pixels;
+  //     WidgetsBinding.instance.addPostFrameCallback((_) {
+  //       if (context.mounted) {
+  //         updateRowColCount(
+  //           visibleHeight: visibleEdge - sheet.colHeaderHeight
+  //         );
+  //       }
+  //     });
+  //   } else if (metrics.axis == Axis.horizontal) {
+  //     _selectionController.selection.scrollOffsetX = metrics.pixels;
+  //     WidgetsBinding.instance.addPostFrameCallback((_) {
+  //       if (context.mounted) {
+  //         updateRowColCount(
+  //           visibleWidth: visibleEdge - sheet.rowHeaderWidth
+  //         );
+  //       }
+  //     });
+  //   }
+  // }
+
+  void scroll(ScrollNotification notification) {
+    // 1. Detect a "Fling" (User lifts finger with downward velocity)
+    if (!(notification is ScrollEndNotification) && !(notification is ScrollStartNotification) && !(notification is UserScrollNotification) && !(notification is ScrollUpdateNotification)) {
+      return;
+    }
+    if (notification is ScrollEndNotification &&
+        notification.dragDetails != null &&
+        notification.metrics.axis == Axis.vertical) {
+
+      final double velocity = notification.dragDetails!.primaryVelocity ?? 0;
+
+      // Only act if scrolling DOWN (velocity is negative)
+      if (velocity < 0) {
+        // 2. Predict the final scroll position
+        // We use ClampingScrollSimulation to mimic the standard scroll physics
+        final simulation = ClampingScrollSimulation(
+          position: notification.metrics.pixels,
+          velocity: -velocity, // Invert velocity for the physics math
+          tolerance: Tolerance.defaultTolerance,
+        );
+
+        // The pixel offset where the scroll wants to stop
+        final double estimatedFinalOffset = simulation.x(double.infinity);
+        final double currentMaxExtent = notification.metrics.maxScrollExtent;
+
+        // 3. Check if the fling will hit the "wall"
+        if (estimatedFinalOffset >= currentMaxExtent) {
+          return;
+          final double viewportHeight = notification.metrics.viewportDimension;
+
+          // To scroll to 'estimatedFinalOffset', the total content height must be
+          // at least (offset + viewportHeight).
+          final double requiredTotalHeight = estimatedFinalOffset + viewportHeight;
+
+          // 4. Find the exact least number of rows needed
+          // We start checking from the current total row count.
+          // recall: getTargetTop(n) usually returns the total height of n rows.
+          int targetRowCount = tableViewRows;
+          
+          // Loop until we find a row count that provides enough height
+          // (Add a safety limit to prevent infinite loops if logic fails)
+          while (getTargetTop(targetRowCount) < requiredTotalHeight) {
+            targetRowCount++;
+          }
+
+          if (targetRowCount != tableViewRows) {
+            _selectionController.tableViewRows = targetRowCount;
+            _selectionController.selection.scrollOffsetY = notification.metrics.pixels;
+            saveLastSelection(_selectionController.selection);
+            _gridController.visibleWindowHeight = getTargetTop(targetRowCount) + sheet.colHeaderHeight;
+            notifyListeners();
+          }
         }
-      });
-    } else if (metrics.axis == Axis.horizontal) {
-      _selectionController.selection.scrollOffsetX = metrics.pixels;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) {
-          updateRowColCount(
-            visibleWidth: visibleEdge - sheet.rowHeaderWidth
-          );
-        }
-      });
+      }
     }
   }
 

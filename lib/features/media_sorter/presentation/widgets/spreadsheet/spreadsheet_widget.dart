@@ -238,79 +238,24 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     );
   }
 
-  bool _handleScrollNotification(
-    ScrollNotification notification,
-    GridHistorySelectionDataTreeContrManager controller,
-  ) {
-    // 1. Prediction Logic: Handle "Fling" (User lifts finger with velocity)
-    if (notification is ScrollEndNotification &&
-        notification.dragDetails != null &&
-        notification.metrics.axis == Axis.vertical) {
-      final double velocity = notification.dragDetails!.primaryVelocity ?? 0;
-
-      // Only care if scrolling DOWN (velocity is negative when dragging up)
-      if (velocity < 0) {
-        // Create a physics simulation to predict where the scroll *wants* to go.
-        // We use the inverse of velocity because scroll velocity is opposite to drag velocity.
-        final simulation = ClampingScrollSimulation(
-          position: notification.metrics.pixels,
-          velocity: -velocity,
-          tolerance: Tolerance.defaultTolerance,
-        );
-
-        // Calculate the final offset (where the scroll would stop)
-        final double estimatedFinalOffset = simulation.x(double.infinity);
-        final double currentMaxExtent = notification.metrics.maxScrollExtent;
-
-        // 2. Check if we will hit the wall
-        if (estimatedFinalOffset > currentMaxExtent) {
-          // Calculate the overflow distance
-          final double overflowPixels = estimatedFinalOffset - currentMaxExtent;
-
-          // Estimate row height (use a fixed value or calculate average from controller)
-          const double estimatedRowHeight = 50.0;
-
-          // Calculate "just enough" rows
-          final int rowsNeeded = (overflowPixels / estimatedRowHeight).ceil();
-
-          // Add a small buffer (e.g., +5 rows) to ensure smoothness
-          final int rowsToAdd = rowsNeeded + 5;
-
-          // 3. Add rows synchronously so the scroll continues seamlessly
-          // Note: Ensure your controller notifies listeners immediately.
-          controller.addRows(rowsToAdd);
-        }
-      }
-    }
-
-    // 4. Standard Infinite Scroll Fallback (for slow dragging)
-    // If the user drags slowly to the bottom, the prediction above won't trigger.
-    // We still need to load data if they get close to the edge.
-    if (notification is ScrollUpdateNotification &&
-        notification.metrics.axis == Axis.vertical) {
-      final double triggerThreshold = 500.0; // Load when 500px from bottom
-      if (notification.metrics.extentAfter < triggerThreshold) {
-        // Add a fixed batch of rows for standard scrolling
-        controller.addRows(20);
-      }
-    }
-
-    return false; // Allow notification to bubble up to Scrollbars
-  }
-
-  bool _handleScrollNotification(
-    ScrollNotification notification,
-    GridHistorySelectionDataTreeContrManager controller,
-  ) {
-    // We only care about vertical scrolling on the TableView for Infinite Loading
-    if (notification.depth != 0 || notification is! ScrollUpdateNotification) {
-      return false;
-    }
-    controller.scroll(notification.metrics, context);
-
-    // Return false so the notification bubbles up to the Vertical Scrollbar
+  bool _handleScrollNotification(ScrollNotification notification, GridHistorySelectionDataTreeContrManager controller) {
+    controller.scroll(notification);
     return false;
   }
+  
+  // bool _handleScrollNotification(
+  //   ScrollNotification notification,
+  //   GridHistorySelectionDataTreeContrManager controller,
+  // ) {
+  //   // We only care about vertical scrolling on the TableView for Infinite Loading
+  //   if (notification.depth != 0 || notification is! ScrollUpdateNotification) {
+  //     return false;
+  //   }
+  //   controller.scroll(notification.metrics, context);
+
+  //   // Return false so the notification bubbles up to the Vertical Scrollbar
+  //   return false;
+  // }
 
   KeyEventResult _handleKeyboard(
     BuildContext context,
