@@ -2,11 +2,16 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
+import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/layout_calculator.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 
 class SheetDataController extends ChangeNotifier {
   // --- states ---
@@ -22,6 +27,8 @@ class SheetDataController extends ChangeNotifier {
 
   // --- usecases ---
   final SaveSheetDataUseCase _saveSheetDataUseCase;
+  final SpreadsheetLayoutCalculator _layoutCalculator =
+      SpreadsheetLayoutCalculator();
 
   // getters
   SheetModel get currentSheet => sheet;
@@ -43,5 +50,138 @@ class SheetDataController extends ChangeNotifier {
       await _saveSheetDataUseCase.saveSheet(sheetName, sheet);
       await Future.delayed(Duration(milliseconds: saveDelayMs));
     });
+  }
+
+  bool isRowValid(int rowId) {
+    for (int srcColId in sheetContent.sourceColIndices) {
+      if (getContent(rowId, srcColId).isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void removeSourceColId(int colId) {
+    sheetContent.sourceColIndices.remove(colId);
+  }
+
+  void addSourceColId(int colId) {
+    sheetContent.sourceColIndices.add(colId);
+  }
+  
+  Future<void> saveLastSelection(SelectionModel selection) async {
+    saveLastSelectionExecutor.execute(() async {
+      await _saveSheetDataUseCase.saveLastSelection(selection);
+      await Future.delayed(Duration(milliseconds: SpreadsheetConstants.saveDelayMs));
+    });
+  }
+
+  // Content Access
+  String getContent(int row, int col) {
+    if (row < rowCount && col < colCount) {
+      return sheetContent.table[row][col];
+    }
+    return '';
+  }
+
+  void increaseColumnCount(int col) {
+    if (col >= colCount) {
+      final needed = col + 1 - colCount;
+      for (var r = 0; r < rowCount; r++) {
+        sheetContent.table[r].addAll(
+          List.filled(needed, '', growable: true),
+        );
+      }
+      sheetContent.columnTypes.addAll(
+        List.filled(needed, ColumnType.attributes),
+      );
+    }
+  }
+
+  void decreaseRowCount(int row) {
+    if (row == rowCount - 1) {
+      while (row >= 0 &&
+          !sheetContent.table[row].any(
+            (cell) => cell.isNotEmpty,
+          )) {
+        sheetContent.table.removeLast();
+        row--;
+      }
+    }
+  }
+
+  double getRowHeight(int row) {
+    if (row < sheet.rowsBottomPos.length) {
+      if (row == 0) {
+        return sheet.rowsBottomPos[0];
+      } else {
+        return sheet.rowsBottomPos[row] -
+            sheet.rowsBottomPos[row - 1];
+      }
+    }
+    return GetDefaultSizes.getDefaultRowHeight();
+  }
+
+  double getTargetTop(int row) {
+    if (row <= 0) return 0.0;
+    final int nbKnownBottomPos = sheet.rowsBottomPos.length;
+    var rowsBottomPos = sheet.rowsBottomPos;
+    final int tableHeight = nbKnownBottomPos == 0
+        ? 0
+        : rowsBottomPos.last.toInt();
+    final double targetTop = row - 1 < nbKnownBottomPos
+        ? rowsBottomPos[row - 1].toDouble()
+        : tableHeight +
+              (row - nbKnownBottomPos) * GetDefaultSizes.getDefaultRowHeight();
+    return targetTop;
+  }
+
+  double getTargetLeft(int col) {
+    if (col <= 0) return 0.0;
+    final int nbKnownRightPos = sheet.colRightPos.length;
+    var columnsRightPos = sheet.colRightPos;
+    final int tableWidth = nbKnownRightPos == 0
+        ? 0
+        : columnsRightPos.last.toInt();
+    final double targetRight = col - 1 < nbKnownRightPos
+        ? columnsRightPos[col - 1].toDouble()
+        : tableWidth + (col - nbKnownRightPos) * GetDefaultSizes.getDefaultCellWidth();
+    return targetRight;
+  }
+
+  int minRows(double height) {
+    double tableHeight = getTargetTop(rowCount - 1);
+    if (height >= tableHeight) {
+      return sheet.rowsBottomPos.length +
+          ((height -
+                  getTargetTop(
+                    sheet.rowsBottomPos.length - 1,
+                  ) + 1) /
+              GetDefaultSizes.getDefaultRowHeight()).ceil();
+    }
+    return rowCount;
+  }
+
+  int minCols(double width) {
+    double tableWidth = getTargetLeft(colCount - 1);
+    if (width >= tableWidth) {
+      return sheet.colRightPos.length +
+          ((width -
+                  getTargetLeft(
+                    sheet.colRightPos.length - 1,
+                  ) + 1) /
+              GetDefaultSizes.getDefaultCellWidth()).ceil();
+    }
+    return colCount;
+  }
+
+  double getColumnWidth(int col) {
+    return getTargetLeft(col + 1) - getTargetLeft(col);
+  }
+
+  double calculateRequiredRowHeight(String text, int colId) {
+    final double availableWidth =
+        getColumnWidth(colId) - PageConstants.horizontalPadding;
+    return _layoutCalculator.calculateRowHeight(text, availableWidth);
   }
 }

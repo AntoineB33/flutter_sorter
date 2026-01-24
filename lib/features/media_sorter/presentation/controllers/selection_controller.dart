@@ -1,7 +1,8 @@
 import 'dart:math';
 import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
+import 'package:flutter/foundation.dart';
 
-class SelectionController {
+class SelectionController extends ChangeNotifier {
   // --- states ---
   SelectionModel selection = SelectionModel.empty();
 
@@ -30,4 +31,16 @@ class SelectionController {
   }
 
   SelectionController();
+
+  
+  bool isCellSelected(int row, int col) {
+    return selectedCells.any(
+      (cell) => cell.x == row && cell.y == col,
+    );
+  }
+  
+  bool isPrimarySelectedCell(int row, int col) {
+    return row == primarySelectedCell.x &&
+        col == primarySelectedCell.y;
+  }
 }

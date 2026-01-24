@@ -7,6 +7,5 @@ class GridController {
 
   GridController(); 
 
-  // --- Layout Calculations ---
 
 }

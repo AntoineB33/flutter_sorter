@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_history_selection_data_tree_contr_manager.dart';
 import 'package:trying_flutter/injection_container.dart';
 import 'package:trying_flutter/shared/widgets/navigation_dropdown.dart';
@@ -16,6 +18,8 @@ class MediaSorterPage extends StatelessWidget {
       providers: [
         // 1. Data Controller (The Model)
         ChangeNotifierProvider(create: (_) => sl<GridHistorySelectionDataTreeContrManager>()),
+        ChangeNotifierProvider(create: (_) => sl<SheetDataController>()),
+        ChangeNotifierProvider(create: (_) => sl<SelectionController>()),
       ],
       child: const Scaffold(
         appBar: NavigationDropdown(),

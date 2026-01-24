@@ -33,7 +33,7 @@ class SheetModel {
     return SheetModel(
       updateHistories: [],
       historyIndex: -1,
-      sheetContent: SheetContent(table: [], columnTypes: []),
+      sheetContent: SheetContent(table: [], columnTypes: [ColumnType.names]),
       rowsBottomPos: [],
       colRightPos: [],
       rowsManuallyAdjustedHeight: [],

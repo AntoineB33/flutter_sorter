@@ -11,11 +11,9 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update.dart
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/sorting_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/layout_calculator.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
@@ -43,17 +41,10 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
   final SpreadsheetStreamController _streamController;
   
   // --- usecases ---
-  final SpreadsheetLayoutCalculator _layoutCalculator =
-      SpreadsheetLayoutCalculator();
   final SaveSheetDataUseCase _saveSheetDataUseCase = SaveSheetDataUseCase(SheetRepositoryImpl(FileSheetLocalDataSource()));
   final GetSheetDataUseCase _getDataUseCase = GetSheetDataUseCase(SheetRepositoryImpl(FileSheetLocalDataSource()));
   final CalculationService calculationService = CalculationService();
   final ParsePasteDataUseCase _parsePasteDataUseCase = ParsePasteDataUseCase();
-
-  // --- utils ---
-  final GetNames _getNames = GetNames();
-  final GetDefaultSizes _getDefaultSizes = GetDefaultSizes();
-  final CheckValidStrings _checkValidStrings = CheckValidStrings();
 
   // --- getters ---
   String get sheetName => _dataController.sheetName;
@@ -89,44 +80,6 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     init();
   }
 
-  void increaseColumnCount(int col) {
-    if (col >= _dataController.colCount) {
-      final needed = col + 1 - _dataController.colCount;
-      for (var r = 0; r < _dataController.rowCount; r++) {
-        _dataController.sheetContent.table[r].addAll(
-          List.filled(needed, '', growable: true),
-        );
-      }
-      _dataController.sheetContent.columnTypes.addAll(
-        List.filled(needed, ColumnType.attributes),
-      );
-    }
-  }
-
-  void decreaseRowCount(int row) {
-    if (row == _dataController.rowCount - 1) {
-      while (row >= 0 &&
-          !_dataController.sheetContent.table[row].any(
-            (cell) => cell.isNotEmpty,
-          )) {
-        _dataController.sheetContent.table.removeLast();
-        row--;
-      }
-    }
-  }
-
-  double getRowHeight(int row) {
-    if (row < _dataController.sheet.rowsBottomPos.length) {
-      if (row == 0) {
-        return _dataController.sheet.rowsBottomPos[0];
-      } else {
-        return _dataController.sheet.rowsBottomPos[row] -
-            _dataController.sheet.rowsBottomPos[row - 1];
-      }
-    }
-    return _getDefaultSizes.getDefaultRowHeight();
-  }
-
   void adjustRowHeightAfterUpdate(
     int row,
     int col,
@@ -143,9 +96,9 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
       return;
     }
 
-    double heightItNeeds = calculateRequiredRowHeight(newValue, col);
+    double heightItNeeds = _dataController.calculateRequiredRowHeight(newValue, col);
 
-    if (heightItNeeds > _getDefaultSizes.getDefaultRowHeight() &&
+    if (heightItNeeds > GetDefaultSizes.getDefaultRowHeight() &&
         _dataController.sheet.rowsBottomPos.length <= row) {
       int prevRowsBottomPosLength = _dataController.sheet.rowsBottomPos.length;
       _dataController.sheet.rowsBottomPos.addAll(
@@ -153,24 +106,24 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
       );
       for (int i = prevRowsBottomPosLength; i <= row; i++) {
         _dataController.sheet.rowsBottomPos[i] = i == 0
-            ? _getDefaultSizes.getDefaultRowHeight()
+            ? GetDefaultSizes.getDefaultRowHeight()
             : _dataController.sheet.rowsBottomPos[i - 1] +
-                  _getDefaultSizes.getDefaultRowHeight();
+                  GetDefaultSizes.getDefaultRowHeight();
       }
     }
 
     if (row < _dataController.sheet.rowsBottomPos.length) {
       if (_dataController.sheet.rowsManuallyAdjustedHeight.length <= row ||
           !_dataController.sheet.rowsManuallyAdjustedHeight[row]) {
-        double currentHeight = getRowHeight(row);
+        double currentHeight = _dataController.getRowHeight(row);
         if (heightItNeeds < currentHeight) {
-          double heightItNeeded = calculateRequiredRowHeight(prevValue, col);
+          double heightItNeeded = _dataController.calculateRequiredRowHeight(prevValue, col);
           if (heightItNeeded == currentHeight) {
             double newHeight = heightItNeeds;
             for (int j = 0; j < _dataController.colCount; j++) {
               if (j == col) continue;
               newHeight = max(
-                calculateRequiredRowHeight(
+                _dataController.calculateRequiredRowHeight(
                   _dataController.sheetContent.table[row][j],
                   j,
                 ),
@@ -187,7 +140,7 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
               ) {
                 _dataController.sheet.rowsBottomPos[r] -= heightDiff;
               }
-              if (newHeight == _getDefaultSizes.getDefaultRowHeight()) {
+              if (newHeight == GetDefaultSizes.getDefaultRowHeight()) {
                 int removeFrom = _dataController.sheet.rowsBottomPos.length;
                 for (
                   int r = _dataController.sheet.rowsBottomPos.length - 1;
@@ -205,7 +158,7 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
                                   ? 0
                                   : _dataController.sheet.rowsBottomPos[r -
                                         1]) +
-                              _getDefaultSizes.getDefaultRowHeight()) {
+                              GetDefaultSizes.getDefaultRowHeight()) {
                     break;
                   }
                   removeFrom--;
@@ -229,11 +182,11 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
           }
         }
       }
-    } else if (heightItNeeds == _getDefaultSizes.getDefaultRowHeight() &&
+    } else if (heightItNeeds == GetDefaultSizes.getDefaultRowHeight() &&
         row == _dataController.sheet.rowsBottomPos.length - 1) {
       int i = row;
       while (_dataController.sheet.rowsBottomPos[i] ==
-              _getDefaultSizes.getDefaultRowHeight() &&
+              GetDefaultSizes.getDefaultRowHeight() &&
           row > 0) {
         _dataController.sheet.rowsBottomPos.removeLast();
         i--;
@@ -244,86 +197,6 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
       visibleWidth: _gridController.visibleWindowWidth,
       notify: false,
     );
-  }
-
-  // void scroll(ScrollMetrics metrics, BuildContext context) {
-  //   final double visibleEdge = metrics.pixels + metrics.viewportDimension;
-  //   if (metrics.axis == Axis.vertical) {
-  //     _selectionController.selection.scrollOffsetY = metrics.pixels;
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       if (context.mounted) {
-  //         updateRowColCount(
-  //           visibleHeight: visibleEdge - sheet.colHeaderHeight
-  //         );
-  //       }
-  //     });
-  //   } else if (metrics.axis == Axis.horizontal) {
-  //     _selectionController.selection.scrollOffsetX = metrics.pixels;
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       if (context.mounted) {
-  //         updateRowColCount(
-  //           visibleWidth: visibleEdge - sheet.rowHeaderWidth
-  //         );
-  //       }
-  //     });
-  //   }
-  // }
-
-  void scroll(ScrollNotification notification) {
-    // 1. Detect a "Fling" (User lifts finger with downward velocity)
-    if (!(notification is ScrollEndNotification) && !(notification is ScrollStartNotification) && !(notification is UserScrollNotification) && !(notification is ScrollUpdateNotification)) {
-      return;
-    }
-    if (notification is ScrollEndNotification &&
-        notification.dragDetails != null &&
-        notification.metrics.axis == Axis.vertical) {
-
-      final double velocity = notification.dragDetails!.primaryVelocity ?? 0;
-
-      // Only act if scrolling DOWN (velocity is negative)
-      if (velocity < 0) {
-        // 2. Predict the final scroll position
-        // We use ClampingScrollSimulation to mimic the standard scroll physics
-        final simulation = ClampingScrollSimulation(
-          position: notification.metrics.pixels,
-          velocity: -velocity, // Invert velocity for the physics math
-          tolerance: Tolerance.defaultTolerance,
-        );
-
-        // The pixel offset where the scroll wants to stop
-        final double estimatedFinalOffset = simulation.x(double.infinity);
-        final double currentMaxExtent = notification.metrics.maxScrollExtent;
-
-        // 3. Check if the fling will hit the "wall"
-        if (estimatedFinalOffset >= currentMaxExtent) {
-          return;
-          final double viewportHeight = notification.metrics.viewportDimension;
-
-          // To scroll to 'estimatedFinalOffset', the total content height must be
-          // at least (offset + viewportHeight).
-          final double requiredTotalHeight = estimatedFinalOffset + viewportHeight;
-
-          // 4. Find the exact least number of rows needed
-          // We start checking from the current total row count.
-          // recall: getTargetTop(n) usually returns the total height of n rows.
-          int targetRowCount = tableViewRows;
-          
-          // Loop until we find a row count that provides enough height
-          // (Add a safety limit to prevent infinite loops if logic fails)
-          while (getTargetTop(targetRowCount) < requiredTotalHeight) {
-            targetRowCount++;
-          }
-
-          if (targetRowCount != tableViewRows) {
-            _selectionController.tableViewRows = targetRowCount;
-            _selectionController.selection.scrollOffsetY = notification.metrics.pixels;
-            saveLastSelection(_selectionController.selection);
-            _gridController.visibleWindowHeight = getTargetTop(targetRowCount) + sheet.colHeaderHeight;
-            notifyListeners();
-          }
-        }
-      }
-    }
   }
 
   void updateRowColCount({
@@ -337,11 +210,11 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
 
     if (visibleHeight != null) {
       _gridController.visibleWindowHeight = visibleHeight;
-      targetRows = minRows(_gridController.visibleWindowHeight);
+      targetRows = _dataController.minRows(_gridController.visibleWindowHeight);
     }
     if (visibleWidth != null) {
       _gridController.visibleWindowWidth = visibleWidth;
-      targetCols = minCols(_gridController.visibleWindowWidth);
+      targetCols = _dataController.minCols(_gridController.visibleWindowWidth);
     }
 
     // We access the selection manager via the controller
@@ -356,131 +229,8 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
       }
     }
     if (save) {
-      saveLastSelection(_selectionController.selection);
+      _dataController.saveLastSelection(_selectionController.selection);
     }
-  }
-
-  double getTargetTop(int row) {
-    if (row <= 0) return 0.0;
-    final int nbKnownBottomPos = _dataController.sheet.rowsBottomPos.length;
-    var rowsBottomPos = _dataController.sheet.rowsBottomPos;
-    final int tableHeight = nbKnownBottomPos == 0
-        ? 0
-        : rowsBottomPos.last.toInt();
-    final double targetTop = row - 1 < nbKnownBottomPos
-        ? rowsBottomPos[row - 1].toDouble()
-        : tableHeight +
-              (row - nbKnownBottomPos) * _getDefaultSizes.getDefaultRowHeight();
-    return targetTop;
-  }
-
-  double getTargetLeft(int col) {
-    if (col <= 0) return 0.0;
-    final int nbKnownRightPos = _dataController.sheet.colRightPos.length;
-    var columnsRightPos = _dataController.sheet.colRightPos;
-    final int tableWidth = nbKnownRightPos == 0
-        ? 0
-        : columnsRightPos.last.toInt();
-    final double targetRight = col - 1 < nbKnownRightPos
-        ? columnsRightPos[col - 1].toDouble()
-        : tableWidth + (col - nbKnownRightPos) * _getDefaultSizes.getDefaultCellWidth();
-    return targetRight;
-  }
-
-  int minRows(double height) {
-    double tableHeight = getTargetTop(_dataController.rowCount - 1);
-    if (height >= tableHeight) {
-      return _dataController.sheet.rowsBottomPos.length +
-          (height -
-                  getTargetTop(
-                    _dataController.sheet.rowsBottomPos.length - 1,
-                  )) ~/
-              _getDefaultSizes.getDefaultRowHeight() +
-          1;
-    }
-    return _dataController.rowCount;
-  }
-
-  int minCols(double width) {
-    double tableWidth = getTargetLeft(_dataController.colCount - 1);
-    if (width >= tableWidth) {
-      return _dataController.sheet.colRightPos.length +
-          (width -
-                  getTargetLeft(
-                    _dataController.sheet.colRightPos.length - 1,
-                  )) ~/
-              _getDefaultSizes.getDefaultCellWidth() +
-          1;
-    }
-    return _dataController.colCount;
-  }
-
-  double getColumnWidth(int col) {
-    return getTargetLeft(col + 1) - getTargetLeft(col);
-  }
-
-  double calculateRequiredRowHeight(String text, int colId) {
-    final double availableWidth =
-        getColumnWidth(colId) - PageConstants.horizontalPadding;
-    return _layoutCalculator.calculateRowHeight(text, availableWidth);
-  }
-
-  void undo() {
-    final sheet = _dataController.sheet;
-    if (sheet.historyIndex < 0 || sheet.updateHistories.isEmpty) {
-      return;
-    }
-    final lastUpdate = sheet.updateHistories[sheet.historyIndex];
-    if (lastUpdate.key == UpdateHistory.updateCellContent) {
-      for (var cellUpdate in lastUpdate.updatedCells!) {
-        updateCell(
-          cellUpdate.cell.x,
-          cellUpdate.cell.y,
-          cellUpdate.previousValue,
-          historyNavigation: true,
-        );
-      }
-    } else if (lastUpdate.key == UpdateHistory.updateColumnType) {
-      for (var typeUpdate in lastUpdate.updatedColumnTypes!) {
-        setColumnType(
-          typeUpdate.colId!,
-          typeUpdate.previousColumnType!,
-          updateHistory: false,
-        );
-      }
-    }
-    sheet.historyIndex--;
-    notifyListeners();
-    saveAndCalculate();
-  }
-
-  void redo() {
-    final sheet = _dataController.sheet;
-    if (sheet.historyIndex + 1 == sheet.updateHistories.length) {
-      return;
-    }
-    final nextUpdate = sheet.updateHistories[sheet.historyIndex + 1];
-    if (nextUpdate.key == UpdateHistory.updateCellContent) {
-      for (var cellUpdate in nextUpdate.updatedCells!) {
-        updateCell(
-          cellUpdate.cell.x,
-          cellUpdate.cell.y,
-          cellUpdate.newValue,
-          historyNavigation: true,
-        );
-      }
-    } else if (nextUpdate.key == UpdateHistory.updateColumnType) {
-      for (var typeUpdate in nextUpdate.updatedColumnTypes!) {
-        setColumnType(
-          typeUpdate.colId!,
-          typeUpdate.newColumnType!,
-          updateHistory: false,
-        );
-      }
-    }
-    sheet.historyIndex++;
-    notifyListeners();
-    saveAndCalculate();
   }
 
   /// Commits the `currentUpdateHistory` to the Sheet's permanent history stack.
@@ -503,7 +253,7 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
 
   void keepOnlyPrim() {
     _selectionController.selectedCells.clear();
-    saveLastSelection(_selectionController.selection);
+    _dataController.saveLastSelection(_selectionController.selection);
     notifyListeners();
   }
 
@@ -517,13 +267,8 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     setPrimarySelection(0, 0, true, true);
   }
 
-  bool isPrimarySelectedCell(int row, int col) {
-    return row == _selectionController.primarySelectedCell.x &&
-        col == _selectionController.primarySelectedCell.y;
-  }
-
   Future<void> init() async {
-    // await _saveSheetDataUseCase.clearAllData();
+    await _saveSheetDataUseCase.clearAllData();
     await _saveSheetDataUseCase.initialize();
     try {
       _dataController.sheetName = await _getDataUseCase.getLastOpenedSheetName();
@@ -534,11 +279,11 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
       _selectionController.selection = await _getDataUseCase.getLastSelection();
     } catch (e) {
       _selectionController.selection = SelectionModel.empty();
-      await saveLastSelection(_selectionController.selection);
+      await _dataController.saveLastSelection(_selectionController.selection);
     }
 
     _dataController.availableSheets = await _getDataUseCase.getAllSheetNames();
-    if (!_checkValidStrings.isValidSheetName(_dataController.sheetName)) {
+    if (!CheckValidStrings.isValidSheetName(_dataController.sheetName)) {
       if (_dataController.availableSheets.isNotEmpty) {
         _dataController.sheetName = _dataController.availableSheets[0];
       } else {
@@ -614,7 +359,7 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     }
 
     if (!init) {
-      saveLastSelection(_selectionController.selection);
+      _dataController.saveLastSelection(_selectionController.selection);
     }
 
     _dataController.loadedSheetsData[name] = _dataController.sheet;
@@ -637,21 +382,6 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveLastSelection(SelectionModel selection) async {
-    _dataController.saveLastSelectionExecutor.execute(() async {
-      await _saveSheetDataUseCase.saveLastSelection(selection);
-      await Future.delayed(Duration(milliseconds: SpreadsheetConstants.saveDelayMs));
-    });
-  }
-
-  // Content Access
-  String getContent(int row, int col) {
-    if (row < _dataController.rowCount && col < _dataController.colCount) {
-      return _dataController.sheetContent.table[row][col];
-    }
-    return '';
-  }
-
   void updateCell(
     int row,
     int col,
@@ -671,7 +401,7 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
           ),
         );
       }
-      increaseColumnCount(col);
+      _dataController.increaseColumnCount(col);
       prevValue = _dataController.sheetContent.table[row][col];
       _dataController.sheetContent.table[row][col] = newValue;
     }
@@ -682,7 +412,7 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
         col < _dataController.colCount &&
         (row == _dataController.rowCount - 1 || col == _dataController.colCount - 1) &&
         prevValue.isNotEmpty) {
-      decreaseRowCount(row);
+      _dataController.decreaseRowCount(row);
       if (col == _dataController.colCount - 1) {
         int colId = col;
         bool canRemove = true;
@@ -717,26 +447,11 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     adjustRowHeightAfterUpdate(row, col, newValue, prevValue);
   }
 
-  void applyDefaultColumnSequence() {
-    setColumnType(0, ColumnType.names);
-    setColumnType(1, ColumnType.dependencies);
-    setColumnType(2, ColumnType.dependencies);
-    setColumnType(3, ColumnType.dependencies);
-    setColumnType(7, ColumnType.urls);
-    setColumnType(8, ColumnType.dependencies);
-  }
-
-  bool isCellSelected(int row, int col) {
-    return _selectionController.selectedCells.any(
-      (cell) => cell.x == row && cell.y == col,
-    );
-  }
-
   void startEditing({String? initialInput}) {
-    _selectionController.previousContent = getContent(_selectionController.primarySelectedCell.x, _selectionController.primarySelectedCell.y);
+    _selectionController.previousContent = _dataController.getContent(_selectionController.primarySelectedCell.x, _selectionController.primarySelectedCell.y);
     onChanged(initialInput!);
     _selectionController.editingMode = true;
-    saveLastSelection(_selectionController.selection);
+    _dataController.saveLastSelection(_selectionController.selection);
     notifyListeners();
   }
 
@@ -753,7 +468,7 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
 
   void stopEditing(bool updateHistory) {
     _selectionController.editingMode = false;
-    saveLastSelection(_selectionController.selection);
+    _dataController.saveLastSelection(_selectionController.selection);
     notifyListeners();
     if (updateHistory && _historyController.currentUpdateHistory != null) {
       saveAndCalculate(updateHistory: true);
@@ -765,6 +480,7 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
       _selectionController.editingMode &&
       _selectionController.primarySelectedCell.x == row &&
       _selectionController.primarySelectedCell.y == col;
+
   Future<void> copySelectionToClipboard() async {
     int startRow = _selectionController.primarySelectedCell.x;
     int endRow = _selectionController.primarySelectedCell.x;
@@ -786,7 +502,7 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     if (!selectedCellsTable.every((row) => row.every((cell) => !cell))) {
       await Clipboard.setData(
         ClipboardData(
-          text: getContent(
+          text: _dataController.getContent(
             _selectionController.primarySelectedCell.x,
             _selectionController.primarySelectedCell.y,
           ),
@@ -800,7 +516,7 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     for (int r = startRow; r <= endRow; r++) {
       List<String> rowData = [];
       for (int c = startCol; c <= endCol; c++) {
-        rowData.add(getContent(r, c));
+        rowData.add(_dataController.getContent(r, c));
       }
       buffer.write(rowData.join('\t')); // Tab separated for Excel compat
       if (r < endRow) buffer.write('\n');
@@ -902,7 +618,7 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
       _selectionController.selectedCells.clear();
     }
     _selectionController.primarySelectedCell = Point(row, col);
-    saveLastSelection(_selectionController.selection);
+    _dataController.saveLastSelection(_selectionController.selection);
 
     // Update Mentions
     if (updateMentions) {
@@ -931,10 +647,10 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     if (node.message == null) {
       if (node.instruction == SpreadsheetConstants.selectionMsg) {
         node.message =
-            '${_getNames.getColumnLabel(colId)}$rowId selected: ${getContent(rowId, colId)}';
+            '${GetNames.getColumnLabel(colId)}$rowId selected: ${_dataController.getContent(rowId, colId)}';
       } else {
         node.message =
-            '${_getNames.getColumnLabel(colId)}$rowId: ${getContent(rowId, colId)}';
+            '${GetNames.getColumnLabel(colId)}$rowId: ${_dataController.getContent(rowId, colId)}';
       }
     }
 
@@ -1145,6 +861,142 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     }
   }
 
+
+
+  void populateRowNode(NodeStruct node, bool populateChildren) {
+    int rowId = node.rowId!;
+    node.message ??= GetNames.getRowName(
+      _treeController.nameIndexes,
+      _treeController.tableToAtt,
+      rowId,
+    );
+    if (!populateChildren) return;
+
+    List<NodeStruct> rowCells = [];
+    for (int colId = 0; colId < _dataController.colCount; colId++) {
+      if (_dataController.sheetContent.table[rowId][colId].isNotEmpty) {
+        rowCells.add(
+          NodeStruct(
+            cell: Cell(rowId: rowId, colId: colId),
+          ),
+        );
+      }
+    }
+
+    if (rowCells.isNotEmpty) {
+      node.newChildren!.add(
+        NodeStruct(message: 'Content of the row', newChildren: rowCells),
+      );
+    }
+    populateAttributeNode(node, true);
+  }
+
+  void populateColumnNode(NodeStruct node, bool populateChildren) {
+    node.message ??= node.colId == -1
+        ? "Rows"
+        : 'Column ${GetNames.getColumnLabel(node.colId!)} "${_dataController.sheetContent.table[0][node.colId!]}"';
+    if (!populateChildren) return;
+
+    if (_treeController.colToAtt.containsKey(node.colId)) {
+      for (final attCol in _treeController.colToAtt[node.colId]!) {
+        node.newChildren!.add(NodeStruct(att: attCol));
+      }
+    }
+  }
+
+  void setColumnType(int col, ColumnType type, {bool updateHistory = true}) {
+    ColumnType previousType = GetNames.getColumnType(_dataController.sheetContent, col);
+    if (updateHistory) {
+      _historyController.recordColumnTypeChange(col, previousType, type);
+    }
+    if (type == ColumnType.attributes) {
+      if (col < _dataController.colCount) {
+        if (GetNames.isSourceColumn(previousType)) {
+          _dataController.removeSourceColId(col);
+        }
+        _dataController.sheetContent.columnTypes[col] = type;
+        if (col == _dataController.sheetContent.columnTypes.length - 1) {
+          while (col > 0) {
+            col--;
+            if (_dataController.sheetContent.columnTypes[col] != ColumnType.attributes) {
+              break;
+            }
+          }
+          _dataController.sheetContent.columnTypes = _dataController.sheetContent.columnTypes.sublist(
+            0,
+            col + 1,
+          );
+        }
+      }
+    } else {
+      _dataController.increaseColumnCount(col);
+      _dataController.sheetContent.columnTypes[col] = type;
+      if (GetNames.isSourceColumn(type)) {
+        _dataController.addSourceColId(col);
+      }
+    }
+    notifyListeners();
+    saveAndCalculate(updateHistory: true);
+  }
+
+  void undo() {
+    final sheet = _dataController.sheet;
+    if (sheet.historyIndex < 0 || sheet.updateHistories.isEmpty) {
+      return;
+    }
+    final lastUpdate = sheet.updateHistories[sheet.historyIndex];
+    if (lastUpdate.key == UpdateHistory.updateCellContent) {
+      for (var cellUpdate in lastUpdate.updatedCells!) {
+        updateCell(
+          cellUpdate.cell.x,
+          cellUpdate.cell.y,
+          cellUpdate.previousValue,
+          historyNavigation: true,
+        );
+      }
+    } else if (lastUpdate.key == UpdateHistory.updateColumnType) {
+      for (var typeUpdate in lastUpdate.updatedColumnTypes!) {
+        setColumnType(
+          typeUpdate.colId!,
+          typeUpdate.previousColumnType!,
+          updateHistory: false,
+        );
+      }
+    }
+    sheet.historyIndex--;
+    notifyListeners();
+    saveAndCalculate();
+  }
+
+  void redo() {
+    final sheet = _dataController.sheet;
+    if (sheet.historyIndex + 1 == sheet.updateHistories.length) {
+      return;
+    }
+    final nextUpdate = sheet.updateHistories[sheet.historyIndex + 1];
+    if (nextUpdate.key == UpdateHistory.updateCellContent) {
+      for (var cellUpdate in nextUpdate.updatedCells!) {
+        updateCell(
+          cellUpdate.cell.x,
+          cellUpdate.cell.y,
+          cellUpdate.newValue,
+          historyNavigation: true,
+        );
+      }
+    } else if (nextUpdate.key == UpdateHistory.updateColumnType) {
+      for (var typeUpdate in nextUpdate.updatedColumnTypes!) {
+        setColumnType(
+          typeUpdate.colId!,
+          typeUpdate.newColumnType!,
+          updateHistory: false,
+        );
+      }
+    }
+    sheet.historyIndex++;
+    notifyListeners();
+    saveAndCalculate();
+  }
+
   void populateAttributeNode(NodeStruct node, bool populateChildren) {
     if (populateChildren) {
       if (_treeController.attToRefFromAttColToCol.containsKey(node.att)) {
@@ -1209,69 +1061,7 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
       node.defaultOnTap = false;
     }
   }
-
-  // Extracted selection logic to keep populateAttributeNode cleaner
-  void _handleSelectionLogic(NodeStruct node, List<Cell> cells) {
-    int found = -1;
-    for (int i = 0; i < cells.length; i++) {
-      final child = cells[i];
-      if (_selectionController.primarySelectedCell.x == child.rowId &&
-          _selectionController.primarySelectedCell.y == child.colId) {
-        found = i;
-        break;
-      }
-    }
-
-    int index = (found == -1) ? 0 : (found + 1) % cells.length;
-    setPrimarySelection(
-      cells[index].rowId,
-      cells[index].colId,
-      false,
-      false,
-    );
-  }
-
-  void populateRowNode(NodeStruct node, bool populateChildren) {
-    int rowId = node.rowId!;
-    node.message ??= _getNames.getRowName(
-      _treeController.nameIndexes,
-      _treeController.tableToAtt,
-      rowId,
-    );
-    if (!populateChildren) return;
-
-    List<NodeStruct> rowCells = [];
-    for (int colId = 0; colId < _dataController.colCount; colId++) {
-      if (_dataController.sheetContent.table[rowId][colId].isNotEmpty) {
-        rowCells.add(
-          NodeStruct(
-            cell: Cell(rowId: rowId, colId: colId),
-          ),
-        );
-      }
-    }
-
-    if (rowCells.isNotEmpty) {
-      node.newChildren!.add(
-        NodeStruct(message: 'Content of the row', newChildren: rowCells),
-      );
-    }
-    populateAttributeNode(node, true);
-  }
-
-  void populateColumnNode(NodeStruct node, bool populateChildren) {
-    node.message ??= node.colId == -1
-        ? "Rows"
-        : 'Column ${_getNames.getColumnLabel(node.colId!)} "${_dataController.sheetContent.table[0][node.colId!]}"';
-    if (!populateChildren) return;
-
-    if (_treeController.colToAtt.containsKey(node.colId)) {
-      for (final attCol in _treeController.colToAtt[node.colId]!) {
-        node.newChildren!.add(NodeStruct(att: attCol));
-      }
-    }
-  }
-
+  
   void populateTree(List<NodeStruct> roots) {
     if (_treeController.noResult) return;
 
@@ -1307,7 +1097,7 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
       }
     }
   }
-
+  
   /// Call this when the Controller finishes a calculation.
   /// The Manager takes ownership of updating the tree state.
   void onAnalysisComplete(
@@ -1332,6 +1122,14 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
       result.distPairsRoot,
     ]);
   }
+  
+  void applyDefaultColumnSequence() {
+    setColumnType(1, ColumnType.dependencies);
+    setColumnType(2, ColumnType.dependencies);
+    setColumnType(3, ColumnType.dependencies);
+    setColumnType(7, ColumnType.urls);
+    setColumnType(8, ColumnType.dependencies);
+  }
 
   // Method to allow Controller to toggle expansion
   void toggleNodeExpansion(NodeStruct node, bool isExpanded) {
@@ -1342,7 +1140,27 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     populateTree([node]);
     notifyListeners();
   }
+  
+  // Extracted selection logic to keep populateAttributeNode cleaner
+  void _handleSelectionLogic(NodeStruct node, List<Cell> cells) {
+    int found = -1;
+    for (int i = 0; i < cells.length; i++) {
+      final child = cells[i];
+      if (_selectionController.primarySelectedCell.x == child.rowId &&
+          _selectionController.primarySelectedCell.y == child.colId) {
+        found = i;
+        break;
+      }
+    }
 
+    int index = (found == -1) ? 0 : (found + 1) % cells.length;
+    setPrimarySelection(
+      cells[index].rowId,
+      cells[index].colId,
+      false,
+      false,
+    );
+  }
   Future<void> pasteSelection() async {
     final data = await Clipboard.getData('text/plain');
     if (data?.text == null) return;
@@ -1367,34 +1185,6 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
         update.value,
         keepPrevious: true,
       );
-    }
-    notifyListeners();
-    saveAndCalculate(updateHistory: true);
-  }
-
-  void setColumnType(int col, ColumnType type, {bool updateHistory = true}) {
-    if (updateHistory) {
-      _historyController.recordColumnTypeChange(col, _getNames.getColumnType(_dataController.sheetContent, col), type);
-    }
-    if (type == ColumnType.attributes) {
-      if (col < _dataController.colCount) {
-        _dataController.sheetContent.columnTypes[col] = type;
-        if (col == _dataController.sheetContent.columnTypes.length - 1) {
-          while (col > 0) {
-            col--;
-            if (_dataController.sheetContent.columnTypes[col] != ColumnType.attributes) {
-              break;
-            }
-          }
-          _dataController.sheetContent.columnTypes = _dataController.sheetContent.columnTypes.sublist(
-            0,
-            col + 1,
-          );
-        }
-      }
-    } else {
-      increaseColumnCount(col);
-      _dataController.sheetContent.columnTypes[col] = type;
     }
     notifyListeners();
     saveAndCalculate(updateHistory: true);

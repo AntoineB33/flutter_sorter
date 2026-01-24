@@ -62,5 +62,4 @@ class HistoryController {
   void discardCurrent() {
     currentUpdateHistory = null;
   }
-
 }

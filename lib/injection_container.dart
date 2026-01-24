@@ -18,11 +18,16 @@ final sl = GetIt.instance; // sl = Service Locator
 Future<void> init() async {
   final GetSheetDataUseCase getDataUseCase = GetSheetDataUseCase(SheetRepositoryImpl(FileSheetLocalDataSource()));
   final SaveSheetDataUseCase saveSheetDataUseCase = SaveSheetDataUseCase(SheetRepositoryImpl(FileSheetLocalDataSource()));
+  sl.registerLazySingleton(() => SheetDataController(
+    getDataUseCase: getDataUseCase,
+    saveSheetDataUseCase: saveSheetDataUseCase,
+  ));
+  sl.registerFactory(() => SelectionController());
   sl.registerFactory(() => GridHistorySelectionDataTreeContrManager(
     GridController(),
     HistoryController(),
-    SelectionController(),
-    SheetDataController(getDataUseCase: getDataUseCase, saveSheetDataUseCase: saveSheetDataUseCase),
+    sl<SelectionController>(),
+    sl<SheetDataController>(),
     TreeController(),
     SpreadsheetStreamController(),
   ));

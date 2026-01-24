@@ -86,6 +86,7 @@ class SpreadsheetDataCell extends StatefulWidget {
   final int row;
   final int col;
   final String content;
+  final bool isValid;
   final bool isPrimarySelectedCell;
   final bool isSelected;
   final bool isEditing;
@@ -101,6 +102,7 @@ class SpreadsheetDataCell extends StatefulWidget {
     required this.row,
     required this.col,
     required this.content,
+    required this.isValid,
     required this.isPrimarySelectedCell,
     required this.isSelected,
     required this.isEditing,
@@ -184,13 +186,13 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
     // -------------------------------------------------------------------------
     // STYLE NORMALIZATION
     // -------------------------------------------------------------------------
-    
+
     // We also use the StrutStyle in both View and Edit modes to ensure
     // vertical metrics (line height) are identical.
     final StrutStyle effectiveStrut = StrutStyle(
       fontSize: PageConstants.cellStyle.fontSize,
-      height: PageConstants.cellStyle.height, 
-      leading: 0, 
+      height: PageConstants.cellStyle.height,
+      leading: 0,
       forceStrutHeight: true,
     );
 
@@ -215,7 +217,10 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
         ),
         child: CallbackShortcuts(
           bindings: {
-            const SingleActivator(LogicalKeyboardKey.enter, control: true): () =>
+            const SingleActivator(
+              LogicalKeyboardKey.enter,
+              control: true,
+            ): () =>
                 _insertNewline(),
             const SingleActivator(LogicalKeyboardKey.enter, shift: true): () =>
                 widget.onSave(_textController.text, moveUp: true),
@@ -225,7 +230,9 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
                 widget.onEscape(widget.previousContent),
           },
           child: ScrollConfiguration(
-            behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+            behavior: ScrollConfiguration.of(
+              context,
+            ).copyWith(scrollbars: false),
             child: TextField(
               controller: _textController,
               focusNode: _editFocusNode,
@@ -234,12 +241,12 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
               minLines: 1,
               onChanged: widget.onChanged,
               textAlignVertical: TextAlignVertical.top,
-              
+
               // FIX: Use unified StrutStyle
-              strutStyle: effectiveStrut, 
+              strutStyle: effectiveStrut,
               // FIX: Use unified TextStyle with fixed letterSpacing
-              style: PageConstants.cellStyle,      
-              
+              style: PageConstants.cellStyle,
+
               decoration: const InputDecoration(
                 contentPadding: EdgeInsets.zero,
                 isDense: true,
@@ -270,7 +277,9 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
         decoration: BoxDecoration(
           color: widget.isPrimarySelectedCell
               ? Colors.blue.shade300
-              : (widget.isSelected ? Colors.blue.shade100 : Colors.white),
+              : (widget.isSelected
+                    ? Colors.blue.shade100
+                    : (widget.isValid ? Colors.red.shade100 : Colors.white)),
           border: Border(
             right: BorderSide(color: Colors.grey.shade200),
             bottom: BorderSide(color: Colors.grey.shade200),
@@ -279,7 +288,7 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
         child: Text(
           widget.content,
           // FIX: Use the exact same StrutStyle as the TextField
-          strutStyle: effectiveStrut, 
+          strutStyle: effectiveStrut,
           // FIX: Use the exact same Style as the TextField
           style: PageConstants.cellStyle,
         ),

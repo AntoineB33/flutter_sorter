@@ -22,7 +22,6 @@ class Cols {
 class CalculateUsecase {
   final Either<TransferableTypedData, List<List<String>>> dataPackage;
   final AnalysisResult result = AnalysisResult.empty();
-  final GetNames getNames = GetNames();
 
   SheetContent? _sheetContent;
   List<List<String>> get table => _sheetContent!.table;
@@ -211,11 +210,11 @@ class CalculateUsecase {
                   ).map((k) => NodeStruct(cells: k)).toList();
                   for (int nodeId = 0; nodeId < newPath.length; nodeId++) {
                     newPath[nodeId].message =
-                        "${getNames.getAttName(result.nameIndexes, result.tableToAtt, newPath[nodeId].att!)} points to row ${getNames.getAttName(result.nameIndexes, result.tableToAtt, nodeId < newPath.length - 1 ? newPath[nodeId + 1].att! : att)}";
+                        "${GetNames.getAttName(result.nameIndexes, result.tableToAtt, newPath[nodeId].att!)} points to row ${GetNames.getAttName(result.nameIndexes, result.tableToAtt, nodeId < newPath.length - 1 ? newPath[nodeId + 1].att! : att)}";
                   }
                   redundantRef.add(
                     NodeStruct(
-                      message: "${getNames.getAttName(result.nameIndexes, result.tableToAtt, att)} already pointed",
+                      message: "${GetNames.getAttName(result.nameIndexes, result.tableToAtt, att)} already pointed",
                       cells: rowsToCol[childRowId]!.colIndexes
                           .where(
                             (colId) =>
@@ -432,7 +431,7 @@ class CalculateUsecase {
           errorRoot.newChildren!.add(
             NodeStruct(
               message:
-                  "Column ${getNames.getColumnLabel(attColId)} is not an attribute column",
+                  "Column ${GetNames.getColumnLabel(attColId)} is not an attribute column",
               cell: Cell(rowId: rowId, colId: colId),
             ),
           );
@@ -447,7 +446,7 @@ class CalculateUsecase {
           warningRoot.newChildren!.add(
             NodeStruct(
               message:
-                  "Attribute column ${getNames.getColumnLabel(attColId)} differs from current column ${getNames.getColumnLabel(colId)}",
+                  "Attribute column ${GetNames.getColumnLabel(attColId)} differs from current column ${GetNames.getColumnLabel(colId)}",
               cell: Cell(rowId: rowId, colId: colId),
             ),
           );
@@ -758,7 +757,7 @@ class CalculateUsecase {
               final d = entry.value;
               return NodeStruct(
                 message:
-                    "($d) ${getNames.getRowName(result.nameIndexes, result.tableToAtt, rowsList[idx])} - ${getNames.getRowName(result.nameIndexes, result.tableToAtt, rowsList[idx + 1])}",
+                    "($d) ${GetNames.getRowName(result.nameIndexes, result.tableToAtt, rowsList[idx])} - ${GetNames.getRowName(result.nameIndexes, result.tableToAtt, rowsList[idx + 1])}",
                 newChildren: [
                   NodeStruct(att: Attribute.row(rowsList[idx])),
                   NodeStruct(att: Attribute.row(rowsList[idx + 1])),
@@ -1407,7 +1406,7 @@ class CalculateUsecase {
     nameIndexes.clear();
     pathIndexes.clear();
     for (int index = 0; index < colCount; index++) {
-      final role = getNames.getColumnType(_sheetContent!, index);
+      final role = GetNames.getColumnType(_sheetContent!, index);
       if (role == ColumnType.names) {
         nameIndexes.add(index);
       } else if (role == ColumnType.filePath) {

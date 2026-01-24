@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/spreadsheet_scroll_request.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_history_selection_data_tree_contr_manager.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
@@ -56,9 +58,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   void _handleScrollRequest(SpreadsheetScrollRequest request) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final controller = context.read<GridHistorySelectionDataTreeContrManager>();
+      final dataController = context.read<SheetDataController>();
       // Case A: Scroll to specific Cell (Your existing logic)
       if (request.cell != null) {
-        _revealCell(request.cell!);
+        _revealCell(request.cell!, controller, dataController);
         return;
       }
 
@@ -101,16 +105,14 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 
   /// Calculates offsets and scrolls to ensure the target cell is visible.
-  void _revealCell(math.Point<int> cell) {
+  void _revealCell(math.Point<int> cell, GridHistorySelectionDataTreeContrManager controller, SheetDataController dataController) {
     if (!_verticalController.hasClients || !_horizontalController.hasClients) {
       return;
     }
 
-    final controller = context.read<GridHistorySelectionDataTreeContrManager>();
-
     // Vertical Logic
-    final double targetTop = controller.getTargetTop(cell.x);
-    final double targetBottom = controller.getTargetTop(cell.x + 1);
+    final double targetTop = dataController.getTargetTop(cell.x);
+    final double targetBottom = dataController.getTargetTop(cell.x + 1);
     final double currentVerticalOffset = _verticalController.offset;
     final double verticalViewport =
         _verticalController.position.viewportDimension -
@@ -135,8 +137,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     }
 
     // Horizontal Logic
-    final double targetLeft = controller.getTargetLeft(cell.y);
-    final double targetRight = controller.getTargetLeft(cell.y + 1);
+    final double targetLeft = dataController.getTargetLeft(cell.y);
+    final double targetRight = dataController.getTargetLeft(cell.y + 1);
     final double currentHorizontalOffset = _horizontalController.offset;
     final double horizontalViewport =
         _horizontalController.position.viewportDimension -
@@ -165,6 +167,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   Widget build(BuildContext context) {
     final controller = context
         .watch<GridHistorySelectionDataTreeContrManager>();
+    final dataController = context.watch<SheetDataController>();
+    final selectionController = context.watch<SelectionController>();
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -226,9 +230,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                   rowCount: controller.tableViewRows + 1,
                   columnCount: controller.tableViewCols + 1,
                   columnBuilder: (index) => _buildColumnSpan(index),
-                  rowBuilder: (index) => _buildRowSpan(index),
+                  rowBuilder: (index) => _buildRowSpan(index, controller, dataController),
                   cellBuilder: (context, vicinity) =>
-                      _buildCellDispatcher(context, vicinity, controller),
+                      _buildCellDispatcher(context, vicinity, controller, dataController, selectionController),
                 ),
               ),
             ),
@@ -239,7 +243,17 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 
   bool _handleScrollNotification(ScrollNotification notification, GridHistorySelectionDataTreeContrManager controller) {
-    controller.scroll(notification);
+    if (notification is ScrollUpdateNotification) {
+      if (notification.metrics.axis == Axis.vertical) {
+        controller.updateRowColCount(visibleHeight: notification.metrics.pixels +
+              notification.metrics.viewportDimension -
+              controller.sheet.colHeaderHeight);
+      } else if (notification.metrics.axis == Axis.horizontal) {
+        controller.updateRowColCount(visibleWidth: notification.metrics.pixels +
+              notification.metrics.viewportDimension -
+              controller.sheet.rowHeaderWidth);
+      }
+    }
     return false;
   }
   
@@ -356,19 +370,16 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 
   TableSpan _buildColumnSpan(int index) {
-    final GetDefaultSizes getDefaultCellSize = GetDefaultSizes();
     return TableSpan(
       extent: FixedTableSpanExtent(
         index == 0
             ? PageConstants.defaultRowHeaderWidth
-            : getDefaultCellSize.getDefaultCellWidth(),
+            : GetDefaultSizes.getDefaultCellWidth(),
       ),
     );
   }
 
-  TableSpan _buildRowSpan(int index) {
-    final controller = context.read<GridHistorySelectionDataTreeContrManager>();
-
+  TableSpan _buildRowSpan(int index, GridHistorySelectionDataTreeContrManager controller, SheetDataController dataController) {
     if (index == 0) {
       return TableSpan(
         extent: FixedTableSpanExtent(controller.sheet.colHeaderHeight),
@@ -376,7 +387,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     }
 
     final int dataRowIndex = index - 1;
-    final double rowHeight = controller.getRowHeight(dataRowIndex);
+    final double rowHeight = dataController.getRowHeight(dataRowIndex);
 
     return TableSpan(extent: FixedTableSpanExtent(rowHeight));
   }
@@ -385,8 +396,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     BuildContext context,
     TableVicinity vicinity,
     GridHistorySelectionDataTreeContrManager controller,
+    SheetDataController dataController,
+    SelectionController selectionController,
   ) {
-    final GetNames getNames = GetNames();
     final int r = vicinity.row;
     final int c = vicinity.column;
 
@@ -395,9 +407,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     }
     if (r == 0) {
       return SpreadsheetColumnHeader(
-        label: getNames.getColumnLabel(c - 1),
+        label: GetNames.getColumnLabel(c - 1),
         colIndex: c - 1,
-        backgroundColor: getNames
+        backgroundColor: GetNames
             .getColumnType(controller.sheetContent, c - 1)
             .color,
         onContextMenu: (details) => _showColumnContextMenu(
@@ -420,9 +432,10 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     return SpreadsheetDataCell(
       row: dataRow,
       col: dataCol,
-      content: controller.getContent(dataRow, dataCol),
-      isPrimarySelectedCell: controller.isPrimarySelectedCell(dataRow, dataCol),
-      isSelected: controller.isCellSelected(dataRow, dataCol),
+      content: dataController.getContent(dataRow, dataCol),
+      isValid: dataController.isRowValid(dataRow),
+      isPrimarySelectedCell: selectionController.isPrimarySelectedCell(dataRow, dataCol),
+      isSelected: selectionController.isCellSelected(dataRow, dataCol),
       isEditing: isEditingCell,
       previousContent: controller.previousContent,
       onTap: () {
@@ -471,8 +484,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     Offset position,
     int col,
   ) async {
-    final GetNames getNames = GetNames();
-    final currentType = getNames.getColumnType(controller.sheetContent, col);
+    final currentType = GetNames.getColumnType(controller.sheetContent, col);
     final List<PopupMenuEntry<dynamic>> items = ColumnType.values
         .map<PopupMenuEntry<dynamic>>((entry) {
           return CheckedPopupMenuItem<ColumnType>(
@@ -530,6 +542,13 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     Offset position,
     int col,
   ) async {
+    final List<PopupMenuEntry<String>> items = [];
+    if (col > 0) {
+      items.add(const PopupMenuItem(value: 'change_type', child: Text('Change Type ▶')));
+    }
+    if (items.isEmpty) {
+      return; // No items to show
+    }
     final result = await showMenu<String>(
       context: context,
       position: RelativeRect.fromLTRB(
@@ -538,9 +557,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         position.dx,
         position.dy,
       ),
-      items: [
-        const PopupMenuItem(value: 'change_type', child: Text('Change Type ▶')),
-      ],
+      items: items,
     );
 
     if (!context.mounted) return;
