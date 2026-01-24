@@ -35,14 +35,23 @@ class _SideMenuState extends State<SideMenu> {
 
   void _handleScroll(PointerEvent event) {
     if (event is PointerScrollEvent) {
-      final isCtrlPressed = HardwareKeyboard.instance.isLogicalKeyPressed(LogicalKeyboardKey.controlLeft) ||
-          HardwareKeyboard.instance.isLogicalKeyPressed(LogicalKeyboardKey.controlRight);
+      final isCtrlPressed =
+          HardwareKeyboard.instance.isLogicalKeyPressed(
+            LogicalKeyboardKey.controlLeft,
+          ) ||
+          HardwareKeyboard.instance.isLogicalKeyPressed(
+            LogicalKeyboardKey.controlRight,
+          );
 
       if (isCtrlPressed) {
-        final double newOffset = _horizontalController.offset + event.scrollDelta.dy;
+        final double newOffset =
+            _horizontalController.offset + event.scrollDelta.dy;
         if (_horizontalController.hasClients) {
           _horizontalController.jumpTo(
-            newOffset.clamp(0.0, _horizontalController.position.maxScrollExtent),
+            newOffset.clamp(
+              0.0,
+              _horizontalController.position.maxScrollExtent,
+            ),
           );
         }
       }
@@ -107,12 +116,30 @@ class _SideMenuState extends State<SideMenu> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            AnalysisTreeNode(node: spreadsheetController.errorRoot, controller: spreadsheetController),
-                            AnalysisTreeNode(node: spreadsheetController.warningRoot, controller: spreadsheetController),
-                            AnalysisTreeNode(node: spreadsheetController.mentionsRoot, controller: spreadsheetController),
-                            AnalysisTreeNode(node: spreadsheetController.searchRoot, controller: spreadsheetController),
-                            AnalysisTreeNode(node: spreadsheetController.categoriesRoot, controller: spreadsheetController),
-                            AnalysisTreeNode(node: spreadsheetController.distPairsRoot, controller: spreadsheetController),
+                            AnalysisTreeNode(
+                              node: spreadsheetController.errorRoot,
+                              gHSDTManager: spreadsheetController,
+                            ),
+                            AnalysisTreeNode(
+                              node: spreadsheetController.warningRoot,
+                              gHSDTManager: spreadsheetController,
+                            ),
+                            AnalysisTreeNode(
+                              node: spreadsheetController.mentionsRoot,
+                              gHSDTManager: spreadsheetController,
+                            ),
+                            AnalysisTreeNode(
+                              node: spreadsheetController.searchRoot,
+                              gHSDTManager: spreadsheetController,
+                            ),
+                            AnalysisTreeNode(
+                              node: spreadsheetController.categoriesRoot,
+                              gHSDTManager: spreadsheetController,
+                            ),
+                            AnalysisTreeNode(
+                              node: spreadsheetController.distPairsRoot,
+                              gHSDTManager: spreadsheetController,
+                            ),
                           ],
                         ),
                       ),
@@ -127,7 +154,9 @@ class _SideMenuState extends State<SideMenu> {
     );
   }
 
-  Widget _buildSheetAutocomplete(GridHistorySelectionDataTreeContrManager spreadsheetController) {
+  Widget _buildSheetAutocomplete(
+    GridHistorySelectionDataTreeContrManager spreadsheetController,
+  ) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Autocomplete<String>(
@@ -169,7 +198,9 @@ class _SideMenuState extends State<SideMenu> {
                       bool showDivider = false;
                       if (index > 0 && !isMatch) {
                         final prevOption = options.elementAt(index - 1);
-                        final prevWasMatch = prevOption.toLowerCase().contains(query);
+                        final prevWasMatch = prevOption.toLowerCase().contains(
+                          query,
+                        );
                         if (prevWasMatch) showDivider = true;
                       }
                       return Column(
@@ -180,13 +211,17 @@ class _SideMenuState extends State<SideMenu> {
                             Container(
                               width: double.infinity,
                               color: Colors.grey[200],
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 4,
+                              ),
                               child: const Text(
                                 "Other Sheets",
                                 style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.grey,
-                                    fontWeight: FontWeight.bold),
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ],
@@ -205,23 +240,24 @@ class _SideMenuState extends State<SideMenu> {
           onSelected: (String selection) {
             spreadsheetController.loadSheetByName(selection);
           },
-          fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
-            if (textController.text != _textEditingController.text) {
-              textController.text = _textEditingController.text;
-            }
-            return TextField(
-              controller: textController,
-              focusNode: focusNode,
-              decoration: const InputDecoration(
-                labelText: 'Select or Create Sheet',
-                border: OutlineInputBorder(),
-                suffixIcon: Icon(Icons.table_chart),
-              ),
-              onSubmitted: (String value) {
-                spreadsheetController.loadSheetByName(value.trim());
+          fieldViewBuilder:
+              (context, textController, focusNode, onFieldSubmitted) {
+                if (textController.text != _textEditingController.text) {
+                  textController.text = _textEditingController.text;
+                }
+                return TextField(
+                  controller: textController,
+                  focusNode: focusNode,
+                  decoration: const InputDecoration(
+                    labelText: 'Select or Create Sheet',
+                    border: OutlineInputBorder(),
+                    suffixIcon: Icon(Icons.table_chart),
+                  ),
+                  onSubmitted: (String value) {
+                    spreadsheetController.loadSheetByName(value.trim());
+                  },
+                );
               },
-            );
-          },
         );
       },
     );

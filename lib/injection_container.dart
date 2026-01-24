@@ -12,6 +12,7 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/sp
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_history_selection_data_tree_contr_manager.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/history_selection_data_tree_contr_manager.dart';
 
 final sl = GetIt.instance; // sl = Service Locator
 
@@ -20,12 +21,18 @@ Future<void> init() async {
   final SaveSheetDataUseCase saveSheetDataUseCase = SaveSheetDataUseCase(SheetRepositoryImpl(FileSheetLocalDataSource()));
   sl.registerLazySingleton(() => SheetDataController(
     getDataUseCase: getDataUseCase,
-    saveSheetDataUseCase: saveSheetDataUseCase,
+    saveSheetDataUseCase: saveSheetDataUseCase, 
   ));
   sl.registerFactory(() => SelectionController());
   sl.registerFactory(() => GridHistorySelectionDataTreeContrManager(
     GridController(),
     HistoryController(),
+    sl<SelectionController>(),
+    sl<SheetDataController>(),
+    TreeController(),
+    SpreadsheetStreamController(),
+  ));
+  sl.registerFactory(() => HistorySelectionDataTreeContrManager(
     sl<SelectionController>(),
     sl<SheetDataController>(),
     TreeController(),

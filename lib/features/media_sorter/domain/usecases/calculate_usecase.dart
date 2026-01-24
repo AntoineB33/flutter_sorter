@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:isolate';
 import 'package:flutter/foundation.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_message.dart';
 import 'dart:collection';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
@@ -67,8 +68,12 @@ class CalculateUsecase {
   int get colCount => rowCount > 0 ? _sheetContent!.table[0].length : 0;
 
   final List<ColumnType> columnTypes0;
+  final Set<int> sourceColIndices;
 
-  CalculateUsecase(this.dataPackage, this.columnTypes0);
+  CalculateUsecase(IsolateMessage message)
+      : dataPackage = message.table,
+        columnTypes0 = message.columnTypes,
+        sourceColIndices = message.sourceColIndices;
 
   AnalysisResult run() {
     _decodeData(dataPackage);
@@ -481,11 +486,8 @@ class CalculateUsecase {
 
     isMedium = List<bool>.filled(rowCount, false);
     for (int rowId = 1; rowId < rowCount; rowId++) {
-      for (int colId = 0; colId < colCount; colId++) {
-        if (columnTypes[colId] == ColumnType.filePath ||
-            columnTypes[colId] == ColumnType.urls) {
-          isMedium[rowId] = isMedium[rowId] || table[rowId][colId].isNotEmpty;
-        }
+      for (int colId in sourceColIndices) {
+        isMedium[rowId] = isMedium[rowId] || table[rowId][colId].isNotEmpty;
       }
     }
 

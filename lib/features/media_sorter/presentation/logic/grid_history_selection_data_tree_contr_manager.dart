@@ -233,99 +233,6 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     }
   }
 
-  /// Commits the `currentUpdateHistory` to the Sheet's permanent history stack.
-  void commit() {
-    final sheet = _dataController.sheet;
-    if (sheet.historyIndex < sheet.updateHistories.length - 1) {
-      sheet.updateHistories = sheet.updateHistories.sublist(
-        0,
-        sheet.historyIndex + 1,
-      );
-    }
-    sheet.updateHistories.add(_historyController.currentUpdateHistory!);
-    sheet.historyIndex++;
-    if (sheet.historyIndex == SpreadsheetConstants.historyMaxLength) {
-      sheet.updateHistories.removeAt(0);
-      sheet.historyIndex--;
-    }
-    _historyController.discardCurrent();
-  }
-
-  void keepOnlyPrim() {
-    _selectionController.selectedCells.clear();
-    _dataController.saveLastSelection(_selectionController.selection);
-    notifyListeners();
-  }
-
-  void selectAll() {
-    _selectionController.selectedCells.clear();
-    for (int r = 0; r < _dataController.rowCount; r++) {
-      for (int c = 0; c < _dataController.colCount; c++) {
-        _selectionController.selectedCells.add(Point(r, c));
-      }
-    }
-    setPrimarySelection(0, 0, true, true);
-  }
-
-  Future<void> init() async {
-    await _saveSheetDataUseCase.clearAllData();
-    await _saveSheetDataUseCase.initialize();
-    try {
-      _dataController.sheetName = await _getDataUseCase.getLastOpenedSheetName();
-    } catch (e) {
-      await _saveSheetDataUseCase.saveLastOpenedSheetName(_dataController.sheetName);
-    }
-    try {
-      _selectionController.selection = await _getDataUseCase.getLastSelection();
-    } catch (e) {
-      _selectionController.selection = SelectionModel.empty();
-      await _dataController.saveLastSelection(_selectionController.selection);
-    }
-
-    _dataController.availableSheets = await _getDataUseCase.getAllSheetNames();
-    if (!CheckValidStrings.isValidSheetName(_dataController.sheetName)) {
-      if (_dataController.availableSheets.isNotEmpty) {
-        _dataController.sheetName = _dataController.availableSheets[0];
-      } else {
-        _dataController.sheetName = SpreadsheetConstants.defaultSheetName;
-      }
-      _saveSheetDataUseCase.saveLastOpenedSheetName(_dataController.sheetName);
-    }
-    bool availableSheetsChanged = false;
-    if (!_dataController.availableSheets.contains(_dataController.sheetName)) {
-      _dataController.availableSheets.add(_dataController.sheetName);
-      availableSheetsChanged = true;
-      debugPrint(
-        "Last opened sheet ${_dataController.sheetName} not found in available sheets, adding it.",
-      );
-    }
-    _dataController.lastSelectedCells = await _getDataUseCase.getAllLastSelected();
-    bool changed = false;
-    for (var name in _dataController.availableSheets) {
-      if (!_dataController.lastSelectedCells.containsKey(name)) {
-        _dataController.lastSelectedCells[name] = SelectionModel.empty();
-        changed = true;
-        debugPrint(
-          "No last selected cell for sheet $name, defaulting to (0,0)",
-        );
-      }
-    }
-    if (changed) {
-      _saveSheetDataUseCase.saveAllLastSelected(_dataController.lastSelectedCells);
-    }
-    for (var name in _dataController.lastSelectedCells.keys) {
-      if (!_dataController.availableSheets.contains(name)) {
-        _dataController.availableSheets.add(name);
-        availableSheetsChanged = true;
-      }
-    }
-    if (availableSheetsChanged) {
-      _saveSheetDataUseCase.saveAllSheetNames(_dataController.availableSheets);
-    }
-
-    loadSheetByName(_dataController.sheetName, init: true, );
-  }
-
   Future<void> loadSheetByName(String name, {bool init = false, SelectionModel? lastSelection}) async {
     if (!init) {
       _dataController.lastSelectedCells[_dataController.sheetName] = _selectionController.selection;
@@ -381,165 +288,25 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     saveAndCalculate(save: false);
     notifyListeners();
   }
-
-  void updateCell(
-    int row,
-    int col,
-    String newValue, {
-    bool onChange = false,
-    bool historyNavigation = false,
-    bool keepPrevious = false,
-  }) {
-    String prevValue = '';
-    if (newValue.isNotEmpty || (row < _dataController.rowCount && col < _dataController.colCount)) {
-      if (row >= _dataController.rowCount) {
-        final needed = row + 1 - _dataController.rowCount;
-        _dataController.sheetContent.table.addAll(
-          List.generate(
-            needed,
-            (_) => List.filled(_dataController.colCount, '', growable: true),
-          ),
-        );
-      }
-      _dataController.increaseColumnCount(col);
-      prevValue = _dataController.sheetContent.table[row][col];
-      _dataController.sheetContent.table[row][col] = newValue;
-    }
-
-    // Clean up empty rows/cols at the end
-    if (newValue.isEmpty &&
-        row < _dataController.rowCount &&
-        col < _dataController.colCount &&
-        (row == _dataController.rowCount - 1 || col == _dataController.colCount - 1) &&
-        prevValue.isNotEmpty) {
-      _dataController.decreaseRowCount(row);
-      if (col == _dataController.colCount - 1) {
-        int colId = col;
-        bool canRemove = true;
-        while (canRemove && colId >= 0) {
-          for (var r = 0; r < _dataController.rowCount; r++) {
-            if (_dataController.sheetContent.table[r][colId].isNotEmpty) {
-              canRemove = false;
-              break;
-            }
-          }
-          if (canRemove) {
-            for (var r = 0; r < _dataController.rowCount; r++) {
-              _dataController.sheetContent.table[r].removeLast();
-            }
-            colId--;
-          }
-        }
-      }
-    }
-    if (!historyNavigation) {
-      _historyController.recordCellChange(
-        row,
-        col,
-        prevValue,
-        newValue,
-        onChange,
-        keepPrevious,
+  /// Commits the `currentUpdateHistory` to the Sheet's permanent history stack.
+  void commit() {
+    final sheet = _dataController.sheet;
+    if (sheet.historyIndex < sheet.updateHistories.length - 1) {
+      sheet.updateHistories = sheet.updateHistories.sublist(
+        0,
+        sheet.historyIndex + 1,
       );
     }
-
-    // Delegate layout calculation to GridManager
-    adjustRowHeightAfterUpdate(row, col, newValue, prevValue);
-  }
-
-  void startEditing({String? initialInput}) {
-    _selectionController.previousContent = _dataController.getContent(_selectionController.primarySelectedCell.x, _selectionController.primarySelectedCell.y);
-    onChanged(initialInput!);
-    _selectionController.editingMode = true;
-    _dataController.saveLastSelection(_selectionController.selection);
-    notifyListeners();
-  }
-
-  void onChanged(String newValue) {
-    updateCell(
-      _selectionController.primarySelectedCell.x,
-      _selectionController.primarySelectedCell.y,
-      newValue,
-      onChange: true,
-    );
-    notifyListeners();
-    saveAndCalculate();
-  }
-
-  void stopEditing(bool updateHistory) {
-    _selectionController.editingMode = false;
-    _dataController.saveLastSelection(_selectionController.selection);
-    notifyListeners();
-    if (updateHistory && _historyController.currentUpdateHistory != null) {
-      saveAndCalculate(updateHistory: true);
+    sheet.updateHistories.add(_historyController.currentUpdateHistory!);
+    sheet.historyIndex++;
+    if (sheet.historyIndex == SpreadsheetConstants.historyMaxLength) {
+      sheet.updateHistories.removeAt(0);
+      sheet.historyIndex--;
     }
     _historyController.discardCurrent();
   }
 
-  bool isCellEditing(int row, int col) =>
-      _selectionController.editingMode &&
-      _selectionController.primarySelectedCell.x == row &&
-      _selectionController.primarySelectedCell.y == col;
-
-  Future<void> copySelectionToClipboard() async {
-    int startRow = _selectionController.primarySelectedCell.x;
-    int endRow = _selectionController.primarySelectedCell.x;
-    int startCol = _selectionController.primarySelectedCell.y;
-    int endCol = _selectionController.primarySelectedCell.y;
-    for (Point<int> cell in _selectionController.selectedCells) {
-      if (cell.x < startRow) startRow = cell.x;
-      if (cell.y < startCol) startCol = cell.y;
-      if (cell.x > endRow) endRow = cell.x;
-      if (cell.y > endCol) endCol = cell.y;
-    }
-    List<List<bool>> selectedCellsTable = List.generate(
-      endRow - startRow + 1,
-      (_) => List.generate(endCol - startCol + 1, (_) => false),
-    );
-    for (Point<int> cell in _selectionController.selectedCells) {
-      selectedCellsTable[cell.x - startRow][cell.y - startCol] = true;
-    }
-    if (!selectedCellsTable.every((row) => row.every((cell) => !cell))) {
-      await Clipboard.setData(
-        ClipboardData(
-          text: _dataController.getContent(
-            _selectionController.primarySelectedCell.x,
-            _selectionController.primarySelectedCell.y,
-          ),
-        ),
-      );
-      return;
-    }
-
-    StringBuffer buffer = StringBuffer();
-
-    for (int r = startRow; r <= endRow; r++) {
-      List<String> rowData = [];
-      for (int c = startCol; c <= endCol; c++) {
-        rowData.add(_dataController.getContent(r, c));
-      }
-      buffer.write(rowData.join('\t')); // Tab separated for Excel compat
-      if (r < endRow) buffer.write('\n');
-    }
-
-    final text = buffer.toString();
-    await Clipboard.setData(ClipboardData(text: text));
-  }
-
-  void delete() {
-    for (Point<int> cell in _selectionController.selectedCells) {
-      updateCell(cell.x, cell.y, '', keepPrevious: true);
-    }
-    updateCell(
-      _selectionController.primarySelectedCell.x,
-      _selectionController.primarySelectedCell.y,
-      '',
-      keepPrevious: true,
-    );
-    notifyListeners();
-    saveAndCalculate(updateHistory: true);
-  }
-
+  
   void saveAndCalculate({bool save = true, bool updateHistory = false}) {
     if (save) {
       if (updateHistory) {
@@ -550,9 +317,7 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     _dataController.calculateExecutor.execute(
       () async {
         AnalysisResult result = await calculationService.runCalculation(
-          _dataController.sheetContent.table,
-          _dataController.sheetContent.columnTypes,
-        );
+          _dataController.sheetContent);
 
         int nVal = result.instrTable.length;
         if (result.errorRoot.newChildren!.isNotEmpty || nVal == 0) {
@@ -606,7 +371,66 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
       },
     );
   }
+  /// Call this when the Controller finishes a calculation.
+  /// The Manager takes ownership of updating the tree state.
+  void onAnalysisComplete(
+    AnalysisResult result,
+    Point<int> primarySelectedCell,
+  ) {
+    _treeController.lastAnalysis = result;
 
+    // Reset specific roots
+    _treeController.mentionsRootChildren = null;
+    _treeController.mentionsRootRowId = primarySelectedCell.x;
+    _treeController.mentionsRootColId = primarySelectedCell.y;
+    _treeController.searchRootChildren = null;
+
+    // Populate the full tree using the new result
+    populateTree([
+      result.errorRoot,
+      result.warningRoot,
+      _treeController.mentionsRoot,
+      _treeController.searchRoot,
+      result.categoriesRoot,
+      result.distPairsRoot,
+    ]);
+  }
+  void populateTree(List<NodeStruct> roots) {
+    if (_treeController.noResult) return;
+
+    for (final root in roots) {
+      var stack = [root];
+      while (stack.isNotEmpty) {
+        var node = stack.removeLast();
+        populateNode(node);
+        if (node.isExpanded) {
+          for (int i = 0; i < node.children.length; i++) {
+            var obj = node.children[i];
+            if (!obj.isExpanded) {
+              break;
+            }
+            for (int j = 0; j < node.newChildren!.length; j++) {
+              var newObj = node.newChildren![j];
+              if (!newObj.isExpanded && obj == newObj) {
+                newObj.isExpanded = true;
+                break;
+              }
+            }
+          }
+          for (final child in node.children) {
+            child.isExpanded = child.startOpen || child.isExpanded;
+          }
+          if (node.isExpanded) {
+            for (final child in node.newChildren!) {
+              stack.add(child);
+            }
+          }
+        }
+        node.children = node.newChildren!;
+      }
+    }
+  }
+  
   void setPrimarySelection(
     int row,
     int col,
@@ -633,6 +457,16 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
       _streamController.triggerScrollTo(row, col);
     }
     notifyListeners();
+  }
+
+  void selectAll() {
+    _selectionController.selectedCells.clear();
+    for (int r = 0; r < _dataController.rowCount; r++) {
+      for (int c = 0; c < _dataController.colCount; c++) {
+        _selectionController.selectedCells.add(Point(r, c));
+      }
+    }
+    setPrimarySelection(0, 0, true, true);
   }
 
   void populateCellNode(NodeStruct node, bool populateChildren) {
@@ -687,6 +521,19 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
 
     for (Attribute att in _treeController.tableToAtt[rowId][colId]) {
       node.newChildren!.add(NodeStruct(att: att));
+    }
+  }
+
+  void populateColumnNode(NodeStruct node, bool populateChildren) {
+    node.message ??= node.colId == -1
+        ? "Rows"
+        : 'Column ${GetNames.getColumnLabel(node.colId!)} "${_dataController.sheetContent.table[0][node.colId!]}"';
+    if (!populateChildren) return;
+
+    if (_treeController.colToAtt.containsKey(node.colId)) {
+      for (final attCol in _treeController.colToAtt[node.colId]!) {
+        node.newChildren!.add(NodeStruct(att: attCol));
+      }
     }
   }
 
@@ -861,8 +708,102 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     }
   }
 
+  void populateAttributeNode(NodeStruct node, bool populateChildren) {
+    if (populateChildren) {
+      if (_treeController.attToRefFromAttColToCol.containsKey(node.att)) {
+        node.newChildren!.add(
+          NodeStruct(
+            instruction: SpreadsheetConstants.refFromAttColMsg,
+            att: node.att,
+          ),
+        );
+      } else {
+        node.newChildren!.add(
+          NodeStruct(message: 'No references from attribute columns found'),
+        );
+      }
+      if (_treeController.attToRefFromDepColToCol.containsKey(node.att)) {
+        node.newChildren!.add(
+          NodeStruct(
+            instruction: SpreadsheetConstants.refFromDepColMsg,
+            att: node.att,
+          ),
+        );
+      } else {
+        node.newChildren!.add(
+          NodeStruct(message: 'No references from dependence columns found'),
+        );
+      }
+    }
 
+    node.message ??= node.name;
 
+    if (node.defaultOnTap) {
+      node.onTap = (n) {
+        if (node.rowId != null) {
+          setPrimarySelection(node.rowId!, 0, false, false);
+          return;
+        }
+
+        List<Cell> cells = [];
+        List<MapEntry> entries = [];
+
+        if (node.colId != SpreadsheetConstants.notUsedCst) {
+          entries = _treeController.attToRefFromAttColToCol[node.att]!.entries
+              .toList();
+        }
+
+        if (node.instruction !=
+            SpreadsheetConstants.moveToUniqueMentionSprawlCol) {
+          entries.addAll(
+            _treeController.attToRefFromDepColToCol[node.att]!.entries.toList(),
+          );
+        }
+
+        for (final MapEntry(key: rowId, value: colIds) in entries) {
+          for (final colId in colIds) {
+            cells.add(Cell(rowId: rowId, colId: colId));
+          }
+        }
+
+        // ... (Selection logic remains the same, invoking _controller.setPrimarySelection)
+        _handleSelectionLogic(node, cells);
+      };
+      node.defaultOnTap = false;
+    }
+  }
+  
+  // Method to allow Controller to toggle expansion
+  void toggleNodeExpansion(NodeStruct node, bool isExpanded) {
+    node.isExpanded = isExpanded;
+    for (NodeStruct child in node.newChildren ?? []) {
+      child.isExpanded = false;
+    }
+    populateTree([node]);
+    notifyListeners();
+  }
+  
+  // Extracted selection logic to keep populateAttributeNode cleaner
+  void _handleSelectionLogic(NodeStruct node, List<Cell> cells) {
+    int found = -1;
+    for (int i = 0; i < cells.length; i++) {
+      final child = cells[i];
+      if (_selectionController.primarySelectedCell.x == child.rowId &&
+          _selectionController.primarySelectedCell.y == child.colId) {
+        found = i;
+        break;
+      }
+    }
+
+    int index = (found == -1) ? 0 : (found + 1) % cells.length;
+    setPrimarySelection(
+      cells[index].rowId,
+      cells[index].colId,
+      false,
+      false,
+    );
+  }
+  
   void populateRowNode(NodeStruct node, bool populateChildren) {
     int rowId = node.rowId!;
     node.message ??= GetNames.getRowName(
@@ -891,17 +832,49 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     populateAttributeNode(node, true);
   }
 
-  void populateColumnNode(NodeStruct node, bool populateChildren) {
-    node.message ??= node.colId == -1
-        ? "Rows"
-        : 'Column ${GetNames.getColumnLabel(node.colId!)} "${_dataController.sheetContent.table[0][node.colId!]}"';
-    if (!populateChildren) return;
+  
 
-    if (_treeController.colToAtt.containsKey(node.colId)) {
-      for (final attCol in _treeController.colToAtt[node.colId]!) {
-        node.newChildren!.add(NodeStruct(att: attCol));
-      }
+  void onChanged(String newValue) {
+    updateCell(
+      _selectionController.primarySelectedCell.x,
+      _selectionController.primarySelectedCell.y,
+      newValue,
+      onChange: true,
+    );
+    notifyListeners();
+    saveAndCalculate();
+  }
+
+  void stopEditing(bool updateHistory) {
+    _selectionController.editingMode = false;
+    _dataController.saveLastSelection(_selectionController.selection);
+    notifyListeners();
+    if (updateHistory && _historyController.currentUpdateHistory != null) {
+      saveAndCalculate(updateHistory: true);
     }
+    _historyController.discardCurrent();
+  }
+
+  void startEditing({String? initialInput}) {
+    _selectionController.previousContent = _dataController.getContent(_selectionController.primarySelectedCell.x, _selectionController.primarySelectedCell.y);
+    onChanged(initialInput!);
+    _selectionController.editingMode = true;
+    _dataController.saveLastSelection(_selectionController.selection);
+    notifyListeners();
+  }
+
+  void delete() {
+    for (Point<int> cell in _selectionController.selectedCells) {
+      updateCell(cell.x, cell.y, '', keepPrevious: true);
+    }
+    updateCell(
+      _selectionController.primarySelectedCell.x,
+      _selectionController.primarySelectedCell.y,
+      '',
+      keepPrevious: true,
+    );
+    notifyListeners();
+    saveAndCalculate(updateHistory: true);
   }
 
   void setColumnType(int col, ColumnType type, {bool updateHistory = true}) {
@@ -997,169 +970,12 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     saveAndCalculate();
   }
 
-  void populateAttributeNode(NodeStruct node, bool populateChildren) {
-    if (populateChildren) {
-      if (_treeController.attToRefFromAttColToCol.containsKey(node.att)) {
-        node.newChildren!.add(
-          NodeStruct(
-            instruction: SpreadsheetConstants.refFromAttColMsg,
-            att: node.att,
-          ),
-        );
-      } else {
-        node.newChildren!.add(
-          NodeStruct(message: 'No references from attribute columns found'),
-        );
-      }
-      if (_treeController.attToRefFromDepColToCol.containsKey(node.att)) {
-        node.newChildren!.add(
-          NodeStruct(
-            instruction: SpreadsheetConstants.refFromDepColMsg,
-            att: node.att,
-          ),
-        );
-      } else {
-        node.newChildren!.add(
-          NodeStruct(message: 'No references from dependence columns found'),
-        );
-      }
-    }
-
-    node.message ??= node.name;
-
-    if (node.defaultOnTap) {
-      node.onTap = (n) {
-        if (node.rowId != null) {
-          setPrimarySelection(node.rowId!, 0, false, false);
-          return;
-        }
-
-        List<Cell> cells = [];
-        List<MapEntry> entries = [];
-
-        if (node.colId != SpreadsheetConstants.notUsedCst) {
-          entries = _treeController.attToRefFromAttColToCol[node.att]!.entries
-              .toList();
-        }
-
-        if (node.instruction !=
-            SpreadsheetConstants.moveToUniqueMentionSprawlCol) {
-          entries.addAll(
-            _treeController.attToRefFromDepColToCol[node.att]!.entries.toList(),
-          );
-        }
-
-        for (final MapEntry(key: rowId, value: colIds) in entries) {
-          for (final colId in colIds) {
-            cells.add(Cell(rowId: rowId, colId: colId));
-          }
-        }
-
-        // ... (Selection logic remains the same, invoking _controller.setPrimarySelection)
-        _handleSelectionLogic(node, cells);
-      };
-      node.defaultOnTap = false;
-    }
-  }
-  
-  void populateTree(List<NodeStruct> roots) {
-    if (_treeController.noResult) return;
-
-    for (final root in roots) {
-      var stack = [root];
-      while (stack.isNotEmpty) {
-        var node = stack.removeLast();
-        populateNode(node);
-        if (node.isExpanded) {
-          for (int i = 0; i < node.children.length; i++) {
-            var obj = node.children[i];
-            if (!obj.isExpanded) {
-              break;
-            }
-            for (int j = 0; j < node.newChildren!.length; j++) {
-              var newObj = node.newChildren![j];
-              if (!newObj.isExpanded && obj == newObj) {
-                newObj.isExpanded = true;
-                break;
-              }
-            }
-          }
-          for (final child in node.children) {
-            child.isExpanded = child.startOpen || child.isExpanded;
-          }
-          if (node.isExpanded) {
-            for (final child in node.newChildren!) {
-              stack.add(child);
-            }
-          }
-        }
-        node.children = node.newChildren!;
-      }
-    }
-  }
-  
-  /// Call this when the Controller finishes a calculation.
-  /// The Manager takes ownership of updating the tree state.
-  void onAnalysisComplete(
-    AnalysisResult result,
-    Point<int> primarySelectedCell,
-  ) {
-    _treeController.lastAnalysis = result;
-
-    // Reset specific roots
-    _treeController.mentionsRootChildren = null;
-    _treeController.mentionsRootRowId = primarySelectedCell.x;
-    _treeController.mentionsRootColId = primarySelectedCell.y;
-    _treeController.searchRootChildren = null;
-
-    // Populate the full tree using the new result
-    populateTree([
-      result.errorRoot,
-      result.warningRoot,
-      _treeController.mentionsRoot,
-      _treeController.searchRoot,
-      result.categoriesRoot,
-      result.distPairsRoot,
-    ]);
-  }
-  
   void applyDefaultColumnSequence() {
     setColumnType(1, ColumnType.dependencies);
     setColumnType(2, ColumnType.dependencies);
     setColumnType(3, ColumnType.dependencies);
     setColumnType(7, ColumnType.urls);
     setColumnType(8, ColumnType.dependencies);
-  }
-
-  // Method to allow Controller to toggle expansion
-  void toggleNodeExpansion(NodeStruct node, bool isExpanded) {
-    node.isExpanded = isExpanded;
-    for (NodeStruct child in node.newChildren ?? []) {
-      child.isExpanded = false;
-    }
-    populateTree([node]);
-    notifyListeners();
-  }
-  
-  // Extracted selection logic to keep populateAttributeNode cleaner
-  void _handleSelectionLogic(NodeStruct node, List<Cell> cells) {
-    int found = -1;
-    for (int i = 0; i < cells.length; i++) {
-      final child = cells[i];
-      if (_selectionController.primarySelectedCell.x == child.rowId &&
-          _selectionController.primarySelectedCell.y == child.colId) {
-        found = i;
-        break;
-      }
-    }
-
-    int index = (found == -1) ? 0 : (found + 1) % cells.length;
-    setPrimarySelection(
-      cells[index].rowId,
-      cells[index].colId,
-      false,
-      false,
-    );
   }
   Future<void> pasteSelection() async {
     final data = await Clipboard.getData('text/plain');
@@ -1189,4 +1005,130 @@ class GridHistorySelectionDataTreeContrManager extends ChangeNotifier {
     notifyListeners();
     saveAndCalculate(updateHistory: true);
   }
+
+
+  void updateCell(
+    int row,
+    int col,
+    String newValue, {
+    bool onChange = false,
+    bool historyNavigation = false,
+    bool keepPrevious = false,
+  }) {
+    String prevValue = '';
+    if (newValue.isNotEmpty || (row < _dataController.rowCount && col < _dataController.colCount)) {
+      if (row >= _dataController.rowCount) {
+        final needed = row + 1 - _dataController.rowCount;
+        _dataController.sheetContent.table.addAll(
+          List.generate(
+            needed,
+            (_) => List.filled(_dataController.colCount, '', growable: true),
+          ),
+        );
+      }
+      _dataController.increaseColumnCount(col);
+      prevValue = _dataController.sheetContent.table[row][col];
+      _dataController.sheetContent.table[row][col] = newValue;
+    }
+
+    // Clean up empty rows/cols at the end
+    if (newValue.isEmpty &&
+        row < _dataController.rowCount &&
+        col < _dataController.colCount &&
+        (row == _dataController.rowCount - 1 || col == _dataController.colCount - 1) &&
+        prevValue.isNotEmpty) {
+      _dataController.decreaseRowCount(row);
+      if (col == _dataController.colCount - 1) {
+        int colId = col;
+        bool canRemove = true;
+        while (canRemove && colId >= 0) {
+          for (var r = 0; r < _dataController.rowCount; r++) {
+            if (_dataController.sheetContent.table[r][colId].isNotEmpty) {
+              canRemove = false;
+              break;
+            }
+          }
+          if (canRemove) {
+            for (var r = 0; r < _dataController.rowCount; r++) {
+              _dataController.sheetContent.table[r].removeLast();
+            }
+            colId--;
+          }
+        }
+      }
+    }
+    if (!historyNavigation) {
+      _historyController.recordCellChange(
+        row,
+        col,
+        prevValue,
+        newValue,
+        onChange,
+        keepPrevious,
+      );
+    }
+
+    // Delegate layout calculation to GridManager
+    adjustRowHeightAfterUpdate(row, col, newValue, prevValue);
+  }
+
+  Future<void> init() async {
+    await _saveSheetDataUseCase.clearAllData();
+    await _saveSheetDataUseCase.initialize();
+    try {
+      _dataController.sheetName = await _getDataUseCase.getLastOpenedSheetName();
+    } catch (e) {
+      await _saveSheetDataUseCase.saveLastOpenedSheetName(_dataController.sheetName);
+    }
+    try {
+      _selectionController.selection = await _getDataUseCase.getLastSelection();
+    } catch (e) {
+      _selectionController.selection = SelectionModel.empty();
+      await _dataController.saveLastSelection(_selectionController.selection);
+    }
+
+    _dataController.availableSheets = await _getDataUseCase.getAllSheetNames();
+    if (!CheckValidStrings.isValidSheetName(_dataController.sheetName)) {
+      if (_dataController.availableSheets.isNotEmpty) {
+        _dataController.sheetName = _dataController.availableSheets[0];
+      } else {
+        _dataController.sheetName = SpreadsheetConstants.defaultSheetName;
+      }
+      _saveSheetDataUseCase.saveLastOpenedSheetName(_dataController.sheetName);
+    }
+    bool availableSheetsChanged = false;
+    if (!_dataController.availableSheets.contains(_dataController.sheetName)) {
+      _dataController.availableSheets.add(_dataController.sheetName);
+      availableSheetsChanged = true;
+      debugPrint(
+        "Last opened sheet ${_dataController.sheetName} not found in available sheets, adding it.",
+      );
+    }
+    _dataController.lastSelectedCells = await _getDataUseCase.getAllLastSelected();
+    bool changed = false;
+    for (var name in _dataController.availableSheets) {
+      if (!_dataController.lastSelectedCells.containsKey(name)) {
+        _dataController.lastSelectedCells[name] = SelectionModel.empty();
+        changed = true;
+        debugPrint(
+          "No last selected cell for sheet $name, defaulting to (0,0)",
+        );
+      }
+    }
+    if (changed) {
+      _saveSheetDataUseCase.saveAllLastSelected(_dataController.lastSelectedCells);
+    }
+    for (var name in _dataController.lastSelectedCells.keys) {
+      if (!_dataController.availableSheets.contains(name)) {
+        _dataController.availableSheets.add(name);
+        availableSheetsChanged = true;
+      }
+    }
+    if (availableSheetsChanged) {
+      _saveSheetDataUseCase.saveAllSheetNames(_dataController.availableSheets);
+    }
+
+    loadSheetByName(_dataController.sheetName, init: true, );
+  }
+
 }

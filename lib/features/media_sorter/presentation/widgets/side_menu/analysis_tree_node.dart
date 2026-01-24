@@ -4,12 +4,12 @@ import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_his
 
 class AnalysisTreeNode extends StatelessWidget {
   final NodeStruct node;
-  final GridHistorySelectionDataTreeContrManager controller;
+  final GridHistorySelectionDataTreeContrManager gHSDTManager;
 
   const AnalysisTreeNode({
     super.key,
     required this.node,
-    required this.controller,
+    required this.gHSDTManager,
   });
 
   @override
@@ -47,11 +47,11 @@ class AnalysisTreeNode extends StatelessWidget {
                       color: Colors.grey[700],
                     ),
                     onPressed: () {
-                      controller.toggleNodeExpansion(node, !isExpanded);
+                      gHSDTManager.toggleNodeExpansion(node, !isExpanded);
                     },
                   ),
                 ),
-              
+
               InkWell(
                 onTap: () {
                   node.onTap(node);
@@ -59,7 +59,10 @@ class AnalysisTreeNode extends StatelessWidget {
                 },
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 4.0),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6.0,
+                    horizontal: 4.0,
+                  ),
                   child: Text(
                     node.message ?? node.instruction ?? '',
                     style: const TextStyle(
@@ -89,10 +92,12 @@ class AnalysisTreeNode extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: node.children
-                    .map((child) => AnalysisTreeNode(
-                          node: child,
-                          controller: controller,
-                        ))
+                    .map(
+                      (child) => AnalysisTreeNode(
+                        node: child,
+                        gHSDTManager: gHSDTManager,
+                      ),
+                    )
                     .toList(),
               ),
             ),

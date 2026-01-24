@@ -7,6 +7,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/spreadsheet
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_history_selection_data_tree_contr_manager.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/history_selection_data_tree_contr_manager.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
@@ -165,8 +166,10 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context
+    final gHSDTManager = context
         .watch<GridHistorySelectionDataTreeContrManager>();
+    final hSDTManager = context
+        .watch<HistorySelectionDataTreeContrManager>();
     final dataController = context.watch<SheetDataController>();
     final selectionController = context.watch<SelectionController>();
 
@@ -176,11 +179,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           _initialLayoutDone = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) {
-              controller.updateRowColCount(
+              gHSDTManager.updateRowColCount(
                 visibleHeight:
-                    constraints.maxHeight - controller.sheet.colHeaderHeight,
+                    constraints.maxHeight - gHSDTManager.sheet.colHeaderHeight,
                 visibleWidth:
-                    constraints.maxWidth - controller.sheet.rowHeaderWidth,
+                    constraints.maxWidth - gHSDTManager.sheet.rowHeaderWidth,
               );
             }
           });
@@ -190,7 +193,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           focusNode: _focusNode,
           autofocus: true,
           onKeyEvent: (node, event) {
-            return _handleKeyboard(context, event, controller);
+            return _handleKeyboard(context, event, gHSDTManager, hSDTManager);
           },
           // --------------------------------------------------------
           // SCROLLBAR CONFIGURATION
@@ -217,7 +220,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
               child: NotificationListener<ScrollNotification>(
                 onNotification: (notification) =>
-                    _handleScrollNotification(notification, controller),
+                    _handleScrollNotification(notification, gHSDTManager),
                 child: TableView.builder(
                   verticalDetails: ScrollableDetails.vertical(
                     controller: _verticalController,
@@ -225,14 +228,14 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                   horizontalDetails: ScrollableDetails.horizontal(
                     controller: _horizontalController,
                   ),
-                  pinnedRowCount: min(2, controller.tableViewRows + 1),
-                  pinnedColumnCount: min(2, controller.tableViewCols + 1),
-                  rowCount: controller.tableViewRows + 1,
-                  columnCount: controller.tableViewCols + 1,
+                  pinnedRowCount: min(2, gHSDTManager.tableViewRows + 1),
+                  pinnedColumnCount: min(2, gHSDTManager.tableViewCols + 1),
+                  rowCount: gHSDTManager.tableViewRows + 1,
+                  columnCount: gHSDTManager.tableViewCols + 1,
                   columnBuilder: (index) => _buildColumnSpan(index),
-                  rowBuilder: (index) => _buildRowSpan(index, controller, dataController),
+                  rowBuilder: (index) => _buildRowSpan(index, gHSDTManager, dataController),
                   cellBuilder: (context, vicinity) =>
-                      _buildCellDispatcher(context, vicinity, controller, dataController, selectionController),
+                      _buildCellDispatcher(context, vicinity, gHSDTManager, hSDTManager, dataController, selectionController),
                 ),
               ),
             ),
@@ -275,6 +278,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     BuildContext context,
     KeyEvent event,
     GridHistorySelectionDataTreeContrManager ctrl,
+    HistorySelectionDataTreeContrManager hSDTController
   ) {
     if (ctrl.editingMode) {
       return KeyEventResult.ignored;
@@ -332,7 +336,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     }
 
     if (isControl && keyLabel == 'c') {
-      ctrl.copySelectionToClipboard();
+      hSDTController.copySelectionToClipboard();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Selection copied'),
@@ -395,7 +399,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   Widget _buildCellDispatcher(
     BuildContext context,
     TableVicinity vicinity,
-    GridHistorySelectionDataTreeContrManager controller,
+    GridHistorySelectionDataTreeContrManager gHSDTManager,
+    HistorySelectionDataTreeContrManager hSDTManager,
     SheetDataController dataController,
     SelectionController selectionController,
   ) {
@@ -403,18 +408,18 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     final int c = vicinity.column;
 
     if (r == 0 && c == 0) {
-      return SpreadsheetSelectAllCorner(onTap: () => controller.selectAll());
+      return SpreadsheetSelectAllCorner(onTap: () => gHSDTManager.selectAll());
     }
     if (r == 0) {
       return SpreadsheetColumnHeader(
         label: GetNames.getColumnLabel(c - 1),
         colIndex: c - 1,
         backgroundColor: GetNames
-            .getColumnType(controller.sheetContent, c - 1)
+            .getColumnType(gHSDTManager.sheetContent, c - 1)
             .color,
         onContextMenu: (details) => _showColumnContextMenu(
           context,
-          controller,
+          gHSDTManager,
           details.globalPosition,
           c - 1,
         ),
@@ -427,7 +432,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     final int dataRow = r - 1;
     final int dataCol = c - 1;
 
-    final bool isEditingCell = controller.isCellEditing(dataRow, dataCol);
+    final bool isEditingCell = hSDTManager.isCellEditing(dataRow, dataCol);
 
     return SpreadsheetDataCell(
       row: dataRow,
@@ -437,42 +442,42 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       isPrimarySelectedCell: selectionController.isPrimarySelectedCell(dataRow, dataCol),
       isSelected: selectionController.isCellSelected(dataRow, dataCol),
       isEditing: isEditingCell,
-      previousContent: controller.previousContent,
+      previousContent: gHSDTManager.previousContent,
       onTap: () {
-        if (controller.primarySelectedCell.x != dataRow ||
-            controller.primarySelectedCell.y != dataCol) {
-          controller.stopEditing(true);
+        if (gHSDTManager.primarySelectedCell.x != dataRow ||
+            gHSDTManager.primarySelectedCell.y != dataCol) {
+          gHSDTManager.stopEditing(true);
         }
-        controller.setPrimarySelection(dataRow, dataCol, false, true);
+        gHSDTManager.setPrimarySelection(dataRow, dataCol, false, true);
         _focusNode.requestFocus();
       },
       onDoubleTap: () {
-        controller.startEditing();
+        gHSDTManager.startEditing();
       },
       onChanged: (newValue) {
-        controller.onChanged(newValue);
+        gHSDTManager.onChanged(newValue);
       },
       onSave: (newValue, {bool moveUp = false}) {
         if (moveUp) {
-          controller.setPrimarySelection(
+          gHSDTManager.setPrimarySelection(
             max(0, dataRow - 1),
             dataCol,
             false,
             true,
           );
         } else {
-          controller.setPrimarySelection(dataRow + 1, dataCol, false, true);
+          gHSDTManager.setPrimarySelection(dataRow + 1, dataCol, false, true);
         }
-        controller.stopEditing(true);
+        gHSDTManager.stopEditing(true);
         _focusNode.requestFocus();
       },
       onEscape: (String previousContent) {
-        controller.updateCell(
-          controller.primarySelectedCell.x,
-          controller.primarySelectedCell.y,
+        gHSDTManager.updateCell(
+          gHSDTManager.primarySelectedCell.x,
+          gHSDTManager.primarySelectedCell.y,
           previousContent,
         );
-        controller.stopEditing(false);
+        gHSDTManager.stopEditing(false);
         _focusNode.requestFocus();
       },
     );
@@ -480,11 +485,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   Future<void> _showTypeMenu(
     BuildContext context,
-    GridHistorySelectionDataTreeContrManager controller,
+    GridHistorySelectionDataTreeContrManager gHSDTManager,
     Offset position,
     int col,
   ) async {
-    final currentType = GetNames.getColumnType(controller.sheetContent, col);
+    final currentType = GetNames.getColumnType(gHSDTManager.sheetContent, col);
     final List<PopupMenuEntry<dynamic>> items = ColumnType.values
         .map<PopupMenuEntry<dynamic>>((entry) {
           return CheckedPopupMenuItem<ColumnType>(
@@ -527,18 +532,18 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
     if (result != null) {
       if (result is ColumnType) {
-        controller.setColumnType(col, result);
+        gHSDTManager.setColumnType(col, result);
       } else if (result == 'default_sequence') {
         // Call the method on your controller to reset the sequence
         // Ensure this method exists in your SpreadsheetController
-        controller.applyDefaultColumnSequence();
+        gHSDTManager.applyDefaultColumnSequence();
       }
     }
   }
 
   void _showColumnContextMenu(
     BuildContext context,
-    GridHistorySelectionDataTreeContrManager controller,
+    GridHistorySelectionDataTreeContrManager gHSDTManager,
     Offset position,
     int col,
   ) async {
@@ -563,7 +568,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     if (!context.mounted) return;
 
     if (result == 'change_type') {
-      await _showTypeMenu(context, controller, position, col);
+      await _showTypeMenu(context, gHSDTManager, position, col);
     } else if (result != null) {
       debugPrint("Action $result on column $col");
     }
