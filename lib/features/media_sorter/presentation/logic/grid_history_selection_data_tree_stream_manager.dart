@@ -1153,4 +1153,146 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
 
     loadSheetByName(_dataController.sheetName, init: true);
   }
+
+  KeyEventResult handleKeyboard(
+    BuildContext context,
+    KeyEvent event) {
+    if (editingMode) {
+      return KeyEventResult.ignored;
+    }
+
+    if (event is KeyUpEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    final keyLabel = event.logicalKey.keyLabel.toLowerCase();
+    final logicalKey = event.logicalKey;
+    final isControl =
+        HardwareKeyboard.instance.isControlPressed ||
+        HardwareKeyboard.instance.isMetaPressed;
+    final isAlt = HardwareKeyboard.instance.isAltPressed;
+
+    if (logicalKey == LogicalKeyboardKey.enter ||
+        logicalKey == LogicalKeyboardKey.numpadEnter) {
+      startEditing();
+      return KeyEventResult.handled;
+    }
+
+    if (logicalKey == LogicalKeyboardKey.arrowUp) {
+      setPrimarySelection(
+        max(primarySelectedCell.x - 1, 0),
+        primarySelectedCell.y,
+        false,
+        true,
+      );
+      return KeyEventResult.handled;
+    } else if (logicalKey == LogicalKeyboardKey.arrowDown) {
+      setPrimarySelection(
+        primarySelectedCell.x + 1,
+        primarySelectedCell.y,
+        false,
+        true,
+      );
+      return KeyEventResult.handled;
+    } else if (logicalKey == LogicalKeyboardKey.arrowLeft) {
+      setPrimarySelection(
+        primarySelectedCell.x,
+        max(0, primarySelectedCell.y - 1),
+        false,
+        true,
+      );
+      return KeyEventResult.handled;
+    } else if (logicalKey == LogicalKeyboardKey.arrowRight) {
+      setPrimarySelection(
+        primarySelectedCell.x,
+        primarySelectedCell.y + 1,
+        false,
+        true,
+      );
+      return KeyEventResult.handled;
+    }
+
+    if (isControl && keyLabel == 'c') {
+      copySelectionToClipboard();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selection copied'),
+          duration: Duration(milliseconds: 500),
+        ),
+      );
+      return KeyEventResult.handled;
+    } else if (isControl && keyLabel == 'v') {
+      pasteSelection();
+      return KeyEventResult.handled;
+    } else if (keyLabel == 'delete') {
+      delete();
+      return KeyEventResult.handled;
+    } else if (isControl && keyLabel == 'z') {
+      undo();
+      return KeyEventResult.handled;
+    } else if (isControl && keyLabel == 'y') {
+      redo();
+      return KeyEventResult.handled;
+    }
+
+    final bool isPrintable =
+        event.character != null &&
+        event.character!.isNotEmpty &&
+        !isControl &&
+        !isAlt &&
+        logicalKey.keyId > 32;
+
+    if (isPrintable) {
+      startEditing(initialInput: event.character);
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+  
+  Future<void> copySelectionToClipboard() async {
+    int startRow = _selectionController.primarySelectedCell.x;
+    int endRow = _selectionController.primarySelectedCell.x;
+    int startCol = _selectionController.primarySelectedCell.y;
+    int endCol = _selectionController.primarySelectedCell.y;
+    for (Point<int> cell in _selectionController.selectedCells) {
+      if (cell.x < startRow) startRow = cell.x;
+      if (cell.y < startCol) startCol = cell.y;
+      if (cell.x > endRow) endRow = cell.x;
+      if (cell.y > endCol) endCol = cell.y;
+    }
+    List<List<bool>> selectedCellsTable = List.generate(
+      endRow - startRow + 1,
+      (_) => List.generate(endCol - startCol + 1, (_) => false),
+    );
+    for (Point<int> cell in _selectionController.selectedCells) {
+      selectedCellsTable[cell.x - startRow][cell.y - startCol] = true;
+    }
+    if (!selectedCellsTable.every((row) => row.every((cell) => !cell))) {
+      await Clipboard.setData(
+        ClipboardData(
+          text: _dataController.getContent(
+            _selectionController.primarySelectedCell.x,
+            _selectionController.primarySelectedCell.y,
+          ),
+        ),
+      );
+      return;
+    }
+
+    StringBuffer buffer = StringBuffer();
+
+    for (int r = startRow; r <= endRow; r++) {
+      List<String> rowData = [];
+      for (int c = startCol; c <= endCol; c++) {
+        rowData.add(_dataController.getContent(r, c));
+      }
+      buffer.write(rowData.join('\t')); // Tab separated for Excel compat
+      if (r < endRow) buffer.write('\n');
+    }
+
+    final text = buffer.toString();
+    await Clipboard.setData(ClipboardData(text: text));
+  }
+
 }

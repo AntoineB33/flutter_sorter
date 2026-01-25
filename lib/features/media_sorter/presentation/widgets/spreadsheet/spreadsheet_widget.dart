@@ -1,13 +1,11 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/spreadsheet_scroll_request.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_history_selection_data_tree_stream_manager.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/history_selection_data_tree_contr_manager.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
@@ -174,7 +172,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   Widget build(BuildContext context) {
     final gHSDTManager = context
         .watch<GridHistorySelectionDataTreeStreamManager>();
-    final hSDTManager = context.watch<HistorySelectionDataTreeContrManager>();
     final dataController = context.watch<SheetDataController>();
     final selectionController = context.watch<SelectionController>();
 
@@ -198,7 +195,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           focusNode: _focusNode,
           autofocus: true,
           onKeyEvent: (node, event) {
-            return _handleKeyboard(context, event, gHSDTManager, hSDTManager);
+            return gHSDTManager.handleKeyboard(context, event);
           },
           // --------------------------------------------------------
           // SCROLLBAR CONFIGURATION
@@ -244,7 +241,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                     context,
                     vicinity,
                     gHSDTManager,
-                    hSDTManager,
                     dataController,
                     selectionController,
                   ),
@@ -295,105 +291,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   //   return false;
   // }
 
-  KeyEventResult _handleKeyboard(
-    BuildContext context,
-    KeyEvent event,
-    GridHistorySelectionDataTreeStreamManager ctrl,
-    HistorySelectionDataTreeContrManager hSDTController,
-  ) {
-    if (ctrl.editingMode) {
-      return KeyEventResult.ignored;
-    }
-
-    if (event is KeyUpEvent) {
-      return KeyEventResult.ignored;
-    }
-
-    final keyLabel = event.logicalKey.keyLabel.toLowerCase();
-    final logicalKey = event.logicalKey;
-    final isControl =
-        HardwareKeyboard.instance.isControlPressed ||
-        HardwareKeyboard.instance.isMetaPressed;
-    final isAlt = HardwareKeyboard.instance.isAltPressed;
-
-    if (logicalKey == LogicalKeyboardKey.enter ||
-        logicalKey == LogicalKeyboardKey.numpadEnter) {
-      ctrl.startEditing();
-      return KeyEventResult.handled;
-    }
-
-    if (logicalKey == LogicalKeyboardKey.arrowUp) {
-      ctrl.setPrimarySelection(
-        max(ctrl.primarySelectedCell.x - 1, 0),
-        ctrl.primarySelectedCell.y,
-        false,
-        true,
-      );
-      return KeyEventResult.handled;
-    } else if (logicalKey == LogicalKeyboardKey.arrowDown) {
-      ctrl.setPrimarySelection(
-        ctrl.primarySelectedCell.x + 1,
-        ctrl.primarySelectedCell.y,
-        false,
-        true,
-      );
-      return KeyEventResult.handled;
-    } else if (logicalKey == LogicalKeyboardKey.arrowLeft) {
-      ctrl.setPrimarySelection(
-        ctrl.primarySelectedCell.x,
-        max(0, ctrl.primarySelectedCell.y - 1),
-        false,
-        true,
-      );
-      return KeyEventResult.handled;
-    } else if (logicalKey == LogicalKeyboardKey.arrowRight) {
-      ctrl.setPrimarySelection(
-        ctrl.primarySelectedCell.x,
-        ctrl.primarySelectedCell.y + 1,
-        false,
-        true,
-      );
-      return KeyEventResult.handled;
-    }
-
-    if (isControl && keyLabel == 'c') {
-      hSDTController.copySelectionToClipboard();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Selection copied'),
-          duration: Duration(milliseconds: 500),
-        ),
-      );
-      return KeyEventResult.handled;
-    } else if (isControl && keyLabel == 'v') {
-      ctrl.pasteSelection();
-      return KeyEventResult.handled;
-    } else if (keyLabel == 'delete') {
-      ctrl.delete();
-      return KeyEventResult.handled;
-    } else if (isControl && keyLabel == 'z') {
-      ctrl.undo();
-      return KeyEventResult.handled;
-    } else if (isControl && keyLabel == 'y') {
-      ctrl.redo();
-      return KeyEventResult.handled;
-    }
-
-    final bool isPrintable =
-        event.character != null &&
-        event.character!.isNotEmpty &&
-        !isControl &&
-        !isAlt &&
-        logicalKey.keyId > 32;
-
-    if (isPrintable) {
-      ctrl.startEditing(initialInput: event.character);
-      return KeyEventResult.handled;
-    }
-
-    return KeyEventResult.ignored;
-  }
-
   TableSpan _buildColumnSpan(int index) {
     return TableSpan(
       extent: FixedTableSpanExtent(
@@ -425,7 +322,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     BuildContext context,
     TableVicinity vicinity,
     GridHistorySelectionDataTreeStreamManager gHSDTManager,
-    HistorySelectionDataTreeContrManager hSDTManager,
     SheetDataController dataController,
     SelectionController selectionController,
   ) {
