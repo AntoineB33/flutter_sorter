@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../shared/widgets/navigation_dropdown.dart';
+import 'package:trying_flutter/shared/widgets/navigation_dropdown.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});

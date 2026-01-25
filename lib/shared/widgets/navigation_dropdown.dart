@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/route_constants.dart';
-import '../../core/services/storage_service.dart';
+import 'package:trying_flutter/core/constants/route_constants.dart';
+import 'package:trying_flutter/core/services/storage_service.dart';
 
 class NavigationDropdown extends StatefulWidget implements PreferredSizeWidget {
   const NavigationDropdown({super.key});

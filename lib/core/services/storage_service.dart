@@ -1,5 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import '../constants/route_constants.dart';
+import 'package:trying_flutter/core/constants/route_constants.dart';
 
 class StorageService {
   // Save the current route

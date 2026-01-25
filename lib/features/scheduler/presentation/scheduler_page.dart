@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../../shared/widgets/navigation_dropdown.dart';
+import 'package:trying_flutter/shared/widgets/navigation_dropdown.dart';
 
 class EyesHealthPage extends StatefulWidget {
   const EyesHealthPage({super.key});
