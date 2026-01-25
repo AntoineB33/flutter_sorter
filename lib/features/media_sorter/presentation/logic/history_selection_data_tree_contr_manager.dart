@@ -1,54 +1,21 @@
 import 'dart:math';
 import 'package:flutter/services.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/spreadsheet_scroll_request.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:flutter/material.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_stream_controller.dart';
 
 class HistorySelectionDataTreeContrManager extends ChangeNotifier {
   // --- dependencies ---
   final SelectionController _selectionController;
   final SheetDataController _dataController;
-  final TreeController _treeController;
-  final SpreadsheetStreamController _streamController;
   
   // --- usecases ---
   final CalculationService calculationService = CalculationService();
 
-  // --- getters ---
-  String get sheetName => _dataController.sheetName;
-  SheetModel get sheet => _dataController.sheet;
-  SheetContent get sheetContent => _dataController.sheetContent;
-  List<String> get availableSheets => _dataController.availableSheets;
-  NodeStruct get errorRoot => _treeController.errorRoot;
-  NodeStruct get warningRoot => _treeController.warningRoot;
-  NodeStruct get mentionsRoot => _treeController.mentionsRoot;
-  NodeStruct get searchRoot => _treeController.searchRoot;
-  NodeStruct get categoriesRoot => _treeController.categoriesRoot;
-  NodeStruct get distPairsRoot => _treeController.distPairsRoot;
-  Stream<SpreadsheetScrollRequest> get scrollStream => _streamController.scrollStream;
-  bool get editingMode => _selectionController.editingMode;
-  int get tableViewRows => _selectionController.tableViewRows;
-  int get tableViewCols => _selectionController.tableViewCols;
-  Point<int> get primarySelectedCell => _selectionController.primarySelectedCell;
-  String get previousContent => _selectionController.selection.previousContent;
-
-  // --- setters ---
-  set sheetName(String value) {
-    _dataController.sheetName = value;
-  }
-
   HistorySelectionDataTreeContrManager(
     this._selectionController,
-    this._dataController,
-    this._treeController,
-    this._streamController,
+    this._dataController
   );
 
   void keepOnlyPrim() {
@@ -56,11 +23,6 @@ class HistorySelectionDataTreeContrManager extends ChangeNotifier {
     _dataController.saveLastSelection(_selectionController.selection);
     notifyListeners();
   }
-
-  bool isCellEditing(int row, int col) =>
-      _selectionController.editingMode &&
-      _selectionController.primarySelectedCell.x == row &&
-      _selectionController.primarySelectedCell.y == col;
 
   Future<void> copySelectionToClipboard() async {
     int startRow = _selectionController.primarySelectedCell.x;

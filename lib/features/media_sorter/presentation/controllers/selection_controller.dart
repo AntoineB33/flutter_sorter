@@ -43,4 +43,9 @@ class SelectionController extends ChangeNotifier {
     return row == primarySelectedCell.x &&
         col == primarySelectedCell.y;
   }
+
+  bool isCellEditing(int row, int col) =>
+      editingMode &&
+      primarySelectedCell.x == row &&
+      primarySelectedCell.y == col;
 }

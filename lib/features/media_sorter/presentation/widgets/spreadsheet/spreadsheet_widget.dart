@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/spreadsheet_scroll_request.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_history_selection_data_tree_contr_manager.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_history_selection_data_tree_stream_manager.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/history_selection_data_tree_contr_manager.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
@@ -48,7 +48,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 
   void _subscribeToScrollEvents() {
-    final controller = context.read<GridHistorySelectionDataTreeContrManager>();
+    final controller = context
+        .read<GridHistorySelectionDataTreeStreamManager>();
     // Prevent multiple subscriptions if dependencies change
     if (_scrollSubscription != null) return;
     // Listen to the new stream name and type
@@ -59,7 +60,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   void _handleScrollRequest(SpreadsheetScrollRequest request) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final controller = context.read<GridHistorySelectionDataTreeContrManager>();
+      final controller = context
+          .read<GridHistorySelectionDataTreeStreamManager>();
       final dataController = context.read<SheetDataController>();
       // Case A: Scroll to specific Cell (Your existing logic)
       if (request.cell != null) {
@@ -106,7 +108,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 
   /// Calculates offsets and scrolls to ensure the target cell is visible.
-  void _revealCell(math.Point<int> cell, GridHistorySelectionDataTreeContrManager controller, SheetDataController dataController) {
+  void _revealCell(
+    math.Point<int> cell,
+    GridHistorySelectionDataTreeStreamManager controller,
+    SheetDataController dataController,
+  ) {
     if (!_verticalController.hasClients || !_horizontalController.hasClients) {
       return;
     }
@@ -167,9 +173,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   @override
   Widget build(BuildContext context) {
     final gHSDTManager = context
-        .watch<GridHistorySelectionDataTreeContrManager>();
-    final hSDTManager = context
-        .watch<HistorySelectionDataTreeContrManager>();
+        .watch<GridHistorySelectionDataTreeStreamManager>();
+    final hSDTManager = context.watch<HistorySelectionDataTreeContrManager>();
     final dataController = context.watch<SheetDataController>();
     final selectionController = context.watch<SelectionController>();
 
@@ -233,9 +238,16 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                   rowCount: gHSDTManager.tableViewRows + 1,
                   columnCount: gHSDTManager.tableViewCols + 1,
                   columnBuilder: (index) => _buildColumnSpan(index),
-                  rowBuilder: (index) => _buildRowSpan(index, gHSDTManager, dataController),
-                  cellBuilder: (context, vicinity) =>
-                      _buildCellDispatcher(context, vicinity, gHSDTManager, hSDTManager, dataController, selectionController),
+                  rowBuilder: (index) =>
+                      _buildRowSpan(index, gHSDTManager, dataController),
+                  cellBuilder: (context, vicinity) => _buildCellDispatcher(
+                    context,
+                    vicinity,
+                    gHSDTManager,
+                    hSDTManager,
+                    dataController,
+                    selectionController,
+                  ),
                 ),
               ),
             ),
@@ -245,21 +257,30 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     );
   }
 
-  bool _handleScrollNotification(ScrollNotification notification, GridHistorySelectionDataTreeContrManager controller) {
+  bool _handleScrollNotification(
+    ScrollNotification notification,
+    GridHistorySelectionDataTreeStreamManager controller,
+  ) {
     if (notification is ScrollUpdateNotification) {
       if (notification.metrics.axis == Axis.vertical) {
-        controller.updateRowColCount(visibleHeight: notification.metrics.pixels +
+        controller.updateRowColCount(
+          visibleHeight:
+              notification.metrics.pixels +
               notification.metrics.viewportDimension -
-              controller.sheet.colHeaderHeight);
+              controller.sheet.colHeaderHeight,
+        );
       } else if (notification.metrics.axis == Axis.horizontal) {
-        controller.updateRowColCount(visibleWidth: notification.metrics.pixels +
+        controller.updateRowColCount(
+          visibleWidth:
+              notification.metrics.pixels +
               notification.metrics.viewportDimension -
-              controller.sheet.rowHeaderWidth);
+              controller.sheet.rowHeaderWidth,
+        );
       }
     }
     return false;
   }
-  
+
   // bool _handleScrollNotification(
   //   ScrollNotification notification,
   //   GridHistorySelectionDataTreeContrManager controller,
@@ -277,8 +298,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   KeyEventResult _handleKeyboard(
     BuildContext context,
     KeyEvent event,
-    GridHistorySelectionDataTreeContrManager ctrl,
-    HistorySelectionDataTreeContrManager hSDTController
+    GridHistorySelectionDataTreeStreamManager ctrl,
+    HistorySelectionDataTreeContrManager hSDTController,
   ) {
     if (ctrl.editingMode) {
       return KeyEventResult.ignored;
@@ -383,7 +404,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     );
   }
 
-  TableSpan _buildRowSpan(int index, GridHistorySelectionDataTreeContrManager controller, SheetDataController dataController) {
+  TableSpan _buildRowSpan(
+    int index,
+    GridHistorySelectionDataTreeStreamManager controller,
+    SheetDataController dataController,
+  ) {
     if (index == 0) {
       return TableSpan(
         extent: FixedTableSpanExtent(controller.sheet.colHeaderHeight),
@@ -399,7 +424,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   Widget _buildCellDispatcher(
     BuildContext context,
     TableVicinity vicinity,
-    GridHistorySelectionDataTreeContrManager gHSDTManager,
+    GridHistorySelectionDataTreeStreamManager gHSDTManager,
     HistorySelectionDataTreeContrManager hSDTManager,
     SheetDataController dataController,
     SelectionController selectionController,
@@ -414,9 +439,10 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return SpreadsheetColumnHeader(
         label: GetNames.getColumnLabel(c - 1),
         colIndex: c - 1,
-        backgroundColor: GetNames
-            .getColumnType(gHSDTManager.sheetContent, c - 1)
-            .color,
+        backgroundColor: GetNames.getColumnType(
+          gHSDTManager.sheetContent,
+          c - 1,
+        ).color,
         onContextMenu: (details) => _showColumnContextMenu(
           context,
           gHSDTManager,
@@ -432,14 +458,20 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     final int dataRow = r - 1;
     final int dataCol = c - 1;
 
-    final bool isEditingCell = hSDTManager.isCellEditing(dataRow, dataCol);
+    final bool isEditingCell = selectionController.isCellEditing(
+      dataRow,
+      dataCol,
+    );
 
     return SpreadsheetDataCell(
       row: dataRow,
       col: dataCol,
       content: dataController.getContent(dataRow, dataCol),
       isValid: dataController.isRowValid(dataRow),
-      isPrimarySelectedCell: selectionController.isPrimarySelectedCell(dataRow, dataCol),
+      isPrimarySelectedCell: selectionController.isPrimarySelectedCell(
+        dataRow,
+        dataCol,
+      ),
       isSelected: selectionController.isCellSelected(dataRow, dataCol),
       isEditing: isEditingCell,
       previousContent: gHSDTManager.previousContent,
@@ -485,7 +517,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   Future<void> _showTypeMenu(
     BuildContext context,
-    GridHistorySelectionDataTreeContrManager gHSDTManager,
+    GridHistorySelectionDataTreeStreamManager gHSDTManager,
     Offset position,
     int col,
   ) async {
@@ -543,13 +575,15 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   void _showColumnContextMenu(
     BuildContext context,
-    GridHistorySelectionDataTreeContrManager gHSDTManager,
+    GridHistorySelectionDataTreeStreamManager gHSDTManager,
     Offset position,
     int col,
   ) async {
     final List<PopupMenuEntry<String>> items = [];
     if (col > 0) {
-      items.add(const PopupMenuItem(value: 'change_type', child: Text('Change Type ▶')));
+      items.add(
+        const PopupMenuItem(value: 'change_type', child: Text('Change Type ▶')),
+      );
     }
     if (items.isEmpty) {
       return; // No items to show

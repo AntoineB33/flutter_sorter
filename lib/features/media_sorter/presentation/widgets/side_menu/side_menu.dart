@@ -2,7 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_history_selection_data_tree_contr_manager.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_history_selection_data_tree_stream_manager.dart';
 import 'analysis_tree_node.dart';
 
 class SideMenu extends StatefulWidget {
@@ -60,8 +60,8 @@ class _SideMenuState extends State<SideMenu> {
 
   @override
   Widget build(BuildContext context) {
-    final GridHistorySelectionDataTreeContrManager spreadsheetController =
-        Provider.of<GridHistorySelectionDataTreeContrManager>(context);
+    final GridHistorySelectionDataTreeStreamManager spreadsheetController =
+        Provider.of<GridHistorySelectionDataTreeStreamManager>(context);
 
     if (_textEditingController.text != spreadsheetController.sheetName) {
       _textEditingController.text = spreadsheetController.sheetName;
@@ -155,7 +155,7 @@ class _SideMenuState extends State<SideMenu> {
   }
 
   Widget _buildSheetAutocomplete(
-    GridHistorySelectionDataTreeContrManager spreadsheetController,
+    GridHistorySelectionDataTreeStreamManager spreadsheetController,
   ) {
     return LayoutBuilder(
       builder: (context, constraints) {

@@ -11,31 +11,39 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_stream_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_history_selection_data_tree_contr_manager.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_history_selection_data_tree_stream_manager.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/history_selection_data_tree_contr_manager.dart';
 
 final sl = GetIt.instance; // sl = Service Locator
 
 Future<void> init() async {
-  final GetSheetDataUseCase getDataUseCase = GetSheetDataUseCase(SheetRepositoryImpl(FileSheetLocalDataSource()));
-  final SaveSheetDataUseCase saveSheetDataUseCase = SaveSheetDataUseCase(SheetRepositoryImpl(FileSheetLocalDataSource()));
-  sl.registerLazySingleton(() => SheetDataController(
-    getDataUseCase: getDataUseCase,
-    saveSheetDataUseCase: saveSheetDataUseCase, 
-  ));
-  sl.registerFactory(() => SelectionController());
-  sl.registerFactory(() => GridHistorySelectionDataTreeContrManager(
-    GridController(),
-    HistoryController(),
-    sl<SelectionController>(),
-    sl<SheetDataController>(),
-    TreeController(),
-    SpreadsheetStreamController(),
-  ));
-  sl.registerFactory(() => HistorySelectionDataTreeContrManager(
-    sl<SelectionController>(),
-    sl<SheetDataController>(),
-    TreeController(),
-    SpreadsheetStreamController(),
-  ));
+  final GetSheetDataUseCase getDataUseCase = GetSheetDataUseCase(
+    SheetRepositoryImpl(FileSheetLocalDataSource()),
+  );
+  final SaveSheetDataUseCase saveSheetDataUseCase = SaveSheetDataUseCase(
+    SheetRepositoryImpl(FileSheetLocalDataSource()),
+  );
+  sl.registerLazySingleton(
+    () => SheetDataController(
+      getDataUseCase: getDataUseCase,
+      saveSheetDataUseCase: saveSheetDataUseCase,
+    ),
+  );
+  sl.registerLazySingleton(() => SelectionController());
+  sl.registerFactory(
+    () => GridHistorySelectionDataTreeStreamManager(
+      GridController(),
+      HistoryController(),
+      sl<SelectionController>(),
+      sl<SheetDataController>(),
+      TreeController(),
+      SpreadsheetStreamController(),
+    ),
+  );
+  sl.registerFactory(
+    () => HistorySelectionDataTreeContrManager(
+      sl<SelectionController>(),
+      sl<SheetDataController>(),
+    ),
+  );
 }
