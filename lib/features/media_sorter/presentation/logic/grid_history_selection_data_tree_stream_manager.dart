@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'package:flutter/services.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
@@ -11,7 +10,6 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update.dart
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/sorting_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
@@ -20,6 +18,8 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/se
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/delegates/spreadsheet_keyboard_delegate.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/services/sheet_loader_service.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/services/spreadsheet_clipboard_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/tree_structure_builder.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/check_valid_strings.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
@@ -28,7 +28,6 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart'; // Import AnalysisResult
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
-import 'package:trying_flutter/utils/logger.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_stream_controller.dart';
 
 class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
@@ -69,10 +68,11 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
   Point<int> get primarySelectedCell =>
       _selectionController.primarySelectedCell;
   String get previousContent => _selectionController.selection.previousContent;
-  
+
   // --- Helper ---
   late final TreeStructureBuilder _treeBuilder;
-  
+  late final SheetLoaderService _sheetLoaderService;
+
   // Delegates
   late final SpreadsheetClipboardService _clipboardService;
   late final SpreadsheetKeyboardDelegate _keyboardDelegate;
@@ -93,6 +93,17 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
       onCellSelected: (row, col, keep, updateMentions) {
         setPrimarySelection(row, col, keep, updateMentions);
       },
+    );
+    _sheetLoaderService = SheetLoaderService(
+      _gridController,
+      _selectionController,
+      _dataController,
+      _streamController,
+      _saveSheetDataUseCase,
+      _getDataUseCase,
+      notifyListeners,
+      updateRowColCount,
+      saveAndCalculate,
     );
     _clipboardService = SpreadsheetClipboardService(_dataController);
     _keyboardDelegate = SpreadsheetKeyboardDelegate(this);
@@ -164,7 +175,7 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
       },
     );
   }
-  
+
   void setPrimarySelection(
     int row,
     int col,
@@ -192,7 +203,6 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
     }
     notifyListeners();
   }
-
 
   /// Call this when the Controller finishes a calculation.
   /// The Manager takes ownership of updating the tree state.
@@ -251,72 +261,6 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
     if (save) {
       _dataController.saveLastSelection(_selectionController.selection);
     }
-  }
-
-
-  Future<void> loadSheetByName(
-    String name, {
-    bool init = false,
-    SelectionModel? lastSelection,
-  }) async {
-    if (!init) {
-      _dataController.lastSelectedCells[_dataController.sheetName] =
-          _selectionController.selection;
-      _saveSheetDataUseCase.saveAllLastSelected(
-        _dataController.lastSelectedCells,
-      );
-      _saveSheetDataUseCase.saveLastOpenedSheetName(name);
-    }
-
-    if (_dataController.availableSheets.contains(name)) {
-      if (_dataController.loadedSheetsData.containsKey(name)) {
-        _dataController.sheet = _dataController.loadedSheetsData[name]!;
-        _selectionController.selection =
-            _dataController.lastSelectedCells[name]!;
-      } else {
-        _dataController.saveExecutors[name] = ManageWaitingTasks<void>();
-        try {
-          _dataController.sheet = await _getDataUseCase.loadSheet(name);
-          if (!init) {
-            _selectionController.selection =
-                _dataController.lastSelectedCells[name]!;
-          }
-        } catch (e) {
-          logger.e("Error parsing sheet data for $name: $e");
-          _dataController.sheet = SheetModel.empty();
-          _selectionController.selection = SelectionModel.empty();
-        }
-      }
-    } else {
-      _dataController.sheet = SheetModel.empty();
-      _selectionController.selection = SelectionModel.empty();
-      _dataController.availableSheets.add(name);
-      _saveSheetDataUseCase.saveAllSheetNames(_dataController.availableSheets);
-      _dataController.saveExecutors[name] = ManageWaitingTasks<void>();
-    }
-
-    if (!init) {
-      _dataController.saveLastSelection(_selectionController.selection);
-    }
-
-    _dataController.loadedSheetsData[name] = _dataController.sheet;
-    _dataController.sheetName = name;
-
-    // Trigger Controller updates
-    updateRowColCount(
-      visibleHeight: _gridController.visibleWindowHeight,
-      visibleWidth: _gridController.visibleWindowWidth,
-      notify: false,
-    );
-
-    _streamController.scrollToOffset(
-      x: _selectionController.selection.scrollOffsetX,
-      y: _selectionController.selection.scrollOffsetY,
-      animate: false,
-    );
-
-    saveAndCalculate(save: false);
-    notifyListeners();
   }
 
   void onChanged(String newValue) {
@@ -489,16 +433,16 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
   }
 
   Future<void> pasteSelection() async {
-    final data = await Clipboard.getData('text/plain');
-    if (data?.text == null) return;
+    final text = await _clipboardService.getText();
+    if (text == null) return;
     // if contains "
-    if (data!.text!.contains('"')) {
+    if (text.contains('"')) {
       debugPrint('Paste data contains unsupported characters.');
       return;
     }
 
     final List<CellUpdate> updates = _parsePasteDataUseCase.pasteText(
-      data.text!,
+      text,
       _selectionController.primarySelectedCell.x,
       _selectionController.primarySelectedCell.y,
     );
@@ -578,6 +522,7 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
     // Delegate layout calculation to GridManager
     adjustRowHeightAfterUpdate(row, col, newValue, prevValue);
   }
+
   void adjustRowHeightAfterUpdate(
     int row,
     int col,
@@ -703,7 +648,6 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
     );
   }
 
-
   void selectAll() {
     _selectionController.selectedCells.clear();
     for (int r = 0; r < _dataController.rowCount; r++) {
@@ -789,105 +733,21 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
     loadSheetByName(_dataController.sheetName, init: true);
   }
 
+  Future<void> loadSheetByName(
+    String name, {
+    bool init = false,
+    SelectionModel? lastSelection,
+  }) async {
+    await _sheetLoaderService.loadSheetByName(
+      name,
+      init: init,
+      lastSelection: lastSelection,
+    );
+  }
+
   KeyEventResult handleKeyboard(BuildContext context, KeyEvent event) =>
       _keyboardDelegate.handle(context, event);
 
-  KeyEventResult handleKeyboard(
-    BuildContext context,
-    KeyEvent event) {
-    if (editingMode) {
-      return KeyEventResult.ignored;
-    }
-
-    if (event is KeyUpEvent) {
-      return KeyEventResult.ignored;
-    }
-
-    final keyLabel = event.logicalKey.keyLabel.toLowerCase();
-    final logicalKey = event.logicalKey;
-    final isControl =
-        HardwareKeyboard.instance.isControlPressed ||
-        HardwareKeyboard.instance.isMetaPressed;
-    final isAlt = HardwareKeyboard.instance.isAltPressed;
-
-    if (logicalKey == LogicalKeyboardKey.enter ||
-        logicalKey == LogicalKeyboardKey.numpadEnter) {
-      startEditing();
-      return KeyEventResult.handled;
-    }
-
-    if (logicalKey == LogicalKeyboardKey.arrowUp) {
-      setPrimarySelection(
-        max(primarySelectedCell.x - 1, 0),
-        primarySelectedCell.y,
-        false,
-        true,
-      );
-      return KeyEventResult.handled;
-    } else if (logicalKey == LogicalKeyboardKey.arrowDown) {
-      setPrimarySelection(
-        primarySelectedCell.x + 1,
-        primarySelectedCell.y,
-        false,
-        true,
-      );
-      return KeyEventResult.handled;
-    } else if (logicalKey == LogicalKeyboardKey.arrowLeft) {
-      setPrimarySelection(
-        primarySelectedCell.x,
-        max(0, primarySelectedCell.y - 1),
-        false,
-        true,
-      );
-      return KeyEventResult.handled;
-    } else if (logicalKey == LogicalKeyboardKey.arrowRight) {
-      setPrimarySelection(
-        primarySelectedCell.x,
-        primarySelectedCell.y + 1,
-        false,
-        true,
-      );
-      return KeyEventResult.handled;
-    }
-
-    if (isControl && keyLabel == 'c') {
-      copySelectionToClipboard();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Selection copied'),
-          duration: Duration(milliseconds: 500),
-        ),
-      );
-      return KeyEventResult.handled;
-    } else if (isControl && keyLabel == 'v') {
-      pasteSelection();
-      return KeyEventResult.handled;
-    } else if (keyLabel == 'delete') {
-      delete();
-      return KeyEventResult.handled;
-    } else if (isControl && keyLabel == 'z') {
-      undo();
-      return KeyEventResult.handled;
-    } else if (isControl && keyLabel == 'y') {
-      redo();
-      return KeyEventResult.handled;
-    }
-
-    final bool isPrintable =
-        event.character != null &&
-        event.character!.isNotEmpty &&
-        !isControl &&
-        !isAlt &&
-        logicalKey.keyId > 32;
-
-    if (isPrintable) {
-      startEditing(initialInput: event.character);
-      return KeyEventResult.handled;
-    }
-
-    return KeyEventResult.ignored;
-  }
-  
   Future<void> copySelectionToClipboard() async {
     int startRow = _selectionController.primarySelectedCell.x;
     int endRow = _selectionController.primarySelectedCell.x;
@@ -907,12 +767,10 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
       selectedCellsTable[cell.x - startRow][cell.y - startCol] = true;
     }
     if (!selectedCellsTable.every((row) => row.every((cell) => !cell))) {
-      await Clipboard.setData(
-        ClipboardData(
-          text: _dataController.getContent(
-            _selectionController.primarySelectedCell.x,
-            _selectionController.primarySelectedCell.y,
-          ),
+      await _clipboardService.copy(
+        _dataController.getContent(
+          _selectionController.primarySelectedCell.x,
+          _selectionController.primarySelectedCell.y,
         ),
       );
       return;
@@ -930,7 +788,6 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
     }
 
     final text = buffer.toString();
-    await Clipboard.setData(ClipboardData(text: text));
+    await _clipboardService.copy(text);
   }
-
 }
