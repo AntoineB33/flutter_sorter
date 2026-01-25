@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_history_selection_data_tree_stream_manager.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/spreadsheet_controller.dart';
 
 class AnalysisTreeNode extends StatelessWidget {
   final NodeStruct node;
-  final GridHistorySelectionDataTreeStreamManager gHSDTManager;
+  final SpreadsheetController controller;
 
   const AnalysisTreeNode({
     super.key,
     required this.node,
-    required this.gHSDTManager,
+    required this.controller,
   });
 
   @override
@@ -47,7 +47,7 @@ class AnalysisTreeNode extends StatelessWidget {
                       color: Colors.grey[700],
                     ),
                     onPressed: () {
-                      gHSDTManager.toggleNodeExpansion(node, !isExpanded);
+                      controller.toggleNodeExpansion(node, !isExpanded);
                     },
                   ),
                 ),
@@ -93,10 +93,8 @@ class AnalysisTreeNode extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: node.children
                     .map(
-                      (child) => AnalysisTreeNode(
-                        node: child,
-                        gHSDTManager: gHSDTManager,
-                      ),
+                      (child) =>
+                          AnalysisTreeNode(node: child, controller: controller),
                     )
                     .toList(),
               ),

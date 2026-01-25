@@ -18,11 +18,11 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/se
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/delegates/spreadsheet_keyboard_delegate.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/delegates/spreadsheet_layout_delegate.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/services/sheet_loader_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/services/spreadsheet_clipboard_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/tree_structure_builder.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/check_valid_strings.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart'; // Import AnalysisResult
@@ -30,7 +30,7 @@ import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_stream_controller.dart';
 
-class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
+class SpreadsheetController extends ChangeNotifier {
   // --- dependencies ---
   final GridController _gridController;
   final HistoryController _historyController;
@@ -69,15 +69,47 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
       _selectionController.primarySelectedCell;
   String get previousContent => _selectionController.selection.previousContent;
 
+  // --- redirections ---
+  KeyEventResult handleKeyboard(BuildContext context, KeyEvent event) =>
+      _keyboardDelegate.handle(context, event);
+  void updateRowColCount({
+    double? visibleHeight,
+    double? visibleWidth,
+    bool notify = true,
+    bool save = true,
+  }) {
+    _layoutDelegate.updateRowColCount(
+      visibleHeight: visibleHeight,
+      visibleWidth: visibleWidth,
+      notify: notify,
+      save: save,
+    );
+  }
+  
+  Future<void> loadSheetByName(
+    String name, {
+    bool init = false,
+    SelectionModel? lastSelection,
+  }) async {
+    await _sheetLoaderService.loadSheetByName(
+      name,
+      init: init,
+      lastSelection: lastSelection,
+    );
+  }
+
   // --- Helper ---
   late final TreeStructureBuilder _treeBuilder;
   late final SheetLoaderService _sheetLoaderService;
 
   // Delegates
-  late final SpreadsheetClipboardService _clipboardService;
   late final SpreadsheetKeyboardDelegate _keyboardDelegate;
+  late final SpreadsheetLayoutDelegate _layoutDelegate;
 
-  GridHistorySelectionDataTreeStreamManager(
+  // Services
+  late final SpreadsheetClipboardService _clipboardService;
+
+  SpreadsheetController(
     this._gridController,
     this._historyController,
     this._selectionController,
@@ -107,6 +139,12 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
     );
     _clipboardService = SpreadsheetClipboardService(_dataController);
     _keyboardDelegate = SpreadsheetKeyboardDelegate(this);
+    _layoutDelegate = SpreadsheetLayoutDelegate(
+      this,
+      _gridController,
+      _selectionController,
+      _dataController,
+    );
     init();
   }
 
@@ -229,40 +267,6 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
     ]);
   }
 
-  void updateRowColCount({
-    double? visibleHeight,
-    double? visibleWidth,
-    bool notify = true,
-    bool save = true,
-  }) {
-    int targetRows = _selectionController.tableViewRows;
-    int targetCols = _selectionController.tableViewCols;
-
-    if (visibleHeight != null) {
-      _gridController.visibleWindowHeight = visibleHeight;
-      targetRows = _dataController.minRows(_gridController.visibleWindowHeight);
-    }
-    if (visibleWidth != null) {
-      _gridController.visibleWindowWidth = visibleWidth;
-      targetCols = _dataController.minCols(_gridController.visibleWindowWidth);
-    }
-
-    // We access the selection manager via the controller
-    // This assumes the controller exposes the way to set these,
-    // or we modify the selection model directly via the controller's selection getter.
-    if (targetRows != _selectionController.tableViewRows ||
-        targetCols != _selectionController.tableViewCols) {
-      _selectionController.tableViewRows = targetRows;
-      _selectionController.tableViewCols = targetCols;
-      if (notify) {
-        notifyListeners();
-      }
-    }
-    if (save) {
-      _dataController.saveLastSelection(_selectionController.selection);
-    }
-  }
-
   void onChanged(String newValue) {
     updateCell(
       _selectionController.primarySelectedCell.x,
@@ -315,7 +319,9 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
       _selectionController.primarySelectedCell.x,
       _selectionController.primarySelectedCell.y,
     );
-    onChanged(initialInput!);
+    if (initialInput != null) {
+      onChanged(initialInput);
+    }
     _selectionController.editingMode = true;
     _dataController.saveLastSelection(_selectionController.selection);
     notifyListeners();
@@ -464,50 +470,14 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
     bool historyNavigation = false,
     bool keepPrevious = false,
   }) {
-    String prevValue = '';
-    if (newValue.isNotEmpty ||
-        (row < _dataController.rowCount && col < _dataController.colCount)) {
-      if (row >= _dataController.rowCount) {
-        final needed = row + 1 - _dataController.rowCount;
-        _dataController.sheetContent.table.addAll(
-          List.generate(
-            needed,
-            (_) => List.filled(_dataController.colCount, '', growable: true),
-          ),
-        );
-      }
-      _dataController.increaseColumnCount(col);
-      prevValue = _dataController.sheetContent.table[row][col];
-      _dataController.sheetContent.table[row][col] = newValue;
-    }
-
-    // Clean up empty rows/cols at the end
-    if (newValue.isEmpty &&
-        row < _dataController.rowCount &&
-        col < _dataController.colCount &&
-        (row == _dataController.rowCount - 1 ||
-            col == _dataController.colCount - 1) &&
-        prevValue.isNotEmpty) {
-      _dataController.decreaseRowCount(row);
-      if (col == _dataController.colCount - 1) {
-        int colId = col;
-        bool canRemove = true;
-        while (canRemove && colId >= 0) {
-          for (var r = 0; r < _dataController.rowCount; r++) {
-            if (_dataController.sheetContent.table[r][colId].isNotEmpty) {
-              canRemove = false;
-              break;
-            }
-          }
-          if (canRemove) {
-            for (var r = 0; r < _dataController.rowCount; r++) {
-              _dataController.sheetContent.table[r].removeLast();
-            }
-            colId--;
-          }
-        }
-      }
-    }
+    String prevValue = _dataController.updateCell(
+      row,
+      col,
+      newValue,
+      onChange: onChange,
+      historyNavigation: historyNavigation,
+      keepPrevious: keepPrevious,
+    );
     if (!historyNavigation) {
       _historyController.recordCellChange(
         row,
@@ -529,122 +499,11 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
     String newValue,
     String prevValue,
   ) {
-    if (row >= _dataController.sheet.rowsBottomPos.length &&
-        row >= _dataController.rowCount) {
-      updateRowColCount(
-        visibleHeight: _gridController.visibleWindowHeight,
-        visibleWidth: _gridController.visibleWindowWidth,
-        notify: false,
-      );
-      return;
-    }
-
-    double heightItNeeds = _dataController.calculateRequiredRowHeight(
-      newValue,
+    return _layoutDelegate.adjustRowHeightAfterUpdate(
+      row,
       col,
-    );
-
-    if (heightItNeeds > GetDefaultSizes.getDefaultRowHeight() &&
-        _dataController.sheet.rowsBottomPos.length <= row) {
-      int prevRowsBottomPosLength = _dataController.sheet.rowsBottomPos.length;
-      _dataController.sheet.rowsBottomPos.addAll(
-        List.filled(row + 1 - _dataController.sheet.rowsBottomPos.length, 0),
-      );
-      for (int i = prevRowsBottomPosLength; i <= row; i++) {
-        _dataController.sheet.rowsBottomPos[i] = i == 0
-            ? GetDefaultSizes.getDefaultRowHeight()
-            : _dataController.sheet.rowsBottomPos[i - 1] +
-                  GetDefaultSizes.getDefaultRowHeight();
-      }
-    }
-
-    if (row < _dataController.sheet.rowsBottomPos.length) {
-      if (_dataController.sheet.rowsManuallyAdjustedHeight.length <= row ||
-          !_dataController.sheet.rowsManuallyAdjustedHeight[row]) {
-        double currentHeight = _dataController.getRowHeight(row);
-        if (heightItNeeds < currentHeight) {
-          double heightItNeeded = _dataController.calculateRequiredRowHeight(
-            prevValue,
-            col,
-          );
-          if (heightItNeeded == currentHeight) {
-            double newHeight = heightItNeeds;
-            for (int j = 0; j < _dataController.colCount; j++) {
-              if (j == col) continue;
-              newHeight = max(
-                _dataController.calculateRequiredRowHeight(
-                  _dataController.sheetContent.table[row][j],
-                  j,
-                ),
-                newHeight,
-              );
-              if (newHeight == heightItNeeded) break;
-            }
-            if (newHeight < heightItNeeded) {
-              double heightDiff = currentHeight - newHeight;
-              for (
-                int r = row;
-                r < _dataController.sheet.rowsBottomPos.length;
-                r++
-              ) {
-                _dataController.sheet.rowsBottomPos[r] -= heightDiff;
-              }
-              if (newHeight == GetDefaultSizes.getDefaultRowHeight()) {
-                int removeFrom = _dataController.sheet.rowsBottomPos.length;
-                for (
-                  int r = _dataController.sheet.rowsBottomPos.length - 1;
-                  r >= 0;
-                  r--
-                ) {
-                  if (r <
-                              _dataController
-                                  .sheet
-                                  .rowsManuallyAdjustedHeight
-                                  .length &&
-                          _dataController.sheet.rowsManuallyAdjustedHeight[r] ||
-                      _dataController.sheet.rowsBottomPos[r] >
-                          (r == 0
-                                  ? 0
-                                  : _dataController.sheet.rowsBottomPos[r -
-                                        1]) +
-                              GetDefaultSizes.getDefaultRowHeight()) {
-                    break;
-                  }
-                  removeFrom--;
-                }
-                _dataController.sheet.rowsBottomPos = _dataController
-                    .sheet
-                    .rowsBottomPos
-                    .sublist(0, removeFrom);
-              }
-            }
-          }
-        } else if (heightItNeeds > currentHeight) {
-          double heightDiff = heightItNeeds - currentHeight;
-          for (
-            int r = row;
-            r < _dataController.sheet.rowsBottomPos.length;
-            r++
-          ) {
-            _dataController.sheet.rowsBottomPos[r] =
-                _dataController.sheet.rowsBottomPos[r] + heightDiff;
-          }
-        }
-      }
-    } else if (heightItNeeds == GetDefaultSizes.getDefaultRowHeight() &&
-        row == _dataController.sheet.rowsBottomPos.length - 1) {
-      int i = row;
-      while (_dataController.sheet.rowsBottomPos[i] ==
-              GetDefaultSizes.getDefaultRowHeight() &&
-          row > 0) {
-        _dataController.sheet.rowsBottomPos.removeLast();
-        i--;
-      }
-    }
-    updateRowColCount(
-      visibleHeight: _gridController.visibleWindowHeight,
-      visibleWidth: _gridController.visibleWindowWidth,
-      notify: false,
+      newValue,
+      prevValue,
     );
   }
 
@@ -733,21 +592,6 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
     loadSheetByName(_dataController.sheetName, init: true);
   }
 
-  Future<void> loadSheetByName(
-    String name, {
-    bool init = false,
-    SelectionModel? lastSelection,
-  }) async {
-    await _sheetLoaderService.loadSheetByName(
-      name,
-      init: init,
-      lastSelection: lastSelection,
-    );
-  }
-
-  KeyEventResult handleKeyboard(BuildContext context, KeyEvent event) =>
-      _keyboardDelegate.handle(context, event);
-
   Future<void> copySelectionToClipboard() async {
     int startRow = _selectionController.primarySelectedCell.x;
     int endRow = _selectionController.primarySelectedCell.x;
@@ -790,4 +634,9 @@ class GridHistorySelectionDataTreeStreamManager extends ChangeNotifier {
     final text = buffer.toString();
     await _clipboardService.copy(text);
   }
+
+  void notify() {
+    notifyListeners();
+  }
+
 }

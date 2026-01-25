@@ -1,10 +1,10 @@
 import 'dart:math';
 import 'package:flutter/services.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_history_selection_data_tree_stream_manager.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/spreadsheet_controller.dart';
 import 'package:flutter/material.dart';
 
 class SpreadsheetKeyboardDelegate {
-  final GridHistorySelectionDataTreeStreamManager manager;
+  final SpreadsheetController manager;
 
   SpreadsheetKeyboardDelegate(this.manager);
 

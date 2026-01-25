@@ -184,4 +184,59 @@ class SheetDataController extends ChangeNotifier {
         getColumnWidth(colId) - PageConstants.horizontalPadding;
     return _layoutCalculator.calculateRowHeight(text, availableWidth);
   }
+
+  String updateCell(
+    int row,
+    int col,
+    String newValue, {
+    bool onChange = false,
+    bool historyNavigation = false,
+    bool keepPrevious = false,
+  }) {
+    String prevValue = '';
+    if (newValue.isNotEmpty ||
+        (row < rowCount && col < colCount)) {
+      if (row >= rowCount) {
+        final needed = row + 1 - rowCount;
+        sheetContent.table.addAll(
+          List.generate(
+            needed,
+            (_) => List.filled(colCount, '', growable: true),
+          ),
+        );
+      }
+      increaseColumnCount(col);
+      prevValue = sheetContent.table[row][col];
+      sheetContent.table[row][col] = newValue;
+    }
+
+    // Clean up empty rows/cols at the end
+    if (newValue.isEmpty &&
+        row < rowCount &&
+        col < colCount &&
+        (row == rowCount - 1 ||
+            col == colCount - 1) &&
+        prevValue.isNotEmpty) {
+      decreaseRowCount(row);
+      if (col == colCount - 1) {
+        int colId = col;
+        bool canRemove = true;
+        while (canRemove && colId >= 0) {
+          for (var r = 0; r < rowCount; r++) {
+            if (sheetContent.table[r][colId].isNotEmpty) {
+              canRemove = false;
+              break;
+            }
+          }
+          if (canRemove) {
+            for (var r = 0; r < rowCount; r++) {
+              sheetContent.table[r].removeLast();
+            }
+            colId--;
+          }
+        }
+      }
+    }
+    return prevValue;
+  }
 }

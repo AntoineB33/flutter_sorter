@@ -2,7 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/grid_history_selection_data_tree_stream_manager.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/spreadsheet_controller.dart';
 import 'analysis_tree_node.dart';
 
 class SideMenu extends StatefulWidget {
@@ -60,8 +60,8 @@ class _SideMenuState extends State<SideMenu> {
 
   @override
   Widget build(BuildContext context) {
-    final GridHistorySelectionDataTreeStreamManager spreadsheetController =
-        Provider.of<GridHistorySelectionDataTreeStreamManager>(context);
+    final SpreadsheetController spreadsheetController =
+        Provider.of<SpreadsheetController>(context);
 
     if (_textEditingController.text != spreadsheetController.sheetName) {
       _textEditingController.text = spreadsheetController.sheetName;
@@ -118,27 +118,27 @@ class _SideMenuState extends State<SideMenu> {
                           children: [
                             AnalysisTreeNode(
                               node: spreadsheetController.errorRoot,
-                              gHSDTManager: spreadsheetController,
+                              controller: spreadsheetController,
                             ),
                             AnalysisTreeNode(
                               node: spreadsheetController.warningRoot,
-                              gHSDTManager: spreadsheetController,
+                              controller: spreadsheetController,
                             ),
                             AnalysisTreeNode(
                               node: spreadsheetController.mentionsRoot,
-                              gHSDTManager: spreadsheetController,
+                              controller: spreadsheetController,
                             ),
                             AnalysisTreeNode(
                               node: spreadsheetController.searchRoot,
-                              gHSDTManager: spreadsheetController,
+                              controller: spreadsheetController,
                             ),
                             AnalysisTreeNode(
                               node: spreadsheetController.categoriesRoot,
-                              gHSDTManager: spreadsheetController,
+                              controller: spreadsheetController,
                             ),
                             AnalysisTreeNode(
                               node: spreadsheetController.distPairsRoot,
-                              gHSDTManager: spreadsheetController,
+                              controller: spreadsheetController,
                             ),
                           ],
                         ),
@@ -154,9 +154,7 @@ class _SideMenuState extends State<SideMenu> {
     );
   }
 
-  Widget _buildSheetAutocomplete(
-    GridHistorySelectionDataTreeStreamManager spreadsheetController,
-  ) {
+  Widget _buildSheetAutocomplete(SpreadsheetController spreadsheetController) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Autocomplete<String>(

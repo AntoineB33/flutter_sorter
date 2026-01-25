@@ -9,13 +9,6 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/sh
 import 'package:trying_flutter/utils/logger.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_stream_controller.dart';
 
-typedef OnTreeCellSelected = void Function(
-  int row,
-  int col,
-  bool keepSelection,
-  bool updateMentions,
-);
-
 class SheetLoaderService {
   // --- dependencies ---
   final GridController _gridController;
@@ -27,9 +20,14 @@ class SheetLoaderService {
   final SaveSheetDataUseCase _saveSheetDataUseCase;
   final GetSheetDataUseCase _getDataUseCase;
 
-  Function notifyListeners;
-  Function updateRowColCount;
-  Function saveAndCalculate;
+  void Function() notifyListeners;
+  void Function({
+    double? visibleHeight,
+    double? visibleWidth,
+    bool notify,
+    bool save,
+  }) updateRowColCount;
+  void Function({bool save, bool updateHistory}) saveAndCalculate;
 
   SheetLoaderService(
     this._gridController,
