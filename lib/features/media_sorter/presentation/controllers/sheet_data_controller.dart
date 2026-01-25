@@ -44,6 +44,10 @@ class SheetDataController extends ChangeNotifier {
     required GetSheetDataUseCase getDataUseCase,
     required SaveSheetDataUseCase saveSheetDataUseCase,
   })  : _saveSheetDataUseCase = saveSheetDataUseCase;
+  
+  void setTable(List<List<String>> newTable) {
+    sheet.sheetContent.table = newTable;
+  }
 
   void scheduleSheetSave(int saveDelayMs) {
     _saveExecutors[sheetName]!.execute(() async {

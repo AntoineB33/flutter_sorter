@@ -16,6 +16,7 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/gr
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/delegates/spreadsheet_keyboard_delegate.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/delegates/spreadsheet_layout_delegate.dart';
@@ -38,6 +39,7 @@ class SpreadsheetController extends ChangeNotifier {
   final SheetDataController _dataController;
   final TreeController _treeController;
   final SpreadsheetStreamController _streamController;
+  final SortController _sortController;
 
   // --- usecases ---
   final SaveSheetDataUseCase _saveSheetDataUseCase = SaveSheetDataUseCase(
@@ -116,6 +118,7 @@ class SpreadsheetController extends ChangeNotifier {
     this._dataController,
     this._treeController,
     this._streamController,
+    this._sortController,
   ) {
     // Initialize the builder passing the required controllers and the callback
     _treeBuilder = TreeStructureBuilder(
@@ -155,6 +158,7 @@ class SpreadsheetController extends ChangeNotifier {
       }
       _dataController.scheduleSheetSave(SpreadsheetConstants.saveDelayMs);
     }
+    _sortController.clear();
     _dataController.calculateExecutor.execute(
       () async {
         AnalysisResult result = await calculationService.runCalculation(
@@ -200,6 +204,8 @@ class SpreadsheetController extends ChangeNotifier {
                   "Could not find a valid sorting satisfying all constraints.",
             ),
           );
+        } else {
+          _sortController.setBestMediaSortOrder(result0);
         }
         return result;
       },
@@ -528,7 +534,7 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   Future<void> init() async {
-    await _saveSheetDataUseCase.clearAllData();
+    // await _saveSheetDataUseCase.clearAllData();
     await _saveSheetDataUseCase.initialize();
     try {
       _dataController.sheetName = await _getDataUseCase
@@ -637,6 +643,26 @@ class SpreadsheetController extends ChangeNotifier {
 
   void notify() {
     notifyListeners();
+  }
+
+  bool canBeSorted() {
+    return _sortController.canBeSorted();
+  }
+  
+  void sortMedia() {
+    if (canBeSorted()) {
+      final bestMediaSortOrder = _sortController.bestMediaSortOrder!;
+      final toMentioners = _treeController.toMentioners;
+      final table = _dataController.sheetContent.table;
+      List<int> sortOrder = [];
+
+      // ...
+
+      // sort with sortOrder
+      List<List<String>> sortedTable = sortOrder.map((i) => table[i]).toList();
+      _dataController.setTable(sortedTable);
+      notify();
+    }
   }
 
 }

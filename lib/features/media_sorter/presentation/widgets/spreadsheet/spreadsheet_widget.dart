@@ -61,7 +61,10 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       final dataController = context.read<SheetDataController>();
       // Case A: Scroll to specific Cell (Your existing logic)
       if (request.cell != null) {
-        _revealCell(request.cell!, controller, dataController);
+        if (request.cell!.x > 0 &&
+            request.cell!.y > 0) {
+          _revealCell(request.cell!, controller, dataController);
+        }
         return;
       }
 

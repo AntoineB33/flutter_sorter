@@ -8,6 +8,7 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/gr
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_stream_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
@@ -36,6 +37,7 @@ Future<void> init() async {
       sl<SheetDataController>(),
       TreeController(),
       SpreadsheetStreamController(),
+      SortController(),
     ),
   );
 }
