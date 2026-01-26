@@ -88,7 +88,9 @@ class _SideMenuState extends State<SideMenu> {
           const SizedBox(height: 10),
 
           TextButton(
-            onPressed: spreadsheetController.sortMedia,
+            onPressed: spreadsheetController.canBeSorted()
+              ? spreadsheetController.sortMedia
+              : null,
             style: TextButton.styleFrom(
               foregroundColor: spreadsheetController.canBeSorted()
                   ? Colors.white

@@ -52,6 +52,8 @@ class SpreadsheetController extends ChangeNotifier {
   final ParsePasteDataUseCase _parsePasteDataUseCase = ParsePasteDataUseCase();
 
   // --- getters ---
+  int get rowCount => _dataController.rowCount;
+  int get colCount => _dataController.colCount;
   String get sheetName => _dataController.sheetName;
   SheetModel get sheet => _dataController.sheet;
   SheetContent get sheetContent => _dataController.sheetContent;
@@ -87,7 +89,7 @@ class SpreadsheetController extends ChangeNotifier {
       save: save,
     );
   }
-  
+
   Future<void> loadSheetByName(
     String name, {
     bool init = false,
@@ -210,8 +212,8 @@ class SpreadsheetController extends ChangeNotifier {
         return result;
       },
       onComplete: (AnalysisResult result) {
-        result.rowCount = _dataController.rowCount;
-        result.colCount = _dataController.colCount;
+        result.rowCount = rowCount;
+        result.colCount = colCount;
         result.noResult = false;
 
         onAnalysisComplete(result, _selectionController.primarySelectedCell);
@@ -356,7 +358,7 @@ class SpreadsheetController extends ChangeNotifier {
       _historyController.recordColumnTypeChange(col, previousType, type);
     }
     if (type == ColumnType.attributes) {
-      if (col < _dataController.colCount) {
+      if (col < colCount) {
         if (GetNames.isSourceColumn(previousType)) {
           _dataController.removeSourceColId(col);
         }
@@ -515,8 +517,8 @@ class SpreadsheetController extends ChangeNotifier {
 
   void selectAll() {
     _selectionController.selectedCells.clear();
-    for (int r = 0; r < _dataController.rowCount; r++) {
-      for (int c = 0; c < _dataController.colCount; c++) {
+    for (int r = 0; r < rowCount; r++) {
+      for (int c = 0; c < colCount; c++) {
         _selectionController.selectedCells.add(Point(r, c));
       }
     }
@@ -648,21 +650,61 @@ class SpreadsheetController extends ChangeNotifier {
   bool canBeSorted() {
     return _sortController.canBeSorted();
   }
-  
+
   void sortMedia() {
-    if (canBeSorted()) {
-      final bestMediaSortOrder = _sortController.bestMediaSortOrder!;
-      final toMentioners = _treeController.toMentioners;
-      final table = _dataController.sheetContent.table;
-      List<int> sortOrder = [];
-
-      // ...
-
-      // sort with sortOrder
-      List<List<String>> sortedTable = sortOrder.map((i) => table[i]).toList();
-      _dataController.setTable(sortedTable);
-      notify();
+    List<int> validRowIndexes = _treeController.validRowIndexes;
+    List<int> sortOrder = [];
+    List<int> stack = _sortController.bestMediaSortOrder!
+        .asMap()
+        .entries
+        .map((e) => validRowIndexes[e.key])
+        .toList()
+        .reversed
+        .toList();
+    final rowToRowRefs = _treeController.rowToRefFromAttCol;
+    final table = _dataController.sheetContent.table;
+    List<bool> added = List.filled(table.length, false);
+    for (int i in stack) {
+      added[i] = true;
     }
+    List<int> toNewPlacement = List.filled(table.length, -1);
+    for (int rowId in _treeController.validRowIndexes) {
+      stack.add(rowId);
+      while (stack.isNotEmpty) {
+        int current = stack.removeLast();
+        if (added[current]) {
+          continue;
+        }
+        for (int ref in rowToRowRefs[current]) {
+          if (!added[ref]) {
+            stack.add(ref);
+          }
+        }
+        if (rowToRowRefs[current].isEmpty) {
+          toNewPlacement[current] = sortOrder.length;
+          sortOrder.add(current);
+          added[current] = true;
+        }
+      }
+    }
+    List<List<String>> formatedTable = _treeController.formatedTable;
+    List<List<String>> sortedTable = sortOrder.map((i) => formatedTable[i]).toList();
+    for (int rowId = 0; rowId < rowCount; rowId++) {
+      for (int colId = 0; colId < colCount; colId++) {
+        if (sortedTable[rowId][colId].isEmpty) {
+          continue;
+        }
+        String newVal = "";
+        int strIndex = 0;
+        for (rowIdIdentifier rid in _treeController.splittedTable[rowId][colId]) {
+          newVal += formatedTable[rid.rowId][colId].substring(strIndex, rid.start);
+          newVal += toNewPlacement[rid.rowId].toString();
+          strIndex = rid.start + rid.length;
+        }
+        sortedTable[rowId][colId] = newVal + formatedTable[rowId][colId].substring(strIndex);
+      }
+    }
+    _dataController.setTable(sortedTable);
+    notify();
   }
-
 }

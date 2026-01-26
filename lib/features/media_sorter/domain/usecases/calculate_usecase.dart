@@ -38,6 +38,8 @@ class CalculateUsecase {
   Map<String, List<int>> get attToCol => result.attToCol;
   List<int> get nameIndexes => result.nameIndexes;
   List<int> get pathIndexes => result.pathIndexes;
+  List<int> get validRowIndexes => result.validRowIndexes;
+  List<List<String>> get formatedTable => result.formatedTable;
 
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
@@ -46,14 +48,14 @@ class CalculateUsecase {
       result.attToRefFromAttColToCol;
   Map<Attribute, Map<int, List<int>>> get attToRefFromDepColToCol =>
       result.attToRefFromDepColToCol;
+  List<HashSet<int>> get rowToRefFromAttCol => result.rowToRefFromAttCol;
+  List<List<List<rowIdIdentifier>>> get splittedTable => result.splittedTable;
 
-  /// Maps attribute identifiers (row index or name)
-  /// to a map of mentioners (row index) to the column index
-  Map<Attribute, Map<int, List<int>>> get toMentioners => result.toMentioners;
   List<Map<InstrStruct, Cell>> get instrTable => result.instrTable;
   set instrTable(List<Map<InstrStruct, Cell>> value) {
     result.instrTable = value;
   }
+
   Map<int, HashSet<Attribute>> get colToAtt => result.colToAtt;
   List<bool> isMedium = [];
 
@@ -71,9 +73,9 @@ class CalculateUsecase {
   final Set<int> sourceColIndices;
 
   CalculateUsecase(IsolateMessage message)
-      : dataPackage = message.table,
-        columnTypes0 = message.columnTypes,
-        sourceColIndices = message.sourceColIndices;
+    : dataPackage = message.table,
+      columnTypes0 = message.columnTypes,
+      sourceColIndices = message.sourceColIndices;
 
   AnalysisResult run() {
     _decodeData(dataPackage);
@@ -143,9 +145,7 @@ class CalculateUsecase {
       // Validate: ASCII for 'a' is 97, 'z' is 122.
       // If it's outside this range, it's not a lowercase letter.
       if (codeUnit < 97 || codeUnit > 122) {
-        throw FormatException(
-          "Invalid character '${s[i]}' at index $i. Input must only contain lowercase letters (a-z).",
-        );
+        return -1;
       }
 
       // 'a' (97) becomes 0, 'b' (98) becomes 1, etc.
@@ -219,7 +219,8 @@ class CalculateUsecase {
                   }
                   redundantRef.add(
                     NodeStruct(
-                      message: "${GetNames.getAttName(result.nameIndexes, result.tableToAtt, att)} already pointed",
+                      message:
+                          "${GetNames.getAttName(result.nameIndexes, result.tableToAtt, att)} already pointed",
                       cells: rowsToCol[childRowId]!.colIndexes
                           .where(
                             (colId) =>
@@ -367,14 +368,24 @@ class CalculateUsecase {
     return true;
   }
 
-  Attribute getAttAndCol(String attWritten, int rowId, int colId) {
+  Attribute getAttAndCol(
+    String attWritten,
+    int rowId,
+    int colId,
+    int startStr,
+  ) {
     Attribute att = Attribute();
     List<String> splitStr = attWritten.split(".");
     String name = attWritten;
     int attColId = notUsedCst;
+    int startStrRowId = startStr;
     if (splitStr.length == 2) {
       name = splitStr[1];
-      attColId = getIndexFromString(splitStr[0]);
+      startStrRowId += splitStr[0].length;
+      attColId = table[0].indexOf(splitStr[0]);
+      if (attColId == -1) {
+        attColId = getIndexFromString(splitStr[0]);
+      }
       if (attColId < 0 || attColId >= colCount) {
         warningRoot.newChildren!.add(
           NodeStruct(
@@ -397,6 +408,7 @@ class CalculateUsecase {
         columnTypes[colId] != ColumnType.attributes &&
         columnTypes[colId] != ColumnType.sprawl;
     int? numK = int.tryParse(name);
+    int? intNameSaved = numK;
     numK ??= names[name]?.rowId;
     if (numK != null) {
       if (attColId != notUsedCst) {
@@ -414,6 +426,15 @@ class CalculateUsecase {
           NodeStruct(
             message: "$name points to an empty row $numK",
             cell: Cell(rowId: rowId, colId: colId),
+          ),
+        );
+      }
+      if (intNameSaved != null) {
+        splittedTable[rowId][colId].add(
+          rowIdIdentifier(
+            start: startStrRowId,
+            length: name.length,
+            rowId: numK,
           ),
         );
       }
@@ -508,6 +529,32 @@ class CalculateUsecase {
     List<NodeStruct> children = [];
     attToRefFromAttColToCol.clear();
     attToCol.clear();
+    rowToRefFromAttCol
+      ..clear()
+      ..addAll(List.generate(rowCount, (i) => HashSet<int>()));
+    splittedTable
+      ..clear()
+      ..addAll(
+        List.generate(rowCount, (i) => List.generate(colCount, (j) => [])),
+      );
+    formatedTable
+      ..clear()
+      ..addAll(
+        List.generate(rowCount, (i) => List.generate(colCount, (j) => "")),
+      );
+    for (int colId = 0; colId < colCount; colId++) {
+      int index = getIndexFromString(table[0][colId]);
+      if (index > 0 && index < colCount) {
+        errorRoot.newChildren!.add(
+          NodeStruct(
+            message:
+                "Column header ${GetNames.getColumnLabel(colId)} \"${table[0][colId]}\" conflicts with Column header ${GetNames.getColumnLabel(index)} \"${table[0][index]}\"",
+            cell: Cell(rowId: 0, colId: colId),
+          ),
+        );
+        return;
+      }
+    }
     for (int rowId = 1; rowId < rowCount; rowId++) {
       final row = table[rowId];
       for (int colId = 0; colId < colCount; colId++) {
@@ -517,8 +564,11 @@ class CalculateUsecase {
             continue;
           }
           final cellList = row[colId].split(";");
+          int startStr = 0;
           for (String attWritten in cellList) {
             attWritten = attWritten.trim();
+            formatedTable[rowId][colId] +=
+                (startStr == 0 ? "" : "; ") + attWritten;
             if (attWritten.isEmpty) {
               errorRoot.newChildren!.add(
                 NodeStruct(
@@ -556,7 +606,7 @@ class CalculateUsecase {
               continue;
             }
 
-            Attribute att = getAttAndCol(attWritten, rowId, colId);
+            Attribute att = getAttAndCol(attWritten, rowId, colId, startStr);
             if (errorRoot.newChildren!.isNotEmpty) {
               return;
             }
@@ -570,6 +620,9 @@ class CalculateUsecase {
 
             if (!attToRefFromAttColToCol[att]!.containsKey(rowId)) {
               attToRefFromAttColToCol[att]![rowId] = Cols();
+              if (att.isRow()) {
+                rowToRefFromAttCol[rowId].add(att.rowId!);
+              }
               if (isSprawl) {
                 attToDist[att]!.add(rowId);
               }
@@ -601,6 +654,7 @@ class CalculateUsecase {
             attToRefFromAttColToCol[att]![rowId]!.toInformFstDep.add(
               isAppearFst || isAppearLst || isFst || isLst,
             );
+            startStr += attWritten.length + 2;
           }
         }
       }
@@ -691,9 +745,8 @@ class CalculateUsecase {
       }
     }
 
-    final validRowIndexes = [];
+    validRowIndexes.clear();
     final newIndexes = List.generate(rowCount, (i) => i);
-    final toOldIndexes = [];
     final catRows = [];
     int newIndex = 0;
     final List<int> newIndexList = [];
@@ -703,7 +756,6 @@ class CalculateUsecase {
         newIndexes[i] = newIndex;
         newIndexList.add(newIndex);
         newIndex++;
-        toOldIndexes.add(i);
       } else {
         catRows.add(i);
       }
@@ -1100,9 +1152,11 @@ class CalculateUsecase {
       for (int colId = 0; colId < row.length; colId++) {
         if (columnTypes[colId] == ColumnType.dependencies &&
             row[colId].isNotEmpty) {
+          int startStr = 0;
           for (String instr in row[colId].split(";")) {
+            instr = instr.trim();
             if (instr.isEmpty) continue;
-            final instrSplit = instr.split("_");
+            final instrSplit = instr.split("#");
             if (instrSplit.length != depPattern[colId].length - 1 &&
                 depPattern[colId].length > 1) {
               errorRoot.newChildren!.add(
@@ -1128,6 +1182,7 @@ class CalculateUsecase {
                       })
                       .join("");
             }
+            formatedTable[rowId][colId] += (startStr == 0 ? "" : "; ") + instr;
 
             var match = RegExp(patternDistance).firstMatch(instr);
             List<List<int>> intervals = [];
@@ -1149,17 +1204,20 @@ class CalculateUsecase {
                 return;
               }
             }
-
+            int startStrI = startStr + (match.group(1)?.length ?? 0);
+            startStrI += match.group(2)?.length ?? 0;
             Attribute att = getAttAndCol(
               match.namedGroup('att')!,
               rowId,
               colId,
+              startStrI,
             );
             if (errorRoot.newChildren!.isNotEmpty) {
               return;
             }
             depCache[rowId] ??= {};
             depCache[rowId]![colId] = (att, isConstraint, match, intervals);
+            startStr += instr.length + 2;
           }
         }
       }
@@ -1417,10 +1475,12 @@ class CalculateUsecase {
     }
     tableToAtt
       ..clear()
-      ..addAll(List.generate(
-        rowCount,
-        (_) => List.generate(colCount, (_) => HashSet<Attribute>()),
-      ));
+      ..addAll(
+        List.generate(
+          rowCount,
+          (_) => List.generate(colCount, (_) => HashSet<Attribute>()),
+        ),
+      );
     for (int i = 1; i < rowCount; i++) {
       for (int j in nameIndexes) {
         var cellElements = table[i][j].split(";");

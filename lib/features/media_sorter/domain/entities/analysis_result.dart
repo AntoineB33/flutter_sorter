@@ -6,6 +6,18 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
 
+class rowIdIdentifier {
+  int start;
+  int length;
+  int rowId;
+
+  rowIdIdentifier({
+    required this.start,
+    required this.length,
+    required this.rowId,
+  });
+}
+
 class AnalysisResult {
   final NodeStruct errorRoot = NodeStruct(
     instruction: SpreadsheetConstants.errorMsg,
@@ -29,18 +41,18 @@ class AnalysisResult {
   Map<String, List<int>> attToCol;
   List<int> nameIndexes;
   List<int> pathIndexes;
+  List<List<String>> formatedTable;
 
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
   Map<Attribute, Map<int, Cols>> attToRefFromAttColToCol;
   Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol;
-
-  /// Maps attribute identifiers (row index or name)
-  /// to a map of mentioners (row index) to the column index
-  Map<Attribute, Map<int, List<int>>> toMentioners;
+  List<HashSet<int>> rowToRefFromAttCol;
+  List<List<List<rowIdIdentifier>>> splittedTable;
   List<Map<InstrStruct, Cell>> instrTable;
   Map<int, HashSet<Attribute>> colToAtt;
+  List<int> validRowIndexes;
 
   int rowCount;
   int colCount;
@@ -59,9 +71,12 @@ class AnalysisResult {
     required this.pathIndexes,
     required this.attToRefFromAttColToCol,
     required this.attToRefFromDepColToCol,
-    required this.toMentioners,
+    required this.formatedTable,
+    required this.splittedTable,
+    required this.rowToRefFromAttCol,
     required this.instrTable,
     required this.colToAtt,
+    required this.validRowIndexes,
     required this.rowCount,
     required this.colCount,
   }) {
@@ -84,11 +99,14 @@ class AnalysisResult {
       pathIndexes: [],
       attToRefFromAttColToCol: {},
       attToRefFromDepColToCol: {},
-      toMentioners: {},
       instrTable: [],
       colToAtt: {},
+      validRowIndexes: [],
       rowCount: 0,
       colCount: 0,
+      formatedTable: [],
+      splittedTable: [],
+      rowToRefFromAttCol: [],
     );
   }
 }

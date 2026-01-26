@@ -10,7 +10,6 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_u
 import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
 
 class TreeController extends ChangeNotifier {
-
   // --- states ---
   AnalysisResult _lastAnalysis = AnalysisResult.empty();
   final NodeStruct mentionsRoot = NodeStruct(
@@ -33,10 +32,13 @@ class TreeController extends ChangeNotifier {
       _lastAnalysis.attToRefFromAttColToCol;
   Map<Attribute, Map<int, List<int>>> get attToRefFromDepColToCol =>
       _lastAnalysis.attToRefFromDepColToCol;
-  Map<Attribute, Map<int, List<int>>> get toMentioners =>
-      _lastAnalysis.toMentioners;
+  List<HashSet<int>> get rowToRefFromAttCol => _lastAnalysis.rowToRefFromAttCol;
+  List<List<List<rowIdIdentifier>>> get splittedTable =>
+      _lastAnalysis.splittedTable;
   List<Map<InstrStruct, Cell>> get instrTable => _lastAnalysis.instrTable;
   Map<int, HashSet<Attribute>> get colToAtt => _lastAnalysis.colToAtt;
+  List<int> get validRowIndexes => _lastAnalysis.validRowIndexes;
+  List<List<String>> get formatedTable => _lastAnalysis.formatedTable;
   List<int> get nameIndexes => _lastAnalysis.nameIndexes;
   bool get noResult => _lastAnalysis.noResult;
 
@@ -44,15 +46,19 @@ class TreeController extends ChangeNotifier {
   set lastAnalysis(AnalysisResult analysisResult) {
     _lastAnalysis = analysisResult;
   }
+
   set mentionsRootChildren(List<NodeStruct>? children) {
     mentionsRoot.newChildren = children;
   }
+
   set mentionsRootRowId(int rowId) {
     mentionsRoot.rowId = rowId;
   }
+
   set mentionsRootColId(int colId) {
     mentionsRoot.colId = colId;
   }
+
   set searchRootChildren(List<NodeStruct>? children) {
     searchRoot.newChildren = children;
   }
@@ -70,5 +76,4 @@ class TreeController extends ChangeNotifier {
       node.newChildren!.add(NodeStruct(rowId: rowId));
     }
   }
-  
 }
