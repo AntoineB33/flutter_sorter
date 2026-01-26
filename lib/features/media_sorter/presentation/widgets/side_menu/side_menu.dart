@@ -90,7 +90,7 @@ class _SideMenuState extends State<SideMenu> {
               : null,
             style: TextButton.styleFrom(
               foregroundColor: spreadsheetController.canBeSorted()
-                  ? Colors.white
+                  ? Colors.black
                   : Colors.grey,
             ),
             child: Text("Sort media"),

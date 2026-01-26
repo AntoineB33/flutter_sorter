@@ -76,7 +76,7 @@ class SpreadsheetKeyboardDelegate {
     } else if (isControl && keyLabel == 'v') {
       manager.pasteSelection();
       return KeyEventResult.handled;
-    } else if (keyLabel == 'delete') {
+    } else if (keyLabel == 'delete' || keyLabel == 'backspace') {
       manager.delete();
       return KeyEventResult.handled;
     } else if (isControl && keyLabel == 'z') {

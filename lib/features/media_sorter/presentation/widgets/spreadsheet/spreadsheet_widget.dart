@@ -61,10 +61,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       final dataController = context.read<SheetDataController>();
       // Case A: Scroll to specific Cell (Your existing logic)
       if (request.cell != null) {
-        if (request.cell!.x > 0 &&
-            request.cell!.y > 0) {
-          _revealCell(request.cell!, controller, dataController);
-        }
+        _revealCell(request.cell!, controller, dataController);
         return;
       }
 
@@ -81,20 +78,23 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   // 3. HELPER FOR SAFE SCROLLING
   void _safelyScroll(ScrollController controller, double offset, bool animate) {
-    final double maxScroll = controller.position.maxScrollExtent;
-    final double clampedOffset = math.min(math.max(offset, 0), maxScroll);
+    final double clampedOffset = math.max(offset, 0);
 
-    if (animate) {
-      controller.animateTo(
-        clampedOffset,
-        duration: const Duration(
-          milliseconds: SpreadsheetConstants.animationDurationMs,
-        ),
-        curve: Curves.easeOut,
-      );
-    } else {
-      controller.jumpTo(clampedOffset);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!controller.hasClients) return;
+      if (animate) {
+          controller.animateTo(
+            clampedOffset,
+            duration: const Duration(
+              milliseconds: SpreadsheetConstants.animationDurationMs,
+            ),
+            curve: Curves.easeOut,
+          );
+      } else {
+        controller.jumpTo(clampedOffset);
+      }
+    });
   }
 
   @override
@@ -116,56 +116,55 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return;
     }
 
-    // Vertical Logic
-    final double targetTop = dataController.getTargetTop(cell.x);
-    final double targetBottom = dataController.getTargetTop(cell.x + 1);
-    final double currentVerticalOffset = _verticalController.offset;
-    final double verticalViewport =
-        _verticalController.position.viewportDimension -
-        controller.sheet.rowHeaderWidth;
+    if (cell.y > 0) {
+      // Vertical Logic
+      final double targetTop = dataController.getTargetTop(cell.x) - dataController.getTargetTop(1);
+      final double targetBottom = dataController.getTargetTop(cell.x + 1);
+      final double currentVerticalOffset =
+          _verticalController.offset;
+      final double verticalViewport =
+          _verticalController.position.viewportDimension -
+          controller.sheet.rowHeaderWidth;
 
-    double? newVerticalOffset;
+      double? newVerticalOffset;
 
-    if (targetTop < currentVerticalOffset) {
-      newVerticalOffset = targetTop;
-    } else if (targetBottom > currentVerticalOffset + verticalViewport) {
-      newVerticalOffset = targetBottom - verticalViewport;
+      if (targetTop < currentVerticalOffset) {
+        newVerticalOffset = targetTop;
+      } else if (targetBottom > currentVerticalOffset + verticalViewport) {
+        newVerticalOffset = targetBottom - verticalViewport;
+        controller.updateRowColCount(
+          visibleHeight: targetBottom,
+        );
+      }
+
+      if (newVerticalOffset != null) {
+        _safelyScroll(_verticalController, newVerticalOffset, true);
+      }
     }
 
-    if (newVerticalOffset != null) {
-      final double maxScroll = _verticalController.position.maxScrollExtent;
-      final double clampedOffset = math.min(
-        math.max(newVerticalOffset, 0),
-        maxScroll,
-      );
+    if (cell.x > 0) {
+      // Horizontal Logic
+      final double targetLeft = dataController.getTargetLeft(cell.y) - dataController.getTargetLeft(1);
+      final double targetRight = dataController.getTargetLeft(cell.y + 1);
+      final double currentHorizontalOffset = _horizontalController.offset;
+      final double horizontalViewport =
+          _horizontalController.position.viewportDimension -
+          controller.sheet.rowHeaderWidth;
 
-      _safelyScroll(_verticalController, clampedOffset, true);
-    }
+      double? newHorizontalOffset;
 
-    // Horizontal Logic
-    final double targetLeft = dataController.getTargetLeft(cell.y);
-    final double targetRight = dataController.getTargetLeft(cell.y + 1);
-    final double currentHorizontalOffset = _horizontalController.offset;
-    final double horizontalViewport =
-        _horizontalController.position.viewportDimension -
-        controller.sheet.rowHeaderWidth;
+      if (targetLeft < currentHorizontalOffset) {
+        newHorizontalOffset = targetLeft;
+      } else if (targetRight > currentHorizontalOffset + horizontalViewport) {
+        newHorizontalOffset = targetRight - horizontalViewport;
+        controller.updateRowColCount(
+          visibleWidth: targetRight,
+        );
+      }
 
-    double? newHorizontalOffset;
-
-    if (targetLeft < currentHorizontalOffset) {
-      newHorizontalOffset = targetLeft;
-    } else if (targetRight > currentHorizontalOffset + horizontalViewport) {
-      newHorizontalOffset = targetRight - horizontalViewport;
-    }
-
-    if (newHorizontalOffset != null) {
-      final double maxScroll = _horizontalController.position.maxScrollExtent;
-      final double clampedOffset = math.min(
-        math.max(newHorizontalOffset, 0),
-        maxScroll,
-      );
-
-      _safelyScroll(_horizontalController, clampedOffset, true);
+      if (newHorizontalOffset != null) {
+        _safelyScroll(_horizontalController, newHorizontalOffset, true);
+      }
     }
   }
 

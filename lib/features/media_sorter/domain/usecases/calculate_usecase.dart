@@ -1138,7 +1138,7 @@ class CalculateUsecase {
     //   }
     // }
 
-    final depPattern = table[0].map((cell) => cell.split(".")).toList();
+    final depPattern = table[0].map((cell) => cell.split("#")).toList();
 
     final Map<int, Map<int, (Attribute, bool, RegExpMatch, List<List<int>>)>>
     depCache = {};
