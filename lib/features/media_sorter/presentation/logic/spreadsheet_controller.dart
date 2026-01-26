@@ -460,8 +460,10 @@ class SpreadsheetController extends ChangeNotifier {
       _selectionController.primarySelectedCell.x,
       _selectionController.primarySelectedCell.y,
     );
+    setTable(updates);
+  }
 
-    // 2. Update UI & Persist
+  void setTable(List<CellUpdate> updates) {
     _historyController.discardCurrent();
     for (var update in updates) {
       updateCell(update.row, update.col, update.value, keepPrevious: true);
@@ -478,14 +480,7 @@ class SpreadsheetController extends ChangeNotifier {
     bool historyNavigation = false,
     bool keepPrevious = false,
   }) {
-    String prevValue = _dataController.updateCell(
-      row,
-      col,
-      newValue,
-      onChange: onChange,
-      historyNavigation: historyNavigation,
-      keepPrevious: keepPrevious,
-    );
+    String prevValue = _dataController.updateCell(row, col, newValue);
     if (!historyNavigation) {
       _historyController.recordCellChange(
         row,
@@ -688,7 +683,9 @@ class SpreadsheetController extends ChangeNotifier {
       }
     }
     List<List<String>> formatedTable = _treeController.formatedTable;
-    List<List<String>> sortedTable = sortOrder.map((i) => formatedTable[i]).toList();
+    List<List<String>> sortedTable = sortOrder
+        .map((i) => formatedTable[i])
+        .toList();
     for (int rowId = 0; rowId < rowCount; rowId++) {
       for (int colId = 0; colId < colCount; colId++) {
         if (sortedTable[rowId][colId].isEmpty) {
@@ -696,15 +693,27 @@ class SpreadsheetController extends ChangeNotifier {
         }
         String newVal = "";
         int strIndex = 0;
-        for (rowIdIdentifier rid in _treeController.splittedTable[rowId][colId]) {
-          newVal += formatedTable[rid.rowId][colId].substring(strIndex, rid.start);
+        for (RowIdIdentifier rid
+            in _treeController.splittedTable[rowId][colId]) {
+          newVal += formatedTable[rid.rowId][colId].substring(
+            strIndex,
+            rid.start,
+          );
           newVal += toNewPlacement[rid.rowId].toString();
           strIndex = rid.start + rid.length;
         }
-        sortedTable[rowId][colId] = newVal + formatedTable[rowId][colId].substring(strIndex);
+        sortedTable[rowId][colId] =
+            newVal + formatedTable[rowId][colId].substring(strIndex);
       }
     }
-    _dataController.setTable(sortedTable);
-    notify();
+    final List<CellUpdate> updates = [];
+    for (int rowId = 0; rowId < sortedTable.length; rowId++) {
+      for (int colId = 0; colId < sortedTable[rowId].length; colId++) {
+        updates.add(
+          CellUpdate(row: rowId, col: colId, value: sortedTable[rowId][colId]),
+        );
+      }
+    }
+    setTable(updates);
   }
 }

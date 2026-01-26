@@ -49,7 +49,7 @@ class CalculateUsecase {
   Map<Attribute, Map<int, List<int>>> get attToRefFromDepColToCol =>
       result.attToRefFromDepColToCol;
   List<HashSet<int>> get rowToRefFromAttCol => result.rowToRefFromAttCol;
-  List<List<List<rowIdIdentifier>>> get splittedTable => result.splittedTable;
+  List<List<List<RowIdIdentifier>>> get splittedTable => result.splittedTable;
 
   List<Map<InstrStruct, Cell>> get instrTable => result.instrTable;
   set instrTable(List<Map<InstrStruct, Cell>> value) {
@@ -431,7 +431,7 @@ class CalculateUsecase {
       }
       if (intNameSaved != null) {
         splittedTable[rowId][colId].add(
-          rowIdIdentifier(
+          RowIdIdentifier(
             start: startStrRowId,
             length: name.length,
             rowId: numK,

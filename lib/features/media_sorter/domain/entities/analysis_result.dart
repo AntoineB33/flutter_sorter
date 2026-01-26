@@ -6,12 +6,12 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
 
-class rowIdIdentifier {
+class RowIdIdentifier {
   int start;
   int length;
   int rowId;
 
-  rowIdIdentifier({
+  RowIdIdentifier({
     required this.start,
     required this.length,
     required this.rowId,
@@ -49,7 +49,7 @@ class AnalysisResult {
   Map<Attribute, Map<int, Cols>> attToRefFromAttColToCol;
   Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol;
   List<HashSet<int>> rowToRefFromAttCol;
-  List<List<List<rowIdIdentifier>>> splittedTable;
+  List<List<List<RowIdIdentifier>>> splittedTable;
   List<Map<InstrStruct, Cell>> instrTable;
   Map<int, HashSet<Attribute>> colToAtt;
   List<int> validRowIndexes;

@@ -44,10 +44,6 @@ class SheetDataController extends ChangeNotifier {
     required GetSheetDataUseCase getDataUseCase,
     required SaveSheetDataUseCase saveSheetDataUseCase,
   })  : _saveSheetDataUseCase = saveSheetDataUseCase;
-  
-  void setTable(List<List<String>> newTable) {
-    sheet.sheetContent.table = newTable;
-  }
 
   void scheduleSheetSave(int saveDelayMs) {
     _saveExecutors[sheetName]!.execute(() async {
@@ -192,11 +188,7 @@ class SheetDataController extends ChangeNotifier {
   String updateCell(
     int row,
     int col,
-    String newValue, {
-    bool onChange = false,
-    bool historyNavigation = false,
-    bool keepPrevious = false,
-  }) {
+    String newValue) {
     String prevValue = '';
     if (newValue.isNotEmpty ||
         (row < rowCount && col < colCount)) {

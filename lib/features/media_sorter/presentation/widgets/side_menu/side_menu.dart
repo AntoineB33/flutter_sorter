@@ -2,7 +2,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/spreadsheet_controller.dart';
 import 'analysis_tree_node.dart';
 
@@ -83,8 +82,6 @@ class _SideMenuState extends State<SideMenu> {
           // --- Autocomplete Input Field ---
           _buildSheetAutocomplete(spreadsheetController),
 
-          const SizedBox(height: 20),
-          const Divider(),
           const SizedBox(height: 10),
 
           TextButton(

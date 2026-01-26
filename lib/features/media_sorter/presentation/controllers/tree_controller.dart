@@ -33,7 +33,7 @@ class TreeController extends ChangeNotifier {
   Map<Attribute, Map<int, List<int>>> get attToRefFromDepColToCol =>
       _lastAnalysis.attToRefFromDepColToCol;
   List<HashSet<int>> get rowToRefFromAttCol => _lastAnalysis.rowToRefFromAttCol;
-  List<List<List<rowIdIdentifier>>> get splittedTable =>
+  List<List<List<RowIdIdentifier>>> get splittedTable =>
       _lastAnalysis.splittedTable;
   List<Map<InstrStruct, Cell>> get instrTable => _lastAnalysis.instrTable;
   Map<int, HashSet<Attribute>> get colToAtt => _lastAnalysis.colToAtt;
