@@ -181,6 +181,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                     constraints.maxHeight - controller.sheet.colHeaderHeight,
                 visibleWidth:
                     constraints.maxWidth - controller.sheet.rowHeaderWidth,
+                save: false,
               );
             }
           });
@@ -258,7 +259,10 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     SpreadsheetController controller,
   ) {
     if (notification is ScrollUpdateNotification) {
-      if (notification.dragDetails == null) return false;
+      if (notification.dragDetails == null) {
+        controller.saveLastSelection();
+        return false;
+      }
       if (notification.metrics.axis == Axis.vertical) {
         controller.updateRowColCount(
           visibleHeight:

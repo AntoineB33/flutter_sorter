@@ -547,6 +547,7 @@ class SpreadsheetController extends ChangeNotifier {
       _selectionController.selection = SelectionModel.empty();
       await _dataController.saveLastSelection(_selectionController.selection);
     }
+    
 
     _dataController.availableSheets = await _getDataUseCase.getAllSheetNames();
     if (!CheckValidStrings.isValidSheetName(_dataController.sheetName)) {

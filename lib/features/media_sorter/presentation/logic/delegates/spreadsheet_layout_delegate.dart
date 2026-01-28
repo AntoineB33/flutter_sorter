@@ -100,16 +100,18 @@ class SpreadsheetLayoutDelegate {
           );
           if (heightItNeeded == currentHeight) {
             double newHeight = heightItNeeds;
-            for (int j = 0; j < _dataController.colCount; j++) {
-              if (j == col) continue;
-              newHeight = max(
-                _dataController.calculateRequiredRowHeight(
-                  _dataController.sheetContent.table[row][j],
-                  j,
-                ),
-                newHeight,
-              );
-              if (newHeight == heightItNeeded) break;
+            if (row < _dataController.sheetContent.table.length) {
+              for (int j = 0; j < _dataController.colCount; j++) {
+                if (j == col) continue;
+                newHeight = max(
+                  _dataController.calculateRequiredRowHeight(
+                    _dataController.sheetContent.table[row][j],
+                    j,
+                  ),
+                  newHeight,
+                );
+                if (newHeight == heightItNeeded) break;
+              }
             }
             if (newHeight < heightItNeeded) {
               double heightDiff = currentHeight - newHeight;
