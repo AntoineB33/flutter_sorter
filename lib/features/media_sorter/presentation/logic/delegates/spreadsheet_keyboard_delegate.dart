@@ -45,6 +45,7 @@ class SpreadsheetKeyboardDelegate {
         false,
         true,
       );
+      debugPrint("${manager.primarySelectedCell.x}");
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowLeft) {
       manager.setPrimarySelection(

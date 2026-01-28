@@ -80,21 +80,17 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   void _safelyScroll(ScrollController controller, double offset, bool animate) {
     final double clampedOffset = math.max(offset, 0);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (!controller.hasClients) return;
-      if (animate) {
-          controller.animateTo(
-            clampedOffset,
-            duration: const Duration(
-              milliseconds: SpreadsheetConstants.animationDurationMs,
-            ),
-            curve: Curves.easeOut,
-          );
-      } else {
-        controller.jumpTo(clampedOffset);
-      }
-    });
+    if (animate) {
+        controller.animateTo(
+          clampedOffset, 
+          duration: const Duration(
+            milliseconds: SpreadsheetConstants.animationDurationMs,
+          ),
+          curve: Curves.easeOut,
+        );
+    } else {
+      controller.jumpTo(clampedOffset);
+    }
   }
 
   @override
@@ -116,7 +112,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       return;
     }
 
-    if (cell.y > 0) {
+    if (cell.x > 0) {
       // Vertical Logic
       final double targetTop = dataController.getTargetTop(cell.x) - dataController.getTargetTop(1);
       final double targetBottom = dataController.getTargetTop(cell.x + 1);
@@ -142,7 +138,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       }
     }
 
-    if (cell.x > 0) {
+    if (cell.y > 0) {
       // Horizontal Logic
       final double targetLeft = dataController.getTargetLeft(cell.y) - dataController.getTargetLeft(1);
       final double targetRight = dataController.getTargetLeft(cell.y + 1);
@@ -199,49 +195,55 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           // --------------------------------------------------------
           // SCROLLBAR CONFIGURATION
           // --------------------------------------------------------
-          // 1. Vertical Scrollbar
-          child: Scrollbar(
-            controller: _verticalController,
-            thumbVisibility: true,
-            trackVisibility: true, // Makes it look like a desktop app
-            // Important: Only react to Vertical updates
-            notificationPredicate: (notification) =>
-                notification.depth == 0 &&
-                notification.metrics.axis == Axis.vertical,
-
-            // 2. Horizontal Scrollbar
+          // 1. Force RTL Directionality to move Vertical Scrollbar to the LEFT
+          child: Directionality(
+            textDirection: TextDirection.rtl,
             child: Scrollbar(
-              controller: _horizontalController,
+              controller: _verticalController,
               thumbVisibility: true,
-              trackVisibility: true,
-              // Important: Only react to Horizontal updates
+              trackVisibility: true, 
+              // Important: Only react to Vertical updates
               notificationPredicate: (notification) =>
                   notification.depth == 0 &&
-                  notification.metrics.axis == Axis.horizontal,
-
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (notification) =>
-                    _handleScrollNotification(notification, controller),
-                child: TableView.builder(
-                  verticalDetails: ScrollableDetails.vertical(
-                    controller: _verticalController,
-                  ),
-                  horizontalDetails: ScrollableDetails.horizontal(
-                    controller: _horizontalController,
-                  ),
-                  pinnedRowCount: min(2, controller.tableViewRows + 1),
-                  pinnedColumnCount: min(2, controller.tableViewCols + 1),
-                  rowCount: controller.tableViewRows + 1,
-                  columnCount: controller.tableViewCols + 1,
-                  columnBuilder: (index) => _buildColumnSpan(index),
-                  rowBuilder: (index) =>
-                      _buildRowSpan(index, controller, dataController),
-                  cellBuilder: (context, vicinity) => _buildCellDispatcher(
-                    context,
-                    vicinity,
-                    controller,
-                    dataController,
-                    selectionController,
+                  notification.metrics.axis == Axis.vertical,
+            
+              // 2. Reset Directionality to LTR for content and Horizontal Scrollbar
+              child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: Scrollbar(
+                  controller: _horizontalController,
+                  thumbVisibility: true,
+                  trackVisibility: true,
+                  // Important: Only react to Horizontal updates
+                  notificationPredicate: (notification) =>
+                      notification.depth == 0 &&
+                      notification.metrics.axis == Axis.horizontal,
+            
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (notification) =>
+                        _handleScrollNotification(notification, controller),
+                    child: TableView.builder(
+                      verticalDetails: ScrollableDetails.vertical(
+                        controller: _verticalController,
+                      ),
+                      horizontalDetails: ScrollableDetails.horizontal(
+                        controller: _horizontalController,
+                      ),
+                      pinnedRowCount: min(2, controller.tableViewRows + 1),
+                      pinnedColumnCount: min(2, controller.tableViewCols + 1),
+                      rowCount: controller.tableViewRows + 1,
+                      columnCount: controller.tableViewCols + 1,
+                      columnBuilder: (index) => _buildColumnSpan(index),
+                      rowBuilder: (index) =>
+                          _buildRowSpan(index, controller, dataController),
+                      cellBuilder: (context, vicinity) => _buildCellDispatcher(
+                        context,
+                        vicinity,
+                        controller,
+                        dataController,
+                        selectionController,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -251,12 +253,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       },
     );
   }
-
   bool _handleScrollNotification(
     ScrollNotification notification,
     SpreadsheetController controller,
   ) {
     if (notification is ScrollUpdateNotification) {
+      if (notification.dragDetails == null) return false;
       if (notification.metrics.axis == Axis.vertical) {
         controller.updateRowColCount(
           visibleHeight:
