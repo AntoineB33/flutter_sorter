@@ -113,6 +113,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     super.dispose();
   }
 
+  void adjustTableRow(
+    SelectionController selectionController,double targetTop,
+    double targetBottom,) {
+  }
+
   /// Calculates offsets and scrolls to ensure the target cell is visible.
   void _revealCell(
     math.Point<int> cell,

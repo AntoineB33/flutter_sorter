@@ -92,8 +92,8 @@ class SheetLoaderService {
 
     // Trigger Controller updates
     updateRowColCount(
-      visibleHeight: _gridController.visibleWindowHeight,
-      visibleWidth: _gridController.visibleWindowWidth,
+      visibleHeight: _selectionController.selection.scrollOffsetX + _gridController.visibleWindowHeight,
+      visibleWidth: _selectionController.selection.scrollOffsetY + _gridController.visibleWindowWidth,
       notify: false,
     );
 
