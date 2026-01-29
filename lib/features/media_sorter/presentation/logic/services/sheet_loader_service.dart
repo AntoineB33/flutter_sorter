@@ -100,7 +100,7 @@ class SheetLoaderService {
     _streamController.scrollToOffset(
       x: _selectionController.selection.scrollOffsetX,
       y: _selectionController.selection.scrollOffsetY,
-      animate: false,
+      animate: true,
     );
 
     saveAndCalculate(save: false);

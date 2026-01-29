@@ -29,6 +29,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   final ScrollController _horizontalController = ScrollController();
   StreamSubscription? _scrollSubscription;
   bool _initialLayoutDone = false;
+  bool _isProgrammaticScroll = true;
 
   @override
   void initState() {
@@ -59,19 +60,20 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       if (!mounted) return;
       final controller = context.read<SpreadsheetController>();
       final dataController = context.read<SheetDataController>();
+      final selectionController = context.read<SelectionController>();
       // Case A: Scroll to specific Cell (Your existing logic)
       if (request.cell != null) {
-        _revealCell(request.cell!, controller, dataController);
+        _revealCell(request.cell!, controller, dataController, selectionController);
         return;
       }
 
       // Case B: Scroll to specific Pixel Offset (New logic)
-      if (request.offsetX != null && _horizontalController.hasClients) {
-        _safelyScroll(_horizontalController, request.offsetX!, request.animate);
+      if (request.offsetX != null && _verticalController.hasClients) {
+        _safelyScroll(_verticalController, request.offsetX!, request.animate);
       }
 
-      if (request.offsetY != null && _verticalController.hasClients) {
-        _safelyScroll(_verticalController, request.offsetY!, request.animate);
+      if (request.offsetY != null && _horizontalController.hasClients) {
+        _safelyScroll(_horizontalController, request.offsetY!, request.animate);
       }
     });
   }
@@ -81,13 +83,22 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     final double clampedOffset = math.max(offset, 0);
 
     if (animate) {
-        controller.animateTo(
-          clampedOffset, 
-          duration: const Duration(
-            milliseconds: SpreadsheetConstants.animationDurationMs,
-          ),
-          curve: Curves.easeOut,
-        );
+      _isProgrammaticScroll = true;
+      controller.animateTo(
+        clampedOffset,
+        duration: const Duration(
+          milliseconds: SpreadsheetConstants.animationDurationMs,
+        ),
+        curve: Curves.easeOut,
+      );
+      Future.delayed(
+        const Duration(
+          milliseconds: SpreadsheetConstants.animationDurationMs,
+        ),
+        () {
+          _isProgrammaticScroll = false;
+        },
+      );
     } else {
       controller.jumpTo(clampedOffset);
     }
@@ -107,6 +118,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     math.Point<int> cell,
     SpreadsheetController controller,
     SheetDataController dataController,
+    SelectionController selectionController,
   ) {
     if (!_verticalController.hasClients || !_horizontalController.hasClients) {
       return;
@@ -114,54 +126,55 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
     if (cell.x > 0) {
       // Vertical Logic
-      final double targetTop = dataController.getTargetTop(cell.x) - dataController.getTargetTop(1);
+      final double targetTop =
+          dataController.getTargetTop(cell.x) - dataController.getTargetTop(1);
       final double targetBottom = dataController.getTargetTop(cell.x + 1);
-      final double currentVerticalOffset =
-          _verticalController.offset;
+      selectionController.scrollOffsetX = _verticalController.offset;
       final double verticalViewport =
           _verticalController.position.viewportDimension -
           controller.sheet.rowHeaderWidth;
 
-      double? newVerticalOffset;
-
-      if (targetTop < currentVerticalOffset) {
-        newVerticalOffset = targetTop;
-      } else if (targetBottom > currentVerticalOffset + verticalViewport) {
-        newVerticalOffset = targetBottom - verticalViewport;
-        controller.updateRowColCount(
-          visibleHeight: targetBottom,
-        );
+      bool scroll = true;
+      if (targetTop < selectionController.scrollOffsetX) {
+        selectionController.scrollOffsetX = targetTop;
+      } else if (targetBottom > selectionController.scrollOffsetX + verticalViewport) {
+        selectionController.scrollOffsetX = targetBottom - verticalViewport;
+        controller.updateRowColCount(visibleHeight: targetBottom);
+      } else {
+        scroll = false;
       }
 
-      if (newVerticalOffset != null) {
-        _safelyScroll(_verticalController, newVerticalOffset, true);
+      if (scroll) {
+        _safelyScroll(_verticalController, selectionController.scrollOffsetX, true);
       }
     }
 
     if (cell.y > 0) {
       // Horizontal Logic
-      final double targetLeft = dataController.getTargetLeft(cell.y) - dataController.getTargetLeft(1);
+      final double targetLeft =
+          dataController.getTargetLeft(cell.y) -
+          dataController.getTargetLeft(1);
       final double targetRight = dataController.getTargetLeft(cell.y + 1);
-      final double currentHorizontalOffset = _horizontalController.offset;
+      selectionController.scrollOffsetY = _horizontalController.offset;
       final double horizontalViewport =
           _horizontalController.position.viewportDimension -
           controller.sheet.rowHeaderWidth;
 
-      double? newHorizontalOffset;
-
-      if (targetLeft < currentHorizontalOffset) {
-        newHorizontalOffset = targetLeft;
-      } else if (targetRight > currentHorizontalOffset + horizontalViewport) {
-        newHorizontalOffset = targetRight - horizontalViewport;
-        controller.updateRowColCount(
-          visibleWidth: targetRight,
-        );
+      bool scroll = true;
+      if (targetLeft < selectionController.scrollOffsetY) {
+        selectionController.scrollOffsetY = targetLeft;
+      } else if (targetRight > selectionController.scrollOffsetY + horizontalViewport) {
+        selectionController.scrollOffsetY = targetRight - horizontalViewport;
+        controller.updateRowColCount(visibleWidth: targetRight);
+      } else {
+        scroll = false;
       }
 
-      if (newHorizontalOffset != null) {
-        _safelyScroll(_horizontalController, newHorizontalOffset, true);
+      if (scroll) {
+        _safelyScroll(_horizontalController, selectionController.scrollOffsetY, true);
       }
     }
+    dataController.saveLastSelection(selectionController.selection);
   }
 
   @override
@@ -202,12 +215,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
             child: Scrollbar(
               controller: _verticalController,
               thumbVisibility: true,
-              trackVisibility: true, 
+              trackVisibility: true,
               // Important: Only react to Vertical updates
               notificationPredicate: (notification) =>
                   notification.depth == 0 &&
                   notification.metrics.axis == Axis.vertical,
-            
+
               // 2. Reset Directionality to LTR for content and Horizontal Scrollbar
               child: Directionality(
                 textDirection: TextDirection.ltr,
@@ -219,7 +232,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                   notificationPredicate: (notification) =>
                       notification.depth == 0 &&
                       notification.metrics.axis == Axis.horizontal,
-            
+
                   child: NotificationListener<ScrollNotification>(
                     onNotification: (notification) =>
                         _handleScrollNotification(notification, controller),
@@ -254,13 +267,13 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       },
     );
   }
+
   bool _handleScrollNotification(
     ScrollNotification notification,
     SpreadsheetController controller,
   ) {
     if (notification is ScrollUpdateNotification) {
-      if (notification.dragDetails == null) {
-        controller.saveLastSelection();
+      if (_isProgrammaticScroll) {
         return false;
       }
       if (notification.metrics.axis == Axis.vertical) {
