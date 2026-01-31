@@ -367,11 +367,7 @@ class CalculateUsecase {
     return true;
   }
 
-  Attribute getAttAndCol(
-    String attWritten,
-    int rowId,
-    int colId,
-  ) {
+  Attribute getAttAndCol(String attWritten, int rowId, int colId) {
     Attribute att = Attribute();
     List<String> splitStr = attWritten.split(".");
     String name = attWritten;
@@ -428,9 +424,16 @@ class CalculateUsecase {
         );
       }
       if (intNameSaved != null) {
-        formatedTable[rowId][colId].strings.last += attWritten.substring(0, startStrRowId);
+        formatedTable[rowId][colId].strings.last += attWritten.substring(
+          0,
+          startStrRowId,
+        );
         formatedTable[rowId][colId].integers.add(numK);
-        formatedTable[rowId][colId].strings.add(attWritten.substring(startStrRowId + name.length));
+        formatedTable[rowId][colId].strings.add(
+          attWritten.substring(startStrRowId + name.length),
+        );
+      } else {
+        formatedTable[rowId][colId].strings.last += attWritten;
       }
       att = Attribute.row(numK);
       attColId = all;
@@ -529,7 +532,10 @@ class CalculateUsecase {
     formatedTable
       ..clear()
       ..addAll(
-        List.generate(rowCount, (i) => List.generate(colCount, (j) => StrInt())),
+        List.generate(
+          rowCount,
+          (i) => List.generate(colCount, (j) => StrInt()),
+        ),
       );
     for (int colId = 0; colId < colCount; colId++) {
       int index = getIndexFromString(table[0][colId]);
@@ -1184,47 +1190,70 @@ class CalculateUsecase {
                 return;
               }
             }
-            formatedTable[rowId][colId].strings.last += (firstInstr ? "" : "; ") + (match.group(0) ?? "") + (match.group(1) ?? "");
+            formatedTable[rowId][colId].strings.last +=
+                (firstInstr ? "" : "; ") +
+                (match.group(1) ?? "") +
+                (match.group(2) ?? "");
             firstInstr = false;
             Attribute att = getAttAndCol(
               match.namedGroup('att')!,
               rowId,
-              colId
+              colId,
             );
             if (errorRoot.newChildren!.isNotEmpty) {
               return;
             }
+            formatedTable[rowId][colId].strings.last += match.group(4) ?? "";
             int nameLength = match.namedGroup('att')!.length;
             if (separations.isNotEmpty) {
               int lastStrLen = formatedTable[rowId][colId].strings.last.length;
               int startAttPos = instr.length - lastStrLen - nameLength;
               if (lastStrLen < instr.length) {
-                int separationId = separations.indexWhere((e) => e > startAttPos);
+                int separationId = separations.indexWhere(
+                  (e) => e > startAttPos,
+                );
                 int separation = separations[separationId];
-                if (separationId % 2 == 0 || separation - startAttPos < nameLength) {
+                if (separationId % 2 == 0 ||
+                    separation - startAttPos < nameLength) {
                   errorRoot.newChildren!.add(
                     NodeStruct(
-                      message:
-                          "Attribute reference overlaps with header",
+                      message: "Attribute reference overlaps with header",
                       cell: Cell(rowId: rowId, colId: colId),
                     ),
                   );
                   return;
                 }
               }
-              int strId = formatedTable[rowId][colId].strings.length - 2;
-              int startStrIdInSplit = formatedTable[rowId][colId].strings[strId].length - startAttPos;
+              int strId = formatedTable[rowId][colId].strings.length - 1;
+              int startStrIdInSplit = lastStrLen - instr.length;
+              if (lastStrLen < instr.length) {
+                startStrIdInSplit =
+                    formatedTable[rowId][colId].strings[strId].length -
+                    startAttPos;
+                strId--;
+              } else {
+                startAttPos = maxInt;
+              }
               int correctId = 0;
               if (separations[0] != 0) {
-                formatedTable[rowId][colId].strings[strId].replaceRange(startStrIdInSplit, startStrIdInSplit + separations[0], "#");
+                formatedTable[rowId][colId].strings[strId].replaceRange(
+                  startStrIdInSplit,
+                  startStrIdInSplit + separations[0],
+                  "#",
+                );
                 correctId = separations[0] - 1;
               }
+              int strIdNext = strId + 1;
               for (int i = 2; i < separations.length; i += 2) {
                 if (separations[i] > startAttPos) {
-                  strId++;
+                  strId = strIdNext;
                   startStrIdInSplit = 0;
                 }
-                formatedTable[rowId][colId].strings[strId].replaceRange(startStrIdInSplit + separations[i - 1] - correctId, startStrIdInSplit + separations[i] - correctId, "#");
+                formatedTable[rowId][colId].strings[strId].replaceRange(
+                  startStrIdInSplit + separations[i - 1] - correctId,
+                  startStrIdInSplit + separations[i] - correctId,
+                  "#",
+                );
                 correctId += separations[i] - separations[i - 1] - 1;
               }
             }

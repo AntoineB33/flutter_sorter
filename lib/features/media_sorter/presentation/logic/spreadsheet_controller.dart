@@ -649,7 +649,7 @@ class SpreadsheetController extends ChangeNotifier {
 
   void sortMedia() {
     List<int> validRowIndexes = _treeController.validRowIndexes;
-    List<int> sortOrder = [];
+    List<int> sortOrder = [0];
     List<int> stack = _sortController.bestMediaSortOrder!
         .asMap()
         .entries
@@ -659,30 +659,35 @@ class SpreadsheetController extends ChangeNotifier {
         .toList();
     final rowToRowRefs = _treeController.rowToRefFromAttCol;
     final table = _dataController.sheetContent.table;
-    List<bool> added = List.filled(table.length, false);
+    List<int> added = List.filled(table.length, 0);
     for (int i in stack) {
-      added[i] = true;
+      added[i] = 1;
     }
     List<String> toNewPlacement = List.filled(table.length, '');
     for (int rowId in _treeController.validRowIndexes) {
       stack.add(rowId);
       while (stack.isNotEmpty) {
         int current = stack[stack.length - 1];
+        if (added[current] == 2) {
+          stack.removeLast();
+          continue;
+        }
         for (int ref in rowToRowRefs[current]) {
-          if (!added[ref]) {
+          if (added[ref] != 2) {
             stack.add(ref);
+            added[ref] = 1;
           }
         }
         if (stack[stack.length - 1] == current) {
           toNewPlacement[current] = sortOrder.length.toString();
           sortOrder.add(current);
           stack.removeLast();
-          added[current] = true;
+          added[current] = 2;
         }
       }
     }
-    for (int rowId = 0; rowId < table.length; rowId++) {
-      if (!added[rowId]) {
+    for (int rowId = 1; rowId < table.length; rowId++) {
+      if (added[rowId] == 0) {
         sortOrder.add(rowId);
       }
     }
@@ -690,7 +695,7 @@ class SpreadsheetController extends ChangeNotifier {
     List<List<String>> sortedTable = sortOrder
         .map((i) => table[i])
         .toList();
-    for (int rowId = 0; rowId < rowCount; rowId++) {
+    for (int rowId = 1; rowId < rowCount; rowId++) {
       for (int colId = 0; colId < colCount; colId++) {
         if (formatedTable[rowId][colId].integers.isEmpty) {
           continue;
@@ -707,7 +712,7 @@ class SpreadsheetController extends ChangeNotifier {
       }
     }
     final List<CellUpdate> updates = [];
-    for (int rowId = 0; rowId < sortedTable.length; rowId++) {
+    for (int rowId = 1; rowId < sortedTable.length; rowId++) {
       for (int colId = 0; colId < sortedTable[rowId].length; colId++) {
         updates.add(
           CellUpdate(row: rowId, col: colId, value: sortedTable[rowId][colId]),
