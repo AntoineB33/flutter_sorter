@@ -6,16 +6,11 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
 
-class RowIdIdentifier {
-  int start;
-  int length;
-  int rowId;
 
-  RowIdIdentifier({
-    required this.start,
-    required this.length,
-    required this.rowId,
-  });
+class StrInt {
+  List<String> strings = [""];
+  List<int> integers = [];
+  StrInt();
 }
 
 class AnalysisResult {
@@ -41,7 +36,7 @@ class AnalysisResult {
   Map<String, List<int>> attToCol;
   List<int> nameIndexes;
   List<int> pathIndexes;
-  List<List<String>> formatedTable;
+  List<List<StrInt>> formatedTable;
 
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
@@ -49,7 +44,6 @@ class AnalysisResult {
   Map<Attribute, Map<int, Cols>> attToRefFromAttColToCol;
   Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol;
   List<HashSet<int>> rowToRefFromAttCol;
-  List<List<List<RowIdIdentifier>>> splittedTable;
   List<Map<InstrStruct, Cell>> instrTable;
   Map<int, HashSet<Attribute>> colToAtt;
   List<int> validRowIndexes;
@@ -72,7 +66,6 @@ class AnalysisResult {
     required this.attToRefFromAttColToCol,
     required this.attToRefFromDepColToCol,
     required this.formatedTable,
-    required this.splittedTable,
     required this.rowToRefFromAttCol,
     required this.instrTable,
     required this.colToAtt,
@@ -105,7 +98,6 @@ class AnalysisResult {
       rowCount: 0,
       colCount: 0,
       formatedTable: [],
-      splittedTable: [],
       rowToRefFromAttCol: [],
     );
   }

@@ -39,7 +39,7 @@ class CalculateUsecase {
   List<int> get nameIndexes => result.nameIndexes;
   List<int> get pathIndexes => result.pathIndexes;
   List<int> get validRowIndexes => result.validRowIndexes;
-  List<List<String>> get formatedTable => result.formatedTable;
+  List<List<StrInt>> get formatedTable => result.formatedTable;
 
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
@@ -49,7 +49,6 @@ class CalculateUsecase {
   Map<Attribute, Map<int, List<int>>> get attToRefFromDepColToCol =>
       result.attToRefFromDepColToCol;
   List<HashSet<int>> get rowToRefFromAttCol => result.rowToRefFromAttCol;
-  List<List<List<RowIdIdentifier>>> get splittedTable => result.splittedTable;
 
   List<Map<InstrStruct, Cell>> get instrTable => result.instrTable;
   set instrTable(List<Map<InstrStruct, Cell>> value) {
@@ -372,13 +371,12 @@ class CalculateUsecase {
     String attWritten,
     int rowId,
     int colId,
-    int startStr,
   ) {
     Attribute att = Attribute();
     List<String> splitStr = attWritten.split(".");
     String name = attWritten;
     int attColId = notUsedCst;
-    int startStrRowId = startStr;
+    int startStrRowId = 0;
     if (splitStr.length == 2) {
       name = splitStr[1];
       startStrRowId += splitStr[0].length;
@@ -430,13 +428,9 @@ class CalculateUsecase {
         );
       }
       if (intNameSaved != null) {
-        splittedTable[rowId][colId].add(
-          RowIdIdentifier(
-            start: startStrRowId,
-            length: name.length,
-            rowId: numK,
-          ),
-        );
+        formatedTable[rowId][colId].strings.last += attWritten.substring(0, startStrRowId);
+        formatedTable[rowId][colId].integers.add(numK);
+        formatedTable[rowId][colId].strings.add(attWritten.substring(startStrRowId + name.length));
       }
       att = Attribute.row(numK);
       attColId = all;
@@ -532,15 +526,10 @@ class CalculateUsecase {
     rowToRefFromAttCol
       ..clear()
       ..addAll(List.generate(rowCount, (i) => HashSet<int>()));
-    splittedTable
-      ..clear()
-      ..addAll(
-        List.generate(rowCount, (i) => List.generate(colCount, (j) => [])),
-      );
     formatedTable
       ..clear()
       ..addAll(
-        List.generate(rowCount, (i) => List.generate(colCount, (j) => "")),
+        List.generate(rowCount, (i) => List.generate(colCount, (j) => StrInt())),
       );
     for (int colId = 0; colId < colCount; colId++) {
       int index = getIndexFromString(table[0][colId]);
@@ -564,11 +553,8 @@ class CalculateUsecase {
             continue;
           }
           final cellList = row[colId].split(";");
-          int startStr = 0;
-          for (String attWritten in cellList) {
-            attWritten = attWritten.trim();
-            formatedTable[rowId][colId] +=
-                (startStr == 0 ? "" : "; ") + attWritten;
+          for (String attWrittenNotTrimed in cellList) {
+            String attWritten = attWrittenNotTrimed.trim();
             if (attWritten.isEmpty) {
               errorRoot.newChildren!.add(
                 NodeStruct(
@@ -606,7 +592,7 @@ class CalculateUsecase {
               continue;
             }
 
-            Attribute att = getAttAndCol(attWritten, rowId, colId, startStr);
+            Attribute att = getAttAndCol(attWritten, rowId, colId);
             if (errorRoot.newChildren!.isNotEmpty) {
               return;
             }
@@ -654,7 +640,6 @@ class CalculateUsecase {
             attToRefFromAttColToCol[att]![rowId]!.toInformFstDep.add(
               isAppearFst || isAppearLst || isFst || isLst,
             );
-            startStr += attWritten.length + 2;
           }
         }
       }
@@ -1152,7 +1137,7 @@ class CalculateUsecase {
       for (int colId = 0; colId < row.length; colId++) {
         if (columnTypes[colId] == ColumnType.dependencies &&
             row[colId].isNotEmpty) {
-          int startStr = 0;
+          bool firstInstr = true;
           for (String instr in row[colId].split(";")) {
             instr = instr.trim();
             if (instr.isEmpty) continue;
@@ -1168,21 +1153,16 @@ class CalculateUsecase {
               );
               return;
             }
-
+            List<int> separations = [];
             if (depPattern[colId].length > 1) {
-              instr =
-                  depPattern[colId][0] +
-                  instrSplit
-                      .asMap()
-                      .entries
-                      .map((entry) {
-                        final idx = entry.key;
-                        final split = entry.value;
-                        return split + depPattern[colId][idx + 1];
-                      })
-                      .join("");
+              instr = depPattern[colId][0];
+              separations.add(instr.length);
+              for (int i = 1; i < depPattern[colId].length; i++) {
+                instr += instrSplit[i - 1] + depPattern[colId][i];
+                separations.add(separations.last + instrSplit[i - 1].length);
+                separations.add(separations.last + depPattern[colId][i].length);
+              }
             }
-            formatedTable[rowId][colId] += (startStr == 0 ? "" : "; ") + instr;
 
             var match = RegExp(patternDistance).firstMatch(instr);
             List<List<int>> intervals = [];
@@ -1204,20 +1184,52 @@ class CalculateUsecase {
                 return;
               }
             }
-            int startStrI = startStr + (match.group(1)?.length ?? 0);
-            startStrI += match.group(2)?.length ?? 0;
+            formatedTable[rowId][colId].strings.last += (firstInstr ? "" : "; ") + (match.group(0) ?? "") + (match.group(1) ?? "");
+            firstInstr = false;
             Attribute att = getAttAndCol(
               match.namedGroup('att')!,
               rowId,
-              colId,
-              startStrI,
+              colId
             );
             if (errorRoot.newChildren!.isNotEmpty) {
               return;
             }
+            int nameLength = match.namedGroup('att')!.length;
+            if (separations.isNotEmpty) {
+              int lastStrLen = formatedTable[rowId][colId].strings.last.length;
+              int startAttPos = instr.length - lastStrLen - nameLength;
+              if (lastStrLen < instr.length) {
+                int separationId = separations.indexWhere((e) => e > startAttPos);
+                int separation = separations[separationId];
+                if (separationId % 2 == 0 || separation - startAttPos < nameLength) {
+                  errorRoot.newChildren!.add(
+                    NodeStruct(
+                      message:
+                          "Attribute reference overlaps with header",
+                      cell: Cell(rowId: rowId, colId: colId),
+                    ),
+                  );
+                  return;
+                }
+              }
+              int strId = formatedTable[rowId][colId].strings.length - 2;
+              int startStrIdInSplit = formatedTable[rowId][colId].strings[strId].length - startAttPos;
+              int correctId = 0;
+              if (separations[0] != 0) {
+                formatedTable[rowId][colId].strings[strId].replaceRange(startStrIdInSplit, startStrIdInSplit + separations[0], "#");
+                correctId = separations[0] - 1;
+              }
+              for (int i = 2; i < separations.length; i += 2) {
+                if (separations[i] > startAttPos) {
+                  strId++;
+                  startStrIdInSplit = 0;
+                }
+                formatedTable[rowId][colId].strings[strId].replaceRange(startStrIdInSplit + separations[i - 1] - correctId, startStrIdInSplit + separations[i] - correctId, "#");
+                correctId += separations[i] - separations[i - 1] - 1;
+              }
+            }
             depCache[rowId] ??= {};
             depCache[rowId]![colId] = (att, isConstraint, match, intervals);
-            startStr += instr.length + 2;
           }
         }
       }

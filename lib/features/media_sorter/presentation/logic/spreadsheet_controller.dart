@@ -663,48 +663,47 @@ class SpreadsheetController extends ChangeNotifier {
     for (int i in stack) {
       added[i] = true;
     }
-    List<int> toNewPlacement = List.filled(table.length, -1);
+    List<String> toNewPlacement = List.filled(table.length, '');
     for (int rowId in _treeController.validRowIndexes) {
       stack.add(rowId);
       while (stack.isNotEmpty) {
-        int current = stack.removeLast();
-        if (added[current]) {
-          continue;
-        }
+        int current = stack[stack.length - 1];
         for (int ref in rowToRowRefs[current]) {
           if (!added[ref]) {
             stack.add(ref);
           }
         }
-        if (rowToRowRefs[current].isEmpty) {
-          toNewPlacement[current] = sortOrder.length;
+        if (stack[stack.length - 1] == current) {
+          toNewPlacement[current] = sortOrder.length.toString();
           sortOrder.add(current);
+          stack.removeLast();
           added[current] = true;
         }
       }
     }
-    List<List<String>> formatedTable = _treeController.formatedTable;
+    for (int rowId = 0; rowId < table.length; rowId++) {
+      if (!added[rowId]) {
+        sortOrder.add(rowId);
+      }
+    }
+    List<List<StrInt>> formatedTable = _treeController.formatedTable;
     List<List<String>> sortedTable = sortOrder
-        .map((i) => formatedTable[i])
+        .map((i) => table[i])
         .toList();
     for (int rowId = 0; rowId < rowCount; rowId++) {
       for (int colId = 0; colId < colCount; colId++) {
-        if (sortedTable[rowId][colId].isEmpty) {
+        if (formatedTable[rowId][colId].integers.isEmpty) {
           continue;
         }
-        String newVal = "";
-        int strIndex = 0;
-        for (RowIdIdentifier rid
-            in _treeController.splittedTable[rowId][colId]) {
-          newVal += formatedTable[rid.rowId][colId].substring(
-            strIndex,
-            rid.start,
-          );
-          newVal += toNewPlacement[rid.rowId].toString();
-          strIndex = rid.start + rid.length;
+        for (int splitId = 0;
+            splitId < formatedTable[rowId][colId].strings.length;
+            splitId++) {
+          sortedTable[rowId][colId] = formatedTable[rowId][colId].strings[splitId];
+          if (formatedTable[rowId][colId].integers.length <= splitId) {
+            break;
+          }
+          sortedTable[rowId][colId] += toNewPlacement[formatedTable[rowId][colId].integers[splitId]];
         }
-        sortedTable[rowId][colId] =
-            newVal + formatedTable[rowId][colId].substring(strIndex);
       }
     }
     final List<CellUpdate> updates = [];
