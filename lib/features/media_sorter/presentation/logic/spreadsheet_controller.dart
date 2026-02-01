@@ -156,7 +156,7 @@ class SpreadsheetController extends ChangeNotifier {
   void saveAndCalculate({bool save = true, bool updateHistory = false}) {
     if (save) {
       if (updateHistory) {
-        commit();
+        commitHistory();
       }
       _dataController.scheduleSheetSave(SpreadsheetConstants.saveDelayMs);
     }
@@ -197,17 +197,22 @@ class SpreadsheetController extends ChangeNotifier {
 
         debugPrint("Sending request...");
         final service = SortingService();
-        List<int>? result0 = await service.solveSorting(nVal, myRules);
-
-        if (result0 == null) {
+        
+        try {
+          // await for pauses the execution of this function 
+          // until the stream is closed by the server.
+          await for (final solution in service.solveSortingStream(nVal, myRules)) {
+            _sortController.setBestMediaSortOrder(solution);
+          }
+        } catch (error) {
+          // If the stream yields an error (status: failure), 
+          // it throws here and we catch it.
+          debugPrint("Solver error caught: $error");
           result.errorRoot.newChildren!.add(
             NodeStruct(
-              message:
-                  "Could not find a valid sorting satisfying all constraints.",
+              message: "Could not find a valid sorting satisfying all constraints.",
             ),
           );
-        } else {
-          _sortController.setBestMediaSortOrder(result0);
         }
         return result;
       },
@@ -295,7 +300,7 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   /// Commits the `currentUpdateHistory` to the Sheet's permanent history stack.
-  void commit() {
+  void commitHistory() {
     final sheet = _dataController.sheet;
     if (sheet.historyIndex < sheet.updateHistories.length - 1) {
       sheet.updateHistories = sheet.updateHistories.sublist(
@@ -312,14 +317,17 @@ class SpreadsheetController extends ChangeNotifier {
     _historyController.discardCurrent();
   }
 
-  void stopEditing(bool updateHistory) {
+  void stopEditing({bool updateHistory = true, bool notify = true}) {
     _selectionController.editingMode = false;
     _dataController.saveLastSelection(_selectionController.selection);
-    notifyListeners();
-    if (updateHistory && _historyController.currentUpdateHistory != null) {
-      saveAndCalculate(updateHistory: true);
+    if (notify) {
+      notifyListeners();
     }
-    _historyController.discardCurrent();
+    if (updateHistory && _historyController.currentUpdateHistory != null) {
+      commitHistory();
+    } else {
+      _historyController.discardCurrent();
+    }
   }
 
   void startEditing({String? initialInput}) {
@@ -648,6 +656,7 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   void sortMedia() {
+    stopEditing(notify: false);
     List<int> validRowIndexes = _treeController.validRowIndexes;
     List<int> sortOrder = [0];
     List<int> stack = _sortController.bestMediaSortOrder!

@@ -383,7 +383,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       onTap: () {
         if (controller.primarySelectedCell.x != dataRow ||
             controller.primarySelectedCell.y != dataCol) {
-          controller.stopEditing(true);
+          controller.stopEditing();
         }
         controller.setPrimarySelection(dataRow, dataCol, false, true);
         _focusNode.requestFocus();
@@ -405,7 +405,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         } else {
           controller.setPrimarySelection(dataRow + 1, dataCol, false, true);
         }
-        controller.stopEditing(true);
+        controller.stopEditing();
         _focusNode.requestFocus();
       },
       onEscape: (String previousContent) {
@@ -414,7 +414,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           controller.primarySelectedCell.y,
           previousContent,
         );
-        controller.stopEditing(false);
+        controller.stopEditing(updateHistory: false);
         _focusNode.requestFocus();
       },
     );
