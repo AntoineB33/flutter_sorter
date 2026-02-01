@@ -502,7 +502,7 @@ class CalculateUsecase {
       return;
     }
 
-    isMedium = List<bool>.filled(rowCount, false);
+    isMedium..clear()..addAll(List<bool>.filled(rowCount, false));
     for (int rowId = 1; rowId < rowCount; rowId++) {
       for (int colId in sourceColIndices) {
         isMedium[rowId] = isMedium[rowId] || table[rowId][colId].isNotEmpty;
