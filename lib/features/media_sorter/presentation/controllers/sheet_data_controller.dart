@@ -52,15 +52,6 @@ class SheetDataController extends ChangeNotifier {
     });
   }
 
-  bool isRowValid(int rowId) {
-    for (int srcColId in sheetContent.sourceColIndices) {
-      if (getContent(rowId, srcColId).isNotEmpty) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   void removeSourceColId(int colId) {
     sheetContent.sourceColIndices.remove(colId);
   }

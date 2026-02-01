@@ -56,7 +56,7 @@ class CalculateUsecase {
   }
 
   Map<int, HashSet<Attribute>> get colToAtt => result.colToAtt;
-  List<bool> isMedium = [];
+  List<bool> get isMedium => result.isMedium;
 
   static const int maxInt = -1 >>> 1;
   static const patternDistance = SpreadsheetConstants.patternDistance;

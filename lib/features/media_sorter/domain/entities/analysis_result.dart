@@ -46,6 +46,7 @@ class AnalysisResult {
   List<HashSet<int>> rowToRefFromAttCol;
   List<Map<InstrStruct, Cell>> instrTable;
   Map<int, HashSet<Attribute>> colToAtt;
+  List<bool> isMedium = [];
   List<int> validRowIndexes;
 
   int rowCount;

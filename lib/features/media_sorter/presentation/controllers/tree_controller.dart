@@ -37,6 +37,7 @@ class TreeController extends ChangeNotifier {
   Map<int, HashSet<Attribute>> get colToAtt => _lastAnalysis.colToAtt;
   List<int> get validRowIndexes => _lastAnalysis.validRowIndexes;
   List<List<StrInt>> get formatedTable => _lastAnalysis.formatedTable;
+  List<bool> get isMedium => _lastAnalysis.isMedium;
   List<int> get nameIndexes => _lastAnalysis.nameIndexes;
   bool get noResult => _lastAnalysis.noResult;
 

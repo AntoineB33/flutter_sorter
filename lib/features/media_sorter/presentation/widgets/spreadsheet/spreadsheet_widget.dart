@@ -372,7 +372,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       row: dataRow,
       col: dataCol,
       content: dataController.getContent(dataRow, dataCol),
-      isValid: dataController.isRowValid(dataRow),
+      isValid: controller.isRowValid(dataRow),
       isPrimarySelectedCell: selectionController.isPrimarySelectedCell(
         dataRow,
         dataCol,

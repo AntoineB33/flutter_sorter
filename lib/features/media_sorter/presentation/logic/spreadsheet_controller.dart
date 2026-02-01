@@ -197,7 +197,7 @@ class SpreadsheetController extends ChangeNotifier {
 
         debugPrint("Sending request...");
         final service = SortingService();
-        
+
         try {
           // await for pauses the execution of this function 
           // until the stream is closed by the server.
@@ -205,9 +205,7 @@ class SpreadsheetController extends ChangeNotifier {
             _sortController.setBestMediaSortOrder(solution);
           }
         } catch (error) {
-          // If the stream yields an error (status: failure), 
-          // it throws here and we catch it.
-          debugPrint("Solver error caught: $error");
+          _sortController.clear();
           result.errorRoot.newChildren!.add(
             NodeStruct(
               message: "Could not find a valid sorting satisfying all constraints.",
@@ -653,6 +651,21 @@ class SpreadsheetController extends ChangeNotifier {
 
   bool canBeSorted() {
     return _sortController.canBeSorted();
+  }
+
+  bool isRowValid(int rowId) {
+    if (rowId == 0) {
+      return false;
+    }
+    if (_sortController.canBeSorted() && _treeController.isMedium[rowId]) {
+      return true;
+    }
+    for (int srcColId in sheetContent.sourceColIndices) {
+      if (_dataController.getContent(rowId, srcColId).isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
   }
 
   void sortMedia() {
