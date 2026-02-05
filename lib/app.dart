@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'core/constants/route_constants.dart';
-import 'features/home/home_page.dart';
+import 'features/food_plan/presentation/pages/food_plan_page.dart';
 import 'features/media_sorter/presentation/pages/media_sorter_page.dart';
 import 'features/scheduler/presentation/scheduler_page.dart';
 
@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.blue),
       initialRoute: initialRoute,
       routes: {
-        RouteConstants.home: (context) => const HomePage(),
+        RouteConstants.home: (context) => const FoodPlanPage(),
         RouteConstants.scheduler: (context) => const EyesHealthPage(),
         RouteConstants.profile: (context) => const MediaSorterPage(),
       },
