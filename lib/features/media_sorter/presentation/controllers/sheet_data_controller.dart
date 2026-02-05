@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
@@ -15,13 +15,10 @@ import 'package:trying_flutter/features/media_sorter/presentation/utils/get_defa
 
 class SheetDataController extends ChangeNotifier {
   // --- states ---
-  SheetModel sheet = SheetModel.empty();
   String sheetName = "";
-  List<String> availableSheets = [];
-  Map<String, SheetModel> loadedSheetsData = {};
-  Map<String, SelectionModel> lastSelectedCells = {};
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
-  final ManageWaitingTasks<void> _saveLastSelectionExecutor = ManageWaitingTasks<void>();
+  final ManageWaitingTasks<void> _saveLastSelectionExecutor =
+      ManageWaitingTasks<void>();
   final ManageWaitingTasks<AnalysisResult> _calculateExecutor =
       ManageWaitingTasks<AnalysisResult>();
 
@@ -31,9 +28,10 @@ class SheetDataController extends ChangeNotifier {
       SpreadsheetLayoutCalculator();
 
   // getters
-  SheetModel get currentSheet => sheet;
+  SheetData get currentSheet => sheet;
   Map<String, ManageWaitingTasks<void>> get saveExecutors => _saveExecutors;
-  ManageWaitingTasks<void> get saveLastSelectionExecutor => _saveLastSelectionExecutor;
+  ManageWaitingTasks<void> get saveLastSelectionExecutor =>
+      _saveLastSelectionExecutor;
   SheetContent get sheetContent => sheet.sheetContent;
   int get rowCount => sheet.sheetContent.table.length;
   int get colCount => rowCount > 0 ? sheet.sheetContent.table[0].length : 0;
@@ -43,7 +41,7 @@ class SheetDataController extends ChangeNotifier {
   SheetDataController({
     required GetSheetDataUseCase getDataUseCase,
     required SaveSheetDataUseCase saveSheetDataUseCase,
-  })  : _saveSheetDataUseCase = saveSheetDataUseCase;
+  }) : _saveSheetDataUseCase = saveSheetDataUseCase;
 
   void scheduleSheetSave(int saveDelayMs) {
     _saveExecutors[sheetName]!.execute(() async {
@@ -59,11 +57,13 @@ class SheetDataController extends ChangeNotifier {
   void addSourceColId(int colId) {
     sheetContent.sourceColIndices.add(colId);
   }
-  
-  Future<void> saveLastSelection(SelectionModel selection) async {
+
+  Future<void> saveLastSelection(SelectionData selection) async {
     saveLastSelectionExecutor.execute(() async {
       await _saveSheetDataUseCase.saveLastSelection(selection);
-      await Future.delayed(Duration(milliseconds: SpreadsheetConstants.saveDelayMs));
+      await Future.delayed(
+        Duration(milliseconds: SpreadsheetConstants.saveDelayMs),
+      );
     });
   }
 
@@ -79,9 +79,7 @@ class SheetDataController extends ChangeNotifier {
     if (col >= colCount) {
       final needed = col + 1 - colCount;
       for (var r = 0; r < rowCount; r++) {
-        sheetContent.table[r].addAll(
-          List.filled(needed, '', growable: true),
-        );
+        sheetContent.table[r].addAll(List.filled(needed, '', growable: true));
       }
       sheetContent.columnTypes.addAll(
         List.filled(needed, ColumnType.attributes),
@@ -92,9 +90,7 @@ class SheetDataController extends ChangeNotifier {
   void decreaseRowCount(int row) {
     if (row == rowCount - 1) {
       while (row >= 0 &&
-          !sheetContent.table[row].any(
-            (cell) => cell.isNotEmpty,
-          )) {
+          !sheetContent.table[row].any((cell) => cell.isNotEmpty)) {
         sheetContent.table.removeLast();
         row--;
       }
@@ -106,8 +102,7 @@ class SheetDataController extends ChangeNotifier {
       if (row == 0) {
         return sheet.rowsBottomPos[0];
       } else {
-        return sheet.rowsBottomPos[row] -
-            sheet.rowsBottomPos[row - 1];
+        return sheet.rowsBottomPos[row] - sheet.rowsBottomPos[row - 1];
       }
     }
     return GetDefaultSizes.getDefaultRowHeight();
@@ -136,7 +131,8 @@ class SheetDataController extends ChangeNotifier {
         : columnsRightPos.last.toInt();
     final double targetRight = col - 1 < nbKnownRightPos
         ? columnsRightPos[col - 1].toDouble()
-        : tableWidth + (col - nbKnownRightPos) * GetDefaultSizes.getDefaultCellWidth();
+        : tableWidth +
+              (col - nbKnownRightPos) * GetDefaultSizes.getDefaultCellWidth();
     return targetRight;
   }
 
@@ -144,11 +140,9 @@ class SheetDataController extends ChangeNotifier {
     double tableHeight = getTargetTop(rowCount - 1);
     if (height >= tableHeight) {
       return sheet.rowsBottomPos.length +
-          ((height -
-                  getTargetTop(
-                    sheet.rowsBottomPos.length - 1,
-                  ) + 1) /
-              GetDefaultSizes.getDefaultRowHeight()).ceil();
+          ((height - getTargetTop(sheet.rowsBottomPos.length - 1) + 1) /
+                  GetDefaultSizes.getDefaultRowHeight())
+              .ceil();
     }
     return rowCount;
   }
@@ -157,11 +151,9 @@ class SheetDataController extends ChangeNotifier {
     double tableWidth = getTargetLeft(colCount - 1);
     if (width >= tableWidth) {
       return sheet.colRightPos.length +
-          ((width -
-                  getTargetLeft(
-                    sheet.colRightPos.length - 1,
-                  ) + 1) /
-              GetDefaultSizes.getDefaultCellWidth()).ceil();
+          ((width - getTargetLeft(sheet.colRightPos.length - 1) + 1) /
+                  GetDefaultSizes.getDefaultCellWidth())
+              .ceil();
     }
     return colCount;
   }
@@ -176,13 +168,9 @@ class SheetDataController extends ChangeNotifier {
     return _layoutCalculator.calculateRowHeight(text, availableWidth);
   }
 
-  String updateCell(
-    int row,
-    int col,
-    String newValue) {
+  String updateCell(int row, int col, String newValue) {
     String prevValue = '';
-    if (newValue.isNotEmpty ||
-        (row < rowCount && col < colCount)) {
+    if (newValue.isNotEmpty || (row < rowCount && col < colCount)) {
       if (row >= rowCount) {
         final needed = row + 1 - rowCount;
         sheetContent.table.addAll(
@@ -201,8 +189,7 @@ class SheetDataController extends ChangeNotifier {
     if (newValue.isEmpty &&
         row < rowCount &&
         col < colCount &&
-        (row == rowCount - 1 ||
-            col == colCount - 1) &&
+        (row == rowCount - 1 || col == colCount - 1) &&
         prevValue.isNotEmpty) {
       decreaseRowCount(row);
       if (col == colCount - 1) {

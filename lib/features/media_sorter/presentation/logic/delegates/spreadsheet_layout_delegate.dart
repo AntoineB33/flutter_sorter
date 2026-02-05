@@ -5,7 +5,6 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/sh
 import 'package:trying_flutter/features/media_sorter/presentation/logic/spreadsheet_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 
-
 class SpreadsheetLayoutDelegate {
   final SpreadsheetController manager;
   final GridController _gridController;
@@ -18,7 +17,7 @@ class SpreadsheetLayoutDelegate {
     this._selectionController,
     this._dataController,
   );
-  
+
   void updateRowColCount({
     double? visibleHeight,
     double? visibleWidth,
@@ -29,12 +28,16 @@ class SpreadsheetLayoutDelegate {
     int targetCols = _selectionController.tableViewCols;
 
     if (visibleHeight != null) {
-      _gridController.visibleWindowHeight = visibleHeight;
-      targetRows = _dataController.minRows(_gridController.visibleWindowHeight);
+      _gridController.row1ToScreenBottomHeight = visibleHeight;
+      targetRows = _dataController.minRows(
+        _gridController.row1ToScreenBottomHeight,
+      );
     }
     if (visibleWidth != null) {
-      _gridController.visibleWindowWidth = visibleWidth;
-      targetCols = _dataController.minCols(_gridController.visibleWindowWidth);
+      _gridController.colBToScreenRightWidth = visibleWidth;
+      targetCols = _dataController.minCols(
+        _gridController.colBToScreenRightWidth,
+      );
     }
 
     // We access the selection manager via the controller
@@ -53,7 +56,6 @@ class SpreadsheetLayoutDelegate {
     }
   }
 
-  
   void adjustRowHeightAfterUpdate(
     int row,
     int col,
@@ -63,8 +65,8 @@ class SpreadsheetLayoutDelegate {
     if (row >= _dataController.sheet.rowsBottomPos.length &&
         row >= _dataController.rowCount) {
       updateRowColCount(
-        visibleHeight: _gridController.visibleWindowHeight,
-        visibleWidth: _gridController.visibleWindowWidth,
+        visibleHeight: _gridController.row1ToScreenBottomHeight,
+        visibleWidth: _gridController.colBToScreenRightWidth,
         notify: false,
       );
       return;
@@ -175,8 +177,8 @@ class SpreadsheetLayoutDelegate {
       }
     }
     updateRowColCount(
-      visibleHeight: _gridController.visibleWindowHeight,
-      visibleWidth: _gridController.visibleWindowWidth,
+      visibleHeight: _gridController.row1ToScreenBottomHeight,
+      visibleWidth: _gridController.colBToScreenRightWidth,
       notify: false,
     );
   }

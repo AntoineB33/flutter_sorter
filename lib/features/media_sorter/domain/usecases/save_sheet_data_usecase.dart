@@ -1,5 +1,5 @@
-import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
 
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
@@ -9,20 +9,11 @@ class SaveSheetDataUseCase {
 
   SaveSheetDataUseCase(this.repository);
 
-  Future<void> initialize() async {
-    for (String fileName in [
-      SpreadsheetConstants.sheetsIndexFileName,
-      SpreadsheetConstants.allLastSelectedFileName,
-    ]) {
-      await repository.createFile(fileName);
-    }
-  }
-
-  Future<void> saveLastSelection(SelectionModel selection) {
+  Future<void> saveLastSelection(SelectionData selection) {
     return repository.saveLastSelection(selection);
   }
 
-  Future<void> saveSheet(String sheetName, SheetModel sheet) {
+  Future<void> saveSheet(String sheetName, SheetData sheet) {
     return repository.updateSheet(sheetName, sheet);
   }
 
@@ -37,7 +28,7 @@ class SaveSheetDataUseCase {
     return repository.saveAllSheetNames(sheetNames);
   }
 
-  Future<void> saveAllLastSelected(Map<String, SelectionModel> cells) {
+  Future<void> saveAllLastSelected(Map<String, SelectionData> cells) {
     return repository.saveAllLastSelected(cells);
   }
 

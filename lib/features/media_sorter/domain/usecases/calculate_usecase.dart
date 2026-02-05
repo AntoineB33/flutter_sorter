@@ -1486,7 +1486,6 @@ class CalculateUsecase {
     //   [-1, -1],
     //   [1, maxInt]
     // ]);
-
     instrTable = instrTable
         .asMap()
         .entries

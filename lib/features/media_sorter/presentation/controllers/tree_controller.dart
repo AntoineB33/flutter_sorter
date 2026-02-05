@@ -11,13 +11,6 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struc
 
 class TreeController extends ChangeNotifier {
   // --- states ---
-  AnalysisResult _lastAnalysis = AnalysisResult.empty();
-  final NodeStruct mentionsRoot = NodeStruct(
-    instruction: SpreadsheetConstants.selectionMsg,
-  );
-  final NodeStruct searchRoot = NodeStruct(
-    instruction: SpreadsheetConstants.searchMsg,
-  );
 
   // --- getters ---
   NodeStruct get errorRoot => _lastAnalysis.errorRoot;

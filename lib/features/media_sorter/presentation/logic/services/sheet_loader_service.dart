@@ -1,5 +1,5 @@
-import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
@@ -16,7 +16,6 @@ class SheetLoaderService {
   final SheetDataController _dataController;
   final SpreadsheetStreamController _streamController;
 
-
   final SaveSheetDataUseCase _saveSheetDataUseCase;
   final GetSheetDataUseCase _getDataUseCase;
 
@@ -26,7 +25,8 @@ class SheetLoaderService {
     double? visibleWidth,
     bool notify,
     bool save,
-  }) updateRowColCount;
+  })
+  updateRowColCount;
   void Function({bool save, bool updateHistory}) saveAndCalculate;
 
   SheetLoaderService(
@@ -41,45 +41,44 @@ class SheetLoaderService {
     this.saveAndCalculate,
   );
 
-  
   Future<void> loadSheetByName(
     String name, {
     bool init = false,
-    SelectionModel? lastSelection,
+    SelectionData? lastSelection,
   }) async {
     if (!init) {
-      _dataController.lastSelectedCells[_dataController.sheetName] =
+      _dataController.lastSelectionBySheet[_dataController.sheetName] =
           _selectionController.selection;
       _saveSheetDataUseCase.saveAllLastSelected(
-        _dataController.lastSelectedCells,
+        _dataController.lastSelectionBySheet,
       );
       _saveSheetDataUseCase.saveLastOpenedSheetName(name);
     }
 
-    if (_dataController.availableSheets.contains(name)) {
+    if (_dataController.sheetNames.contains(name)) {
       if (_dataController.loadedSheetsData.containsKey(name)) {
         _dataController.sheet = _dataController.loadedSheetsData[name]!;
         _selectionController.selection =
-            _dataController.lastSelectedCells[name]!;
+            _dataController.lastSelectionBySheet[name]!;
       } else {
         _dataController.saveExecutors[name] = ManageWaitingTasks<void>();
         try {
           _dataController.sheet = await _getDataUseCase.loadSheet(name);
           if (!init) {
             _selectionController.selection =
-                _dataController.lastSelectedCells[name]!;
+                _dataController.lastSelectionBySheet[name]!;
           }
         } catch (e) {
           logger.e("Error parsing sheet data for $name: $e");
-          _dataController.sheet = SheetModel.empty();
-          _selectionController.selection = SelectionModel.empty();
+          _dataController.sheet = SheetData.empty();
+          _selectionController.selection = SelectionData.empty();
         }
       }
     } else {
-      _dataController.sheet = SheetModel.empty();
-      _selectionController.selection = SelectionModel.empty();
-      _dataController.availableSheets.add(name);
-      _saveSheetDataUseCase.saveAllSheetNames(_dataController.availableSheets);
+      _dataController.sheet = SheetData.empty();
+      _selectionController.selection = SelectionData.empty();
+      _dataController.sheetNames.add(name);
+      _saveSheetDataUseCase.saveAllSheetNames(_dataController.sheetNames);
       _dataController.saveExecutors[name] = ManageWaitingTasks<void>();
     }
 
@@ -92,8 +91,12 @@ class SheetLoaderService {
 
     // Trigger Controller updates
     updateRowColCount(
-      visibleHeight: _selectionController.selection.scrollOffsetX + _gridController.visibleWindowHeight,
-      visibleWidth: _selectionController.selection.scrollOffsetY + _gridController.visibleWindowWidth,
+      visibleHeight:
+          _selectionController.selection.scrollOffsetX +
+          _gridController.row1ToScreenBottomHeight,
+      visibleWidth:
+          _selectionController.selection.scrollOffsetY +
+          _gridController.colBToScreenRightWidth,
       notify: false,
     );
 

@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/sheet_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
@@ -55,9 +55,9 @@ class SpreadsheetController extends ChangeNotifier {
   int get rowCount => _dataController.rowCount;
   int get colCount => _dataController.colCount;
   String get sheetName => _dataController.sheetName;
-  SheetModel get sheet => _dataController.sheet;
+  SheetData get sheet => _dataController.sheet;
   SheetContent get sheetContent => _dataController.sheetContent;
-  List<String> get availableSheets => _dataController.availableSheets;
+  List<String> get sheetNames => _dataController.sheetNames;
   NodeStruct get errorRoot => _treeController.errorRoot;
   NodeStruct get warningRoot => _treeController.warningRoot;
   NodeStruct get mentionsRoot => _treeController.mentionsRoot;
@@ -72,6 +72,7 @@ class SpreadsheetController extends ChangeNotifier {
   Point<int> get primarySelectedCell =>
       _selectionController.primarySelectedCell;
   String get previousContent => _selectionController.selection.previousContent;
+  bool get findingBestSort => _sortController.findingBestSort;
 
   // --- redirections ---
   KeyEventResult handleKeyboard(BuildContext context, KeyEvent event) =>
@@ -93,7 +94,7 @@ class SpreadsheetController extends ChangeNotifier {
   Future<void> loadSheetByName(
     String name, {
     bool init = false,
-    SelectionModel? lastSelection,
+    SelectionData? lastSelection,
   }) async {
     await _sheetLoaderService.loadSheetByName(
       name,
@@ -172,7 +173,7 @@ class SpreadsheetController extends ChangeNotifier {
           return result;
         }
 
-        Map<int, List<SortingRule>> myRules = {};
+        myRules = {};
         for (int rowId = 0; rowId < nVal; rowId++) {
           myRules[rowId] = [];
           for (final instr in result.instrTable[rowId].keys) {
@@ -199,16 +200,20 @@ class SpreadsheetController extends ChangeNotifier {
         final service = SortingService();
 
         try {
-          // await for pauses the execution of this function 
+          // await for pauses the execution of this function
           // until the stream is closed by the server.
-          await for (final solution in service.solveSortingStream(nVal, myRules)) {
+          await for (final solution in service.solveSortingStream(
+            nVal,
+            myRules,
+          )) {
             _sortController.setBestMediaSortOrder(solution);
           }
         } catch (error) {
           _sortController.clear();
           result.errorRoot.newChildren!.add(
             NodeStruct(
-              message: "Could not find a valid sorting satisfying all constraints.",
+              message:
+                  "Could not find a valid sorting satisfying all constraints.",
             ),
           );
         }
@@ -536,72 +541,6 @@ class SpreadsheetController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> init() async {
-    // await _saveSheetDataUseCase.clearAllData();
-    await _saveSheetDataUseCase.initialize();
-    try {
-      _dataController.sheetName = await _getDataUseCase
-          .getLastOpenedSheetName();
-    } catch (e) {
-      await _saveSheetDataUseCase.saveLastOpenedSheetName(
-        _dataController.sheetName,
-      );
-    }
-    try {
-      _selectionController.selection = await _getDataUseCase.getLastSelection();
-    } catch (e) {
-      _selectionController.selection = SelectionModel.empty();
-      await _dataController.saveLastSelection(_selectionController.selection);
-    }
-    
-
-    _dataController.availableSheets = await _getDataUseCase.getAllSheetNames();
-    if (!CheckValidStrings.isValidSheetName(_dataController.sheetName)) {
-      if (_dataController.availableSheets.isNotEmpty) {
-        _dataController.sheetName = _dataController.availableSheets[0];
-      } else {
-        _dataController.sheetName = SpreadsheetConstants.defaultSheetName;
-      }
-      _saveSheetDataUseCase.saveLastOpenedSheetName(_dataController.sheetName);
-    }
-    bool availableSheetsChanged = false;
-    if (!_dataController.availableSheets.contains(_dataController.sheetName)) {
-      _dataController.availableSheets.add(_dataController.sheetName);
-      availableSheetsChanged = true;
-      debugPrint(
-        "Last opened sheet ${_dataController.sheetName} not found in available sheets, adding it.",
-      );
-    }
-    _dataController.lastSelectedCells = await _getDataUseCase
-        .getAllLastSelected();
-    bool changed = false;
-    for (var name in _dataController.availableSheets) {
-      if (!_dataController.lastSelectedCells.containsKey(name)) {
-        _dataController.lastSelectedCells[name] = SelectionModel.empty();
-        changed = true;
-        debugPrint(
-          "No last selected cell for sheet $name, defaulting to (0,0)",
-        );
-      }
-    }
-    if (changed) {
-      _saveSheetDataUseCase.saveAllLastSelected(
-        _dataController.lastSelectedCells,
-      );
-    }
-    for (var name in _dataController.lastSelectedCells.keys) {
-      if (!_dataController.availableSheets.contains(name)) {
-        _dataController.availableSheets.add(name);
-        availableSheetsChanged = true;
-      }
-    }
-    if (availableSheetsChanged) {
-      _saveSheetDataUseCase.saveAllSheetNames(_dataController.availableSheets);
-    }
-
-    loadSheetByName(_dataController.sheetName, init: true);
-  }
-
   Future<void> copySelectionToClipboard() async {
     int startRow = _selectionController.primarySelectedCell.x;
     int endRow = _selectionController.primarySelectedCell.x;
@@ -654,11 +593,11 @@ class SpreadsheetController extends ChangeNotifier {
   }
 
   bool isRowValid(int rowId) {
+    if (_sortController.canBeSorted()) {
+      return _treeController.isMedium[rowId];
+    }
     if (rowId == 0) {
       return false;
-    }
-    if (_sortController.canBeSorted() && _treeController.isMedium[rowId]) {
-      return true;
     }
     for (int srcColId in sheetContent.sourceColIndices) {
       if (_dataController.getContent(rowId, srcColId).isNotEmpty) {
@@ -714,22 +653,24 @@ class SpreadsheetController extends ChangeNotifier {
       }
     }
     List<List<StrInt>> formatedTable = _treeController.formatedTable;
-    List<List<String>> sortedTable = sortOrder
-        .map((i) => table[i])
-        .toList();
+    List<List<String>> sortedTable = sortOrder.map((i) => table[i]).toList();
     for (int rowId = 1; rowId < rowCount; rowId++) {
       for (int colId = 0; colId < colCount; colId++) {
         if (formatedTable[rowId][colId].integers.isEmpty) {
           continue;
         }
-        for (int splitId = 0;
-            splitId < formatedTable[rowId][colId].strings.length;
-            splitId++) {
-          sortedTable[rowId][colId] = formatedTable[rowId][colId].strings[splitId];
+        for (
+          int splitId = 0;
+          splitId < formatedTable[rowId][colId].strings.length;
+          splitId++
+        ) {
+          sortedTable[rowId][colId] =
+              formatedTable[rowId][colId].strings[splitId];
           if (formatedTable[rowId][colId].integers.length <= splitId) {
             break;
           }
-          sortedTable[rowId][colId] += toNewPlacement[formatedTable[rowId][colId].integers[splitId]];
+          sortedTable[rowId][colId] +=
+              toNewPlacement[formatedTable[rowId][colId].integers[splitId]];
         }
       }
     }
@@ -742,5 +683,34 @@ class SpreadsheetController extends ChangeNotifier {
       }
     }
     setTable(updates);
+  }
+
+  Future<void> findBestSortToggle() async {
+    if (_sortController.findingBestSort) {
+    } else {
+      stopEditing(notify: false);
+
+      final service = SortingService();
+
+      try {
+        // await for pauses the execution of this function
+        // until the stream is closed by the server.
+        await for (final solution in service.solveSortingStream(
+          nVal,
+          myRules,
+        )) {
+          _sortController.setBestMediaSortOrder(solution);
+        }
+      } catch (error) {
+        _sortController.clear();
+        result.errorRoot.newChildren!.add(
+          NodeStruct(
+            message:
+                "Could not find a valid sorting satisfying all constraints.",
+          ),
+        );
+      }
+    }
+    _sortController.findingBestSort = !_sortController.findingBestSort;
   }
 }

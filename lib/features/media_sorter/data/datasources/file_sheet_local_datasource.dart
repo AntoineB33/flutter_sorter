@@ -5,45 +5,40 @@ import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_she
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 
 class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   @override
-  Future<void> createFile(String fileName) async {
-    final directory = await getApplicationDocumentsDirectory();
-    final file = File(
-      '${directory.path}/${SpreadsheetConstants.folderName}/$fileName',
-    );
-    await file.create(recursive: true);
-  }
-
-  @override
-  Future<SelectionModel> getLastSelection() async {
+  Future<SelectionData> getLastSelection() async {
     final prefs = await SharedPreferences.getInstance();
     final cellString = prefs.getString(
       SpreadsheetConstants.lastSelectedCellKey,
     );
-    return SelectionModel.fromJson(jsonDecode(cellString!));
+    return SelectionData.fromJson(jsonDecode(cellString!));
   }
 
   @override
-  Future<void> saveLastSelection(SelectionModel selection) async {
-    await Future.delayed(const Duration(milliseconds: SpreadsheetConstants.debugDelayMs));
+  Future<void> saveLastSelection(SelectionData selection) async {
+    await Future.delayed(
+      const Duration(milliseconds: SpreadsheetConstants.debugDelayMs),
+    );
     final prefs = await SharedPreferences.getInstance();
     final jsonString = jsonEncode(selection.toJson());
     await prefs.setString(SpreadsheetConstants.lastSelectedCellKey, jsonString);
   }
 
   @override
-  Future<String> getLastOpenedSheetName() async {
+  Future<String?> getLastOpenedSheetName() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(SpreadsheetConstants.lastOpenedSheetNameKey)!;
+    return prefs.getString(SpreadsheetConstants.lastOpenedSheetNameKey);
   }
 
   @override
   Future<void> saveLastOpenedSheetName(String sheetName) async {
-    await Future.delayed(const Duration(milliseconds: SpreadsheetConstants.debugDelayMs));
+    await Future.delayed(
+      const Duration(milliseconds: SpreadsheetConstants.debugDelayMs),
+    );
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       SpreadsheetConstants.lastOpenedSheetNameKey,
@@ -62,26 +57,23 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
       final List<dynamic> jsonList = jsonDecode(jsonString);
       final List<String> sheetNames = jsonList.cast<String>();
       return sheetNames;
-    } catch (e) {
-      debugPrint("Error reading sheet names: $e");
+    } on FileSystemException catch (_) {
       return [];
     }
   }
 
   @override
   Future<void> saveAllSheetNames(List<String> sheetNames) async {
-    try {
-      await Future.delayed(const Duration(milliseconds: SpreadsheetConstants.debugDelayMs));
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File(
-        '${directory.path}/${SpreadsheetConstants.folderName}/${SpreadsheetConstants.sheetsIndexFileName}',
-      );
-      await file.create(recursive: true);
-      final jsonString = jsonEncode(sheetNames);
-      await file.writeAsString(jsonString);
-    } catch (e) {
-      throw Exception("Error saving sheet names: $e");
-    }
+    await Future.delayed(
+      const Duration(milliseconds: SpreadsheetConstants.debugDelayMs),
+    );
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File(
+      '${directory.path}/${SpreadsheetConstants.folderName}/${SpreadsheetConstants.sheetsIndexFileName}',
+    );
+    await file.create(recursive: true);
+    final jsonString = jsonEncode(sheetNames);
+    await file.writeAsString(jsonString);
   }
 
   Future<File> _getFile(String sheetName) async {
@@ -95,22 +87,24 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   }
 
   @override
-  Future<SheetModel> getSheet(String sheetName) async {
+  Future<SheetData> getSheet(String sheetName) async {
     final file = await _getFile(sheetName);
     try {
       final jsonString = await file.readAsString();
       var decoded = jsonDecode(jsonString);
-      return SheetModel.fromJson(decoded);
+      return SheetData.fromJson(decoded);
     } catch (e) {
       debugPrint("Error decoding JSON for sheet $sheetName: $e");
-      return SheetModel.empty();
+      return SheetData.empty();
     }
   }
 
   @override
-  Future<void> saveSheet(String sheetName, SheetModel sheet) async {
+  Future<void> saveSheet(String sheetName, SheetData sheet) async {
     try {
-      await Future.delayed(const Duration(milliseconds: SpreadsheetConstants.debugDelayMs));
+      await Future.delayed(
+        const Duration(milliseconds: SpreadsheetConstants.debugDelayMs),
+      );
       final file = await _getFile(sheetName);
       final jsonString = jsonEncode(sheet.toJson());
       await file.writeAsString(jsonString);
@@ -120,7 +114,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   }
 
   @override
-  Future<Map<String, SelectionModel>> getAllLastSelected() async {
+  Future<Map<String, SelectionData>> getAllLastSelected() async {
     final directory = await getApplicationDocumentsDirectory();
     final file = File(
       '${directory.path}/${SpreadsheetConstants.folderName}/${SpreadsheetConstants.allLastSelectedFileName}',
@@ -128,9 +122,9 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
     try {
       final jsonString = await file.readAsString();
       final Map<String, dynamic> decoded = jsonDecode(jsonString);
-      final Map<String, SelectionModel> result = {};
+      final Map<String, SelectionData> result = {};
       decoded.forEach((key, value) {
-        result[key] = SelectionModel.fromJson(value);
+        result[key] = SelectionData.fromJson(value);
       });
       return result;
     } catch (e) {
@@ -141,9 +135,11 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
 
   @override
   Future<void> saveAllLastSelected(
-    Map<String, SelectionModel> lastSelected,
+    Map<String, SelectionData> lastSelected,
   ) async {
-    await Future.delayed(const Duration(milliseconds: SpreadsheetConstants.debugDelayMs));
+    await Future.delayed(
+      const Duration(milliseconds: SpreadsheetConstants.debugDelayMs),
+    );
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/media_sorter/all_last_selected.json');
     await file.create(recursive: true);

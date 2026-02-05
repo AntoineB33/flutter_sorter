@@ -1,15 +1,18 @@
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 
-class SheetModel {
+class SheetData {
+  SheetContent sheetContent;
   List<UpdateHistory> updateHistories;
   int historyIndex;
-  SheetContent sheetContent;
   List<double> rowsBottomPos;
   List<double> colRightPos;
   List<bool> rowsManuallyAdjustedHeight;
@@ -17,10 +20,21 @@ class SheetModel {
   double colHeaderHeight;
   double rowHeaderWidth;
 
-  SheetModel({
+  AnalysisResult lastAnalysis;
+  final NodeStruct mentionsRoot = NodeStruct(
+    instruction: SpreadsheetConstants.selectionMsg,
+  );
+  final NodeStruct searchRoot = NodeStruct(
+    instruction: SpreadsheetConstants.searchMsg,
+  );
+
+  UpdateHistory? currentUpdateHistory;
+
+  SheetData({
+    required this.sheetContent,
+    required this.lastAnalysis,
     required this.updateHistories,
     required this.historyIndex,
-    required this.sheetContent,
     required this.rowsBottomPos,
     required this.colRightPos,
     required this.rowsManuallyAdjustedHeight,
@@ -29,11 +43,12 @@ class SheetModel {
     required this.rowHeaderWidth,
   });
 
-  factory SheetModel.empty() {
-    return SheetModel(
+  factory SheetData.empty() {
+    return SheetData(
+      sheetContent: SheetContent(table: [], columnTypes: [ColumnType.names]),
+      lastAnalysis: AnalysisResult.empty(),
       updateHistories: [],
       historyIndex: -1,
-      sheetContent: SheetContent(table: [], columnTypes: [ColumnType.names]),
       rowsBottomPos: [],
       colRightPos: [],
       rowsManuallyAdjustedHeight: [],
@@ -44,7 +59,7 @@ class SheetModel {
   }
 
   // This factory handles the ugly 'dynamic' parsing in one isolated place
-  factory SheetModel.fromJson(Map<String, dynamic> json) {
+  factory SheetData.fromJson(Map<String, dynamic> json) {
     try {
       var rawSheetContent = json['sheetContent'] as Map<String, dynamic>;
       var rawTable = rawSheetContent['table'] as List;
@@ -55,10 +70,7 @@ class SheetModel {
         List<CellUpdateHistory> parsedUpdatedCells = updatedCellsRaw.map((uch) {
           var cellPoint = uch['cell'] as Map<String, dynamic>;
           return CellUpdateHistory(
-            cell: Point<int>(
-              cellPoint['x'] as int,
-              cellPoint['y'] as int,
-            ),
+            cell: Point<int>(cellPoint['x'] as int, cellPoint['y'] as int),
             previousValue: uch['previousValue'] as String,
             newValue: uch['newValue'] as String,
           );
@@ -79,12 +91,20 @@ class SheetModel {
       }).toList();
 
       var rawTypes = rawSheetContent['columnTypes'] as List;
-      List<ColumnType> parsedTypes = rawTypes.map((e) => ColumnType.values.firstWhere((ct) => ct.toString() == e.toString())).toList();
+      List<ColumnType> parsedTypes = rawTypes
+          .map(
+            (e) => ColumnType.values.firstWhere(
+              (ct) => ct.toString() == e.toString(),
+            ),
+          )
+          .toList();
 
-      List<double> parsedHeight =
-          (json['rowsBottomPos'] as List).map((e) => e as double).toList();
-      List<double> parsedWidth =
-          (json['colRightPos'] as List).map((e) => e as double).toList();
+      List<double> parsedHeight = (json['rowsBottomPos'] as List)
+          .map((e) => e as double)
+          .toList();
+      List<double> parsedWidth = (json['colRightPos'] as List)
+          .map((e) => e as double)
+          .toList();
       List<bool> parsedRowsManuallyAdjustedHeight =
           (json['rowsManuallyAdjustedHeight'] as List)
               .map((e) => e as bool)
@@ -94,22 +114,23 @@ class SheetModel {
               .map((e) => e as bool)
               .toList();
 
-      return SheetModel(
+      return SheetData(
         updateHistories: parsedUpdateHistories,
         historyIndex: json['historyIndex'] as int,
-        sheetContent: SheetContent(table: parsedTable, columnTypes: parsedTypes),
+        sheetContent: SheetContent(
+          table: parsedTable,
+          columnTypes: parsedTypes,
+        ),
         rowsBottomPos: parsedHeight,
         colRightPos: parsedWidth,
         rowsManuallyAdjustedHeight: parsedRowsManuallyAdjustedHeight,
         colsManuallyAdjustedWidth: parsedColsManuallyAdjustedWidth,
-        colHeaderHeight:
-            json['colHeaderHeight'] as double,
-        rowHeaderWidth:
-            json['rowHeaderWidth'] as double,
+        colHeaderHeight: json['colHeaderHeight'] as double,
+        rowHeaderWidth: json['rowHeaderWidth'] as double,
       );
     } catch (e) {
-      debugPrint("Error parsing SheetModel from JSON: $e");
-      return SheetModel.empty();
+      debugPrint("Error parsing SheetData from JSON: $e");
+      return SheetData.empty();
     }
   }
 
@@ -131,7 +152,9 @@ class SheetModel {
       'historyIndex': historyIndex,
       'sheetContent': {
         'table': sheetContent.table,
-        'columnTypes': sheetContent.columnTypes.map((ct) => ct.toString()).toList(),
+        'columnTypes': sheetContent.columnTypes
+            .map((ct) => ct.toString())
+            .toList(),
       },
       'rowsBottomPos': rowsBottomPos,
       'colRightPos': colRightPos,

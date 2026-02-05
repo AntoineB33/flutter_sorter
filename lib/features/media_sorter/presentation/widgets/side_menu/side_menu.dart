@@ -84,16 +84,40 @@ class _SideMenuState extends State<SideMenu> {
 
           const SizedBox(height: 10),
 
-          TextButton(
-            onPressed: spreadsheetController.canBeSorted()
-              ? spreadsheetController.sortMedia
-              : null,
-            style: TextButton.styleFrom(
-              foregroundColor: spreadsheetController.canBeSorted()
-                  ? Colors.black
-                  : Colors.grey,
-            ),
-            child: Text("Sort media"),
+          Row(
+            mainAxisAlignment:
+                MainAxisAlignment.center, // Centers the buttons horizontally
+            children: [
+              // Existing Button (Now with background)
+              ElevatedButton(
+                onPressed: spreadsheetController.canBeSorted()
+                    ? spreadsheetController.sortMedia
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue, // Your background color
+                  foregroundColor: Colors.white, // Text color
+                  disabledBackgroundColor: Colors.grey[300],
+                ),
+                child: const Text("Sort media"),
+              ),
+
+              const SizedBox(width: 12), // Adds spacing between the two buttons
+              // New Button to the right
+              ElevatedButton(
+                onPressed: spreadsheetController.canBeSorted()
+                    ? spreadsheetController.findBestSortToggle()
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text(
+                  spreadsheetController.findingBestSort
+                      ? "Stop sorting"
+                      : "Find the best order",
+                ),
+              ),
+            ],
           ),
 
           const SizedBox(height: 20),
@@ -174,7 +198,7 @@ class _SideMenuState extends State<SideMenu> {
         return Autocomplete<String>(
           optionsBuilder: (TextEditingValue textEditingValue) {
             final query = textEditingValue.text.toLowerCase();
-            final allSheets = spreadsheetController.availableSheets;
+            final allSheets = spreadsheetController.sheetNames;
             if (query.isEmpty) {
               final sorted = List<String>.from(allSheets);
               sorted.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));

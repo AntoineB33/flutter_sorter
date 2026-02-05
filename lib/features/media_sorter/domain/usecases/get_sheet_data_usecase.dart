@@ -1,17 +1,18 @@
+import 'package:crypto/crypto.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_repository.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 
 class GetSheetDataUseCase {
   final SheetRepository repository;
 
   GetSheetDataUseCase(this.repository);
 
-  Future<SelectionModel> getLastSelection() {
+  Future<SelectionData> getLastSelection() {
     return repository.getLastSelection();
   }
 
-  Future<String> getLastOpenedSheetName() {
+  Future<String?> getLastOpenedSheetName() {
     return repository.getLastOpenedSheetName();
   }
 
@@ -19,11 +20,11 @@ class GetSheetDataUseCase {
     return repository.getAllSheetNames();
   }
 
-  Future<Map<String, SelectionModel>> getAllLastSelected() async {
+  Future<Map<String, SelectionData>> getAllLastSelected() async {
     return await repository.getAllLastSelected();
   }
 
-  Future<SheetModel> loadSheet(String sheetName) {
+  Future<SheetData> loadSheet(String sheetName) {
     return repository.loadSheet(sheetName);
   }
 }

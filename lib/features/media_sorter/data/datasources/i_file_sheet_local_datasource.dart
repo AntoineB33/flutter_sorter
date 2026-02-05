@@ -1,17 +1,16 @@
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 
 abstract class IFileSheetLocalDataSource {
-  Future<void> createFile(String fileName);
-  Future<SelectionModel> getLastSelection();
-  Future<void> saveLastSelection(SelectionModel selection);
-  Future<String> getLastOpenedSheetName();
+  Future<SelectionData> getLastSelection();
+  Future<void> saveLastSelection(SelectionData selection);
+  Future<String?> getLastOpenedSheetName();
   Future<void> saveLastOpenedSheetName(String sheetName);
   Future<List<String>> getAllSheetNames();
   Future<void> saveAllSheetNames(List<String> sheetNames);
-  Future<Map<String, SelectionModel>> getAllLastSelected();
-  Future<void> saveAllLastSelected(Map<String, SelectionModel> cells);
+  Future<Map<String, SelectionData>> getAllLastSelected();
+  Future<void> saveAllLastSelected(Map<String, SelectionData> cells);
   Future<void> clearAllData();
-  Future<SheetModel> getSheet(String sheetName);
-  Future<void> saveSheet(String sheetName, SheetModel sheet);
+  Future<SheetData> getSheet(String sheetName);
+  Future<void> saveSheet(String sheetName, SheetData sheet);
 }

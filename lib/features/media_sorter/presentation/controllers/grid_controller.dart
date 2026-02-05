@@ -1,7 +1,7 @@
 class GridController {
   // --- states ---
-  double visibleWindowHeight = 0.0;
-  double visibleWindowWidth = 0.0;
+  double row1ToScreenBottomHeight = 0.0;
+  double colBToScreenRightWidth = 0.0;
 
   // --- helpers ---
 

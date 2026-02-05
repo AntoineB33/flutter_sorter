@@ -5,8 +5,6 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update.dart
 
 // --- Manager Class ---
 class HistoryController {
-  // --- states ---
-  UpdateHistory? currentUpdateHistory;
 
   HistoryController();
 

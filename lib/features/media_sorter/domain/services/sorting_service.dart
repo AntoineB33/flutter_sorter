@@ -1,23 +1,7 @@
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 
-class SortingRule {
-  final int minVal;
-  final int maxVal;
-  final int? relativeTo;
-
-  SortingRule({
-    required this.minVal,
-    required this.maxVal,
-    this.relativeTo,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'min_val': minVal,
-        'max_val': maxVal,
-        'relative_to': relativeTo,
-      };
-}
 
 class SortingService {
   static const String wsUrl = 'ws://127.0.0.1:8000/ws/solve';

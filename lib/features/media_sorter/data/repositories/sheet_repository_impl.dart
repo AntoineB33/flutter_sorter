@@ -1,7 +1,7 @@
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_repository.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_model.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/selection_model.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 
 class SheetRepositoryImpl implements SheetRepository {
   final FileSheetLocalDataSource dataSource;
@@ -9,22 +9,17 @@ class SheetRepositoryImpl implements SheetRepository {
   SheetRepositoryImpl(this.dataSource);
 
   @override
-  Future<void> createFile(String fileName) async {
-    await dataSource.createFile(fileName);
-  }
-
-  @override
-  Future<SelectionModel> getLastSelection() async {
+  Future<SelectionData> getLastSelection() async {
     return await dataSource.getLastSelection();
   }
 
   @override
-  Future<void> saveLastSelection(SelectionModel selection) async {
+  Future<void> saveLastSelection(SelectionData selection) async {
     await dataSource.saveLastSelection(selection);
   }
 
   @override
-  Future<String> getLastOpenedSheetName() async {
+  Future<String?> getLastOpenedSheetName() async {
     return await dataSource.getLastOpenedSheetName();
   }
 
@@ -44,22 +39,22 @@ class SheetRepositoryImpl implements SheetRepository {
   }
 
   @override
-  Future<SheetModel> loadSheet(String sheetName) async {
+  Future<SheetData> loadSheet(String sheetName) async {
     return await dataSource.getSheet(sheetName);
   }
 
   @override
-  Future<void> updateSheet(String sheetName, SheetModel sheet) async {
+  Future<void> updateSheet(String sheetName, SheetData sheet) async {
     return await dataSource.saveSheet(sheetName, sheet);
   }
 
   @override
-  Future<Map<String, SelectionModel>> getAllLastSelected() async {
+  Future<Map<String, SelectionData>> getAllLastSelected() async {
     return await dataSource.getAllLastSelected();
   }
 
   @override
-  Future<void> saveAllLastSelected(Map<String, SelectionModel> cells) async {
+  Future<void> saveAllLastSelected(Map<String, SelectionData> cells) async {
     await dataSource.saveAllLastSelected(cells);
   }
 
