@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:convert';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
@@ -102,4 +103,108 @@ class AnalysisResult {
       rowToRefFromAttCol: [],
     );
   }
+
+  factory AnalysisResult.fromJson(Map<String, dynamic> json) {
+    return AnalysisResult(
+      errorChildren: (json['errorRoot']['newChildren'] as List)
+          .map((child) => NodeStruct.fromJson(child))
+          .toList(),
+      warningChildren: (json['warningRoot']['newChildren'] as List)
+          .map((child) => NodeStruct.fromJson(child))
+          .toList(),
+      categoryChildren: (json['categoriesRoot']['newChildren'] as List)
+          .map((child) => NodeStruct.fromJson(child))
+          .toList(),
+      distPairChildren: (json['distPairsRoot']['newChildren'] as List)
+          .map((child) => NodeStruct.fromJson(child))
+          .toList(),
+      tableToAtt: (json['tableToAtt'] as List)
+          .map((row) => (row as List)
+              .map((cellAtts) => HashSet<Attribute>.from(
+                  (cellAtts as List).map((att) => Attribute.fromJson(att))))
+              .toList())
+          .toList(),
+      names: Map<String, Cell>.fromEntries(
+        (json['names'] as Map<String, dynamic>).entries.map(
+              (entry) => MapEntry(entry.key, Cell.fromJson(entry.value)),
+            ),
+      ),
+      attToCol: Map<String, List<int>>.fromEntries(
+        (json['attToCol'] as Map<String, dynamic>).entries.map(
+              (entry) => MapEntry(
+                entry.key,
+                List<int>.from(entry.value as List),
+              ),
+            ),
+      ),
+      nameIndexes:
+          List<int>.from(json['nameIndexes'] as List<dynamic>),
+      pathIndexes:
+          List<int>.from(json['pathIndexes'] as List<dynamic>),
+      attToRefFromAttColToCol: Map<Attribute, Map<int, Cols>>.fromEntries(
+        (json['attToRefFromAttColToCol'] as Map<String, dynamic>).entries.map(
+              (entry) => MapEntry(
+                Attribute.fromJson(jsonDecode(entry.key) as Map<String, dynamic>),
+                Map<int, Cols>.fromEntries(
+                  (entry.value as Map<String, dynamic>).entries.map(
+                        (innerEntry) => MapEntry(
+                          int.parse(innerEntry.key),
+                          Cols.fromJson(innerEntry.value),
+                        ),
+                      ),
+                ),
+              ),
+            ),
+      ),
+      attToRefFromDepColToCol: Map<Attribute, Map<int, List<int>>>.fromEntries(
+        (json['attToRefFromDepColToCol'] as Map<String, dynamic>).entries.map(
+              (entry) => MapEntry(
+                Attribute.fromJson(jsonDecode(entry.key) as Map<String, dynamic>),
+                Map<int, List<int>>.fromEntries(
+                  (entry.value as Map<String, dynamic>).entries.map(
+                        (innerEntry) => MapEntry(
+                          int.parse(innerEntry.key),
+                          List<int>.from(innerEntry.value as List),
+                        ),
+                      ),
+                ),
+              ),
+            ),
+      ),
+      formatedTable: (json['formatedTable'] as List)
+          .map((row) => (row as List)
+              .map((cell) => StrInt()
+                ..strings = List<String>.from(cell['strings'] as List)
+                ..integers = List<int>.from(cell['integers'] as List))
+              .toList())
+          .toList(),
+      rowToRefFromAttCol: (json['rowToRefFromAttCol'] as List)
+          .map((row) => HashSet<int>.from(row as List))
+          .toList(),
+      instrTable: (json['instrTable'] as List)
+          .map((row) => Map<InstrStruct, Cell>.fromEntries(
+                (row as Map<String, dynamic>).entries.map(
+                      (entry) => MapEntry(
+                        InstrStruct.fromJson(jsonDecode(entry.key) as Map<String, dynamic>),
+                        Cell.fromJson(entry.value),
+                      ),
+                    ),
+              ))
+          .toList(),
+      colToAtt: Map<int, HashSet<Attribute>>.fromEntries(
+        (json['colToAtt'] as Map<String, dynamic>).entries.map(
+              (entry) => MapEntry(
+                int.parse(entry.key),
+                HashSet<Attribute>.from(
+                    (entry.value as List).map((att) => Attribute.fromJson(att))),
+              ),
+            ),
+      ),
+      validRowIndexes:
+          List<int>.from(json['validRowIndexes'] as List<dynamic>),
+      rowCount: json['rowCount'] as int,
+      colCount: json['colCount'] as int,
+    );
+  }
+
 }

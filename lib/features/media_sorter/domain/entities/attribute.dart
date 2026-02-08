@@ -32,4 +32,20 @@ class Attribute {
 
   @override
   int get hashCode => Object.hash(name, rowId, colId);
+
+  factory Attribute.fromJson(Map<String, dynamic> json) {
+    return Attribute._(
+      name: json['name'] as String?,
+      rowId: json['rowId'] as int?,
+      colId: json['colId'] as int?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'rowId': rowId,
+      'colId': colId,
+    };
+  }
 }

@@ -18,44 +18,6 @@ class SpreadsheetLayoutDelegate {
     this._dataController,
   );
 
-  void updateRowColCount({
-    double? visibleHeight,
-    double? visibleWidth,
-    bool notify = true,
-    bool save = true,
-  }) {
-    int targetRows = _selectionController.tableViewRows;
-    int targetCols = _selectionController.tableViewCols;
-
-    if (visibleHeight != null) {
-      _gridController.row1ToScreenBottomHeight = visibleHeight;
-      targetRows = _dataController.minRows(
-        _gridController.row1ToScreenBottomHeight,
-      );
-    }
-    if (visibleWidth != null) {
-      _gridController.colBToScreenRightWidth = visibleWidth;
-      targetCols = _dataController.minCols(
-        _gridController.colBToScreenRightWidth,
-      );
-    }
-
-    // We access the selection manager via the controller
-    // This assumes the controller exposes the way to set these,
-    // or we modify the selection model directly via the controller's selection getter.
-    if (targetRows != _selectionController.tableViewRows ||
-        targetCols != _selectionController.tableViewCols) {
-      _selectionController.tableViewRows = targetRows;
-      _selectionController.tableViewCols = targetCols;
-      if (notify) {
-        manager.notify();
-      }
-    }
-    if (save) {
-      _dataController.saveLastSelection(_selectionController.selection);
-    }
-  }
-
   void adjustRowHeightAfterUpdate(
     int row,
     int col,

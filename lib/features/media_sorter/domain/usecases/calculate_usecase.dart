@@ -18,6 +18,22 @@ class Cols {
   final List<int> colIndexes = [];
   final List<bool> toInformFstDep = [];
   Cols();
+
+  factory Cols.fromJson(Map<String, dynamic> json) {
+    final colIndexes = List<int>.from(json['colIndexes'] as List<dynamic>);
+    final toInformFstDep = List<bool>.from(json['toInformFstDep'] as List<dynamic>);
+    final cols = Cols();
+    cols.colIndexes.addAll(colIndexes);
+    cols.toInformFstDep.addAll(toInformFstDep);
+    return cols;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'colIndexes': colIndexes,
+      'toInformFstDep': toInformFstDep,
+    };
+  }
 }
 
 class CalculateUsecase {
@@ -69,12 +85,11 @@ class CalculateUsecase {
   int get colCount => rowCount > 0 ? _sheetContent!.table[0].length : 0;
 
   final List<ColumnType> columnTypes0;
-  final Set<int> sourceColIndices;
+  Set<int> sourceColIndices = {};
 
   CalculateUsecase(IsolateMessage message)
     : dataPackage = message.table,
-      columnTypes0 = message.columnTypes,
-      sourceColIndices = message.sourceColIndices;
+      columnTypes0 = message.columnTypes;
 
   AnalysisResult run() {
     _decodeData(dataPackage);

@@ -63,7 +63,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       final selectionController = context.read<SelectionController>();
       // Case A: Scroll to specific Cell (Your existing logic)
       if (request.cell != null) {
-        _revealCell(request.cell!, controller, dataController, selectionController);
+        _revealCell(
+          request.cell!,
+          controller,
+          dataController,
+          selectionController,
+        );
         return;
       }
 
@@ -92,9 +97,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         curve: Curves.easeOut,
       );
       Future.delayed(
-        const Duration(
-          milliseconds: SpreadsheetConstants.animationDurationMs,
-        ),
+        const Duration(milliseconds: SpreadsheetConstants.animationDurationMs),
         () {
           _isProgrammaticScroll = false;
         },
@@ -114,9 +117,10 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 
   void adjustTableRow(
-    SelectionController selectionController,double targetTop,
-    double targetBottom,) {
-  }
+    SelectionController selectionController,
+    double targetTop,
+    double targetBottom,
+  ) {}
 
   /// Calculates offsets and scrolls to ensure the target cell is visible.
   void _revealCell(
@@ -142,7 +146,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       bool scroll = true;
       if (targetTop < selectionController.scrollOffsetX) {
         selectionController.scrollOffsetX = targetTop;
-      } else if (targetBottom > selectionController.scrollOffsetX + verticalViewport) {
+      } else if (targetBottom >
+          selectionController.scrollOffsetX + verticalViewport) {
         selectionController.scrollOffsetX = targetBottom - verticalViewport;
         controller.updateRowColCount(visibleHeight: targetBottom);
       } else {
@@ -150,7 +155,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       }
 
       if (scroll) {
-        _safelyScroll(_verticalController, selectionController.scrollOffsetX, true);
+        _safelyScroll(
+          _verticalController,
+          selectionController.scrollOffsetX,
+          true,
+        );
       }
     }
 
@@ -168,7 +177,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       bool scroll = true;
       if (targetLeft < selectionController.scrollOffsetY) {
         selectionController.scrollOffsetY = targetLeft;
-      } else if (targetRight > selectionController.scrollOffsetY + horizontalViewport) {
+      } else if (targetRight >
+          selectionController.scrollOffsetY + horizontalViewport) {
         selectionController.scrollOffsetY = targetRight - horizontalViewport;
         controller.updateRowColCount(visibleWidth: targetRight);
       } else {
@@ -176,7 +186,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       }
 
       if (scroll) {
-        _safelyScroll(_horizontalController, selectionController.scrollOffsetY, true);
+        _safelyScroll(
+          _horizontalController,
+          selectionController.scrollOffsetY,
+          true,
+        );
       }
     }
     dataController.saveLastSelection(selectionController.selection);
@@ -371,7 +385,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     return SpreadsheetDataCell(
       row: dataRow,
       col: dataCol,
-      content: dataController.getContent(dataRow, dataCol),
+      content: dataController.getCellContent(dataRow, dataCol),
       isValid: controller.isRowValid(dataRow),
       isPrimarySelectedCell: selectionController.isPrimarySelectedCell(
         dataRow,

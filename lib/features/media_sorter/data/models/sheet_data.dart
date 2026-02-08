@@ -20,19 +20,10 @@ class SheetData {
   double colHeaderHeight;
   double rowHeaderWidth;
 
-  AnalysisResult lastAnalysis;
-  final NodeStruct mentionsRoot = NodeStruct(
-    instruction: SpreadsheetConstants.selectionMsg,
-  );
-  final NodeStruct searchRoot = NodeStruct(
-    instruction: SpreadsheetConstants.searchMsg,
-  );
-
   UpdateHistory? currentUpdateHistory;
 
   SheetData({
     required this.sheetContent,
-    required this.lastAnalysis,
     required this.updateHistories,
     required this.historyIndex,
     required this.rowsBottomPos,
@@ -46,7 +37,6 @@ class SheetData {
   factory SheetData.empty() {
     return SheetData(
       sheetContent: SheetContent(table: [], columnTypes: [ColumnType.names]),
-      lastAnalysis: AnalysisResult.empty(),
       updateHistories: [],
       historyIndex: -1,
       rowsBottomPos: [],
@@ -115,12 +105,12 @@ class SheetData {
               .toList();
 
       return SheetData(
-        updateHistories: parsedUpdateHistories,
-        historyIndex: json['historyIndex'] as int,
         sheetContent: SheetContent(
           table: parsedTable,
           columnTypes: parsedTypes,
         ),
+        updateHistories: parsedUpdateHistories,
+        historyIndex: json['historyIndex'] as int,
         rowsBottomPos: parsedHeight,
         colRightPos: parsedWidth,
         rowsManuallyAdjustedHeight: parsedRowsManuallyAdjustedHeight,

@@ -36,4 +36,24 @@ class InstrStruct {
         _equality.hash(numbers),
         _equality.hash(intervals),
       );
+  
+  factory InstrStruct.fromJson(Map<String, dynamic> json) {
+    return InstrStruct(
+      json['isConstraint'] as bool,
+      json['any'] as bool,
+      List<int>.from(json['numbers'] as List<dynamic>),
+      (json['intervals'] as List<dynamic>)
+          .map((e) => List<int>.from(e as List<dynamic>))
+          .toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'isConstraint': isConstraint,
+      'any': any,
+      'numbers': numbers,
+      'intervals': intervals,
+    };
+  }
 }

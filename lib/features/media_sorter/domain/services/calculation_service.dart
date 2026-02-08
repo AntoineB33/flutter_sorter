@@ -20,12 +20,12 @@ class CalculationService {
   
   IsolateMessage getMessage(SheetContent sheetContent) {
     if (sheetContent.table.length < 5000) {
-      return IsolateMessage(Right(sheetContent.table), sheetContent.columnTypes, sheetContent.sourceColIndices);
+      return IsolateMessage(Right(sheetContent.table), sheetContent.columnTypes);
     } else {
       final String combined = jsonEncode(sheetContent.table);
       final Uint8List bytes = utf8.encode(combined);
       final transferable = TransferableTypedData.fromList([bytes]);
-      return IsolateMessage(Left(transferable), sheetContent.columnTypes, sheetContent.sourceColIndices);
+      return IsolateMessage(Left(transferable), sheetContent.columnTypes);
     }
   }
 

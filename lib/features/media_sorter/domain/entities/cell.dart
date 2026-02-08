@@ -13,4 +13,18 @@ class Cell {
 
   @override
   int get hashCode => Object.hash(rowId, colId);
+
+  factory Cell.fromJson(Map<String, dynamic> json) {
+    return Cell(
+      rowId: json['rowId'] as int,
+      colId: json['colId'] as int,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'rowId': rowId,
+      'colId': colId,
+    };
+  }
 }

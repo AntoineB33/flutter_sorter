@@ -81,4 +81,32 @@ class NodeStruct {
       minDist.hashCode ^
       hideIfEmpty.hashCode ^
       startOpen.hashCode;
+
+  factory NodeStruct.fromJson(Map<String, dynamic> json) {
+    return NodeStruct(
+      instruction: json['instruction'],
+      message: json['message'],
+      rowId: json['rowId'],
+      colId: json['colId'],
+      name: json['name'],
+      dist: json['dist'],
+      minDist: json['minDist'],
+      hideIfEmpty: json['hideIfEmpty'] ?? false,
+      startOpen: json['startOpen'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'instruction': instruction,
+      'message': message,
+      'rowId': rowId,
+      'colId': colId,
+      'name': name,
+      'dist': dist,
+      'minDist': minDist,
+      'hideIfEmpty': hideIfEmpty,
+      'startOpen': startOpen,
+    };
+  }
 }
