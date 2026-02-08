@@ -1,14 +1,29 @@
 import 'dart:math';
+import 'package:flutter/material.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update.dart';
 
 
 // --- Manager Class ---
-class HistoryController {
+class HistoryController extends ChangeNotifier {
+  void Function(int, int, String, {
+    bool onChange,
+    bool historyNavigation,
+    bool keepPrevious,
+  }) updateCell;
+  void Function(int, ColumnType, {
+    bool updateHistory,
+  }) setColumnType;
+  void Function(SheetData sheet, SelectionData selection, String currentSheetName, {bool save, bool updateHistory}) saveAndCalculate;
 
-  HistoryController();
+  int rowCount(SheetContent content) => content.table.length;
+  int colCount(SheetContent content) => content.table.isNotEmpty ? content.table[0].length : 0;
+
+  HistoryController(this.updateCell, this.setColumnType, this.saveAndCalculate);
 
   void discardPendingChanges(SheetData sheet) {
     sheet.currentUpdateHistory = null;
@@ -81,4 +96,62 @@ class HistoryController {
       ),
     );
   }
+
+  void undo(SheetData sheet, SelectionData selection, String currentSheetName) {
+    if (sheet.historyIndex < 0 || sheet.updateHistories.isEmpty) {
+      return;
+    }
+    final lastUpdate = sheet.updateHistories[sheet.historyIndex];
+    if (lastUpdate.key == UpdateHistory.updateCellContent) {
+      for (var cellUpdate in lastUpdate.updatedCells!) {
+        updateCell(
+          cellUpdate.cell.x,
+          cellUpdate.cell.y,
+          cellUpdate.previousValue,
+          historyNavigation: true,
+        );
+      }
+    } else if (lastUpdate.key == UpdateHistory.updateColumnType) {
+      for (var typeUpdate in lastUpdate.updatedColumnTypes!) {
+        setColumnType(
+          typeUpdate.colId!,
+          typeUpdate.previousColumnType!,
+          updateHistory: false,
+        );
+      }
+    }
+    sheet.historyIndex--;
+    notifyListeners();
+    saveAndCalculate(sheet, selection, currentSheetName);
+  }
+  
+  void redo(SheetData sheet, SelectionData selection, String currentSheetName) {
+    if (sheet.historyIndex + 1 == sheet.updateHistories.length) {
+      return;
+    }
+    final nextUpdate = sheet.updateHistories[sheet.historyIndex + 1];
+    if (nextUpdate.key == UpdateHistory.updateCellContent) {
+      for (var cellUpdate in nextUpdate.updatedCells!) {
+        updateCell(
+          cellUpdate.cell.x,
+          cellUpdate.cell.y,
+          cellUpdate.newValue,
+          historyNavigation: true,
+        );
+      }
+    } else if (nextUpdate.key == UpdateHistory.updateColumnType) {
+      for (var typeUpdate in nextUpdate.updatedColumnTypes!) {
+        setColumnType(
+          typeUpdate.colId!,
+          typeUpdate.newColumnType!,
+          updateHistory: false,
+        );
+      }
+    }
+    sheet.historyIndex++;
+    notifyListeners();
+    saveAndCalculate(sheet, selection, currentSheetName);
+  }
+
+
 }

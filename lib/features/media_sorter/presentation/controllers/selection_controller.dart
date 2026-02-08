@@ -2,8 +2,10 @@ import 'dart:math';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 import 'package:flutter/foundation.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/sheet_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
@@ -11,9 +13,16 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_
 class SelectionController extends ChangeNotifier {
   final ManageWaitingTasks<void> _saveLastSelectionExecutor =
       ManageWaitingTasks<void>();
-
+  Function (SheetData sheet) commitHistory;
+  void Function(SheetData sheet) discardPendingChanges;
+  void Function(SheetData sheet, SelectionData selection, String currentSheetName, String newValue) onChanged;
+  String Function(List<List<String>> table, int row, int col) getCellContent;
   void Function(int, int) updateMentionsContext;
   void Function(int, int) triggerScrollTo;
+  (int, int) Function(SelectionData selection, SheetData sheet, int rowCount, int colCount, {
+    double? visibleHeight,
+    double? visibleWidth,
+  }) getNewRowColCount;
 
   final GetSheetDataUseCase _getDataUseCase = GetSheetDataUseCase(
     SheetRepositoryImpl(FileSheetLocalDataSource()),
@@ -59,16 +68,12 @@ class SelectionController extends ChangeNotifier {
   // set editingMode(bool isEditing) {
   //   selection.editingMode = isEditing;
   // }
+  
+  int rowCount(SheetContent content) => content.table.length;
+  int colCount(SheetContent content) => content.table.isNotEmpty ? content.table[0].length : 0;
 
   SelectionController(this.updateMentionsContext,
-      this.triggerScrollTo);
-
-  String getCellContent(List<List<String>> table, int row, int col) {
-    if (row < table.length && col < table[row].length) {
-      return table[row][col];
-    }
-    return '';
-  }
+      this.triggerScrollTo, this.commitHistory, this.discardPendingChanges, this.onChanged, this.getCellContent, this.getNewRowColCount);
 
   Future<Map<String, SelectionData>> getAllLastSelected() async {
     try {
@@ -80,9 +85,17 @@ class SelectionController extends ChangeNotifier {
   }
 
 
-  void updateRowColCount(SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, int targetRows, int targetCols, String currentSheetName, {
+  void updateRowColCount(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {
+    double ? visibleHeight,
+    double ? visibleWidth,
     bool notify = true,
     bool save = true,}) {
+    var (targetRows, targetCols) = getNewRowColCount(
+      selection,
+      sheet,
+      rowCount(sheet.sheetContent),
+      colCount(sheet.sheetContent),
+    );
     if (targetRows != selection.tableViewRows ||
         targetCols != selection.tableViewCols) {
       selection.tableViewRows = targetRows;
@@ -160,8 +173,7 @@ class SelectionController extends ChangeNotifier {
     String currentSheetName,
     int row,
     int col,
-    bool keepSelection,
-    bool updateMentions, {
+    bool keepSelection, {
     bool scrollTo = true,
   }) {
     if (!keepSelection) {
@@ -170,15 +182,48 @@ class SelectionController extends ChangeNotifier {
     selection.primarySelectedCell = Point(row, col);
     saveLastSelection(lastSelectionBySheet, currentSheetName);
 
-    // Update Mentions
-    if (updateMentions) {
-      updateMentionsContext(row, col);
-    }
+    updateMentionsContext(row, col);
 
     // Request scroll to visible
     if (scrollTo) {
       triggerScrollTo(row, col);
     }
     notifyListeners();
+  }
+
+  void stopEditing(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {bool updateHistory = true, bool notify = true}) {
+    selection.editingMode = false;
+    saveLastSelection(lastSelectionBySheet, currentSheetName);
+    if (notify) {
+      notifyListeners();
+    }
+    if (updateHistory && sheet.currentUpdateHistory != null) {
+      commitHistory(sheet);
+    } else {
+      discardPendingChanges(sheet);
+    }
+  }
+
+  void startEditing(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {String? initialInput}) {
+    selection.previousContent = getCellContent(sheet.sheetContent.table,
+      selection.primarySelectedCell.x,
+      selection.primarySelectedCell.y,
+    );
+    if (initialInput != null) {
+      onChanged(sheet, selection, currentSheetName, initialInput);
+    }
+    selection.editingMode = true;
+    saveLastSelection(lastSelectionBySheet, currentSheetName);
+    notifyListeners();
+  }
+  
+  void selectAll(SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, int rowCount, int colCount) {
+    selection.selectedCells.clear();
+    for (int r = 0; r < rowCount; r++) {
+      for (int c = 0; c < colCount; c++) {
+        selection.selectedCells.add(Point(r, c));
+      }
+    }
+    setPrimarySelection(selection, lastSelectionBySheet, currentSheetName, 0, 0, true);
   }
 }

@@ -2,7 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/spreadsheet_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
 import 'analysis_tree_node.dart';
 
 class SideMenu extends StatefulWidget {
@@ -60,11 +61,13 @@ class _SideMenuState extends State<SideMenu> {
 
   @override
   Widget build(BuildContext context) {
-    final SpreadsheetController spreadsheetController =
-        Provider.of<SpreadsheetController>(context);
+    final WorkbookController workbookController =
+        Provider.of<WorkbookController>(context);
+    final SheetDataController sheetDataController =
+        Provider.of<SheetDataController>(context);
 
-    if (_textEditingController.text != spreadsheetController.sheetName) {
-      _textEditingController.text = spreadsheetController.sheetName;
+    if (_textEditingController.text != workbookController.currentSheetName) {
+      _textEditingController.text = workbookController.currentSheetName;
     }
 
     return Container(
@@ -80,7 +83,7 @@ class _SideMenuState extends State<SideMenu> {
           const SizedBox(height: 16),
 
           // --- Autocomplete Input Field ---
-          _buildSheetAutocomplete(spreadsheetController),
+          _buildSheetAutocomplete(workbookController),
 
           const SizedBox(height: 10),
 
@@ -90,8 +93,8 @@ class _SideMenuState extends State<SideMenu> {
             children: [
               // Existing Button (Now with background)
               ElevatedButton(
-                onPressed: spreadsheetController.canBeSorted()
-                    ? spreadsheetController.sortMedia
+                onPressed: sheetDataController.canBeSorted()
+                    ? workbookController.sortMedia
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue, // Your background color

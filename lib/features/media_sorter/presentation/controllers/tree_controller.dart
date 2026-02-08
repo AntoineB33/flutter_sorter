@@ -32,11 +32,14 @@ class TreeController extends ChangeNotifier {
   );
 
   final OnTreeCellSelected _onCellSelected;
+  
+  int rowCount(SheetContent content) => content.table.length;
+  int colCount(SheetContent content) => content.table.isNotEmpty ? content.table[0].length : 0;
 
   TreeController(this._onCellSelected);
 
   void populateAllTrees(SelectionData selection, SheetData sheet, AnalysisResult result, int rowCount, int colCount) {
-    populateTree(selection, sheet, result, rowCount, colCount, [
+    populateTree(selection, sheet, result, [
       result.errorRoot,
       result.warningRoot,
       mentionsRoot,
@@ -45,14 +48,14 @@ class TreeController extends ChangeNotifier {
       result.distPairsRoot,
     ]);
   }
-  void populateTree(SelectionData selection, SheetData sheet, AnalysisResult result, int rowCount, int colCount, List<NodeStruct> roots) {
+  void populateTree(SelectionData selection, SheetData sheet, AnalysisResult result, List<NodeStruct> roots) {
     if (result.noResult) return;
 
     for (final root in roots) {
       var stack = [root];
       while (stack.isNotEmpty) {
         var node = stack.removeLast();
-        _populateNode(selection, sheet, result, node, rowCount, colCount); // Internal call
+        _populateNode(selection, sheet, result, node, rowCount(sheet.sheetContent), colCount(sheet.sheetContent)); // Internal call
         if (node.isExpanded) {
           _handleExpansion(node, stack);
         }
@@ -445,9 +448,9 @@ class TreeController extends ChangeNotifier {
     }
   }
 
-  void updateMentionsContext(SelectionData selection, SheetData sheet, AnalysisResult result, int rowCount, int colCount, int row, int col) {
+  void updateMentionsContext(SelectionData selection, SheetData sheet, AnalysisResult result, int row, int col) {
     updateMentionsRoot(row, col);
-    populateTree(selection, sheet, result, rowCount, colCount, [mentionsRoot]);
+    populateTree(selection, sheet, result, [mentionsRoot]);
   }
 
   void updateMentionsRoot(int row, int col) {
@@ -458,5 +461,17 @@ class TreeController extends ChangeNotifier {
 
   void clearSearchRoot() {
     searchRoot.newChildren = null;
+  }
+  
+
+
+  // Method to allow Controller to toggle expansion
+  void toggleNodeExpansion(SheetData sheet, AnalysisResult result, SelectionData selection, NodeStruct node, bool isExpanded) {
+    node.isExpanded = isExpanded;
+    for (NodeStruct child in node.newChildren ?? []) {
+      child.isExpanded = false;
+    }
+    populateTree(selection, sheet, result, [node]);
+    notifyListeners();
   }
 }

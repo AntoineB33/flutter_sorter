@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/spreadsheet_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
 
 class AnalysisTreeNode extends StatelessWidget {
   final NodeStruct node;
-  final SpreadsheetController controller;
+  final WorkbookController controller;
 
   const AnalysisTreeNode({
     super.key,

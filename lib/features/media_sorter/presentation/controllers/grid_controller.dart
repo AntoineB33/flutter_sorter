@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
@@ -11,11 +13,21 @@ class GridController {
   double row1ToScreenBottomHeight = 0.0;
   double colBToScreenRightWidth = 0.0;
 
+  (int, int) Function(SelectionData selection, SheetData sheet, int rowCount, int colCount, {
+    double? visibleHeight,
+    double? visibleWidth,
+    bool notify,
+    bool save,
+  }) updateRowColCount;
 
   final SpreadsheetLayoutCalculator _layoutCalculator =
       SpreadsheetLayoutCalculator();
+
+  
+  int rowCount(SheetContent content) => content.table.length;
+  int colCount(SheetContent content) => content.table.isNotEmpty ? content.table[0].length : 0;
       
-  GridController(); 
+  GridController(this.updateRowColCount); 
 
 
   int minRows(SheetData sheet, List<double> rowsBottomPos, int rowCount, double height) {
@@ -29,7 +41,7 @@ class GridController {
     return rowCount;
   }
   
-  (int, int) updateRowColCount(SelectionData selection, SheetData sheet, int rowCount, int colCount, {
+  (int, int) getNewRowColCount(SelectionData selection, SheetData sheet, int rowCount, int colCount, {
     double? visibleHeight,
     double? visibleWidth,
   }) {
@@ -56,27 +68,6 @@ class GridController {
     return (targetRows, targetCols);
   }
 
-  void increaseColumnCount(int col, int rowCount, int colCount, SheetContent sheetContent) {
-    if (col >= colCount) {
-      final needed = col + 1 - colCount;
-      for (var r = 0; r < rowCount; r++) {
-        sheetContent.table[r].addAll(List.filled(needed, '', growable: true));
-      }
-      sheetContent.columnTypes.addAll(
-        List.filled(needed, ColumnType.attributes),
-      );
-    }
-  }
-
-  void decreaseRowCount(int row, int rowCount, SheetContent sheetContent) {
-    if (row == rowCount - 1) {
-      while (row >= 0 &&
-          !sheetContent.table[row].any((cell) => cell.isNotEmpty)) {
-        sheetContent.table.removeLast();
-        row--;
-      }
-    }
-  }
 
   double getRowHeight(SheetData sheet, int row) {
     if (row < sheet.rowsBottomPos.length) {
@@ -138,50 +129,142 @@ class GridController {
     return _layoutCalculator.calculateRowHeight(text, availableWidth);
   }
 
-  String updateCell(int row, int col, SheetContent sheetContent, int rowCount, int colCount, String newValue) {
-    String prevValue = '';
-    if (newValue.isNotEmpty || (row < rowCount && col < colCount)) {
-      if (row >= rowCount) {
-        final needed = row + 1 - rowCount;
-        sheetContent.table.addAll(
-          List.generate(
-            needed,
-            (_) => List.filled(colCount, '', growable: true),
-          ),
-        );
-      }
-      increaseColumnCount(col, rowCount, colCount, sheetContent);
-      prevValue = sheetContent.table[row][col];
-      sheetContent.table[row][col] = newValue;
+  void adjustRowHeightAfterUpdate(
+    SheetData sheet,
+    SelectionData selection,
+    int row,
+    int col,
+    double row1ToScreenBottomHeight,
+    double colBToScreenRightWidth,
+    String newValue,
+    String prevValue,
+  ) {
+    if (row >= sheet.rowsBottomPos.length &&
+        row >= rowCount(sheet.sheetContent)) {
+      updateRowColCount(
+        selection,
+        sheet,
+        rowCount(sheet.sheetContent),
+        colCount(sheet.sheetContent),
+        visibleHeight: row1ToScreenBottomHeight,
+        visibleWidth: colBToScreenRightWidth,
+        notify: false,
+      );
+      return;
     }
 
-    // Clean up empty rows/cols at the end
-    if (newValue.isEmpty &&
-        row < rowCount &&
-        col < colCount &&
-        (row == rowCount - 1 || col == colCount - 1) &&
-        prevValue.isNotEmpty) {
-      decreaseRowCount(row, rowCount, sheetContent);
-      if (col == colCount - 1) {
-        int colId = col;
-        bool canRemove = true;
-        while (canRemove && colId >= 0) {
-          for (var r = 0; r < rowCount; r++) {
-            if (sheetContent.table[r][colId].isNotEmpty) {
-              canRemove = false;
-              break;
+    double heightItNeeds = calculateRequiredRowHeight(
+      sheet,
+      newValue,
+      col,
+    );
+
+    if (heightItNeeds > GetDefaultSizes.getDefaultRowHeight() &&
+        sheet.rowsBottomPos.length <= row) {
+      int prevRowsBottomPosLength = sheet.rowsBottomPos.length;
+      sheet.rowsBottomPos.addAll(
+        List.filled(row + 1 - sheet.rowsBottomPos.length, 0),
+      );
+      for (int i = prevRowsBottomPosLength; i <= row; i++) {
+        sheet.rowsBottomPos[i] = i == 0
+            ? GetDefaultSizes.getDefaultRowHeight()
+            : sheet.rowsBottomPos[i - 1] +
+                  GetDefaultSizes.getDefaultRowHeight();
+      }
+    }
+
+    if (row < sheet.rowsBottomPos.length) {
+      if (sheet.rowsManuallyAdjustedHeight.length <= row ||
+          !sheet.rowsManuallyAdjustedHeight[row]) {
+        double currentHeight = getRowHeight(sheet, row);
+        if (heightItNeeds < currentHeight) {
+          double heightItNeeded = calculateRequiredRowHeight(
+            sheet,
+            prevValue,
+            col,
+          );
+          if (heightItNeeded == currentHeight) {
+            double newHeight = heightItNeeds;
+            if (row < sheet.sheetContent.table.length) {
+              for (int j = 0; j < colCount(sheet.sheetContent); j++) {
+                if (j == col) continue;
+                newHeight = max(
+                  calculateRequiredRowHeight(
+                    sheet,
+                    sheet.sheetContent.table[row][j],
+                    j,
+                  ),
+                  newHeight,
+                );
+                if (newHeight == heightItNeeded) break;
+              }
+            }
+            if (newHeight < heightItNeeded) {
+              double heightDiff = currentHeight - newHeight;
+              for (
+                int r = row;
+                r < sheet.rowsBottomPos.length;
+                r++
+              ) {
+                sheet.rowsBottomPos[r] -= heightDiff;
+              }
+              if (newHeight == GetDefaultSizes.getDefaultRowHeight()) {
+                int removeFrom = sheet.rowsBottomPos.length;
+                for (
+                  int r = sheet.rowsBottomPos.length - 1;
+                  r >= 0;
+                  r--
+                ) {
+                  if (r <
+                              sheet.rowsManuallyAdjustedHeight
+                                  .length &&
+                          sheet.rowsManuallyAdjustedHeight[r] ||
+                      sheet.rowsBottomPos[r] >
+                          (r == 0
+                                  ? 0
+                                  : sheet.rowsBottomPos[r - 1]) +
+                              GetDefaultSizes.getDefaultRowHeight()) {
+                    break;
+                  }
+                  removeFrom--;
+                }
+                sheet.rowsBottomPos = sheet
+                    .rowsBottomPos
+                    .sublist(0, removeFrom);
+              }
             }
           }
-          if (canRemove) {
-            for (var r = 0; r < rowCount; r++) {
-              sheetContent.table[r].removeLast();
-            }
-            colId--;
+        } else if (heightItNeeds > currentHeight) {
+          double heightDiff = heightItNeeds - currentHeight;
+          for (
+            int r = row;
+            r < sheet.rowsBottomPos.length;
+            r++
+          ) {
+            sheet.rowsBottomPos[r] =
+                sheet.rowsBottomPos[r] + heightDiff;
           }
         }
       }
+    } else if (heightItNeeds == GetDefaultSizes.getDefaultRowHeight() &&
+        row == sheet.rowsBottomPos.length - 1) {
+      int i = row;
+      while (sheet.rowsBottomPos[i] ==
+              GetDefaultSizes.getDefaultRowHeight() &&
+          row > 0) {
+        sheet.rowsBottomPos.removeLast();
+        i--;
+      }
     }
-    return prevValue;
+    updateRowColCount(
+      selection,
+      sheet,
+      rowCount(sheet.sheetContent),
+      colCount(sheet.sheetContent),
+      visibleHeight: row1ToScreenBottomHeight,
+      visibleWidth: colBToScreenRightWidth,
+      notify: false,
+    );
   }
 
 }

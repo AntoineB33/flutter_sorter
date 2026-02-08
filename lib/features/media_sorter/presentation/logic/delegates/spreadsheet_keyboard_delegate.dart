@@ -1,15 +1,30 @@
 import 'dart:math';
 import 'package:flutter/services.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/spreadsheet_controller.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
 import 'package:flutter/material.dart';
 
 class SpreadsheetKeyboardDelegate {
-  final SpreadsheetController manager;
+  void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {String? initialInput}) startEditing;
+  void Function(
+    SelectionData selection,
+    Map<String, SelectionData> lastSelectionBySheet,
+    String currentSheetName,
+    int row,
+    int col,
+    bool keepSelection, {
+    bool scrollTo,
+  }) setPrimarySelection;
+  Future<void> Function(SheetData sheet, SelectionData selection, String currentSheetName) copySelectionToClipboard;
+  Future<void> Function(SheetData sheet, SelectionData selection, String currentSheetName) pasteSelection;
+  void Function(SheetData sheet, SelectionData selection, String currentSheetName) delete;
+  void Function(SheetData sheet, SelectionData selection, String currentSheetName) undo;
+  void Function(SheetData sheet, SelectionData selection, String currentSheetName) redo;
 
-  SpreadsheetKeyboardDelegate(this.manager);
+  SpreadsheetKeyboardDelegate(this.startEditing, this.setPrimarySelection, this.copySelectionToClipboard, this.pasteSelection, this.delete, this.undo, this.redo);
 
-  KeyEventResult handle(BuildContext context, KeyEvent event) {
-    if (manager.editingMode) {
+  KeyEventResult handle(BuildContext context, KeyEvent event, SelectionData selection, bool editingMode, SheetData sheet, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName) {
+    if (editingMode) {
       return KeyEventResult.ignored;
     }
 
@@ -26,47 +41,55 @@ class SpreadsheetKeyboardDelegate {
 
     if (logicalKey == LogicalKeyboardKey.enter ||
         logicalKey == LogicalKeyboardKey.numpadEnter) {
-      manager.startEditing();
+      startEditing(sheet, selection, lastSelectionBySheet, currentSheetName);
       return KeyEventResult.handled;
     }
 
     if (logicalKey == LogicalKeyboardKey.arrowUp) {
-      manager.setPrimarySelection(
-        max(manager.primarySelectedCell.x - 1, 0),
-        manager.primarySelectedCell.y,
+      setPrimarySelection(
+        selection,
+        lastSelectionBySheet,
+        currentSheetName,
+        max(selection.primarySelectedCell.x - 1, 0),
+        selection.primarySelectedCell.y,
         false,
-        true,
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowDown) {
-      manager.setPrimarySelection(
-        manager.primarySelectedCell.x + 1,
-        manager.primarySelectedCell.y,
+      setPrimarySelection(
+        selection,
+        lastSelectionBySheet,
+        currentSheetName,
+        selection.primarySelectedCell.x + 1,
+        selection.primarySelectedCell.y,
         false,
-        true,
       );
-      debugPrint("${manager.primarySelectedCell.x}");
+      debugPrint("${selection.primarySelectedCell.x}");
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowLeft) {
-      manager.setPrimarySelection(
-        manager.primarySelectedCell.x,
-        max(0, manager.primarySelectedCell.y - 1),
+      setPrimarySelection(
+        selection,
+        lastSelectionBySheet,
+        currentSheetName,
+        selection.primarySelectedCell.x,
+        max(0, selection.primarySelectedCell.y - 1),
         false,
-        true,
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowRight) {
-      manager.setPrimarySelection(
-        manager.primarySelectedCell.x,
-        manager.primarySelectedCell.y + 1,
+      setPrimarySelection(
+        selection,
+        lastSelectionBySheet,
+        currentSheetName,
+        selection.primarySelectedCell.x,
+        selection.primarySelectedCell.y + 1,
         false,
-        true,
       );
       return KeyEventResult.handled;
     }
 
     if (isControl && keyLabel == 'c') {
-      manager.copySelectionToClipboard();
+      copySelectionToClipboard(sheet, selection, currentSheetName);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Selection copied'),
@@ -75,16 +98,16 @@ class SpreadsheetKeyboardDelegate {
       );
       return KeyEventResult.handled;
     } else if (isControl && keyLabel == 'v') {
-      manager.pasteSelection();
+      pasteSelection(sheet, selection, currentSheetName);
       return KeyEventResult.handled;
     } else if (keyLabel == 'delete' || keyLabel == 'backspace') {
-      manager.delete();
+      delete(sheet, selection, currentSheetName);
       return KeyEventResult.handled;
     } else if (isControl && keyLabel == 'z') {
-      manager.undo();
+      undo(sheet, selection, currentSheetName);
       return KeyEventResult.handled;
     } else if (isControl && keyLabel == 'y') {
-      manager.redo();
+      redo(sheet, selection, currentSheetName);
       return KeyEventResult.handled;
     }
 
@@ -96,7 +119,7 @@ class SpreadsheetKeyboardDelegate {
         logicalKey.keyId > 32;
 
     if (isPrintable) {
-      manager.startEditing(initialInput: event.character);
+      startEditing(sheet, selection, lastSelectionBySheet, currentSheetName, initialInput: event.character);
       return KeyEventResult.handled;
     }
 
