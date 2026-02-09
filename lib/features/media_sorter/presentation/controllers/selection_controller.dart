@@ -18,7 +18,7 @@ class SelectionController extends ChangeNotifier {
   late void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth, String currentSheetName, String newValue) onChanged;
   late String Function(List<List<String>> table, int row, int col) getCellContent;
   late void Function(int, int) updateMentionsContext;
-  late void Function({double? x, double? y, bool animate}) triggerScrollTo;
+  late void Function(int row, int col) triggerScrollTo;
   late (int, int) Function(SelectionData selection, SheetData sheet, int rowCount, int colCount,
     double? visibleHeight,
     double? visibleWidth,) getNewRowColCount;
@@ -186,7 +186,7 @@ class SelectionController extends ChangeNotifier {
 
     // Request scroll to visible
     if (scrollTo) {
-      triggerScrollTo(x: col.toDouble(), y: row.toDouble(), animate: true);
+      triggerScrollTo(row, col);
     }
     notifyListeners();
   }

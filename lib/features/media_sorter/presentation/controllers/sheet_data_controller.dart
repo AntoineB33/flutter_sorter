@@ -24,7 +24,7 @@ class SheetDataController extends ChangeNotifier {
     ColumnType newType,
   ) recordColumnTypeChange;
   late void Function(SheetData sheet) commitHistory;
-  late void Function(SheetData sheet, SelectionData selection) calculate;
+  late void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName) calculate;
   late void Function(
     AnalysisResult result,
     Point<int> primarySelectedCell,
@@ -103,11 +103,11 @@ class SheetDataController extends ChangeNotifier {
       onChange: true,
     );
     notifyListeners();
-    saveAndCalculate(sheet, selection, currentSheetName);
+    saveAndCalculate(sheet, selection, lastSelectionBySheet, currentSheetName);
   }
 
   
-  void saveAndCalculate(SheetData sheet, SelectionData selection, String currentSheetName, {bool save = true, bool updateHistory = false}) {
+  void saveAndCalculate(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {bool save = true, bool updateHistory = false}) {
     if (save) {
       if (updateHistory) {
         commitHistory(sheet);
@@ -116,7 +116,9 @@ class SheetDataController extends ChangeNotifier {
     }
     calculate(
       sheet,
-      selection
+      selection,
+      lastSelectionBySheet,
+      currentSheetName,
     );
   }
 
@@ -209,7 +211,7 @@ class SheetDataController extends ChangeNotifier {
   }
 
 
-  void setColumnType(SheetData sheet, SelectionData selection, String currentSheetName, int col, ColumnType type, {bool updateHistory = true}) {
+  void setColumnType(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, int col, ColumnType type, {bool updateHistory = true}) {
     ColumnType previousType = GetNames.getColumnType(
       sheet.sheetContent,
       col,
@@ -238,7 +240,7 @@ class SheetDataController extends ChangeNotifier {
       sheet.sheetContent.columnTypes[col] = type;
     }
     notifyListeners();
-    saveAndCalculate(sheet, selection, currentSheetName, updateHistory: true);
+    saveAndCalculate(sheet, selection, lastSelectionBySheet, currentSheetName, updateHistory: true);
   }
 
   Future<void> pasteSelection(SheetData sheet, SelectionData selection, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth, Map<String, SelectionData> lastSelectionBySheet) async {
@@ -264,7 +266,7 @@ class SheetDataController extends ChangeNotifier {
       updateCell(sheet, selection, lastSelectionBySheet, row1ToScreenBottomHeight, colBToScreenRightWidth, currentSheetName, update.row, update.col, update.value, keepPrevious: true);
     }
     notifyListeners();
-    saveAndCalculate(sheet, selection, currentSheetName, updateHistory: true);
+    saveAndCalculate(sheet, selection, lastSelectionBySheet, currentSheetName, updateHistory: true);
   }
 
   void delete(SheetData sheet, SelectionData selection, String currentSheetName, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth) {
@@ -283,15 +285,15 @@ class SheetDataController extends ChangeNotifier {
       keepPrevious: true,
     );
     notifyListeners();
-    saveAndCalculate(sheet, selection, currentSheetName, updateHistory: true);
+    saveAndCalculate(sheet, selection, lastSelectionBySheet, currentSheetName, updateHistory: true);
   }
 
-  void applyDefaultColumnSequence(SheetData sheet, SelectionData selection, String currentSheetName) {
-    setColumnType(sheet, selection, currentSheetName, 1, ColumnType.dependencies);
-    setColumnType(sheet, selection, currentSheetName, 2, ColumnType.dependencies);
-    setColumnType(sheet, selection, currentSheetName, 3, ColumnType.dependencies);
-    setColumnType(sheet, selection, currentSheetName, 7, ColumnType.urls);
-    setColumnType(sheet, selection, currentSheetName, 8, ColumnType.dependencies);
+  void applyDefaultColumnSequence(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName) {
+    setColumnType(sheet, selection, lastSelectionBySheet, currentSheetName, 1, ColumnType.dependencies);
+    setColumnType(sheet, selection, lastSelectionBySheet, currentSheetName, 2, ColumnType.dependencies);
+    setColumnType(sheet, selection, lastSelectionBySheet, currentSheetName, 3, ColumnType.dependencies);
+    setColumnType(sheet, selection, lastSelectionBySheet, currentSheetName, 7, ColumnType.urls);
+    setColumnType(sheet, selection, lastSelectionBySheet, currentSheetName, 8, ColumnType.dependencies);
   }
   String getCellContent(List<List<String>> table, int row, int col) {
     if (row < table.length && col < table[row].length) {

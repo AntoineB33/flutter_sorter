@@ -50,7 +50,7 @@ class WorkbookController extends ChangeNotifier {
   final CalculationService calculationService = CalculationService();
 
   // Delegates
-  late final SpreadsheetKeyboardDelegate _keyboardDelegate;
+  final SpreadsheetKeyboardDelegate _keyboardDelegate;
 
   SelectionData get selection => lastSelectionBySheet[currentSheetName] ?? SelectionData.empty();
   
@@ -94,7 +94,7 @@ class WorkbookController extends ChangeNotifier {
   }
 
   void sortMedia() {
-    _sortController.calculate(sheet, selection);
+    _sortController.calculate(sheet, selection, lastSelectionBySheet, currentSheetName);
   }
 
   void findBestSortToggle() {
@@ -130,7 +130,7 @@ class WorkbookController extends ChangeNotifier {
   }
 
   KeyEventResult handleKeyboard(BuildContext context, KeyEvent event) {
-    return _keyboardDelegate.handle(context, event, selection, selection.editingMode, sheet, lastSelectionBySheet, currentSheetName);
+    return _keyboardDelegate.handle(context, event, selection, selection.editingMode, sheet, lastSelectionBySheet, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth, currentSheetName);
   }
 
   double getRowHeight(int row) {
@@ -182,11 +182,11 @@ class WorkbookController extends ChangeNotifier {
   }
 
   void setColumnType(int col, ColumnType type) {
-    _dataController.setColumnType(sheet, selection, currentSheetName, col, type);
+    _dataController.setColumnType(sheet, selection, lastSelectionBySheet, currentSheetName, col, type);
   }
 
   void applyDefaultColumnSequence() {
-    _dataController.applyDefaultColumnSequence(sheet, selection, currentSheetName);
+    _dataController.applyDefaultColumnSequence(sheet, selection, lastSelectionBySheet, currentSheetName);
   }
 
   WorkbookController(
@@ -196,7 +196,9 @@ class WorkbookController extends ChangeNotifier {
     this._dataController,
     this._treeController,
     this._streamController,
-    this._sortController,) {
+    this._sortController,
+    this._keyboardDelegate,
+  ) {
     _gridController.updateRowColCount = _selectionController.updateRowColCount;
     _gridController.canBeSorted = _sortController.canBeSorted;
     _gridController.getCellContent = _dataController.getCellContent;
@@ -207,7 +209,7 @@ class WorkbookController extends ChangeNotifier {
     _selectionController.discardPendingChanges = _historyController.discardPendingChanges;
     _selectionController.onChanged = _dataController.onChanged;
     _selectionController.updateMentionsContext = _treeController.updateMentionsRoot;
-    _selectionController.triggerScrollTo = _streamController.scrollToOffset;
+    _selectionController.triggerScrollTo = _streamController.triggerScrollTo;
     _selectionController.getNewRowColCount = _gridController.getNewRowColCount;
     _dataController.recordColumnTypeChange = _historyController.recordColumnTypeChange;
     _dataController.commitHistory = _historyController.commitHistory;
@@ -218,11 +220,35 @@ class WorkbookController extends ChangeNotifier {
     _sortController.stopEditing = _selectionController.stopEditing;
     _sortController.setTable = _dataController.setTable;
     _sortController.onAnalysisComplete = onAnalysisComplete;
+    _keyboardDelegate.startEditing = _selectionController.startEditing;
+    _keyboardDelegate.setPrimarySelection = _selectionController.setPrimarySelection;
+    _keyboardDelegate.copySelectionToClipboard = _dataController.copySelectionToClipboard;
+    _keyboardDelegate.pasteSelection = _dataController.pasteSelection;
+    _keyboardDelegate.delete = _dataController.delete;
+    _keyboardDelegate.undo = _historyController.undo;
+    _keyboardDelegate.redo = _historyController.redo;
+
+    _historyController.addListener(() {
+      notifyListeners();
+    });
+    _selectionController.addListener(() {
+      notifyListeners();
+    });
+    _dataController.addListener(() {
+      notifyListeners();
+    });
+    _sortController.addListener(() {
+      notifyListeners();
+    });
+    _treeController.addListener(() {
+      notifyListeners();
+    });
+
     init();
   }
 
   Future<void> init() async {
-    await _saveSheetDataUseCase.clearAllData();
+    // await _saveSheetDataUseCase.clearAllData();
 
     // --- get current sheet name and all sheet names ---
     String? lastOpenedSheetName;
@@ -275,7 +301,7 @@ class WorkbookController extends ChangeNotifier {
     lastSelectionBySheet = await _selectionController.getAllLastSelected();
     bool saveLastSelectionBySheet = _selectionController.completeMissing(lastSelectionBySheet, sheetNames);
     for (var name in lastSelectionBySheet.keys.toList()) {
-      if (CheckValidStrings.isValidSheetName(name)) {
+      if (!CheckValidStrings.isValidSheetName(name)) {
         debugPrint(
           "Last selection found for sheet '$name' which is not in sheet names list, removing it.",
         );
@@ -359,7 +385,7 @@ class WorkbookController extends ChangeNotifier {
       animate: true,
     );
 
-    _dataController.saveAndCalculate(sheet, selection, currentSheetName, save: false);
+    _dataController.saveAndCalculate(sheet, selection, lastSelectionBySheet, currentSheetName, save: false);
     notifyListeners();
   }
 

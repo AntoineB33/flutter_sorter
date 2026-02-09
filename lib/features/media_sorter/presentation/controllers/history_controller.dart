@@ -15,8 +15,8 @@ class HistoryController extends ChangeNotifier {
     bool historyNavigation,
     bool keepPrevious,
   }) updateCell;
-  late void Function(SheetData sheet, SelectionData selection, String currentSheetName, int col, ColumnType type, {bool updateHistory}) setColumnType;
-  late void Function(SheetData sheet, SelectionData selection, String currentSheetName, {bool save, bool updateHistory}) saveAndCalculate;
+  late void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, int col, ColumnType type, {bool updateHistory}) setColumnType;
+  late void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {bool save, bool updateHistory}) saveAndCalculate;
 
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) => content.table.isNotEmpty ? content.table[0].length : 0;
@@ -119,6 +119,7 @@ class HistoryController extends ChangeNotifier {
         setColumnType(
           sheet,
           selection,
+          lastSelectionBySheet,
           currentSheetName,
           typeUpdate.colId!,
           typeUpdate.previousColumnType!,
@@ -128,7 +129,7 @@ class HistoryController extends ChangeNotifier {
     }
     sheet.historyIndex--;
     notifyListeners();
-    saveAndCalculate(sheet, selection, currentSheetName, );
+    saveAndCalculate(sheet, selection, lastSelectionBySheet, currentSheetName, );
   }
   
   void redo(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth) {
@@ -156,6 +157,7 @@ class HistoryController extends ChangeNotifier {
         setColumnType(
           sheet,
           selection,
+          lastSelectionBySheet,
           currentSheetName,
           typeUpdate.colId!,
           typeUpdate.newColumnType!,
@@ -165,7 +167,7 @@ class HistoryController extends ChangeNotifier {
     }
     sheet.historyIndex++;
     notifyListeners();
-    saveAndCalculate(sheet, selection, currentSheetName);
+    saveAndCalculate(sheet, selection, lastSelectionBySheet, currentSheetName);
   }
 
 

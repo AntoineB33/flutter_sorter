@@ -49,14 +49,14 @@ class SortController extends ChangeNotifier {
 
   
 
-  void calculate(SheetData sheet, SelectionData selection) {
+  void calculate(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName) {
     clear();
     _calculateExecutor.execute(
       () async {
         AnalysisResult result = await calculationService.runCalculation(
           sheet.sheetContent,
         );
-        await solveSatisfaction(sheet, selection, {}, "", result);
+        await solveSatisfaction(sheet, selection, lastSelectionBySheet, currentSheetName, result);
         return result;
       },
       onComplete: (AnalysisResult result) {
