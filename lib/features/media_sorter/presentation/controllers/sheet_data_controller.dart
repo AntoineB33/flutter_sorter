@@ -8,9 +8,7 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
@@ -20,7 +18,7 @@ class SheetDataController extends ChangeNotifier {
   // --- states ---
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
   late void Function(
-    UpdateHistory? currentUpdateHistory,
+    SheetData sheet,
     int col,
     ColumnType prevType,
     ColumnType newType,
@@ -33,7 +31,6 @@ class SheetDataController extends ChangeNotifier {
   ) onAnalysisComplete;
   late void Function(
     SheetData sheet,
-    UpdateHistory? currentUpdateHistory,
     int row,
     int col,
     String prevValue,
@@ -78,7 +75,6 @@ class SheetDataController extends ChangeNotifier {
   //     _calculateExecutor;
 
   SheetDataController({
-    required GetSheetDataUseCase getDataUseCase,
     required SaveSheetDataUseCase saveSheetDataUseCase,
   }) : _saveSheetDataUseCase = saveSheetDataUseCase;
 
@@ -199,7 +195,6 @@ class SheetDataController extends ChangeNotifier {
     if (!historyNavigation) {
       recordCellChange(
         sheet,
-        sheet.currentUpdateHistory,
         row,
         col,
         prevValue,
@@ -220,7 +215,7 @@ class SheetDataController extends ChangeNotifier {
       col,
     );
     if (updateHistory) {
-      recordColumnTypeChange(sheet.currentUpdateHistory, col, previousType, type);
+      recordColumnTypeChange(sheet, col, previousType, type);
     }
     if (type == ColumnType.attributes) {
       if (col < colCount(sheet.sheetContent)) {

@@ -3,8 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/spreadsheet_scroll_request.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
@@ -59,15 +57,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final controller = context.read<WorkbookController>();
-      final dataController = context.read<SheetDataController>();
-      final selectionController = context.read<SelectionController>();
       // Case A: Scroll to specific Cell (Your existing logic)
       if (request.cell != null) {
         _revealCell(
           request.cell!,
           controller,
-          dataController,
-          selectionController,
         );
         return;
       }
@@ -116,18 +110,10 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     super.dispose();
   }
 
-  void adjustTableRow(
-    SelectionController selectionController,
-    double targetTop,
-    double targetBottom,
-  ) {}
-
   /// Calculates offsets and scrolls to ensure the target cell is visible.
   void _revealCell(
     math.Point<int> cell,
     WorkbookController controller,
-    SheetDataController dataController,
-    SelectionController selectionController,
   ) {
     if (!_verticalController.hasClients || !_horizontalController.hasClients) {
       return;
@@ -199,8 +185,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<WorkbookController>();
-    final dataController = context.watch<SheetDataController>();
-    final selectionController = context.watch<SelectionController>();
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -268,13 +252,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                       columnCount: controller.tableViewCols + 1,
                       columnBuilder: (index) => _buildColumnSpan(index),
                       rowBuilder: (index) =>
-                          _buildRowSpan(index, controller, dataController),
+                          _buildRowSpan(index, controller),
                       cellBuilder: (context, vicinity) => _buildCellDispatcher(
                         context,
                         vicinity,
                         controller,
-                        dataController,
-                        selectionController,
                       ),
                     ),
                   ),
@@ -327,7 +309,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   TableSpan _buildRowSpan(
     int index,
     WorkbookController controller,
-    SheetDataController dataController,
   ) {
     if (index == 0) {
       return TableSpan(
@@ -345,8 +326,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     BuildContext context,
     TableVicinity vicinity,
     WorkbookController controller,
-    SheetDataController dataController,
-    SelectionController selectionController,
   ) {
     final int r = vicinity.row;
     final int c = vicinity.column;

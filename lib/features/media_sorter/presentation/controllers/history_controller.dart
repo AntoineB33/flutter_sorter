@@ -48,7 +48,6 @@ class HistoryController extends ChangeNotifier {
   /// Handles the logic for continuous typing (keeping the very first previous value).
   void recordCellChange(
     SheetData sheet,
-    UpdateHistory? currentUpdateHistory,
     int row,
     int col,
     String prevValue,
@@ -56,17 +55,17 @@ class HistoryController extends ChangeNotifier {
     bool onChange,
     bool keepPrevious,
   ) {
-    String previousValue = onChange && currentUpdateHistory != null
-        ? currentUpdateHistory.updatedCells![0].previousValue
+    String previousValue = onChange && sheet.currentUpdateHistory != null
+        ? sheet.currentUpdateHistory!.updatedCells![0].previousValue
         : prevValue;
     if (!keepPrevious) {
       sheet.currentUpdateHistory = null;
     }
-    currentUpdateHistory ??= UpdateHistory(
+    sheet.currentUpdateHistory ??= UpdateHistory(
       key: UpdateHistory.updateCellContent,
       timestamp: DateTime.now(),
     );
-    currentUpdateHistory.updatedCells!.add(
+    sheet.currentUpdateHistory!.updatedCells!.add(
       CellUpdateHistory(
         cell: Point(row, col),
         previousValue: previousValue,
@@ -77,16 +76,16 @@ class HistoryController extends ChangeNotifier {
 
   /// Sets up a history record for a column type change.
   void recordColumnTypeChange(
-    UpdateHistory? currentUpdateHistory,
+    SheetData sheet,
     int col,
     ColumnType prevType,
     ColumnType newType,
   ) {
-    currentUpdateHistory ??= UpdateHistory(
+    sheet.currentUpdateHistory ??= UpdateHistory(
       key: UpdateHistory.updateColumnType,
       timestamp: DateTime.now(),
     );
-    currentUpdateHistory.updatedColumnTypes!.add(
+    sheet.currentUpdateHistory!.updatedColumnTypes!.add(
       ColumnTypeUpdateHistory(
         colId: col,
         previousColumnType: prevType,
