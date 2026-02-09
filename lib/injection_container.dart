@@ -16,7 +16,9 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/wo
 final sl = GetIt.instance; // sl = Service Locator
 
 Future<void> init() async {
-  sl.registerFactory(
+  sl.registerLazySingleton<TreeController>(() => TreeController());
+  sl.registerLazySingleton<SortController>(() => SortController());
+  sl.registerLazySingleton(
     () => WorkbookController(
       GridController(),
       HistoryController(),
@@ -26,9 +28,9 @@ Future<void> init() async {
           SheetRepositoryImpl(FileSheetLocalDataSource()),
         ),
       ),
-      TreeController(),
+      sl<TreeController>(),
       SpreadsheetStreamController(),
-      SortController(),
+      sl<SortController>(),
     ),
   );
 }

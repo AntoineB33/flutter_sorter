@@ -198,7 +198,7 @@ class WorkbookController extends ChangeNotifier {
     this._streamController,
     this._sortController,) {
     _gridController.updateRowColCount = _selectionController.updateRowColCount;
-    _gridController.canBeSorted = _gridController.canBeSorted;
+    _gridController.canBeSorted = _sortController.canBeSorted;
     _gridController.getCellContent = _dataController.getCellContent;
     _historyController.updateCell = _dataController.updateCell;
     _historyController.setColumnType = _dataController.setColumnType;
@@ -212,15 +212,12 @@ class WorkbookController extends ChangeNotifier {
     _dataController.recordColumnTypeChange = _historyController.recordColumnTypeChange;
     _dataController.commitHistory = _historyController.commitHistory;
     _dataController.calculate = _sortController.calculate;
-    _dataController.onAnalysisComplete = _sortController.onAnalysisComplete;
+    _dataController.onAnalysisComplete = onAnalysisComplete;
     _dataController.recordCellChange = _historyController.recordCellChange;
     _dataController.adjustRowHeightAfterUpdate = _gridController.adjustRowHeightAfterUpdate;
     _sortController.stopEditing = _selectionController.stopEditing;
     _sortController.setTable = _dataController.setTable;
-    _sortController.onAnalysisComplete = (result, primarySelectedCell) {
-      analysisResults[currentSheetName] = result;
-      onAnalysisComplete(result, primarySelectedCell);
-    };
+    _sortController.onAnalysisComplete = onAnalysisComplete;
     init();
   }
 

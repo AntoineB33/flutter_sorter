@@ -19,10 +19,9 @@ class SelectionController extends ChangeNotifier {
   late String Function(List<List<String>> table, int row, int col) getCellContent;
   late void Function(int, int) updateMentionsContext;
   late void Function({double? x, double? y, bool animate}) triggerScrollTo;
-  late (int, int) Function(SelectionData selection, SheetData sheet, int rowCount, int colCount, {
+  late (int, int) Function(SelectionData selection, SheetData sheet, int rowCount, int colCount,
     double? visibleHeight,
-    double? visibleWidth,
-  }) getNewRowColCount;
+    double? visibleWidth,) getNewRowColCount;
 
   final GetSheetDataUseCase _getDataUseCase = GetSheetDataUseCase(
     SheetRepositoryImpl(FileSheetLocalDataSource()),
@@ -94,6 +93,8 @@ class SelectionController extends ChangeNotifier {
       sheet,
       rowCount(sheet.sheetContent),
       colCount(sheet.sheetContent),
+      visibleHeight,
+      visibleWidth,
     );
     if (targetRows != selection.tableViewRows ||
         targetCols != selection.tableViewCols) {

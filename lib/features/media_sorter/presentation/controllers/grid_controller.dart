@@ -42,10 +42,9 @@ class GridController {
     return rowCount;
   }
   
-  (int, int) getNewRowColCount(SelectionData selection, SheetData sheet, int rowCount, int colCount, {
-    double? visibleHeight,
+  (int, int) getNewRowColCount(SelectionData selection, SheetData sheet, int rowCount, int colCount,     double? visibleHeight,
     double? visibleWidth,
-  }) {
+  ) {
     int targetRows = selection.tableViewRows;
     int targetCols = selection.tableViewCols;
     if (visibleHeight != null) {
