@@ -1,8 +1,8 @@
 import 'dart:math';
 
+import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/layout_calculator.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
@@ -13,12 +13,13 @@ class GridController {
   double row1ToScreenBottomHeight = 0.0;
   double colBToScreenRightWidth = 0.0;
 
-  (int, int) Function(SelectionData selection, SheetData sheet, int rowCount, int colCount, {
-    double? visibleHeight,
-    double? visibleWidth,
+  late void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {
+    double ? visibleHeight,
+    double ? visibleWidth,
     bool notify,
-    bool save,
-  }) updateRowColCount;
+    bool save}) updateRowColCount;
+  late bool Function() canBeSorted;
+  late String Function(List<List<String>> table, int row, int col) getCellContent;
 
   final SpreadsheetLayoutCalculator _layoutCalculator =
       SpreadsheetLayoutCalculator();
@@ -27,7 +28,7 @@ class GridController {
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) => content.table.isNotEmpty ? content.table[0].length : 0;
       
-  GridController(this.updateRowColCount); 
+  GridController(); 
 
 
   int minRows(SheetData sheet, List<double> rowsBottomPos, int rowCount, double height) {
@@ -132,6 +133,8 @@ class GridController {
   void adjustRowHeightAfterUpdate(
     SheetData sheet,
     SelectionData selection,
+    Map<String, SelectionData> lastSelectionBySheet,
+    String currentSheetName,
     int row,
     int col,
     double row1ToScreenBottomHeight,
@@ -142,10 +145,10 @@ class GridController {
     if (row >= sheet.rowsBottomPos.length &&
         row >= rowCount(sheet.sheetContent)) {
       updateRowColCount(
-        selection,
         sheet,
-        rowCount(sheet.sheetContent),
-        colCount(sheet.sheetContent),
+        selection,
+        lastSelectionBySheet,
+        currentSheetName,
         visibleHeight: row1ToScreenBottomHeight,
         visibleWidth: colBToScreenRightWidth,
         notify: false,
@@ -257,14 +260,29 @@ class GridController {
       }
     }
     updateRowColCount(
-      selection,
       sheet,
-      rowCount(sheet.sheetContent),
-      colCount(sheet.sheetContent),
+      selection,
+      lastSelectionBySheet,
+      currentSheetName,
       visibleHeight: row1ToScreenBottomHeight,
       visibleWidth: colBToScreenRightWidth,
       notify: false,
     );
+  }
+
+  bool isRowValid(SheetContent sheetContent, List<bool> isMedium, int rowId) {
+    if (canBeSorted()) {
+      return isMedium[rowId];
+    }
+    if (rowId == 0) {
+      return false;
+    }
+    for (int srcColId = 0; srcColId < colCount(sheetContent); srcColId++) {
+      if (GetNames.isSourceColumn(sheetContent.columnTypes[srcColId]) && getCellContent(sheetContent.table, rowId, srcColId).isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
   }
 
 }

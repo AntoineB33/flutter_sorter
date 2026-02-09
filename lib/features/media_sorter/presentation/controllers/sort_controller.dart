@@ -18,8 +18,12 @@ class SortController extends ChangeNotifier {
   bool findingBestSort = false;
   final ManageWaitingTasks<AnalysisResult> _calculateExecutor =
       ManageWaitingTasks<AnalysisResult>();
-  void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {bool updateHistory, bool notify}) stopEditing;
-  void Function(SheetData sheet, SelectionData selection, String currentSheetName, List<CellUpdate> updates) setTable;
+  late void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {bool updateHistory, bool notify}) stopEditing;
+  late void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth, String currentSheetName, List<CellUpdate> updates) setTable;
+  late void Function(
+    AnalysisResult result,
+    Point<int> primarySelectedCell,
+  ) onAnalysisComplete;
 
       
   final CalculationService calculationService = CalculationService();
@@ -29,7 +33,7 @@ class SortController extends ChangeNotifier {
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) => content.table.isNotEmpty ? content.table[0].length : 0;
 
-  SortController(this.stopEditing, this.setTable);
+  SortController();
 
   void clear() {
     _bestMediaSortOrder = null;
@@ -45,19 +49,19 @@ class SortController extends ChangeNotifier {
 
   
 
-  void calculate(SheetData sheet, int rowCount, int colCount, Function(AnalysisResult, Point<int>) onAnalysisComplete, SelectionData selection, SortController sortController) {
+  void calculate(SheetData sheet, SelectionData selection) {
     clear();
     _calculateExecutor.execute(
       () async {
         AnalysisResult result = await calculationService.runCalculation(
           sheet.sheetContent,
         );
-        await sortController.solveSatisfaction(sheet, selection, {}, "", result);
+        await solveSatisfaction(sheet, selection, {}, "", result);
         return result;
       },
       onComplete: (AnalysisResult result) {
-        result.rowCount = rowCount;
-        result.colCount = colCount;
+        result.rowCount = rowCount(sheet.sheetContent);
+        result.colCount = colCount(sheet.sheetContent);
         result.noResult = false;
 
         onAnalysisComplete(result, selection.primarySelectedCell);
@@ -120,7 +124,7 @@ class SortController extends ChangeNotifier {
       );
     }
   }
-  void sortMedia(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, List<int> validRowIndexes, List<bool> isMedium, List<List<StrInt>> formatedTable, List<List<String>> table, List<List<int>> rowToRefFromAttCol) {
+  void sortMedia(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, List<int> validRowIndexes, List<bool> isMedium, List<List<StrInt>> formatedTable, List<List<String>> table, List<List<int>> rowToRefFromAttCol, double row1ToScreenBottomHeight, double colBToScreenRightWidth) {
     stopEditing(sheet, selection, lastSelectionBySheet, currentSheetName, notify: false);
     List<int> sortOrder = [0];
     List<int> stack = bestMediaSortOrder!
@@ -193,7 +197,7 @@ class SortController extends ChangeNotifier {
         );
       }
     }
-    setTable(sheet, selection, currentSheetName, updates);
+    setTable(sheet, selection, lastSelectionBySheet, row1ToScreenBottomHeight, colBToScreenRightWidth, currentSheetName, updates);
   }
 
   Future<void> findBestSortToggle(SheetData sheet, AnalysisResult result, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName) async {

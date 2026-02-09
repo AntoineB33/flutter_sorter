@@ -10,20 +10,18 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update.dart
 
 // --- Manager Class ---
 class HistoryController extends ChangeNotifier {
-  void Function(int, int, String, {
+  late void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth, String currentSheetName, int row, int col, String newValue, {
     bool onChange,
     bool historyNavigation,
     bool keepPrevious,
   }) updateCell;
-  void Function(int, ColumnType, {
-    bool updateHistory,
-  }) setColumnType;
-  void Function(SheetData sheet, SelectionData selection, String currentSheetName, {bool save, bool updateHistory}) saveAndCalculate;
+  late void Function(SheetData sheet, SelectionData selection, String currentSheetName, int col, ColumnType type, {bool updateHistory}) setColumnType;
+  late void Function(SheetData sheet, SelectionData selection, String currentSheetName, {bool save, bool updateHistory}) saveAndCalculate;
 
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) => content.table.isNotEmpty ? content.table[0].length : 0;
 
-  HistoryController(this.updateCell, this.setColumnType, this.saveAndCalculate);
+  HistoryController();
 
   void discardPendingChanges(SheetData sheet) {
     sheet.currentUpdateHistory = null;
@@ -97,7 +95,7 @@ class HistoryController extends ChangeNotifier {
     );
   }
 
-  void undo(SheetData sheet, SelectionData selection, String currentSheetName) {
+  void undo(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth) {
     if (sheet.historyIndex < 0 || sheet.updateHistories.isEmpty) {
       return;
     }
@@ -105,6 +103,12 @@ class HistoryController extends ChangeNotifier {
     if (lastUpdate.key == UpdateHistory.updateCellContent) {
       for (var cellUpdate in lastUpdate.updatedCells!) {
         updateCell(
+          sheet,
+          selection,
+          lastSelectionBySheet,
+          row1ToScreenBottomHeight,
+          colBToScreenRightWidth,
+          currentSheetName,
           cellUpdate.cell.x,
           cellUpdate.cell.y,
           cellUpdate.previousValue,
@@ -114,6 +118,9 @@ class HistoryController extends ChangeNotifier {
     } else if (lastUpdate.key == UpdateHistory.updateColumnType) {
       for (var typeUpdate in lastUpdate.updatedColumnTypes!) {
         setColumnType(
+          sheet,
+          selection,
+          currentSheetName,
           typeUpdate.colId!,
           typeUpdate.previousColumnType!,
           updateHistory: false,
@@ -122,10 +129,10 @@ class HistoryController extends ChangeNotifier {
     }
     sheet.historyIndex--;
     notifyListeners();
-    saveAndCalculate(sheet, selection, currentSheetName);
+    saveAndCalculate(sheet, selection, currentSheetName, );
   }
   
-  void redo(SheetData sheet, SelectionData selection, String currentSheetName) {
+  void redo(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth) {
     if (sheet.historyIndex + 1 == sheet.updateHistories.length) {
       return;
     }
@@ -133,6 +140,12 @@ class HistoryController extends ChangeNotifier {
     if (nextUpdate.key == UpdateHistory.updateCellContent) {
       for (var cellUpdate in nextUpdate.updatedCells!) {
         updateCell(
+          sheet,
+          selection,
+          lastSelectionBySheet,
+          row1ToScreenBottomHeight,
+          colBToScreenRightWidth,
+          currentSheetName,
           cellUpdate.cell.x,
           cellUpdate.cell.y,
           cellUpdate.newValue,
@@ -142,6 +155,9 @@ class HistoryController extends ChangeNotifier {
     } else if (nextUpdate.key == UpdateHistory.updateColumnType) {
       for (var typeUpdate in nextUpdate.updatedColumnTypes!) {
         setColumnType(
+          sheet,
+          selection,
+          currentSheetName,
           typeUpdate.colId!,
           typeUpdate.newColumnType!,
           updateHistory: false,

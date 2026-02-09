@@ -1,46 +1,37 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
-import 'package:isar/isar.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/sorting_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/layout_calculator.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/services/spreadsheet_clipboard_service.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 
 class SheetDataController extends ChangeNotifier {
   // --- states ---
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
-  void Function(
+  late void Function(
     UpdateHistory? currentUpdateHistory,
     int col,
     ColumnType prevType,
     ColumnType newType,
   ) recordColumnTypeChange;
-  void Function(SheetData sheet) commitHistory;
-  void Function(SheetContent sheetContent, int rowCount, int colCount, Function(AnalysisResult, Point<int>) onAnalysisComplete, SelectionData selection) calculate;
-  void Function(
+  late void Function(SheetData sheet) commitHistory;
+  late void Function(SheetData sheet, SelectionData selection) calculate;
+  late void Function(
     AnalysisResult result,
     Point<int> primarySelectedCell,
   ) onAnalysisComplete;
-  void Function(
+  late void Function(
     SheetData sheet,
     UpdateHistory? currentUpdateHistory,
     int row,
@@ -50,13 +41,18 @@ class SheetDataController extends ChangeNotifier {
     bool onChange,
     bool keepPrevious,
   ) recordCellChange;
-  void Function(
+  late void Function(
+    SheetData sheet,
+    SelectionData selection,
+    Map<String, SelectionData> lastSelectionBySheet,
+    String currentSheetName,
     int row,
     int col,
+    double row1ToScreenBottomHeight,
+    double colBToScreenRightWidth,
     String newValue,
     String prevValue,
   ) adjustRowHeightAfterUpdate;
-  bool Function() canBeSorted;
 
   
   late final SpreadsheetClipboardService _clipboardService;  
@@ -84,13 +80,6 @@ class SheetDataController extends ChangeNotifier {
   SheetDataController({
     required GetSheetDataUseCase getDataUseCase,
     required SaveSheetDataUseCase saveSheetDataUseCase,
-    required this.recordColumnTypeChange,
-    required this.commitHistory,
-    required this.calculate,
-    required this.onAnalysisComplete,
-    required this.recordCellChange,
-    required this.adjustRowHeightAfterUpdate,
-    required this.canBeSorted,
   }) : _saveSheetDataUseCase = saveSheetDataUseCase;
 
   void scheduleSheetSave(SheetData sheet, String sheetName, int saveDelayMs) {
@@ -104,9 +93,14 @@ class SheetDataController extends ChangeNotifier {
     _saveExecutors[name] = ManageWaitingTasks<void>();
   }
 
-  void onChanged(SheetData sheet, SelectionData selection, String currentSheetName, String newValue) {
+  void onChanged(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth, String currentSheetName, String newValue) {
     updateCell(
       sheet,
+      selection,
+      lastSelectionBySheet,
+      row1ToScreenBottomHeight,
+      colBToScreenRightWidth,
+      currentSheetName,
       selection.primarySelectedCell.x,
       selection.primarySelectedCell.y,
       newValue,
@@ -125,11 +119,8 @@ class SheetDataController extends ChangeNotifier {
       scheduleSheetSave(sheet, currentSheetName, SpreadsheetConstants.saveDelayMs);
     }
     calculate(
-      sheet.sheetContent,
-      rowCount(sheet.sheetContent),
-      colCount(sheet.sheetContent),
-      onAnalysisComplete,
-      selection,
+      sheet,
+      selection
     );
   }
 
@@ -155,7 +146,7 @@ class SheetDataController extends ChangeNotifier {
     }
   }
   
-  void updateCell(SheetData sheet, int row, int col, String newValue, {
+  void updateCell(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth, String currentSheetName, int row, int col, String newValue, {
     bool onChange = false,
     bool historyNavigation = false,
     bool keepPrevious = false,
@@ -219,7 +210,7 @@ class SheetDataController extends ChangeNotifier {
     }
 
     // Delegate layout calculation to GridManager
-    adjustRowHeightAfterUpdate(row, col, newValue, prevValue);
+    adjustRowHeightAfterUpdate(sheet, selection, lastSelectionBySheet, currentSheetName, row, col, row1ToScreenBottomHeight, colBToScreenRightWidth, newValue, prevValue);
   }
 
 
@@ -255,7 +246,7 @@ class SheetDataController extends ChangeNotifier {
     saveAndCalculate(sheet, selection, currentSheetName, updateHistory: true);
   }
 
-  Future<void> pasteSelection(SheetData sheet, SelectionData selection, String currentSheetName) async {
+  Future<void> pasteSelection(SheetData sheet, SelectionData selection, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth, Map<String, SelectionData> lastSelectionBySheet) async {
     final text = await _clipboardService.getText();
     if (text == null) return;
     // if contains "
@@ -269,24 +260,28 @@ class SheetDataController extends ChangeNotifier {
       selection.primarySelectedCell.x,
       selection.primarySelectedCell.y,
     );
-    setTable(sheet, selection, currentSheetName, updates);
+    setTable(sheet, selection, lastSelectionBySheet, row1ToScreenBottomHeight, colBToScreenRightWidth, currentSheetName, updates);
   }
 
-  void setTable(SheetData sheet, SelectionData selection, String currentSheetName, List<CellUpdate> updates) {
+  void setTable(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth, String currentSheetName, List<CellUpdate> updates) {
     sheet.currentUpdateHistory = null;
     for (var update in updates) {
-      updateCell(sheet, update.row, update.col, update.value, keepPrevious: true);
+      updateCell(sheet, selection, lastSelectionBySheet, row1ToScreenBottomHeight, colBToScreenRightWidth, currentSheetName, update.row, update.col, update.value, keepPrevious: true);
     }
     notifyListeners();
     saveAndCalculate(sheet, selection, currentSheetName, updateHistory: true);
   }
 
-  void delete(SheetData sheet, SelectionData selection, String currentSheetName) {
+  void delete(SheetData sheet, SelectionData selection, String currentSheetName, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth) {
     for (Point<int> cell in selection.selectedCells) {
-      updateCell(sheet, cell.x, cell.y, '', keepPrevious: true);
+      updateCell(sheet, selection, lastSelectionBySheet, row1ToScreenBottomHeight, colBToScreenRightWidth, currentSheetName, cell.x, cell.y, '', keepPrevious: true);
     }
     updateCell(
       sheet,
+      selection,lastSelectionBySheet,
+      row1ToScreenBottomHeight,
+      colBToScreenRightWidth,
+      currentSheetName,
       selection.primarySelectedCell.x,
       selection.primarySelectedCell.y,
       '',
@@ -351,21 +346,6 @@ class SheetDataController extends ChangeNotifier {
 
     final text = buffer.toString();
     await _clipboardService.copy(text);
-  }
-
-  bool isRowValid(SheetContent sheetContent, List<bool> isMedium, int rowId) {
-    if (canBeSorted()) {
-      return isMedium[rowId];
-    }
-    if (rowId == 0) {
-      return false;
-    }
-    for (int srcColId = 0; srcColId < colCount(sheetContent); srcColId++) {
-      if (GetNames.isSourceColumn(sheetContent.columnTypes[srcColId]) && getCellContent(sheetContent.table, rowId, srcColId).isNotEmpty) {
-        return true;
-      }
-    }
-    return false;
   }
 
 

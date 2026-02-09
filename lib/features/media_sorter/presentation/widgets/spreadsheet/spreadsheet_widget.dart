@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/spreadsheet_scroll_request.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/spreadsheet_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
@@ -47,7 +47,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 
   void _subscribeToScrollEvents() {
-    final controller = context.read<SpreadsheetController>();
+    final controller = context.read<WorkbookController>();
     // Prevent multiple subscriptions if dependencies change
     if (_scrollSubscription != null) return;
     // Listen to the new stream name and type
@@ -58,7 +58,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   void _handleScrollRequest(SpreadsheetScrollRequest request) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final controller = context.read<SpreadsheetController>();
+      final controller = context.read<WorkbookController>();
       final dataController = context.read<SheetDataController>();
       final selectionController = context.read<SelectionController>();
       // Case A: Scroll to specific Cell (Your existing logic)
@@ -125,7 +125,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   /// Calculates offsets and scrolls to ensure the target cell is visible.
   void _revealCell(
     math.Point<int> cell,
-    SpreadsheetController controller,
+    WorkbookController controller,
     SheetDataController dataController,
     SelectionController selectionController,
   ) {
@@ -136,19 +136,19 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     if (cell.x > 0) {
       // Vertical Logic
       final double targetTop =
-          dataController.getTargetTop(cell.x) - dataController.getTargetTop(1);
-      final double targetBottom = dataController.getTargetTop(cell.x + 1);
-      selectionController.scrollOffsetX = _verticalController.offset;
+          controller.getTargetTop(cell.x) - controller.getTargetTop(1);
+      final double targetBottom = controller.getTargetTop(cell.x + 1);
+      controller.scrollOffsetX = _verticalController.offset;
       final double verticalViewport =
           _verticalController.position.viewportDimension -
           controller.sheet.rowHeaderWidth;
 
       bool scroll = true;
-      if (targetTop < selectionController.scrollOffsetX) {
-        selectionController.scrollOffsetX = targetTop;
+      if (targetTop < controller.scrollOffsetX) {
+        controller.scrollOffsetX = targetTop;
       } else if (targetBottom >
-          selectionController.scrollOffsetX + verticalViewport) {
-        selectionController.scrollOffsetX = targetBottom - verticalViewport;
+          controller.scrollOffsetX + verticalViewport) {
+        controller.scrollOffsetX = targetBottom - verticalViewport;
         controller.updateRowColCount(visibleHeight: targetBottom);
       } else {
         scroll = false;
@@ -157,7 +157,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       if (scroll) {
         _safelyScroll(
           _verticalController,
-          selectionController.scrollOffsetX,
+          controller.scrollOffsetX,
           true,
         );
       }
@@ -166,20 +166,20 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     if (cell.y > 0) {
       // Horizontal Logic
       final double targetLeft =
-          dataController.getTargetLeft(cell.y) -
-          dataController.getTargetLeft(1);
-      final double targetRight = dataController.getTargetLeft(cell.y + 1);
-      selectionController.scrollOffsetY = _horizontalController.offset;
+          controller.getTargetLeft(cell.y) -
+          controller.getTargetLeft(1);
+      final double targetRight = controller.getTargetLeft(cell.y + 1);
+      controller.scrollOffsetY = _horizontalController.offset;
       final double horizontalViewport =
           _horizontalController.position.viewportDimension -
           controller.sheet.rowHeaderWidth;
 
       bool scroll = true;
-      if (targetLeft < selectionController.scrollOffsetY) {
-        selectionController.scrollOffsetY = targetLeft;
+      if (targetLeft < controller.scrollOffsetY) {
+        controller.scrollOffsetY = targetLeft;
       } else if (targetRight >
-          selectionController.scrollOffsetY + horizontalViewport) {
-        selectionController.scrollOffsetY = targetRight - horizontalViewport;
+          controller.scrollOffsetY + horizontalViewport) {
+        controller.scrollOffsetY = targetRight - horizontalViewport;
         controller.updateRowColCount(visibleWidth: targetRight);
       } else {
         scroll = false;
@@ -188,17 +188,17 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       if (scroll) {
         _safelyScroll(
           _horizontalController,
-          selectionController.scrollOffsetY,
+          controller.scrollOffsetY,
           true,
         );
       }
     }
-    dataController.saveLastSelection(selectionController.selection);
+    controller.saveLastSelection();
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<SpreadsheetController>();
+    final controller = context.watch<WorkbookController>();
     final dataController = context.watch<SheetDataController>();
     final selectionController = context.watch<SelectionController>();
 
@@ -289,7 +289,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   bool _handleScrollNotification(
     ScrollNotification notification,
-    SpreadsheetController controller,
+    WorkbookController controller,
   ) {
     if (notification is ScrollUpdateNotification) {
       if (_isProgrammaticScroll) {
@@ -326,7 +326,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   TableSpan _buildRowSpan(
     int index,
-    SpreadsheetController controller,
+    WorkbookController controller,
     SheetDataController dataController,
   ) {
     if (index == 0) {
@@ -336,7 +336,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     }
 
     final int dataRowIndex = index - 1;
-    final double rowHeight = dataController.getRowHeight(dataRowIndex);
+    final double rowHeight = controller.getRowHeight(dataRowIndex);
 
     return TableSpan(extent: FixedTableSpanExtent(rowHeight));
   }
@@ -344,7 +344,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   Widget _buildCellDispatcher(
     BuildContext context,
     TableVicinity vicinity,
-    SpreadsheetController controller,
+    WorkbookController controller,
     SheetDataController dataController,
     SelectionController selectionController,
   ) {
@@ -377,7 +377,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     final int dataRow = r - 1;
     final int dataCol = c - 1;
 
-    final bool isEditingCell = selectionController.isCellEditing(
+    final bool isEditingCell = controller.isCellEditing(
       dataRow,
       dataCol,
     );
@@ -385,13 +385,13 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     return SpreadsheetDataCell(
       row: dataRow,
       col: dataCol,
-      content: dataController.getCellContent(dataRow, dataCol),
+      content: controller.getCellContent(dataRow, dataCol),
       isValid: controller.isRowValid(dataRow),
-      isPrimarySelectedCell: selectionController.isPrimarySelectedCell(
+      isPrimarySelectedCell: controller.isPrimarySelectedCell(
         dataRow,
         dataCol,
       ),
-      isSelected: selectionController.isCellSelected(dataRow, dataCol),
+      isSelected: controller.isCellSelected(dataRow, dataCol),
       isEditing: isEditingCell,
       previousContent: controller.previousContent,
       onTap: () {
@@ -436,7 +436,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   Future<void> _showTypeMenu(
     BuildContext context,
-    SpreadsheetController controller,
+    WorkbookController controller,
     Offset position,
     int col,
   ) async {
@@ -494,7 +494,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   void _showColumnContextMenu(
     BuildContext context,
-    SpreadsheetController controller,
+    WorkbookController controller,
     Offset position,
     int col,
   ) async {

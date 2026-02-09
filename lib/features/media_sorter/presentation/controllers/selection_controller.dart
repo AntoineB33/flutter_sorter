@@ -13,13 +13,13 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_
 class SelectionController extends ChangeNotifier {
   final ManageWaitingTasks<void> _saveLastSelectionExecutor =
       ManageWaitingTasks<void>();
-  Function (SheetData sheet) commitHistory;
-  void Function(SheetData sheet) discardPendingChanges;
-  void Function(SheetData sheet, SelectionData selection, String currentSheetName, String newValue) onChanged;
-  String Function(List<List<String>> table, int row, int col) getCellContent;
-  void Function(int, int) updateMentionsContext;
-  void Function(int, int) triggerScrollTo;
-  (int, int) Function(SelectionData selection, SheetData sheet, int rowCount, int colCount, {
+  late void Function(SheetData sheet) commitHistory;
+  late void Function(SheetData sheet) discardPendingChanges;
+  late void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth, String currentSheetName, String newValue) onChanged;
+  late String Function(List<List<String>> table, int row, int col) getCellContent;
+  late void Function(int, int) updateMentionsContext;
+  late void Function({double? x, double? y, bool animate}) triggerScrollTo;
+  late (int, int) Function(SelectionData selection, SheetData sheet, int rowCount, int colCount, {
     double? visibleHeight,
     double? visibleWidth,
   }) getNewRowColCount;
@@ -72,8 +72,7 @@ class SelectionController extends ChangeNotifier {
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) => content.table.isNotEmpty ? content.table[0].length : 0;
 
-  SelectionController(this.updateMentionsContext,
-      this.triggerScrollTo, this.commitHistory, this.discardPendingChanges, this.onChanged, this.getCellContent, this.getNewRowColCount);
+  SelectionController();
 
   Future<Map<String, SelectionData>> getAllLastSelected() async {
     try {
@@ -186,7 +185,7 @@ class SelectionController extends ChangeNotifier {
 
     // Request scroll to visible
     if (scrollTo) {
-      triggerScrollTo(row, col);
+      triggerScrollTo(x: col.toDouble(), y: row.toDouble(), animate: true);
     }
     notifyListeners();
   }
@@ -204,13 +203,13 @@ class SelectionController extends ChangeNotifier {
     }
   }
 
-  void startEditing(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {String? initialInput}) {
+  void startEditing(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth, {String? initialInput}) {
     selection.previousContent = getCellContent(sheet.sheetContent.table,
       selection.primarySelectedCell.x,
       selection.primarySelectedCell.y,
     );
     if (initialInput != null) {
-      onChanged(sheet, selection, currentSheetName, initialInput);
+      onChanged(sheet, selection, lastSelectionBySheet, row1ToScreenBottomHeight, colBToScreenRightWidth, currentSheetName, initialInput);
     }
     selection.editingMode = true;
     saveLastSelection(lastSelectionBySheet, currentSheetName);

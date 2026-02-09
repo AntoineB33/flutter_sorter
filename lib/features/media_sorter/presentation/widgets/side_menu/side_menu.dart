@@ -2,7 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
 import 'analysis_tree_node.dart';
 
@@ -63,8 +64,10 @@ class _SideMenuState extends State<SideMenu> {
   Widget build(BuildContext context) {
     final WorkbookController workbookController =
         Provider.of<WorkbookController>(context);
-    final SheetDataController sheetDataController =
-        Provider.of<SheetDataController>(context);
+    final SortController sortController =
+        Provider.of<SortController>(context);
+    final TreeController treeController =
+        Provider.of<TreeController>(context);
 
     if (_textEditingController.text != workbookController.currentSheetName) {
       _textEditingController.text = workbookController.currentSheetName;
@@ -93,7 +96,7 @@ class _SideMenuState extends State<SideMenu> {
             children: [
               // Existing Button (Now with background)
               ElevatedButton(
-                onPressed: sheetDataController.canBeSorted()
+                onPressed: sortController.canBeSorted()
                     ? workbookController.sortMedia
                     : null,
                 style: ElevatedButton.styleFrom(
@@ -107,15 +110,15 @@ class _SideMenuState extends State<SideMenu> {
               const SizedBox(width: 12), // Adds spacing between the two buttons
               // New Button to the right
               ElevatedButton(
-                onPressed: spreadsheetController.canBeSorted()
-                    ? spreadsheetController.findBestSortToggle()
+                onPressed: sortController.canBeSorted()
+                    ? workbookController.findBestSortToggle
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
                 ),
                 child: Text(
-                  spreadsheetController.findingBestSort
+                  workbookController.findingBestSort
                       ? "Stop sorting"
                       : "Find the best order",
                 ),
@@ -158,28 +161,28 @@ class _SideMenuState extends State<SideMenu> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             AnalysisTreeNode(
-                              node: spreadsheetController.errorRoot,
-                              controller: spreadsheetController,
+                              node: workbookController.errorRoot,
+                              controller: workbookController,
                             ),
                             AnalysisTreeNode(
-                              node: spreadsheetController.warningRoot,
-                              controller: spreadsheetController,
+                              node: workbookController.warningRoot,
+                              controller: workbookController,
                             ),
                             AnalysisTreeNode(
-                              node: spreadsheetController.mentionsRoot,
-                              controller: spreadsheetController,
+                              node: treeController.mentionsRoot,
+                              controller: workbookController,
                             ),
                             AnalysisTreeNode(
-                              node: spreadsheetController.searchRoot,
-                              controller: spreadsheetController,
+                              node: treeController.searchRoot,
+                              controller: workbookController,
                             ),
                             AnalysisTreeNode(
-                              node: spreadsheetController.categoriesRoot,
-                              controller: spreadsheetController,
+                              node: workbookController.categoriesRoot,
+                              controller: workbookController,
                             ),
                             AnalysisTreeNode(
-                              node: spreadsheetController.distPairsRoot,
-                              controller: spreadsheetController,
+                              node: workbookController.distPairsRoot,
+                              controller: workbookController,
                             ),
                           ],
                         ),
@@ -195,13 +198,13 @@ class _SideMenuState extends State<SideMenu> {
     );
   }
 
-  Widget _buildSheetAutocomplete(SpreadsheetController spreadsheetController) {
+  Widget _buildSheetAutocomplete(WorkbookController workbookController) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Autocomplete<String>(
           optionsBuilder: (TextEditingValue textEditingValue) {
             final query = textEditingValue.text.toLowerCase();
-            final allSheets = spreadsheetController.sheetNames;
+            final allSheets = workbookController.sheetNames;
             if (query.isEmpty) {
               final sorted = List<String>.from(allSheets);
               sorted.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
@@ -277,7 +280,7 @@ class _SideMenuState extends State<SideMenu> {
             );
           },
           onSelected: (String selection) {
-            spreadsheetController.loadSheetByName(selection);
+            workbookController.loadSheetByName(selection);
           },
           fieldViewBuilder:
               (context, textController, focusNode, onFieldSubmitted) {
@@ -293,7 +296,7 @@ class _SideMenuState extends State<SideMenu> {
                     suffixIcon: Icon(Icons.table_chart),
                   ),
                   onSubmitted: (String value) {
-                    spreadsheetController.loadSheetByName(value.trim());
+                    workbookController.loadSheetByName(value.trim());
                   },
                 );
               },

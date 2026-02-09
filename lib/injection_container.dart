@@ -12,7 +12,7 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/so
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_stream_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/spreadsheet_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
 
 final sl = GetIt.instance; // sl = Service Locator
 
@@ -30,7 +30,7 @@ Future<void> init() async {
   );
   sl.registerLazySingleton(() => SelectionController());
   sl.registerFactory(
-    () => SpreadsheetController(
+    () => WorkbookController(
       GridController(),
       HistoryController(),
       sl<SelectionController>(),

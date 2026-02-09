@@ -8,11 +8,8 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
-import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
 
 /// Type definition for the selection callback to decouple the builder from the manager
 typedef OnTreeCellSelected = void Function(
@@ -31,12 +28,12 @@ class TreeController extends ChangeNotifier {
     instruction: SpreadsheetConstants.searchMsg,
   );
 
-  final OnTreeCellSelected _onCellSelected;
+  late OnTreeCellSelected _onCellSelected;
   
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) => content.table.isNotEmpty ? content.table[0].length : 0;
 
-  TreeController(this._onCellSelected);
+  TreeController();
 
   void populateAllTrees(SelectionData selection, SheetData sheet, AnalysisResult result, int rowCount, int colCount) {
     populateTree(selection, sheet, result, [

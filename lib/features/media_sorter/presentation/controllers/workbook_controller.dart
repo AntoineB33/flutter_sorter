@@ -4,43 +4,24 @@ import 'package:trying_flutter/features/media_sorter/data/models/selection_data.
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/sheet_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/check_valid_strings.dart';
 import 'package:trying_flutter/utils/logger.dart';
 import 'dart:math';
-import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/repositories/sheet_repository_impl.dart';
-import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/spreadsheet_scroll_request.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/sorting_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/parse_paste_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/delegates/spreadsheet_keyboard_delegate.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/services/sheet_loader_service.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/services/spreadsheet_clipboard_service.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/utils/check_valid_strings.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart'; // Import AnalysisResult
-import 'package:flutter/material.dart';
-import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_stream_controller.dart';
 
 class WorkbookController extends ChangeNotifier {
@@ -67,10 +48,14 @@ class WorkbookController extends ChangeNotifier {
     SheetRepositoryImpl(FileSheetLocalDataSource()),
   );
   final CalculationService calculationService = CalculationService();
-  final ParsePasteDataUseCase _parsePasteDataUseCase = ParsePasteDataUseCase();
+
+  // Delegates
+  late final SpreadsheetKeyboardDelegate _keyboardDelegate;
 
   SelectionData get selection => lastSelectionBySheet[currentSheetName] ?? SelectionData.empty();
   
+  int get tableViewRows => selection.tableViewRows;
+  int get tableViewCols => selection.tableViewCols;
   AnalysisResult get result => analysisResults[currentSheetName] ?? AnalysisResult.empty();
   List<List<String>> get table => sheet.sheetContent.table;
   int get rowCount => table.length;
@@ -91,15 +76,118 @@ class WorkbookController extends ChangeNotifier {
   //     _selectionController.primarySelectedCell;
   String get previousContent => selection.previousContent;
   bool get findingBestSort => _sortController.findingBestSort;
+  double get scrollOffsetX => selection.scrollOffsetX;
+  double get scrollOffsetY => selection.scrollOffsetY;
+  Point<int> get primarySelectedCell => selection.primarySelectedCell;
 
-  // --- Helper ---
-  late final SheetLoaderService _sheetLoaderService;
+  // --- setters ---
+  set scrollOffsetX(double offset) {
+    selection.scrollOffsetX = offset;
+  }
 
-  // Delegates
-  late final SpreadsheetKeyboardDelegate _keyboardDelegate;
+  set scrollOffsetY(double offset) {
+    selection.scrollOffsetY = offset;
+  }
 
-  // Services
-  late final SpreadsheetClipboardService _clipboardService;
+  void toggleNodeExpansion(NodeStruct node, bool isExpanded) {
+    _treeController.toggleNodeExpansion(sheet, result, selection, node, isExpanded);
+  }
+
+  void sortMedia() {
+    _sortController.calculate(sheet, selection);
+  }
+
+  void findBestSortToggle() {
+    _sortController.findBestSortToggle(sheet, result, selection, lastSelectionBySheet, currentSheetName);
+  }
+
+  double getTargetTop(int row) {
+    return _gridController.getTargetTop(sheet, row);
+  }
+  double getTargetLeft(int col) {
+    return _gridController.getTargetLeft(sheet, col);
+  }
+
+  void updateRowColCount({
+    double ? visibleHeight,
+    double ? visibleWidth,
+    bool notify = true,
+    bool save = true,}) {
+    _selectionController.updateRowColCount(
+      sheet,
+      selection,
+      lastSelectionBySheet,
+      currentSheetName,
+      visibleHeight: visibleHeight,
+      visibleWidth: visibleWidth,
+      notify: notify,
+      save: save,
+    );
+  }
+
+  void saveLastSelection() {
+    _selectionController.saveLastSelection(lastSelectionBySheet, currentSheetName);
+  }
+
+  KeyEventResult handleKeyboard(BuildContext context, KeyEvent event) {
+    return _keyboardDelegate.handle(context, event, selection, selection.editingMode, sheet, lastSelectionBySheet, currentSheetName);
+  }
+
+  double getRowHeight(int row) {
+    return _gridController.getRowHeight(sheet, row);
+  }
+
+  void selectAll() {
+    _selectionController.selectAll(selection, lastSelectionBySheet, currentSheetName, rowCount, colCount);
+  }
+
+  bool isCellEditing(int row, int col) {
+    return _selectionController.isCellEditing(selection, row, col);
+  }
+
+  String getCellContent(int row, int col) {
+    return _dataController.getCellContent(sheet.sheetContent.table, row, col);
+  }
+
+  bool isRowValid(int row) {
+    return _gridController.isRowValid(sheet.sheetContent, result.isMedium, row);
+  }
+
+  bool isPrimarySelectedCell(int row, int col) {
+    return _selectionController.isPrimarySelectedCell(selection, row, col);
+  }
+
+  bool isCellSelected(int row, int col) {
+    return _selectionController.isCellSelected(selection, row, col);
+  }
+
+  void stopEditing({bool updateHistory = true, bool notify = true}) {
+    _selectionController.stopEditing(sheet, selection, lastSelectionBySheet, currentSheetName);
+  }
+
+  void setPrimarySelection(int row, int col, bool keepSelection, bool scrollTo) {
+    _selectionController.setPrimarySelection(selection, lastSelectionBySheet, currentSheetName, row, col, keepSelection, scrollTo: scrollTo);
+  }
+
+  void startEditing({String? initialInput}) {
+    _selectionController.startEditing(sheet, selection, lastSelectionBySheet, currentSheetName, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth, initialInput: initialInput);
+  }
+
+  void onChanged(String newValue) {
+    _selectionController.onChanged(sheet, selection, lastSelectionBySheet, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth, currentSheetName, newValue);
+  }
+
+  void updateCell(int row, int col, String newValue) {
+    _dataController.updateCell(sheet, selection, lastSelectionBySheet, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth, currentSheetName, row, col, newValue);
+  }
+
+  void setColumnType(int col, ColumnType type) {
+    _dataController.setColumnType(sheet, selection, currentSheetName, col, type);
+  }
+
+  void applyDefaultColumnSequence() {
+    _dataController.applyDefaultColumnSequence(sheet, selection, currentSheetName);
+  }
 
   WorkbookController(
     this._gridController,
@@ -109,9 +197,30 @@ class WorkbookController extends ChangeNotifier {
     this._treeController,
     this._streamController,
     this._sortController,) {
-    final SheetRepositoryImpl sheetRepository = SheetRepositoryImpl(
-      FileSheetLocalDataSource(),
-    );
+    _gridController.updateRowColCount = _selectionController.updateRowColCount;
+    _gridController.canBeSorted = _gridController.canBeSorted;
+    _gridController.getCellContent = _dataController.getCellContent;
+    _historyController.updateCell = _dataController.updateCell;
+    _historyController.setColumnType = _dataController.setColumnType;
+    _historyController.saveAndCalculate = _dataController.saveAndCalculate;
+    _selectionController.commitHistory = _historyController.commitHistory;
+    _selectionController.discardPendingChanges = _historyController.discardPendingChanges;
+    _selectionController.onChanged = _dataController.onChanged;
+    _selectionController.updateMentionsContext = _treeController.updateMentionsRoot;
+    _selectionController.triggerScrollTo = _streamController.scrollToOffset;
+    _selectionController.getNewRowColCount = _gridController.getNewRowColCount;
+    _dataController.recordColumnTypeChange = _historyController.recordColumnTypeChange;
+    _dataController.commitHistory = _historyController.commitHistory;
+    _dataController.calculate = _sortController.calculate;
+    _dataController.onAnalysisComplete = _sortController.onAnalysisComplete;
+    _dataController.recordCellChange = _historyController.recordCellChange;
+    _dataController.adjustRowHeightAfterUpdate = _gridController.adjustRowHeightAfterUpdate;
+    _sortController.stopEditing = _selectionController.stopEditing;
+    _sortController.setTable = _dataController.setTable;
+    _sortController.onAnalysisComplete = (result, primarySelectedCell) {
+      analysisResults[currentSheetName] = result;
+      onAnalysisComplete(result, primarySelectedCell);
+    };
     init();
   }
 
@@ -133,7 +242,7 @@ class WorkbookController extends ChangeNotifier {
       debugPrint("Error initializing AllSheetsController: $e");
       sheetNames = [];
     }
-    if (lastOpenedSheetName != null && !CheckValidStrings.isValidSheetName(lastOpenedSheetName!)) {
+    if (lastOpenedSheetName != null && !CheckValidStrings.isValidSheetName(lastOpenedSheetName)) {
       debugPrint(
         "Invalid last opened sheet name '$lastOpenedSheetName'.",
       );
@@ -267,9 +376,5 @@ class WorkbookController extends ChangeNotifier {
     _treeController.updateMentionsRoot(primarySelectedCell.x, primarySelectedCell.y);
     _treeController.clearSearchRoot();
     _treeController.populateAllTrees(selection, sheet, result, rowCount, colCount);
-  }
-
-  void toggleNodeExpansion(NodeStruct node, bool isExpanded) {
-    _treeController.toggleNodeExpansion(sheet, result, selection, node, isExpanded);
   }
 }
