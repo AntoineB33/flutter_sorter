@@ -52,7 +52,7 @@ class SheetDataController extends ChangeNotifier {
   ) adjustRowHeightAfterUpdate;
 
   
-  late final SpreadsheetClipboardService _clipboardService;  
+  late final SpreadsheetClipboardService _clipboardService = SpreadsheetClipboardService();  
   final ParsePasteDataUseCase _parsePasteDataUseCase = ParsePasteDataUseCase();
   
   int rowCount(SheetContent content) => content.table.length;
@@ -150,42 +150,41 @@ class SheetDataController extends ChangeNotifier {
     bool keepPrevious = false,
   }) {
     String prevValue = '';
-    int rowCount = this.rowCount(sheet.sheetContent);
-    int colCount = this.colCount(sheet.sheetContent);
-    if (newValue.isNotEmpty || (row < rowCount && col < colCount)) {
-      if (row >= rowCount) {
-        final needed = row + 1 - rowCount;
+    SheetContent sheetContent = sheet.sheetContent;
+    if (newValue.isNotEmpty || (row < rowCount(sheetContent) && col < colCount(sheetContent))) {
+      if (row >= rowCount(sheetContent)) {
+        final needed = row + 1 - rowCount(sheetContent);
         sheet.sheetContent.table.addAll(
           List.generate(
             needed,
-            (_) => List.filled(colCount, '', growable: true),
+            (_) => List.filled(colCount(sheetContent), '', growable: true),
           ),
         );
       }
-      increaseColumnCount(col, rowCount, colCount, sheet.sheetContent);
+      increaseColumnCount(col, rowCount(sheetContent), colCount(sheetContent), sheet.sheetContent);
       prevValue = sheet.sheetContent.table[row][col];
       sheet.sheetContent.table[row][col] = newValue;
     }
 
     // Clean up empty rows/cols at the end
     if (newValue.isEmpty &&
-        row < rowCount &&
-        col < colCount &&
-        (row == rowCount - 1 || col == colCount - 1) &&
+        row < rowCount(sheetContent) &&
+        col < colCount(sheetContent) &&
+        (row == rowCount(sheetContent) - 1 || col == colCount(sheetContent) - 1) &&
         prevValue.isNotEmpty) {
-      decreaseRowCount(row, rowCount, sheet.sheetContent);
-      if (col == colCount - 1) {
+      decreaseRowCount(row, rowCount(sheetContent), sheet.sheetContent);
+      if (col == colCount(sheetContent) - 1) {
         int colId = col;
         bool canRemove = true;
         while (canRemove && colId >= 0) {
-          for (var r = 0; r < rowCount; r++) {
+          for (var r = 0; r < rowCount(sheetContent); r++) {
             if (sheet.sheetContent.table[r][colId].isNotEmpty) {
               canRemove = false;
               break;
             }
           }
           if (canRemove) {
-            for (var r = 0; r < rowCount; r++) {
+            for (var r = 0; r < rowCount(sheetContent); r++) {
               sheet.sheetContent.table[r].removeLast();
             }
             colId--;

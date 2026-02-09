@@ -90,7 +90,7 @@ class WorkbookController extends ChangeNotifier {
   }
 
   void toggleNodeExpansion(NodeStruct node, bool isExpanded) {
-    _treeController.toggleNodeExpansion(sheet, result, selection, node, isExpanded);
+    _treeController.toggleNodeExpansion(sheet, result, selection, lastSelectionBySheet, currentSheetName, node, isExpanded);
   }
 
   void sortMedia() {
@@ -227,6 +227,8 @@ class WorkbookController extends ChangeNotifier {
     _keyboardDelegate.delete = _dataController.delete;
     _keyboardDelegate.undo = _historyController.undo;
     _keyboardDelegate.redo = _historyController.redo;
+    _treeController.onCellSelected = _selectionController.setPrimarySelection;
+    _treeController.getCellContent = _dataController.getCellContent;
 
     _historyController.addListener(() {
       notifyListeners();
@@ -248,7 +250,7 @@ class WorkbookController extends ChangeNotifier {
   }
 
   Future<void> init() async {
-    // await _saveSheetDataUseCase.clearAllData();
+    await _saveSheetDataUseCase.clearAllData();
 
     // --- get current sheet name and all sheet names ---
     String? lastOpenedSheetName;
@@ -398,6 +400,6 @@ class WorkbookController extends ChangeNotifier {
     // Reset specific roots
     _treeController.updateMentionsRoot(primarySelectedCell.x, primarySelectedCell.y);
     _treeController.clearSearchRoot();
-    _treeController.populateAllTrees(selection, sheet, result, rowCount, colCount);
+    _treeController.populateAllTrees(selection, lastSelectionBySheet, currentSheetName, sheet, result, rowCount, colCount);
   }
 }

@@ -1,11 +1,9 @@
 import 'package:flutter/services.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 
 
 class SpreadsheetClipboardService {
-  final SheetDataController dataController;
 
-  SpreadsheetClipboardService(this.dataController);
+  SpreadsheetClipboardService();
 
   Future<void> copy(String text) async {
     await Clipboard.setData(ClipboardData(text: text));
