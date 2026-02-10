@@ -11,14 +11,14 @@ import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_message.dart';
 
 class CalculationService {
-  Future<AnalysisResult> runCalculation(SheetContent sheetContent) async {
-    return compute(
-      _isolateHandler,
-      getMessage(sheetContent),
-    );
+  static Future<void> runCalculation(List<dynamic> args) async {
+    SendPort sendPort = args[0];
+    SheetContent sheetContent = args[1];
+    AnalysisResult result = _isolateHandler(getMessage(sheetContent));
+    Isolate.exit(sendPort, result);
   }
   
-  IsolateMessage getMessage(SheetContent sheetContent) {
+  static IsolateMessage getMessage(SheetContent sheetContent) {
     if (sheetContent.table.length < 5000) {
       return IsolateMessage(Right(sheetContent.table), sheetContent.columnTypes);
     } else {

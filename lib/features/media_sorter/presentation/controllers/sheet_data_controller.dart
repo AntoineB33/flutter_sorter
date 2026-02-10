@@ -22,13 +22,19 @@ class SheetDataController extends ChangeNotifier {
     int col,
     ColumnType prevType,
     ColumnType newType,
-  ) recordColumnTypeChange;
+  )
+  recordColumnTypeChange;
   late void Function(SheetData sheet) commitHistory;
-  late void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName) calculate;
   late void Function(
-    AnalysisResult result,
-    Point<int> primarySelectedCell,
-  ) onAnalysisComplete;
+    SheetData sheet,
+    Map<String, AnalysisResult> analysisResults,
+    SelectionData selection,
+    Map<String, SelectionData> lastSelectionBySheet,
+    String currentSheetName,
+  )
+  calculate;
+  late void Function(AnalysisResult result, Point<int> primarySelectedCell)
+  onAnalysisComplete;
   late void Function(
     SheetData sheet,
     int row,
@@ -37,7 +43,8 @@ class SheetDataController extends ChangeNotifier {
     String newValue,
     bool onChange,
     bool keepPrevious,
-  ) recordCellChange;
+  )
+  recordCellChange;
   late void Function(
     SheetData sheet,
     SelectionData selection,
@@ -49,15 +56,17 @@ class SheetDataController extends ChangeNotifier {
     double colBToScreenRightWidth,
     String newValue,
     String prevValue,
-  ) adjustRowHeightAfterUpdate;
+  )
+  adjustRowHeightAfterUpdate;
 
-  
-  late final SpreadsheetClipboardService _clipboardService = SpreadsheetClipboardService();  
+  late final SpreadsheetClipboardService _clipboardService =
+      SpreadsheetClipboardService();
   final ParsePasteDataUseCase _parsePasteDataUseCase = ParsePasteDataUseCase();
-  
+
   int rowCount(SheetContent content) => content.table.length;
-  int colCount(SheetContent content) => content.table.isNotEmpty ? content.table[0].length : 0;
-      
+  int colCount(SheetContent content) =>
+      content.table.isNotEmpty ? content.table[0].length : 0;
+
   final CalculationService calculationService = CalculationService();
 
   // --- usecases ---
@@ -74,9 +83,8 @@ class SheetDataController extends ChangeNotifier {
   // ManageWaitingTasks<AnalysisResult> get calculateExecutor =>
   //     _calculateExecutor;
 
-  SheetDataController({
-    required SaveSheetDataUseCase saveSheetDataUseCase,
-  }) : _saveSheetDataUseCase = saveSheetDataUseCase;
+  SheetDataController({required SaveSheetDataUseCase saveSheetDataUseCase})
+    : _saveSheetDataUseCase = saveSheetDataUseCase;
 
   void scheduleSheetSave(SheetData sheet, String sheetName, int saveDelayMs) {
     _saveExecutors[sheetName]!.execute(() async {
@@ -89,7 +97,16 @@ class SheetDataController extends ChangeNotifier {
     _saveExecutors[name] = ManageWaitingTasks<void>();
   }
 
-  void onChanged(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth, String currentSheetName, String newValue) {
+  void onChanged(
+    SheetData sheet,
+    Map<String, AnalysisResult> analysisResults,
+    SelectionData selection,
+    Map<String, SelectionData> lastSelectionBySheet,
+    double row1ToScreenBottomHeight,
+    double colBToScreenRightWidth,
+    String currentSheetName,
+    String newValue,
+  ) {
     updateCell(
       sheet,
       selection,
@@ -103,27 +120,50 @@ class SheetDataController extends ChangeNotifier {
       onChange: true,
     );
     notifyListeners();
-    saveAndCalculate(sheet, selection, lastSelectionBySheet, currentSheetName);
-  }
-
-  
-  void saveAndCalculate(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {bool save = true, bool updateHistory = false}) {
-    if (save) {
-      if (updateHistory) {
-        commitHistory(sheet);
-      }
-      scheduleSheetSave(sheet, currentSheetName, SpreadsheetConstants.saveDelayMs);
-    }
-    calculate(
+    saveAndCalculate(
       sheet,
+      analysisResults,
       selection,
       lastSelectionBySheet,
       currentSheetName,
     );
   }
 
+  void saveAndCalculate(
+    SheetData sheet,
+    Map<String, AnalysisResult> analysisResults,
+    SelectionData selection,
+    Map<String, SelectionData> lastSelectionBySheet,
+    String currentSheetName, {
+    bool save = true,
+    bool updateHistory = false,
+  }) {
+    if (save) {
+      if (updateHistory) {
+        commitHistory(sheet);
+      }
+      scheduleSheetSave(
+        sheet,
+        currentSheetName,
+        SpreadsheetConstants.saveSheetDelayMs,
+      );
+    }
+    sheet.calculated = false;
+    calculate(
+      sheet,
+      analysisResults,
+      selection,
+      lastSelectionBySheet,
+      currentSheetName,
+    );
+  }
 
-  void increaseColumnCount(int col, int rowCount, int colCount, SheetContent sheetContent) {
+  void increaseColumnCount(
+    int col,
+    int rowCount,
+    int colCount,
+    SheetContent sheetContent,
+  ) {
     if (col >= colCount) {
       final needed = col + 1 - colCount;
       for (var r = 0; r < rowCount; r++) {
@@ -134,6 +174,7 @@ class SheetDataController extends ChangeNotifier {
       );
     }
   }
+
   void decreaseRowCount(int row, int rowCount, SheetContent sheetContent) {
     if (row == rowCount - 1) {
       while (row >= 0 &&
@@ -143,15 +184,25 @@ class SheetDataController extends ChangeNotifier {
       }
     }
   }
-  
-  void updateCell(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth, String currentSheetName, int row, int col, String newValue, {
+
+  void updateCell(
+    SheetData sheet,
+    SelectionData selection,
+    Map<String, SelectionData> lastSelectionBySheet,
+    double row1ToScreenBottomHeight,
+    double colBToScreenRightWidth,
+    String currentSheetName,
+    int row,
+    int col,
+    String newValue, {
     bool onChange = false,
     bool historyNavigation = false,
     bool keepPrevious = false,
   }) {
     String prevValue = '';
     SheetContent sheetContent = sheet.sheetContent;
-    if (newValue.isNotEmpty || (row < rowCount(sheetContent) && col < colCount(sheetContent))) {
+    if (newValue.isNotEmpty ||
+        (row < rowCount(sheetContent) && col < colCount(sheetContent))) {
       if (row >= rowCount(sheetContent)) {
         final needed = row + 1 - rowCount(sheetContent);
         sheet.sheetContent.table.addAll(
@@ -161,7 +212,12 @@ class SheetDataController extends ChangeNotifier {
           ),
         );
       }
-      increaseColumnCount(col, rowCount(sheetContent), colCount(sheetContent), sheet.sheetContent);
+      increaseColumnCount(
+        col,
+        rowCount(sheetContent),
+        colCount(sheetContent),
+        sheet.sheetContent,
+      );
       prevValue = sheet.sheetContent.table[row][col];
       sheet.sheetContent.table[row][col] = newValue;
     }
@@ -170,7 +226,8 @@ class SheetDataController extends ChangeNotifier {
     if (newValue.isEmpty &&
         row < rowCount(sheetContent) &&
         col < colCount(sheetContent) &&
-        (row == rowCount(sheetContent) - 1 || col == colCount(sheetContent) - 1) &&
+        (row == rowCount(sheetContent) - 1 ||
+            col == colCount(sheetContent) - 1) &&
         prevValue.isNotEmpty) {
       decreaseRowCount(row, rowCount(sheetContent), sheet.sheetContent);
       if (col == colCount(sheetContent) - 1) {
@@ -192,7 +249,7 @@ class SheetDataController extends ChangeNotifier {
         }
       }
     }
-    
+
     if (!historyNavigation) {
       recordCellChange(
         sheet,
@@ -206,15 +263,31 @@ class SheetDataController extends ChangeNotifier {
     }
 
     // Delegate layout calculation to GridManager
-    adjustRowHeightAfterUpdate(sheet, selection, lastSelectionBySheet, currentSheetName, row, col, row1ToScreenBottomHeight, colBToScreenRightWidth, newValue, prevValue);
+    adjustRowHeightAfterUpdate(
+      sheet,
+      selection,
+      lastSelectionBySheet,
+      currentSheetName,
+      row,
+      col,
+      row1ToScreenBottomHeight,
+      colBToScreenRightWidth,
+      newValue,
+      prevValue,
+    );
   }
 
-
-  void setColumnType(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, int col, ColumnType type, {bool updateHistory = true}) {
-    ColumnType previousType = GetNames.getColumnType(
-      sheet.sheetContent,
-      col,
-    );
+  void setColumnType(
+    SheetData sheet,
+    Map<String, AnalysisResult> analysisResults,
+    SelectionData selection,
+    Map<String, SelectionData> lastSelectionBySheet,
+    String currentSheetName,
+    int col,
+    ColumnType type, {
+    bool updateHistory = true,
+  }) {
+    ColumnType previousType = GetNames.getColumnType(sheet.sheetContent, col);
     if (updateHistory) {
       recordColumnTypeChange(sheet, col, previousType, type);
     }
@@ -224,25 +297,43 @@ class SheetDataController extends ChangeNotifier {
         if (col == sheet.sheetContent.columnTypes.length - 1) {
           while (col > 0) {
             col--;
-            if (sheet.sheetContent.columnTypes[col] !=
-                ColumnType.attributes) {
+            if (sheet.sheetContent.columnTypes[col] != ColumnType.attributes) {
               break;
             }
           }
-          sheet.sheetContent.columnTypes = sheet.sheetContent
-              .columnTypes
+          sheet.sheetContent.columnTypes = sheet.sheetContent.columnTypes
               .sublist(0, col + 1);
         }
       }
     } else {
-      increaseColumnCount(col, rowCount(sheet.sheetContent), colCount(sheet.sheetContent), sheet.sheetContent);
+      increaseColumnCount(
+        col,
+        rowCount(sheet.sheetContent),
+        colCount(sheet.sheetContent),
+        sheet.sheetContent,
+      );
       sheet.sheetContent.columnTypes[col] = type;
     }
     notifyListeners();
-    saveAndCalculate(sheet, selection, lastSelectionBySheet, currentSheetName, updateHistory: true);
+    saveAndCalculate(
+      sheet,
+      analysisResults,
+      selection,
+      lastSelectionBySheet,
+      currentSheetName,
+      updateHistory: true,
+    );
   }
 
-  Future<void> pasteSelection(SheetData sheet, SelectionData selection, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth, Map<String, SelectionData> lastSelectionBySheet) async {
+  Future<void> pasteSelection(
+    SheetData sheet,
+    Map<String, AnalysisResult> analysisResults,
+    SelectionData selection,
+    String currentSheetName,
+    double row1ToScreenBottomHeight,
+    double colBToScreenRightWidth,
+    Map<String, SelectionData> lastSelectionBySheet,
+  ) async {
     final text = await _clipboardService.getText();
     if (text == null) return;
     // if contains "
@@ -256,25 +347,81 @@ class SheetDataController extends ChangeNotifier {
       selection.primarySelectedCell.x,
       selection.primarySelectedCell.y,
     );
-    setTable(sheet, selection, lastSelectionBySheet, row1ToScreenBottomHeight, colBToScreenRightWidth, currentSheetName, updates);
+    setTable(
+      sheet,
+      analysisResults,
+      selection,
+      lastSelectionBySheet,
+      row1ToScreenBottomHeight,
+      colBToScreenRightWidth,
+      currentSheetName,
+      updates,
+    );
   }
 
-  void setTable(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth, String currentSheetName, List<CellUpdate> updates) {
+  void setTable(
+    SheetData sheet,
+    Map<String, AnalysisResult> analysisResults,
+    SelectionData selection,
+    Map<String, SelectionData> lastSelectionBySheet,
+    double row1ToScreenBottomHeight,
+    double colBToScreenRightWidth,
+    String currentSheetName,
+    List<CellUpdate> updates,
+  ) {
     sheet.currentUpdateHistory = null;
     for (var update in updates) {
-      updateCell(sheet, selection, lastSelectionBySheet, row1ToScreenBottomHeight, colBToScreenRightWidth, currentSheetName, update.row, update.col, update.value, keepPrevious: true);
+      updateCell(
+        sheet,
+        selection,
+        lastSelectionBySheet,
+        row1ToScreenBottomHeight,
+        colBToScreenRightWidth,
+        currentSheetName,
+        update.row,
+        update.col,
+        update.value,
+        keepPrevious: true,
+      );
     }
     notifyListeners();
-    saveAndCalculate(sheet, selection, lastSelectionBySheet, currentSheetName, updateHistory: true);
+    saveAndCalculate(
+      sheet,
+      analysisResults,
+      selection,
+      lastSelectionBySheet,
+      currentSheetName,
+      updateHistory: true,
+    );
   }
 
-  void delete(SheetData sheet, SelectionData selection, String currentSheetName, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth) {
+  void delete(
+    SheetData sheet,
+    Map<String, AnalysisResult> analysisResults,
+    SelectionData selection,
+    String currentSheetName,
+    Map<String, SelectionData> lastSelectionBySheet,
+    double row1ToScreenBottomHeight,
+    double colBToScreenRightWidth,
+  ) {
     for (Point<int> cell in selection.selectedCells) {
-      updateCell(sheet, selection, lastSelectionBySheet, row1ToScreenBottomHeight, colBToScreenRightWidth, currentSheetName, cell.x, cell.y, '', keepPrevious: true);
+      updateCell(
+        sheet,
+        selection,
+        lastSelectionBySheet,
+        row1ToScreenBottomHeight,
+        colBToScreenRightWidth,
+        currentSheetName,
+        cell.x,
+        cell.y,
+        '',
+        keepPrevious: true,
+      );
     }
     updateCell(
       sheet,
-      selection,lastSelectionBySheet,
+      selection,
+      lastSelectionBySheet,
       row1ToScreenBottomHeight,
       colBToScreenRightWidth,
       currentSheetName,
@@ -284,23 +431,82 @@ class SheetDataController extends ChangeNotifier {
       keepPrevious: true,
     );
     notifyListeners();
-    saveAndCalculate(sheet, selection, lastSelectionBySheet, currentSheetName, updateHistory: true);
+    saveAndCalculate(
+      sheet,
+      analysisResults,
+      selection,
+      lastSelectionBySheet,
+      currentSheetName,
+      updateHistory: true,
+    );
   }
 
-  void applyDefaultColumnSequence(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName) {
-    setColumnType(sheet, selection, lastSelectionBySheet, currentSheetName, 1, ColumnType.dependencies);
-    setColumnType(sheet, selection, lastSelectionBySheet, currentSheetName, 2, ColumnType.dependencies);
-    setColumnType(sheet, selection, lastSelectionBySheet, currentSheetName, 3, ColumnType.dependencies);
-    setColumnType(sheet, selection, lastSelectionBySheet, currentSheetName, 7, ColumnType.urls);
-    setColumnType(sheet, selection, lastSelectionBySheet, currentSheetName, 8, ColumnType.dependencies);
+  void applyDefaultColumnSequence(
+    SheetData sheet,
+    Map<String, AnalysisResult> analysisResults,
+    SelectionData selection,
+    Map<String, SelectionData> lastSelectionBySheet,
+    String currentSheetName,
+  ) {
+    setColumnType(
+      sheet,
+      analysisResults,
+      selection,
+      lastSelectionBySheet,
+      currentSheetName,
+      1,
+      ColumnType.dependencies,
+    );
+    setColumnType(
+      sheet,
+      analysisResults,
+      selection,
+      lastSelectionBySheet,
+      currentSheetName,
+      2,
+      ColumnType.dependencies,
+    );
+    setColumnType(
+      sheet,
+      analysisResults,
+      selection,
+      lastSelectionBySheet,
+      currentSheetName,
+      3,
+      ColumnType.dependencies,
+    );
+    setColumnType(
+      sheet,
+      analysisResults,
+      selection,
+      lastSelectionBySheet,
+      currentSheetName,
+      7,
+      ColumnType.urls,
+    );
+    setColumnType(
+      sheet,
+      analysisResults,
+      selection,
+      lastSelectionBySheet,
+      currentSheetName,
+      8,
+      ColumnType.dependencies,
+    );
   }
+
   String getCellContent(List<List<String>> table, int row, int col) {
     if (row < table.length && col < table[row].length) {
       return table[row][col];
     }
     return '';
   }
-  Future<void> copySelectionToClipboard(SheetData sheet, SelectionData selection, String currentSheetName) async {
+
+  Future<void> copySelectionToClipboard(
+    SheetData sheet,
+    SelectionData selection,
+    String currentSheetName,
+  ) async {
     int startRow = selection.primarySelectedCell.x;
     int endRow = selection.primarySelectedCell.x;
     int startCol = selection.primarySelectedCell.y;
@@ -343,6 +549,4 @@ class SheetDataController extends ChangeNotifier {
     final text = buffer.toString();
     await _clipboardService.copy(text);
   }
-
-
 }

@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
 import 'package:flutter/material.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 
 class SpreadsheetKeyboardDelegate {
-  late void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth, {String? initialInput}) startEditing;
+  late void Function(SheetData sheet, Map<String, AnalysisResult> analysisResults, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth, {String? initialInput}) startEditing;
   late void Function(
     SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
@@ -16,14 +17,14 @@ class SpreadsheetKeyboardDelegate {
     bool scrollTo,
   }) setPrimarySelection;
   late Future<void> Function(SheetData sheet, SelectionData selection, String currentSheetName) copySelectionToClipboard;
-  late Future<void> Function(SheetData sheet, SelectionData selection, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth, Map<String, SelectionData> lastSelectionBySheet) pasteSelection;
-  late void Function(SheetData sheet, SelectionData selection, String currentSheetName, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth) delete;
-  late void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth) undo;
-  late void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth) redo;
+  late Future<void> Function(SheetData sheet, Map<String, AnalysisResult> analysisResults, SelectionData selection, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth, Map<String, SelectionData> lastSelectionBySheet) pasteSelection;
+  late void Function(SheetData sheet, Map<String, AnalysisResult> analysisResults, SelectionData selection, String currentSheetName, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth) delete;
+  late void Function(SheetData sheet, Map<String, AnalysisResult> analysisResults, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth) undo;
+  late void Function(SheetData sheet, Map<String, AnalysisResult> analysisResults, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth) redo;
 
   SpreadsheetKeyboardDelegate();
 
-  KeyEventResult handle(BuildContext context, KeyEvent event, SelectionData selection, bool editingMode, SheetData sheet, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth, String currentSheetName) {
+  KeyEventResult handle(BuildContext context, KeyEvent event, SelectionData selection, bool editingMode, SheetData sheet, Map<String, AnalysisResult> analysisResults, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth, String currentSheetName) {
     if (editingMode) {
       return KeyEventResult.ignored;
     }
@@ -41,7 +42,7 @@ class SpreadsheetKeyboardDelegate {
 
     if (logicalKey == LogicalKeyboardKey.enter ||
         logicalKey == LogicalKeyboardKey.numpadEnter) {
-      startEditing(sheet, selection, lastSelectionBySheet, currentSheetName, row1ToScreenBottomHeight, colBToScreenRightWidth);
+      startEditing(sheet, analysisResults, selection, lastSelectionBySheet, currentSheetName, row1ToScreenBottomHeight, colBToScreenRightWidth);
       return KeyEventResult.handled;
     }
 
@@ -98,16 +99,16 @@ class SpreadsheetKeyboardDelegate {
       );
       return KeyEventResult.handled;
     } else if (isControl && keyLabel == 'v') {
-      pasteSelection(sheet, selection, currentSheetName, row1ToScreenBottomHeight, colBToScreenRightWidth, lastSelectionBySheet);
+      pasteSelection(sheet, analysisResults, selection, currentSheetName, row1ToScreenBottomHeight, colBToScreenRightWidth, lastSelectionBySheet);
       return KeyEventResult.handled;
     } else if (keyLabel == 'delete' || keyLabel == 'backspace') {
-      delete(sheet, selection, currentSheetName, lastSelectionBySheet, row1ToScreenBottomHeight, colBToScreenRightWidth);
+      delete(sheet, analysisResults, selection, currentSheetName, lastSelectionBySheet, row1ToScreenBottomHeight, colBToScreenRightWidth);
       return KeyEventResult.handled;
     } else if (isControl && keyLabel == 'z') {
-      undo(sheet, selection, lastSelectionBySheet, currentSheetName, row1ToScreenBottomHeight, colBToScreenRightWidth);
+      undo(sheet, analysisResults, selection, lastSelectionBySheet, currentSheetName, row1ToScreenBottomHeight, colBToScreenRightWidth);
       return KeyEventResult.handled;
     } else if (isControl && keyLabel == 'y') {
-      redo(sheet, selection, lastSelectionBySheet, currentSheetName, row1ToScreenBottomHeight, colBToScreenRightWidth);
+      redo(sheet, analysisResults, selection, lastSelectionBySheet, currentSheetName, row1ToScreenBottomHeight, colBToScreenRightWidth);
       return KeyEventResult.handled;
     }
 
@@ -119,7 +120,7 @@ class SpreadsheetKeyboardDelegate {
         logicalKey.keyId > 32;
 
     if (isPrintable) {
-      startEditing(sheet, selection, lastSelectionBySheet, currentSheetName, row1ToScreenBottomHeight, colBToScreenRightWidth, initialInput: event.character);
+      startEditing(sheet, analysisResults, selection, lastSelectionBySheet, currentSheetName, row1ToScreenBottomHeight, colBToScreenRightWidth, initialInput: event.character);
       return KeyEventResult.handled;
     }
 

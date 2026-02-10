@@ -1,0 +1,310 @@
+import 'dart:async';
+import 'dart:isolate';
+import 'dart:math';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:equatable/equatable.dart';
+
+// -----------------------------------------------------------------------------
+// 1. ISOLATE MANAGER (The "Heavy" Lifter)
+// -----------------------------------------------------------------------------
+
+/// Manages the lifecycles of isolated threads.
+/// This ensures we can explicitly kill threads as requested.
+class IsolateManager {
+  Isolate? _isolateB;
+  Isolate? _isolateC;
+  
+  // We use Completers to handle the "result" promise which we might need to 
+  // abandon if the isolate is killed.
+  ReceivePort? _portB;
+  ReceivePort? _portC;
+
+  /// Task A: Light calculation on Main Thread
+  int runLightCalculationA(int input) {
+    print("Running Light Task A on Main Thread...");
+    // Simulate light work
+    return input; 
+  }
+
+  /// Cancels Isolate B if it is running.
+  void cancelB() {
+    if (_isolateB != null) {
+      print("Cancelling active Isolate B...");
+      _isolateB!.kill(priority: Isolate.immediate);
+      _isolateB = null;
+      _portB?.close();
+    }
+  }
+
+  /// Task B: Heavy calculation in its own thread.
+  /// Returns a Future that completes with the result.
+  Future<int> runHeavyCalculationB(int input) async {
+    // Requirements: "If A starts... cancel B if it was running."
+    // This is handled by the Bloc calling cancelB() before A, 
+    // but we double check here to ensure clean state.
+    cancelB();
+
+    final receivePort = ReceivePort();
+    _portB = receivePort;
+
+    print("Spawning Isolate B...");
+    _isolateB = await Isolate.spawn(_isolateEntryB, [receivePort.sendPort, input]);
+
+    // Wait for the first message
+    try {
+      final result = await receivePort.first;
+      return result as int;
+    } catch (e) {
+      // If port closes or isolate killed
+      throw Exception("Isolate B execution interrupted");
+    } finally {
+      _isolateB = null; // Cleanup
+    }
+  }
+
+  /// Cancels Isolate C if it is running.
+  void cancelC() {
+    if (_isolateC != null) {
+      print("Cancelling active Isolate C...");
+      _isolateC!.kill(priority: Isolate.immediate);
+      _isolateC = null;
+      _portC?.close();
+    }
+  }
+
+  /// Task C: Heavy calculation in its own thread.
+  Future<int> runHeavyCalculationC(int input) async {
+    // Requirement: "If a C was already running, it must be cancelled"
+    cancelC();
+
+    final receivePort = ReceivePort();
+    _portC = receivePort;
+
+    print("Spawning Isolate C...");
+    _isolateC = await Isolate.spawn(_isolateEntryC, [receivePort.sendPort, input]);
+
+    try {
+      final result = await receivePort.first;
+      return result as int;
+    } catch (e) {
+      throw Exception("Isolate C execution interrupted");
+    } finally {
+      _isolateC = null;
+    }
+  }
+}
+
+// --- Top Level / Static Functions for Isolates ---
+// These MUST be top-level functions or static methods.
+
+Future<void> _isolateEntryB(List<dynamic> args) async {
+  SendPort sendPort = args[0];
+  int input = args[1];
+
+  // Simulate HEAVY calculation + API Wait
+  // e.g. await http.get(...)
+  await Future.delayed(const Duration(seconds: 2));
+  
+  // Simple logic: if input is odd, return negative (Update State), else positive (Run C)
+  // Logic tweak for demonstration: 
+  // If input > 50, return -1 (Update State). Else return 100 (Proceed to C).
+  int result = (input > 50) ? -1 : 100;
+  
+  print("Isolate B finished. Result: $result");
+  Isolate.exit(sendPort, result);
+}
+
+Future<void> _isolateEntryC(List<dynamic> args) async {
+  SendPort sendPort = args[0];
+  int input = args[1];
+
+  // Simulate HEAVY calculation
+  await Future.delayed(const Duration(seconds: 3));
+  
+  // C always updates state
+  int result = input + 999; 
+
+  print("Isolate C finished. Result: $result");
+  Isolate.exit(sendPort, result);
+}
+
+// -----------------------------------------------------------------------------
+// 2. BLOC / STATE MANAGEMENT
+// -----------------------------------------------------------------------------
+
+// Events
+abstract class CalcEvent extends Equatable {
+  const CalcEvent();
+}
+class PerformCalculation extends CalcEvent {
+  final int inputValue;
+  const PerformCalculation(this.inputValue);
+  @override
+  List<Object> get props => [inputValue];
+}
+
+// States
+class CalcState extends Equatable {
+  final String status; // "Idle", "Running A", "Running B", "Running C", "Done"
+  final int? result;
+  
+  const CalcState({required this.status, this.result});
+
+  factory CalcState.initial() => const CalcState(status: "Idle", result: 0);
+
+  CalcState copyWith({String? status, int? result}) {
+    return CalcState(
+      status: status ?? this.status,
+      result: result ?? this.result,
+    );
+  }
+
+  @override
+  List<Object?> get props => [status, result];
+}
+
+class CalculationBloc extends Bloc<CalcEvent, CalcState> {
+  final IsolateManager _isolateManager;
+
+  CalculationBloc(this._isolateManager) : super(CalcState.initial()) {
+    on<PerformCalculation>(_onPerformCalculation);
+  }
+
+  Future<void> _onPerformCalculation(
+    PerformCalculation event,
+    Emitter<CalcState> emit,
+  ) async {
+    // 1. "Cancel B if it was running"
+    _isolateManager.cancelB();
+    
+    // Note: We do NOT cancel C here based on requirements, 
+    // unless implicit. Requirements say "If A starts... Cancel B". 
+    // It does not explicitly say cancel C, but usually a new flow invalidates 
+    // the old one. Assuming strict adherence: Only B is cancelled by A.
+    // However, for a clean UI, usually we cancel everything. 
+    // Let's stick strictly to the prompt: "A... cancel B if it was running."
+
+    // 2. Run A (Main Thread)
+    emit(state.copyWith(status: "Running A..."));
+    final int resultA = _isolateManager.runLightCalculationA(event.inputValue);
+
+    // 3. Logic A
+    // "If A result is negative, it updates the state."
+    if (resultA < 0) {
+      emit(state.copyWith(status: "Finished at A", result: resultA));
+      return;
+    }
+
+    // "Otherwise, B runs."
+    emit(state.copyWith(status: "Running B (Heavy)..."));
+    
+    try {
+      // 4. Run B (Isolated)
+      final int resultB = await _isolateManager.runHeavyCalculationB(resultA);
+      
+      // 5. Logic B
+      // "If B result is negative, it updates the state."
+      if (resultB < 0) {
+        emit(state.copyWith(status: "Finished at B", result: resultB));
+        return;
+      }
+
+      // "Otherwise, C runs."
+      // "If a C was already running, it must be cancelled and a new C starts"
+      // This is handled inside runHeavyCalculationC implementation using cancelC()
+      emit(state.copyWith(status: "Running C (Heavy)..."));
+
+      // 6. Run C (Isolated)
+      final int resultC = await _isolateManager.runHeavyCalculationC(resultB);
+
+      // "C result updates the state."
+      emit(state.copyWith(status: "Finished at C", result: resultC));
+
+    } catch (e) {
+      // This catches cancellation errors or execution errors
+      print("Calculation interrupted or failed: $e");
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 3. UI LAYER
+// -----------------------------------------------------------------------------
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: RepositoryProvider(
+        create: (context) => IsolateManager(),
+        child: BlocProvider(
+          create: (context) => CalculationBloc(context.read<IsolateManager>()),
+          child: const CalculationPage(),
+        ),
+      ),
+    );
+  }
+}
+
+class CalculationPage extends StatelessWidget {
+  const CalculationPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Scalable Isolates Demo")),
+      body: Center(
+        child: BlocBuilder<CalculationBloc, CalcState>(
+          builder: (context, state) {
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Status: ${state.status}',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Result: ${state.result}',
+                  style: Theme.of(context).textTheme.displayMedium,
+                ),
+                const SizedBox(height: 50),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Button 1: Triggers flow where A returns Negative (Ends at A)
+                    ElevatedButton(
+                      onPressed: () {
+                         context.read<CalculationBloc>().add(const PerformCalculation(-10));
+                      },
+                      child: const Text("Run (End at A)"),
+                    ),
+                    const SizedBox(width: 20),
+                    // Button 2: Triggers flow where A is Positive -> B
+                    ElevatedButton(
+                      onPressed: () {
+                        // Input 20: A=20 (>0) -> B runs
+                        // If B(20) returns >0 -> C runs.
+                        context.read<CalculationBloc>().add(const PerformCalculation(20));
+                      },
+                      child: const Text("Run (Go to B/C)"),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Text("Press 'Go to B/C' repeatedly to test Cancellation."),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}

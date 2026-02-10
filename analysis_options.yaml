@@ -21,6 +21,7 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
+    - avoid_unused_constructor_parameters
     # - parameter_assignments
     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
@@ -33,5 +34,20 @@ analyzer:
   errors:
     # This targets unused parameters in private methods
     unused_element_parameter: warning
+
+    # Treat unused local variables as warnings
+    unused_local_variable: warning
+    
+    # Treat unused private members (functions, classes, fields) as warnings
+    unused_element: warning
+    
+    # Treat unused imports as warnings
+    unused_import: warning
+    
+    # Treat unused fields in classes as warnings
+    unused_field: warning
+    
+    # Treat unused catch clauses (e.g., inside try/catch) as warnings
+    unused_catch_clause: warning
   plugins:
     - custom_lint

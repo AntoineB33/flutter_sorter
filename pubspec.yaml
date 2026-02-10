@@ -57,6 +57,7 @@ dependencies:
   fpdart: ^1.1.0
   web_socket_channel: ^3.0.3
   crypto: ^3.0.7
+  flutter_bloc: ^8.1.0
 
 dev_dependencies:
   flutter_test:

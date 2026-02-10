@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/layout_calculator.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
@@ -18,7 +19,7 @@ class GridController {
     double ? visibleWidth,
     bool notify,
     bool save}) updateRowColCount;
-  late bool Function() canBeSorted;
+  late bool Function(SheetData sheet, AnalysisResult result) canBeSorted;
   late String Function(List<List<String>> table, int row, int col) getCellContent;
 
   final SpreadsheetLayoutCalculator _layoutCalculator =
@@ -269,15 +270,15 @@ class GridController {
     );
   }
 
-  bool isRowValid(SheetContent sheetContent, List<bool> isMedium, int rowId) {
-    if (canBeSorted()) {
+  bool isRowValid(SheetData sheet, List<bool> isMedium, int rowId, AnalysisResult result) {
+    if (canBeSorted(sheet, result)) {
       return isMedium[rowId];
     }
     if (rowId == 0) {
       return false;
     }
-    for (int srcColId = 0; srcColId < colCount(sheetContent); srcColId++) {
-      if (GetNames.isSourceColumn(sheetContent.columnTypes[srcColId]) && getCellContent(sheetContent.table, rowId, srcColId).isNotEmpty) {
+    for (int srcColId = 0; srcColId < colCount(sheet.sheetContent); srcColId++) {
+      if (GetNames.isSourceColumn(sheet.sheetContent.columnTypes[srcColId]) && getCellContent(sheet.sheetContent.table, rowId, srcColId).isNotEmpty) {
         return true;
       }
     }

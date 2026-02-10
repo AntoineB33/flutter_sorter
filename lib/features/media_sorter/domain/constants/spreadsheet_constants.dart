@@ -11,7 +11,8 @@ class SpreadsheetConstants {
   static const first = "-fst";
   static const last = "-lst";
   static const animationDurationMs = 100;
-  static const saveDelayMs = 500;
+  static const saveSheetDelayMs = 1000;
+  static const saveAnalysisResultDelayMs = 1000;
   static const historyMaxLength = 100;
 
   static const all = -1;
@@ -41,6 +42,7 @@ class SpreadsheetConstants {
   static const folderName = 'media_sorter';
   static const sheetsIndexFileName = 'sheets_index.json';
   static const allLastSelectedFileName = 'all_last_selected.json';
+  static const allAnalysisResultsFileName = 'all_analysis_results.json';
   static const lastOpenedSheetNameKey = 'lastOpenedSheetName';
   static const lastSelectedCellKey = 'lastSelectedCell';
 

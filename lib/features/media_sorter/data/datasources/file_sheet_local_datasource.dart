@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 
 class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   @override
@@ -141,10 +142,44 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
       const Duration(milliseconds: SpreadsheetConstants.debugDelayMs),
     );
     final directory = await getApplicationDocumentsDirectory();
-    final file = File('${directory.path}/media_sorter/all_last_selected.json');
+    final file = File('${directory.path}/${SpreadsheetConstants.folderName}/${SpreadsheetConstants.allLastSelectedFileName}');
     await file.create(recursive: true);
     final jsonString = jsonEncode(lastSelected);
     await file.writeAsString(jsonString);
+  }
+
+  @override
+  Future<AnalysisResult> getAnalysisResult(String sheetName) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File(
+      '${directory.path}/${SpreadsheetConstants.folderName}/analysis_$sheetName.json',
+    );
+    try {
+      final jsonString = await file.readAsString();
+      var decoded = jsonDecode(jsonString);
+      return AnalysisResult.fromJson(decoded);
+    } catch (e) {
+      debugPrint("Error decoding JSON for analysis result of sheet $sheetName: $e");
+      return AnalysisResult.empty();
+    }
+  }
+
+  @override
+  Future<void> saveAnalysisResult(String sheetName, AnalysisResult result) async {
+    try {
+      await Future.delayed(
+        const Duration(milliseconds: SpreadsheetConstants.debugDelayMs),
+      );
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File(
+        '${directory.path}/${SpreadsheetConstants.folderName}/analysis_$sheetName.json',
+      );
+      await file.create(recursive: true);
+      final jsonString = jsonEncode(result.toJson());
+      await file.writeAsString(jsonString);
+    } catch (e) {
+      throw Exception("Error saving analysis result: $e");
+    }
   }
 
   @override

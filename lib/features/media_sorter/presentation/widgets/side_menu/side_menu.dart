@@ -2,7 +2,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
 import 'analysis_tree_node.dart';
@@ -64,8 +63,6 @@ class _SideMenuState extends State<SideMenu> {
   Widget build(BuildContext context) {
     final WorkbookController workbookController =
         Provider.of<WorkbookController>(context);
-    final SortController sortController =
-        Provider.of<SortController>(context);
     final TreeController treeController =
         Provider.of<TreeController>(context);
 
@@ -96,7 +93,7 @@ class _SideMenuState extends State<SideMenu> {
             children: [
               // Existing Button (Now with background)
               ElevatedButton(
-                onPressed: sortController.canBeSorted()
+                onPressed: workbookController.canBeSorted()
                     ? workbookController.sortMedia
                     : null,
                 style: ElevatedButton.styleFrom(
@@ -110,7 +107,7 @@ class _SideMenuState extends State<SideMenu> {
               const SizedBox(width: 12), // Adds spacing between the two buttons
               // New Button to the right
               ElevatedButton(
-                onPressed: sortController.canBeSorted()
+                onPressed: workbookController.canBeSorted()
                     ? workbookController.findBestSortToggle
                     : null,
                 style: ElevatedButton.styleFrom(

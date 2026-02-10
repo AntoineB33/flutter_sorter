@@ -27,9 +27,8 @@ class NodeStruct {
     int? rowId,
     int? colId,
     String? name,
-    Attribute? att,
+    this.att,
     Cell? cell,
-    Attribute? attribute,
     List<Cell>? cells,
     this.dist,
     this.minDist,
@@ -44,13 +43,13 @@ class NodeStruct {
       if (this.colId != null) {
         this.cell ??= Cell(rowId: this.rowId!, colId: this.colId!);
       }
-      this.att ??= Attribute.row(this.rowId!);
+      att ??= Attribute.row(this.rowId!);
     } else {
       if (this.colId != null) {
-        this.att ??= Attribute(colId: this.colId, name: this.name);
+        att ??= Attribute(colId: this.colId, name: this.name);
       } else {
         if (this.name != null) {
-          this.att ??= Attribute(name: this.name);
+          att ??= Attribute(name: this.name);
         }
       }
     }

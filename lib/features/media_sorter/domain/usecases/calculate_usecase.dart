@@ -13,6 +13,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/column_type
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 
 class Cols {
   final List<int> colIndexes = [];
@@ -85,7 +86,6 @@ class CalculateUsecase {
   int get colCount => rowCount > 0 ? _sheetContent!.table[0].length : 0;
 
   final List<ColumnType> columnTypes0;
-  Set<int> sourceColIndices = {};
 
   CalculateUsecase(IsolateMessage message)
     : dataPackage = message.table,
@@ -94,6 +94,7 @@ class CalculateUsecase {
   AnalysisResult run() {
     _decodeData(dataPackage);
     _getEverything();
+    getRules(result);
     return result;
   }
 
@@ -519,8 +520,10 @@ class CalculateUsecase {
 
     isMedium..clear()..addAll(List<bool>.filled(rowCount, false));
     for (int rowId = 1; rowId < rowCount; rowId++) {
-      for (int colId in sourceColIndices) {
-        isMedium[rowId] = isMedium[rowId] || table[rowId][colId].isNotEmpty;
+      for (int colId = 0; colId < colCount; colId++) {
+        if (GetNames.isSourceColumn(columnTypes[colId])) {
+          isMedium[rowId] = isMedium[rowId] || table[rowId][colId].isNotEmpty;
+        }
       }
     }
 
@@ -1620,4 +1623,31 @@ class CalculateUsecase {
     }
     _getCategories();
   }
+  
+  void getRules(AnalysisResult result) {
+    int nVal = result.instrTable.length;
+    result.myRules = {};
+    for (int rowId = 0; rowId < nVal; rowId++) {
+      result.myRules[rowId] = [];
+      for (final instr in result.instrTable[rowId].keys) {
+        if (!instr.isConstraint) {
+          continue;
+        }
+        for (int target in instr.numbers) {
+          for (final interval in instr.intervals) {
+            int minVal = interval[0];
+            int maxVal = interval[1];
+            result.myRules[rowId]!.add(
+              SortingRule(
+                minVal: minVal,
+                maxVal: maxVal,
+                relativeTo: target,
+              ),
+            );
+          }
+        }
+      }
+    }
+  }
+
 }
