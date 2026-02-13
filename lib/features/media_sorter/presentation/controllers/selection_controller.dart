@@ -97,7 +97,6 @@ class SelectionController extends ChangeNotifier {
 
   void updateRowColCount(
     SheetData sheet,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName, {
     double? visibleHeight,
@@ -105,6 +104,11 @@ class SelectionController extends ChangeNotifier {
     bool notify = true,
     bool save = true,
   }) {
+    SelectionData? selection = lastSelectionBySheet[currentSheetName];
+    if (selection == null) {
+      debugPrint("No selection data found for current sheet when updating row/col count");
+      return;
+    }
     var (targetRows, targetCols) = getNewRowColCount(
       selection,
       sheet,
@@ -223,13 +227,13 @@ class SelectionController extends ChangeNotifier {
 
   void stopEditing(
     SheetData sheet,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName, {
     bool updateHistory = true,
     bool notify = true,
   }) {
-    selection.editingMode = false;
+    if (!lastSelectionBySheet[currentSheetName]!.editingMode) { return; }
+    lastSelectionBySheet[currentSheetName]!.editingMode = false;
     saveLastSelection(lastSelectionBySheet, currentSheetName);
     if (notify) {
       notifyListeners();
@@ -244,13 +248,16 @@ class SelectionController extends ChangeNotifier {
   void startEditing(
     SheetData sheet,
     Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
     double row1ToScreenBottomHeight,
     double colBToScreenRightWidth, {
     String? initialInput,
   }) {
+    SelectionData selection = lastSelectionBySheet[currentSheetName]!;
+    if (selection.findingBestSort) {
+      return;
+    }
     selection.previousContent = getCellContent(
       sheet.sheetContent.table,
       selection.primarySelectedCell.x,

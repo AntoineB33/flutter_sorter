@@ -57,6 +57,7 @@ class WorkbookController extends ChangeNotifier {
   int get tableViewRows => selection.tableViewRows;
   int get tableViewCols => selection.tableViewCols;
   AnalysisResult get result => analysisResults[currentSheetName] ?? AnalysisResult.empty();
+  bool get isBestSort => result.isBestSort;
   List<List<String>> get table => sheet.sheetContent.table;
   int get rowCount => table.length;
   int get colCount => table.isNotEmpty ? table[0].length : 0;
@@ -75,7 +76,7 @@ class WorkbookController extends ChangeNotifier {
   // Point<int> get primarySelectedCell =>
   //     _selectionController.primarySelectedCell;
   String get previousContent => selection.previousContent;
-  bool get findingBestSort => _sortController.findingBestSort;
+  bool get findingBestSort => selection.findingBestSort;
   double get scrollOffsetX => selection.scrollOffsetX;
   double get scrollOffsetY => selection.scrollOffsetY;
   Point<int> get primarySelectedCell => selection.primarySelectedCell;
@@ -94,11 +95,11 @@ class WorkbookController extends ChangeNotifier {
   }
 
   void sortMedia() {
-    _sortController.sortMedia(sheet, analysisResults, selection, lastSelectionBySheet, currentSheetName, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth);
+    _sortController.sortMedia(sheet, analysisResults, lastSelectionBySheet, currentSheetName, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth);
   }
 
   void findBestSortToggle() {
-    _sortController.findBestSortToggle(sheet, result, selection, lastSelectionBySheet, currentSheetName, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth);
+    _sortController.findBestSortToggle(sheet, analysisResults, lastSelectionBySheet, currentSheetName, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth);
   }
 
   double getTargetTop(int row) {
@@ -115,7 +116,6 @@ class WorkbookController extends ChangeNotifier {
     bool save = true,}) {
     _selectionController.updateRowColCount(
       sheet,
-      selection,
       lastSelectionBySheet,
       currentSheetName,
       visibleHeight: visibleHeight,
@@ -150,7 +150,7 @@ class WorkbookController extends ChangeNotifier {
   }
 
   bool isRowValid(int row) {
-    return _gridController.isRowValid(sheet, result.isMedium, row, result);
+    return _gridController.isRowValid(sheet, row, result);
   }
 
   bool isPrimarySelectedCell(int row, int col) {
@@ -162,7 +162,7 @@ class WorkbookController extends ChangeNotifier {
   }
 
   void stopEditing({bool updateHistory = true, bool notify = true}) {
-    _selectionController.stopEditing(sheet, selection, lastSelectionBySheet, currentSheetName);
+    _selectionController.stopEditing(sheet, lastSelectionBySheet, currentSheetName);
   }
 
   void setPrimarySelection(int row, int col, bool keepSelection, bool scrollTo) {
@@ -170,7 +170,7 @@ class WorkbookController extends ChangeNotifier {
   }
 
   void startEditing({String? initialInput}) {
-    _selectionController.startEditing(sheet, analysisResults, selection, lastSelectionBySheet, currentSheetName, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth, initialInput: initialInput);
+    _selectionController.startEditing(sheet, analysisResults, lastSelectionBySheet, currentSheetName, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth, initialInput: initialInput);
   }
 
   void onChanged(String newValue) {
@@ -178,11 +178,11 @@ class WorkbookController extends ChangeNotifier {
   }
 
   void updateCell(int row, int col, String newValue) {
-    _dataController.updateCell(sheet, selection, lastSelectionBySheet, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth, currentSheetName, row, col, newValue);
+    _dataController.updateCell(sheet, lastSelectionBySheet, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth, currentSheetName, row, col, newValue);
   }
 
   void setColumnType(int col, ColumnType type) {
-    _dataController.setColumnType(sheet, analysisResults, selection, lastSelectionBySheet, currentSheetName, col, type);
+    _dataController.setColumnType(sheet, analysisResults, lastSelectionBySheet, currentSheetName, col, type);
   }
 
   void applyDefaultColumnSequence() {
@@ -318,6 +318,13 @@ class WorkbookController extends ChangeNotifier {
         );
       }
     }
+    for (var name in sheetNames) {
+      if (!lastSelectionBySheet.containsKey(name)) {
+        lastSelectionBySheet[name] = SelectionData.empty();
+        saveLastSelectionBySheet = true;
+        debugPrint("No last selection saved for sheet $name");
+      }
+    }
 
     // --- get last selection for current sheet ---
     _selectionController.getLastSelection(lastSelectionBySheet, currentSheetName);
@@ -334,6 +341,11 @@ class WorkbookController extends ChangeNotifier {
     }
 
     loadSheetByName(currentSheetName, init: true);
+    for (var name in sheetNames) {
+      if (lastSelectionBySheet[name]!.findingBestSort) {
+        _sortController.findBestSortToggle(loadedSheetsData[name]!, analysisResults, lastSelectionBySheet, name, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth);
+      }
+    }
   }
 
   
@@ -379,7 +391,7 @@ class WorkbookController extends ChangeNotifier {
 
     // Trigger Controller updates
     _selectionController.updateRowColCount(
-      sheet, selection, lastSelectionBySheet, currentSheetName,
+      sheet, lastSelectionBySheet, currentSheetName,
       visibleHeight:
           selection.scrollOffsetX +
           _gridController.row1ToScreenBottomHeight,
@@ -395,7 +407,7 @@ class WorkbookController extends ChangeNotifier {
       animate: true,
     );
     if (!sheet.calculated) {
-      _sortController.calculate(sheet, analysisResults, selection, lastSelectionBySheet, currentSheetName);
+      _sortController.calculate(sheet, analysisResults, lastSelectionBySheet, currentSheetName);
     }
     notifyListeners();
   }
@@ -414,5 +426,9 @@ class WorkbookController extends ChangeNotifier {
 
   bool canBeSorted() {
     return _sortController.canBeSorted(sheet, result);
+  }
+
+  bool sorted() {
+    return false;
   }
 }

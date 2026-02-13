@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:trying_flutter/features/media_sorter/data/models/selection_data.
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
@@ -12,9 +14,9 @@ import 'package:trying_flutter/features/media_sorter/domain/services/sorting_ser
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/parse_paste_data_usecase.dart';
 import 'dart:async';
-import 'dart:isolate';
 
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/services/isolate_service.dart';
 
 class ThreadResult {
   final AnalysisResult result;
@@ -24,23 +26,13 @@ class ThreadResult {
 }
 
 class SortController extends ChangeNotifier {
-  bool findingBestSort = false;
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
+  final Map<String, IsolateService> _isolateServices = {};
 
-  Isolate? _isolateB;
-  Isolate? _isolateC;
-
-  // We use Completers to handle the "result" promise which we might need to
-  // abandon if the isolate is killed.
-  ReceivePort? _portB;
-  ReceivePort? _portC;
-  
   final SaveSheetDataUseCase _saveSheetDataUseCase;
-    
 
   late void Function(
     SheetData sheet,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName, {
     bool updateHistory,
@@ -50,13 +42,13 @@ class SortController extends ChangeNotifier {
   late void Function(
     SheetData sheet,
     Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     double row1ToScreenBottomHeight,
     double colBToScreenRightWidth,
     String currentSheetName,
-    List<CellUpdate> updates,
-  )
+    List<CellUpdate> updates, {
+    bool toCalculate,
+  })
   setTable;
   late void Function(AnalysisResult result, Point<int> primarySelectedCell)
   onAnalysisComplete;
@@ -73,13 +65,31 @@ class SortController extends ChangeNotifier {
     result.bestMediaSortOrder = null;
   }
 
-  void setBestMediaSortOrder(AnalysisResult result, List<int> order) {
-    result.bestMediaSortOrder = order;
+  void setBestMediaSortOrder(
+    Map<String, AnalysisResult> analysisResults,
+    List<int> order,
+    SheetData sheet,
+    Map<String, SelectionData> lastSelectionBySheet,
+    String currentSheetName,
+    double row1ToScreenBottomHeight,
+    double colBToScreenRightWidth,
+  ) {
+    analysisResults[currentSheetName]!.bestMediaSortOrder = order;
+    sortMedia(
+      sheet,
+      analysisResults,
+      lastSelectionBySheet,
+      currentSheetName,
+      row1ToScreenBottomHeight,
+      colBToScreenRightWidth,
+    );
   }
 
   bool canBeSorted(SheetData sheet, AnalysisResult result) {
     debugPrint("hey");
-    return sheet.calculated && result.bestMediaSortOrder != null;
+    return sheet.calculated &&
+        result.bestMediaSortOrder != null &&
+        !result.sorted;
   }
 
   bool lightCalculations(AnalysisResult result) {
@@ -89,7 +99,6 @@ class SortController extends ChangeNotifier {
   Future<void> calculate(
     SheetData sheet,
     Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
   ) async {
@@ -98,113 +107,42 @@ class SortController extends ChangeNotifier {
       return;
     }
     clear(result);
-    cancelB();
-    ThreadResult resultB = await runHeavyCalculationB(
-      sheet.sheetContent,
-      result,
-    );
+    _isolateServices[currentSheetName] ??= IsolateService();
+    _isolateServices[currentSheetName]!.cancelB();
+    ThreadResult resultB = await _isolateServices[currentSheetName]!
+        .runHeavyCalculationB(sheet.sheetContent, result);
     analysisResults[currentSheetName] = resultB.result;
+    result = resultB.result;
     if (resultB.startSorter) {
-      result.bestMediaSortOrder = await runHeavyCalculationC(result);
+      result.bestMediaSortOrder = await _isolateServices[currentSheetName]!
+          .runHeavyCalculationC(result);
     }
     sheet.calculated = true;
     saveAnalysisResult(currentSheetName, result);
-    onAnalysisComplete(result, selection.primarySelectedCell);
+    onAnalysisComplete(
+      result,
+      lastSelectionBySheet[currentSheetName]!.primarySelectedCell,
+    );
     notifyListeners();
   }
 
-  Future<void> saveAnalysisResult(String sheetName, AnalysisResult result) async {
-    if (_saveExecutors[sheetName] == null) {
-      _saveExecutors[sheetName] = ManageWaitingTasks<void>();
-    }
+  Future<void> saveAnalysisResult(
+    String sheetName,
+    AnalysisResult result,
+  ) async {
+    _saveExecutors[sheetName] ??= ManageWaitingTasks<void>();
     _saveExecutors[sheetName]!.execute(() async {
       await _saveSheetDataUseCase.saveAnalysisResult(sheetName, result);
-      await Future.delayed(Duration(milliseconds: SpreadsheetConstants.saveAnalysisResultDelayMs));
+      await Future.delayed(
+        Duration(milliseconds: SpreadsheetConstants.saveAnalysisResultDelayMs),
+      );
     });
   }
 
-  static Future<void> _isolateEntryC(List<dynamic> args) async {
-    SendPort sendPort = args[0];
-    AnalysisResult result = args[1];
-
-    result.bestMediaSortOrder = await solveSatisfaction(
-      result,
-    );
-
-    Isolate.exit(sendPort, result.bestMediaSortOrder);
-  }
-
-  void cancelC() {
-    if (_isolateC != null) {
-      _isolateC!.kill(priority: Isolate.immediate);
-      _isolateC = null;
-      _portC?.close();
-    }
-  }
-
-  Future<List<int>?> runHeavyCalculationC(AnalysisResult result) async {
-    cancelC();
-
-    final receivePort = ReceivePort();
-    _portC = receivePort;
-
-    _isolateC = await Isolate.spawn(_isolateEntryC, [
-      receivePort.sendPort,
-      result,
-    ]);
-
-    try {
-      final result = await receivePort.first;
-      return result as List<int>?;
-    } catch (e) {
-      throw Exception("Isolate C execution interrupted");
-    } finally {
-      _isolateC = null;
-    }
-  }
-
-  Future<ThreadResult> runHeavyCalculationB(
-    SheetContent sheetContent,
+  static Future<SortingResponse?> solveSatisfaction(
     AnalysisResult result,
   ) async {
-    // Requirements: "If A starts... cancel B if it was running."
-    // This is handled by the Bloc calling cancelB() before A,
-    // but we double check here to ensure clean state.
-
-    final receivePort = ReceivePort();
-    _portB = receivePort;
-
-    _isolateB = await Isolate.spawn(CalculationService.runCalculation, [
-      receivePort.sendPort,
-      sheetContent,
-      result,
-    ]);
-
-    // Wait for the first message
-    try {
-      AnalysisResult result = await receivePort.first;
-      bool startSorter = true;
-      return ThreadResult(result, startSorter);
-    } catch (e) {
-      // If port closes or isolate killed
-      throw Exception("Isolate B execution interrupted");
-    } finally {
-      _isolateB = null; // Cleanup
-    }
-  }
-
-  void cancelB() {
-    if (_isolateB != null) {
-      _isolateB!.kill(priority: Isolate.immediate);
-      _isolateB = null;
-      _portB?.close();
-    }
-  }
-
-  static Future<List<int>?> solveSatisfaction(
-    AnalysisResult result,
-  ) async {
-    int nVal = result.instrTable.length;
+    int nVal = result.tableToAtt.length;
     if (result.errorRoot.newChildren!.isNotEmpty || nVal == 0) {
       return null;
     }
@@ -216,6 +154,7 @@ class SortController extends ChangeNotifier {
       await for (final solution in service.solveSortingStream(
         nVal,
         result.myRules,
+        checkNaturalOrder: true,
       )) {
         return solution;
       }
@@ -229,22 +168,112 @@ class SortController extends ChangeNotifier {
     return null;
   }
 
+  void sortResult(
+    Map<String, AnalysisResult> analysisResults,
+    String currentSheetName,
+    List<int> sortOrder,
+  ) {
+    AnalysisResult result = analysisResults[currentSheetName]!;
+    int rowCount = result.tableToAtt.length;
+    if (rowCount == 0) {
+      return;
+    }
+    int colCount = result.tableToAtt[0].length;
+    List<int> newInd = List.filled(rowCount, 0);
+    for (int i = 0; i < rowCount; i++) {
+      newInd[sortOrder[i]] = i;
+    }
+    result.tableToAtt = List.generate(
+      rowCount,
+      (i) => List.generate(
+        colCount,
+        (j) => HashSet<Attribute>.from(
+          result.tableToAtt[sortOrder[i]][j].map(
+            (e) => e.rowId != null ? Attribute.row(newInd[e.rowId!]) : e,
+          ),
+        ),
+      ),
+    );
+    result.names.forEach((key, value) {
+      value.rowId = newInd[value.rowId];
+    });
+    result.formatedTable = List.generate(
+      rowCount,
+      (i) => List.generate(
+        colCount,
+        (j) => StrInt(
+          strings: result.formatedTable[sortOrder[i]][j].strings,
+          integers: result.formatedTable[sortOrder[i]][j].integers
+              .map((e) => newInd[e])
+              .toList(),
+        ),
+      ),
+    );
+    result.attToRefFromAttColToCol.forEach((key, value) {
+      if (key.rowId != null) {
+        key.rowId = newInd[key.rowId!];
+      }
+      value = Map.fromEntries(
+        value.entries.map((e) => MapEntry(newInd[e.key], e.value)),
+      );
+    });
+    result.attToRefFromDepColToCol.forEach((key, value) {
+      if (key.rowId != null) {
+        key.rowId = newInd[key.rowId!];
+      }
+      value = Map.fromEntries(
+        value.entries.map((e) => MapEntry(newInd[e.key], e.value)),
+      );
+    });
+    for (int id = 0; id < result.validRowIndexes.length; id++) {
+      result.validRowIndexes[id] = newInd[result.validRowIndexes[id]];
+    }
+    result.colToAtt = Map.fromEntries(
+      result.colToAtt.entries.map(
+        (e) => MapEntry(
+          e.key,
+          HashSet<Attribute>.from(
+            e.value.map(
+              (att) =>
+                  att.rowId != null ? Attribute.row(newInd[att.rowId!]) : att,
+            ),
+          ),
+        ),
+      ),
+    );
+    result.myRules = Map.fromEntries(
+      result.myRules.entries.map(
+        (e) => MapEntry(
+          newInd[e.key],
+          Map.fromEntries(
+            e.value.entries.map(
+              (innerE) => MapEntry(
+                newInd[innerE.key],
+                innerE.value,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    result.groupsToMaximize = result.groupsToMaximize
+        .map((group) => group.map((id) => newInd[id]).toList())
+        .toList();
+    result.validAreas = List.generate(
+      rowCount,
+      (i) => result.validAreas[sortOrder[i]]
+    );
+  }
+
   void sortMedia(
     SheetData sheet,
     Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
     double row1ToScreenBottomHeight,
     double colBToScreenRightWidth,
   ) {
-    stopEditing(
-      sheet,
-      selection,
-      lastSelectionBySheet,
-      currentSheetName,
-      notify: false,
-    );
+    stopEditing(sheet, lastSelectionBySheet, currentSheetName, notify: false);
     List<int> sortOrder = [0];
     AnalysisResult result = analysisResults[currentSheetName]!;
     List<int> stack = result.bestMediaSortOrder!
@@ -254,7 +283,6 @@ class SortController extends ChangeNotifier {
         .toList()
         .reversed
         .toList();
-    final rowToRowRefs = result.rowToRefFromAttCol;
     final table = sheet.sheetContent.table;
     List<int> added = List.filled(table.length, 0);
     for (int i in stack) {
@@ -269,10 +297,10 @@ class SortController extends ChangeNotifier {
           stack.removeLast();
           continue;
         }
-        for (int ref in rowToRowRefs[current]) {
-          if (added[ref] != 2) {
-            stack.add(ref);
-            added[ref] = 1;
+        for (Attribute ref in result.tableToAtt[current].expand((i) => i).toList()) {
+          if (ref.isRow() && added[ref.rowId!] != 2) {
+            stack.add(ref.rowId!);
+            added[ref.rowId!] = 1;
           }
         }
         if (stack[stack.length - 1] == current) {
@@ -305,7 +333,9 @@ class SortController extends ChangeNotifier {
             break;
           }
           sortedTable[rowId][colId] +=
-              toNewPlacement[result.formatedTable[rowId][colId].integers[splitId]];
+              toNewPlacement[result
+                  .formatedTable[rowId][colId]
+                  .integers[splitId]];
         }
       }
     }
@@ -317,70 +347,70 @@ class SortController extends ChangeNotifier {
         );
       }
     }
+    sortResult(analysisResults, currentSheetName, sortOrder);
     setTable(
       sheet,
       analysisResults,
-      selection,
       lastSelectionBySheet,
       row1ToScreenBottomHeight,
       colBToScreenRightWidth,
       currentSheetName,
       updates,
+      toCalculate: false,
     );
   }
 
   Future<void> findBestSortToggle(
     SheetData sheet,
-    AnalysisResult result,
-    SelectionData selection,
+    Map<String, AnalysisResult> analysisResults,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
     double row1ToScreenBottomHeight,
     double colBToScreenRightWidth,
   ) async {
-    stopEditing(
-      sheet,
-      selection,
-      lastSelectionBySheet,
-      currentSheetName,
-      notify: false,
-    );
-    if (findingBestSort) {
-      findingBestSort = false;
-    } else {
-      findingBestSort = true;
-      stopEditing(
-        sheet,
-        selection,
-        lastSelectionBySheet,
-        currentSheetName,
-        notify: false,
-      );
-      int nVal = result.instrTable.length;
-      if (result.errorRoot.newChildren!.isNotEmpty || nVal == 0) {
-        return;
-      }
-      final service = SortingService();
+    if (lastSelectionBySheet[currentSheetName]!.findingBestSort) {
+      lastSelectionBySheet[currentSheetName]!.findingBestSort = false;
+      notifyListeners();
+      return;
+    }
+    stopEditing(sheet, lastSelectionBySheet, currentSheetName, notify: false);
+    lastSelectionBySheet[currentSheetName]!.findingBestSort = true;
+    AnalysisResult result = analysisResults[currentSheetName]!;
+    int nVal = result.tableToAtt.length;
+    if (result.errorRoot.newChildren!.isNotEmpty || nVal == 0) {
+      return;
+    }
+    final service = SortingService();
 
-      try {
-        // await for pauses the execution of this function
-        // until the stream is closed by the server.
-        await for (final solution in service.solveSortingStream(
-          nVal,
-          result.myRules,
-          maximizeBetween: result.maximizeBetween,
-        )) {
-          setBestMediaSortOrder(result, solution);
+    try {
+      // await for pauses the execution of this function
+      // until the stream is closed by the server.
+      await for (final solution in service.solveSortingStream(
+        nVal,
+        result.myRules,
+        groupsToMaximize: result.groupsToMaximize,
+      )) {
+        if (!lastSelectionBySheet[currentSheetName]!.findingBestSort) {
+          // If the user has toggled off the "finding best sort" mode, we should stop processing results.
+          break;
         }
-      } catch (error) {
-        clear(result);
-        result.errorRoot.newChildren!.add(
-          NodeStruct(
-            message:
-                "Could not find a valid sorting satisfying all constraints.",
-          ),
+        setBestMediaSortOrder(
+          analysisResults,
+          solution.sortedIds,
+          sheet,
+          lastSelectionBySheet,
+          currentSheetName,
+          row1ToScreenBottomHeight,
+          colBToScreenRightWidth,
         );
       }
+    } catch (error) {
+      clear(result);
+      result.errorRoot.newChildren!.add(
+        NodeStruct(
+          message: "Could not find a valid sorting satisfying all constraints.",
+        ),
+      );
     }
   }
 }

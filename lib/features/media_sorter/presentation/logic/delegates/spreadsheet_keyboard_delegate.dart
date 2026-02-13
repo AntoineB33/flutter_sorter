@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 
 class SpreadsheetKeyboardDelegate {
-  late void Function(SheetData sheet, Map<String, AnalysisResult> analysisResults, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth, {String? initialInput}) startEditing;
+  late void Function(SheetData sheet, Map<String, AnalysisResult> analysisResults, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth, {String? initialInput}) startEditing;
   late void Function(
     SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
@@ -42,7 +42,7 @@ class SpreadsheetKeyboardDelegate {
 
     if (logicalKey == LogicalKeyboardKey.enter ||
         logicalKey == LogicalKeyboardKey.numpadEnter) {
-      startEditing(sheet, analysisResults, selection, lastSelectionBySheet, currentSheetName, row1ToScreenBottomHeight, colBToScreenRightWidth);
+      startEditing(sheet, analysisResults, lastSelectionBySheet, currentSheetName, row1ToScreenBottomHeight, colBToScreenRightWidth);
       return KeyEventResult.handled;
     }
 
@@ -120,7 +120,7 @@ class SpreadsheetKeyboardDelegate {
         logicalKey.keyId > 32;
 
     if (isPrintable) {
-      startEditing(sheet, analysisResults, selection, lastSelectionBySheet, currentSheetName, row1ToScreenBottomHeight, colBToScreenRightWidth, initialInput: event.character);
+      startEditing(sheet, analysisResults, lastSelectionBySheet, currentSheetName, row1ToScreenBottomHeight, colBToScreenRightWidth, initialInput: event.character);
       return KeyEventResult.handled;
     }
 

@@ -11,13 +11,13 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update.dart
 
 // --- Manager Class ---
 class HistoryController extends ChangeNotifier {
-  late void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth, String currentSheetName, int row, int col, String newValue, {
+  late void Function(SheetData sheet, Map<String, SelectionData> lastSelectionBySheet, double row1ToScreenBottomHeight, double colBToScreenRightWidth, String currentSheetName, int row, int col, String newValue, {
     bool onChange,
     bool historyNavigation,
     bool keepPrevious,
   }) updateCell;
-  late void Function(SheetData sheet, Map<String, AnalysisResult> analysisResults, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, int col, ColumnType type, {bool updateHistory}) setColumnType;
-  late void Function(SheetData sheet, Map<String, AnalysisResult> analysisResults, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {bool save, bool updateHistory}) saveAndCalculate;
+  late void Function(SheetData sheet, Map<String, AnalysisResult> analysisResults, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, int col, ColumnType type, {bool updateHistory}) setColumnType;
+  late void Function(SheetData sheet, Map<String, AnalysisResult> analysisResults, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {bool save, bool updateHistory, bool toCalculate}) saveAndCalculate;
 
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) => content.table.isNotEmpty ? content.table[0].length : 0;
@@ -104,7 +104,6 @@ class HistoryController extends ChangeNotifier {
       for (var cellUpdate in lastUpdate.updatedCells!) {
         updateCell(
           sheet,
-          selection,
           lastSelectionBySheet,
           row1ToScreenBottomHeight,
           colBToScreenRightWidth,
@@ -120,7 +119,6 @@ class HistoryController extends ChangeNotifier {
         setColumnType(
           sheet,
           analysisResults,
-          selection,
           lastSelectionBySheet,
           currentSheetName,
           typeUpdate.colId!,
@@ -131,7 +129,7 @@ class HistoryController extends ChangeNotifier {
     }
     sheet.historyIndex--;
     notifyListeners();
-    saveAndCalculate(sheet, analysisResults, selection, lastSelectionBySheet, currentSheetName, );
+    saveAndCalculate(sheet, analysisResults, lastSelectionBySheet, currentSheetName, );
   }
   
   void redo(SheetData sheet, Map<String, AnalysisResult> analysisResults, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, double row1ToScreenBottomHeight, double colBToScreenRightWidth) {
@@ -143,7 +141,6 @@ class HistoryController extends ChangeNotifier {
       for (var cellUpdate in nextUpdate.updatedCells!) {
         updateCell(
           sheet,
-          selection,
           lastSelectionBySheet,
           row1ToScreenBottomHeight,
           colBToScreenRightWidth,
@@ -159,7 +156,6 @@ class HistoryController extends ChangeNotifier {
         setColumnType(
           sheet,
           analysisResults,
-          selection,
           lastSelectionBySheet,
           currentSheetName,
           typeUpdate.colId!,
@@ -170,7 +166,7 @@ class HistoryController extends ChangeNotifier {
     }
     sheet.historyIndex++;
     notifyListeners();
-    saveAndCalculate(sheet, analysisResults, selection, lastSelectionBySheet, currentSheetName);
+    saveAndCalculate(sheet, analysisResults, lastSelectionBySheet, currentSheetName);
   }
 
 

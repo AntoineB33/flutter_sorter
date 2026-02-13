@@ -14,7 +14,7 @@ class GridController {
   double row1ToScreenBottomHeight = 0.0;
   double colBToScreenRightWidth = 0.0;
 
-  late void Function(SheetData sheet, SelectionData selection, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {
+  late void Function(SheetData sheet, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {
     double ? visibleHeight,
     double ? visibleWidth,
     bool notify,
@@ -132,7 +132,6 @@ class GridController {
 
   void adjustRowHeightAfterUpdate(
     SheetData sheet,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
     int row,
@@ -146,7 +145,6 @@ class GridController {
         row >= rowCount(sheet.sheetContent)) {
       updateRowColCount(
         sheet,
-        selection,
         lastSelectionBySheet,
         currentSheetName,
         visibleHeight: row1ToScreenBottomHeight,
@@ -261,7 +259,6 @@ class GridController {
     }
     updateRowColCount(
       sheet,
-      selection,
       lastSelectionBySheet,
       currentSheetName,
       visibleHeight: row1ToScreenBottomHeight,
@@ -270,9 +267,9 @@ class GridController {
     );
   }
 
-  bool isRowValid(SheetData sheet, List<bool> isMedium, int rowId, AnalysisResult result) {
+  bool isRowValid(SheetData sheet, int rowId, AnalysisResult result) {
     if (canBeSorted(sheet, result)) {
-      return isMedium[rowId];
+      return rowId < result.isMedium.length && result.isMedium[rowId];
     }
     if (rowId == 0) {
       return false;

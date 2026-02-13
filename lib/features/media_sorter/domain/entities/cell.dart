@@ -1,5 +1,5 @@
 class Cell {
-  final int rowId;
+  int rowId;
   final int colId;
 
   Cell({required this.rowId, required this.colId});

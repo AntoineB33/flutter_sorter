@@ -54,7 +54,6 @@ class CalculateUsecase {
   Map<String, Cell> get names => result.names;
   Map<String, List<int>> get attToCol => result.attToCol;
   List<int> get nameIndexes => result.nameIndexes;
-  List<int> get pathIndexes => result.pathIndexes;
   List<int> get validRowIndexes => result.validRowIndexes;
   List<List<StrInt>> get formatedTable => result.formatedTable;
 
@@ -65,12 +64,6 @@ class CalculateUsecase {
       result.attToRefFromAttColToCol;
   Map<Attribute, Map<int, List<int>>> get attToRefFromDepColToCol =>
       result.attToRefFromDepColToCol;
-  List<HashSet<int>> get rowToRefFromAttCol => result.rowToRefFromAttCol;
-
-  List<Map<InstrStruct, Cell>> get instrTable => result.instrTable;
-  set instrTable(List<Map<InstrStruct, Cell>> value) {
-    result.instrTable = value;
-  }
 
   Map<int, HashSet<Attribute>> get colToAtt => result.colToAtt;
   List<bool> get isMedium => result.isMedium;
@@ -93,8 +86,9 @@ class CalculateUsecase {
 
   AnalysisResult run() {
     _decodeData(dataPackage);
-    _getEverything();
-    getRules(result);
+    List<Map<InstrStruct, Cell>> instrTable = List.generate(rowCount, (_) => {});
+    _getEverything(instrTable);
+    getRules(result, instrTable);
     return result;
   }
 
@@ -508,7 +502,52 @@ class CalculateUsecase {
     return att;
   }
 
-  void _getCategories() {
+  void _addRulesBefAftOthers(List<int> newIndexList, List<int> newIndexes, Map<int, Map<Attribute, Cell>> beforeAllOthers, List<Map<InstrStruct, Cell>> instrTable, List<List<int>> intervals, String errorMessage) {
+    List<bool> addToRelTo = List.filled(newIndexList.length, true);
+    for (final MapEntry(key: k, value: vMap) in beforeAllOthers.entries) {
+      for (Attribute a in beforeAllOthers[k]?.keys ?? []) {
+        if (a.rowId == all && beforeAllOthers[k]!.keys.length > 1) {
+          warningRoot.newChildren!.add(
+            NodeStruct(
+              message:
+                  "useless statements since it is $errorMessage all others",
+              cell: beforeAllOthers[k]![a]!,
+            ),
+          );
+        }
+      }
+      for (Attribute a in beforeAllOthers[k]?.keys ?? []) {
+        List<int> relTo;
+        addToRelTo.fillRange(0, addToRelTo.length, a.rowId == all);
+        if (a.rowId != all) {
+          for (int rowId in attToRefFromAttColToCol[Attribute.row(k)]?.keys ?? []) {
+            addToRelTo[newIndexes[rowId]] = true;
+          }
+        }
+        if (isMedium[k] && !attToRefFromAttColToCol.containsKey(Attribute.row(k))) {
+          relTo = newIndexList.where((entry) => entry != newIndexes[k] && (a.rowId == all || addToRelTo[entry])).toList();
+        } else {
+          for (int rowId in attToRefFromAttColToCol[Attribute.row(k)]?.keys ?? []) {
+            addToRelTo[newIndexes[rowId]] = false;
+          }
+          if (isMedium[k]) {
+            addToRelTo[newIndexes[k]] = false;
+          }
+          relTo = newIndexList.where((entry) => addToRelTo[entry]).toList();
+        }
+        instrTable[k][InstrStruct(
+          true,
+          false,
+          relTo,
+          intervals,
+        )] = vMap
+            .values
+            .first;
+      }
+    }
+  }
+
+  void _getCategories(List<Map<InstrStruct, Cell>> instrTable) {
     // final saved = {
     //   input: { name: name, table: table, columnTypes: columnTypes },
     //   output: { errorRoot: errorRoot },
@@ -544,9 +583,6 @@ class CalculateUsecase {
     List<NodeStruct> children = [];
     attToRefFromAttColToCol.clear();
     attToCol.clear();
-    rowToRefFromAttCol
-      ..clear()
-      ..addAll(List.generate(rowCount, (i) => HashSet<int>()));
     formatedTable
       ..clear()
       ..addAll(
@@ -606,48 +642,42 @@ class CalculateUsecase {
               attWritten = attWritten
                   .substring(0, attWritten.length - 4)
                   .trim();
-            } else if (attWritten == "fst") {
-              beforeAllOthers[rowId] ??= {};
-              beforeAllOthers[rowId]![Attribute.row(all)] = cell;
-              continue;
-            } else if (attWritten == "lst") {
-              afterAllOthers[rowId] ??= {};
-              afterAllOthers[rowId]![Attribute.row(all)] = cell;
-              continue;
             }
-
-            Attribute att = getAttAndCol(attWritten, rowId, colId);
-            if (errorRoot.newChildren!.isNotEmpty) {
-              return;
-            }
-
-            if (!attToRefFromAttColToCol.containsKey(att)) {
-              attToRefFromAttColToCol[att] = {};
-              if (isSprawl) {
-                attToDist[att] = [];
-              }
-            }
-
-            if (!attToRefFromAttColToCol[att]!.containsKey(rowId)) {
-              attToRefFromAttColToCol[att]![rowId] = Cols();
-              if (att.isRow()) {
-                rowToRefFromAttCol[rowId].add(att.rowId!);
-              }
-              if (isSprawl) {
-                attToDist[att]!.add(rowId);
-              }
+            Attribute att;
+            if (attWritten.isEmpty) {
+              att = Attribute.row(all);
             } else {
-              if (children.isEmpty ||
-                  children[children.length - 1].att != att ||
-                  children[children.length - 1].newChildren![0].rowId !=
-                      rowId) {
-                children.add(NodeStruct(att: att, newChildren: []));
+
+              att = getAttAndCol(attWritten, rowId, colId);
+              if (errorRoot.newChildren!.isNotEmpty) {
+                return;
               }
-              children[children.length - 1].newChildren!.add(
-                NodeStruct(rowId: rowId, colId: colId),
-              );
+
+              if (!attToRefFromAttColToCol.containsKey(att)) {
+                attToRefFromAttColToCol[att] = {};
+                if (isSprawl) {
+                  attToDist[att] = [];
+                }
+              }
+
+              if (!attToRefFromAttColToCol[att]!.containsKey(rowId)) {
+                attToRefFromAttColToCol[att]![rowId] = Cols();
+                if (isSprawl) {
+                  attToDist[att]!.add(rowId);
+                }
+              } else {
+                if (children.isEmpty ||
+                    children[children.length - 1].att != att ||
+                    children[children.length - 1].newChildren![0].rowId !=
+                        rowId) {
+                  children.add(NodeStruct(att: att, newChildren: []));
+                }
+                children[children.length - 1].newChildren!.add(
+                  NodeStruct(rowId: rowId, colId: colId),
+                );
+              }
+              attToRefFromAttColToCol[att]![rowId]!.colIndexes.add(colId);
             }
-            attToRefFromAttColToCol[att]![rowId]!.colIndexes.add(colId);
             if (isAppearFst) {
               isFstToAppear[rowId] ??= {};
               isFstToAppear[rowId]![att] = cell;
@@ -683,18 +713,13 @@ class CalculateUsecase {
       return;
     }
 
-    List<List<String>> urls = List.generate(
-      rowCount,
-      (i) => List.generate(pathIndexes.length, (j) => table[i][pathIndexes[j]]),
-    );
-
     var urlFrom = List.generate(rowCount, (i) => -1);
+    List<bool> isMediumCopy = List.from(isMedium);
     for (int i = 1; i < rowCount; i++) {
-      final row = table[i];
       Attribute att = Attribute.row(i);
       if (isMedium[i] && attToRefFromAttColToCol.containsKey(att)) {
         for (final k in attToRefFromAttColToCol[att]!.keys) {
-          if (isMedium[k]) {
+          if (isMediumCopy[k]) {
             errorRoot.newChildren!.add(
               NodeStruct(
                 message: "URL conflict",
@@ -744,15 +769,13 @@ class CalculateUsecase {
             return;
           }
           if (!attToRefFromAttColToCol.containsKey(att)) {
-            urls[k] = List.generate(
-              pathIndexes.length,
-              (j) => row[pathIndexes[j]],
-            );
+            isMediumCopy[k] = true;
             urlFrom[k] = i;
           }
         }
       }
     }
+    isMedium..clear()..addAll(isMediumCopy);
 
     validRowIndexes.clear();
     final newIndexes = List.generate(rowCount, (i) => i);
@@ -863,6 +886,9 @@ class CalculateUsecase {
       ..addAll(List.generate(rowCount, (_) => {}));
 
     List<Attribute> stack = [];
+    Map<int, Map<Attribute, Cell>> isFstToAppearCopy = Map.fromEntries(isFstToAppear.entries.map(
+      (entry) => MapEntry(entry.key, Map.from(entry.value)),
+    ));
     for (final MapEntry(key: k, value: vMap) in isFstToAppear.entries) {
       for (Attribute a in isFstToAppear[k]?.keys ?? []) {
         if (a.rowId == all && isFstToAppear[k]!.keys.length > 1) {
@@ -875,7 +901,7 @@ class CalculateUsecase {
           );
         }
       }
-      if (isMedium[k]) {
+      if (isMedium[k] && !attToRefFromAttColToCol.containsKey(Attribute.row(k))) {
         for (Attribute a in isFstToAppear[k]?.keys ?? []) {
           stack.add(a);
         }
@@ -913,6 +939,14 @@ class CalculateUsecase {
         }
       }
     }
+      //   errorRoot.newChildren!.add(
+      //     NodeStruct(
+      //       message:
+      //           "Cannot use '${SpreadsheetConstants.appearFirst}' since it is referenced by other attributes (feature not supported yet)",
+      //       cell: isFstToAppear[k]!.values.first,
+      //     ),
+      //   );
+      // }
     stack = [];
     for (final MapEntry(key: k, value: vMap) in isLstToAppear.entries) {
       for (Attribute a in isLstToAppear[k]?.keys ?? []) {
@@ -926,7 +960,7 @@ class CalculateUsecase {
           );
         }
       }
-      if (isMedium[k]) {
+      if (isMedium[k] && !attToRefFromAttColToCol.containsKey(Attribute.row(k))) {
         for (Attribute a in isLstToAppear[k]?.keys ?? []) {
           stack.add(a);
         }
@@ -962,92 +996,22 @@ class CalculateUsecase {
                 vMap.values.first;
           }
         }
+      } else if (attToRefFromAttColToCol.containsKey(Attribute.row(k))) {
+        errorRoot.newChildren!.add(
+          NodeStruct(
+            message:
+                "Cannot use '${SpreadsheetConstants.appearLast}' since it is referenced by other attributes (feature not supported yet)",
+            cell: isLstToAppear[k]!.values.first,
+          ),
+        );
       }
     }
-    for (final MapEntry(key: k, value: vMap) in beforeAllOthers.entries) {
-      for (Attribute a in beforeAllOthers[k]?.keys ?? []) {
-        if (a.rowId == all && beforeAllOthers[k]!.keys.length > 1) {
-          warningRoot.newChildren!.add(
-            NodeStruct(
-              message:
-                  "useless '${SpreadsheetConstants.first}' since it is before all others",
-              cell: beforeAllOthers[k]![a]!,
-            ),
-          );
-        }
-      }
-      if (isMedium[k]) {
-        for (Attribute a in beforeAllOthers[k]?.keys ?? []) {
-          if (a.rowId == all) {
-            instrTable[k][InstrStruct(
-              true,
-              false,
-              newIndexList.where((entry) => entry != newIndexes[k]).toList(),
-              [
-                [-maxInt, -1],
-              ],
-            )] = vMap
-                .values
-                .first;
-          } else {
-            instrTable[k][InstrStruct(
-                  true,
-                  false,
-                  attToRefFromAttColToCol[a]!.keys
-                      .where((key) => isMedium[key] && key != k)
-                      .map((entry) => newIndexes[entry])
-                      .toList(),
-                  [
-                    [-maxInt, -1],
-                  ],
-                )] =
-                vMap.values.first;
-          }
-        }
-      }
-    }
-    for (final MapEntry(key: k, value: vMap) in afterAllOthers.entries) {
-      for (Attribute a in afterAllOthers[k]?.keys ?? []) {
-        if (a.rowId == all && afterAllOthers[k]!.keys.length > 1) {
-          warningRoot.newChildren!.add(
-            NodeStruct(
-              message:
-                  "useless '${SpreadsheetConstants.last}' since it is after all others",
-              cell: afterAllOthers[k]![a]!,
-            ),
-          );
-        }
-      }
-      if (isMedium[k]) {
-        for (Attribute a in afterAllOthers[k]?.keys ?? []) {
-          if (a.rowId == all) {
-            instrTable[k][InstrStruct(
-              true,
-              false,
-              newIndexList.where((entry) => entry != newIndexes[k]).toList(),
-              [
-                [1, maxInt],
-              ],
-            )] = vMap
-                .values
-                .first;
-          } else {
-            instrTable[k][InstrStruct(
-                  true,
-                  false,
-                  attToRefFromAttColToCol[a]!.keys
-                      .where((key) => isMedium[key] && key != k)
-                      .map((entry) => newIndexes[entry])
-                      .toList(),
-                  [
-                    [1, maxInt],
-                  ],
-                )] =
-                vMap.values.first;
-          }
-        }
-      }
-    }
+    _addRulesBefAftOthers(newIndexList, newIndexes, beforeAllOthers, instrTable, [
+      [-maxInt, -1],
+    ], "before");
+    _addRulesBefAftOthers(newIndexList, newIndexes, afterAllOthers, instrTable, [
+      [1, maxInt],
+    ], "after");
 
     // for (final MapEntry(key: k, value: v) in lstCat.entries) {
     //   if (isMedium[k]) {
@@ -1466,10 +1430,6 @@ class CalculateUsecase {
     //   }
     // }
 
-    urls = validRowIndexes.asMap().entries.map((i) {
-      return urls[i.value];
-    }).toList();
-
     // final testData = TestGenerator.generateTestCaseRelative(nVal);
     // final Map<int, List<Rule>> myRules = testData['rules'];
 
@@ -1513,7 +1473,7 @@ class CalculateUsecase {
     return;
   }
 
-  void _getEverything() {
+  void _getEverything(List<Map<InstrStruct, Cell>> instrTable) {
     errorRoot.newChildren!.clear();
     warningRoot.newChildren!.clear();
     for (final row in table) {
@@ -1522,13 +1482,10 @@ class CalculateUsecase {
       }
     }
     nameIndexes.clear();
-    pathIndexes.clear();
     for (int index = 0; index < colCount; index++) {
       final role = GetNames.getColumnType(_sheetContent!, index);
       if (role == ColumnType.names) {
         nameIndexes.add(index);
-      } else if (role == ColumnType.filePath) {
-        pathIndexes.add(index);
       }
     }
     tableToAtt
@@ -1621,15 +1578,15 @@ class CalculateUsecase {
         }
       }
     }
-    _getCategories();
+    _getCategories(instrTable);
   }
   
-  void getRules(AnalysisResult result) {
-    int nVal = result.instrTable.length;
+  void getRules(AnalysisResult result, List<Map<InstrStruct, Cell>> instrTable) {
+    int nVal = instrTable.length;
     result.myRules = {};
     for (int rowId = 0; rowId < nVal; rowId++) {
-      result.myRules[rowId] = [];
-      for (final instr in result.instrTable[rowId].keys) {
+      result.myRules[rowId] = {};
+      for (final instr in instrTable[rowId].keys) {
         if (!instr.isConstraint) {
           continue;
         }
@@ -1637,11 +1594,11 @@ class CalculateUsecase {
           for (final interval in instr.intervals) {
             int minVal = interval[0];
             int maxVal = interval[1];
-            result.myRules[rowId]!.add(
+            result.myRules[rowId]![target] ??= [];
+            result.myRules[rowId]![target]!.add(
               SortingRule(
                 minVal: minVal,
                 maxVal: maxVal,
-                relativeTo: target,
               ),
             );
           }

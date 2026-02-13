@@ -93,13 +93,15 @@ class _SideMenuState extends State<SideMenu> {
             children: [
               // Existing Button (Now with background)
               ElevatedButton(
-                onPressed: workbookController.canBeSorted()
+                onPressed: workbookController.canBeSorted() && !workbookController.sorted()
                     ? workbookController.sortMedia
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue, // Your background color
                   foregroundColor: Colors.white, // Text color
-                  disabledBackgroundColor: Colors.grey[300],
+                  disabledBackgroundColor: workbookController.sorted()
+                      ? Colors.grey
+                      : Colors.blue.withValues(alpha: 0.5)
                 ),
                 child: const Text("Sort media"),
               ),
@@ -107,7 +109,7 @@ class _SideMenuState extends State<SideMenu> {
               const SizedBox(width: 12), // Adds spacing between the two buttons
               // New Button to the right
               ElevatedButton(
-                onPressed: workbookController.canBeSorted()
+                onPressed: workbookController.canBeSorted() && !workbookController.findingBestSort && !workbookController.isBestSort
                     ? workbookController.findBestSortToggle
                     : null,
                 style: ElevatedButton.styleFrom(

@@ -10,6 +10,7 @@ class SelectionData {
   int tableViewCols = 0;
   bool editingMode = false;
   String previousContent = '';
+  bool findingBestSort = false;
 
   SelectionData({
     required this.selectedCells,
@@ -18,6 +19,7 @@ class SelectionData {
     required this.scrollOffsetY,
     required this.editingMode,
     required this.previousContent,
+    required this.findingBestSort,
   });
 
   SelectionData.empty();
@@ -40,6 +42,7 @@ class SelectionData {
         scrollOffsetY: (json['scrollOffsetY'] as num).toDouble(),
         editingMode: json['editingMode'] as bool,
         previousContent: json['previousContent'] as String,
+        findingBestSort: json['findingBestSort'] as bool,
       );
     } catch (e) {
       debugPrint("Error parsing SelectionData from JSON: $e");
@@ -60,6 +63,7 @@ class SelectionData {
       'scrollOffsetY': scrollOffsetY,
       'editingMode': editingMode,
       'previousContent': previousContent,
+      'findingBestSort': findingBestSort,
     };
   }
 }

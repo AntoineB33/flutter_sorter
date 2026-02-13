@@ -2,6 +2,9 @@
 cd /d "C:\Users\antoi\Documents\Home\tools\dev\sorting"
 call venv\Scripts\activate.bat
 
+:: Update pip inside the virtual environment
+python -m pip install --upgrade pip
+
 :: Ensure the websocket-capable version of uvicorn is installed
 pip install uvicorn[standard]
 

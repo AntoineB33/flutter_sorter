@@ -28,7 +28,6 @@ class SheetDataController extends ChangeNotifier {
   late void Function(
     SheetData sheet,
     Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
   )
@@ -47,7 +46,6 @@ class SheetDataController extends ChangeNotifier {
   recordCellChange;
   late void Function(
     SheetData sheet,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
     int row,
@@ -109,7 +107,6 @@ class SheetDataController extends ChangeNotifier {
   ) {
     updateCell(
       sheet,
-      selection,
       lastSelectionBySheet,
       row1ToScreenBottomHeight,
       colBToScreenRightWidth,
@@ -123,7 +120,6 @@ class SheetDataController extends ChangeNotifier {
     saveAndCalculate(
       sheet,
       analysisResults,
-      selection,
       lastSelectionBySheet,
       currentSheetName,
     );
@@ -132,11 +128,11 @@ class SheetDataController extends ChangeNotifier {
   void saveAndCalculate(
     SheetData sheet,
     Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName, {
     bool save = true,
     bool updateHistory = false,
+    bool toCalculate = true,
   }) {
     if (save) {
       if (updateHistory) {
@@ -148,14 +144,15 @@ class SheetDataController extends ChangeNotifier {
         SpreadsheetConstants.saveSheetDelayMs,
       );
     }
-    sheet.calculated = false;
-    calculate(
-      sheet,
-      analysisResults,
-      selection,
-      lastSelectionBySheet,
-      currentSheetName,
-    );
+    if (toCalculate) {
+      sheet.calculated = false;
+      calculate(
+        sheet,
+        analysisResults,
+        lastSelectionBySheet,
+        currentSheetName,
+      );
+    }
   }
 
   void increaseColumnCount(
@@ -187,7 +184,6 @@ class SheetDataController extends ChangeNotifier {
 
   void updateCell(
     SheetData sheet,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     double row1ToScreenBottomHeight,
     double colBToScreenRightWidth,
@@ -265,7 +261,6 @@ class SheetDataController extends ChangeNotifier {
     // Delegate layout calculation to GridManager
     adjustRowHeightAfterUpdate(
       sheet,
-      selection,
       lastSelectionBySheet,
       currentSheetName,
       row,
@@ -280,7 +275,6 @@ class SheetDataController extends ChangeNotifier {
   void setColumnType(
     SheetData sheet,
     Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
     int col,
@@ -318,7 +312,6 @@ class SheetDataController extends ChangeNotifier {
     saveAndCalculate(
       sheet,
       analysisResults,
-      selection,
       lastSelectionBySheet,
       currentSheetName,
       updateHistory: true,
@@ -350,7 +343,6 @@ class SheetDataController extends ChangeNotifier {
     setTable(
       sheet,
       analysisResults,
-      selection,
       lastSelectionBySheet,
       row1ToScreenBottomHeight,
       colBToScreenRightWidth,
@@ -362,18 +354,17 @@ class SheetDataController extends ChangeNotifier {
   void setTable(
     SheetData sheet,
     Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     double row1ToScreenBottomHeight,
     double colBToScreenRightWidth,
     String currentSheetName,
     List<CellUpdate> updates,
+    {bool toCalculate = true,}
   ) {
     sheet.currentUpdateHistory = null;
     for (var update in updates) {
       updateCell(
         sheet,
-        selection,
         lastSelectionBySheet,
         row1ToScreenBottomHeight,
         colBToScreenRightWidth,
@@ -388,10 +379,10 @@ class SheetDataController extends ChangeNotifier {
     saveAndCalculate(
       sheet,
       analysisResults,
-      selection,
       lastSelectionBySheet,
       currentSheetName,
       updateHistory: true,
+      toCalculate: toCalculate,
     );
   }
 
@@ -407,7 +398,6 @@ class SheetDataController extends ChangeNotifier {
     for (Point<int> cell in selection.selectedCells) {
       updateCell(
         sheet,
-        selection,
         lastSelectionBySheet,
         row1ToScreenBottomHeight,
         colBToScreenRightWidth,
@@ -420,7 +410,6 @@ class SheetDataController extends ChangeNotifier {
     }
     updateCell(
       sheet,
-      selection,
       lastSelectionBySheet,
       row1ToScreenBottomHeight,
       colBToScreenRightWidth,
@@ -434,7 +423,6 @@ class SheetDataController extends ChangeNotifier {
     saveAndCalculate(
       sheet,
       analysisResults,
-      selection,
       lastSelectionBySheet,
       currentSheetName,
       updateHistory: true,
@@ -451,7 +439,6 @@ class SheetDataController extends ChangeNotifier {
     setColumnType(
       sheet,
       analysisResults,
-      selection,
       lastSelectionBySheet,
       currentSheetName,
       1,
@@ -460,7 +447,6 @@ class SheetDataController extends ChangeNotifier {
     setColumnType(
       sheet,
       analysisResults,
-      selection,
       lastSelectionBySheet,
       currentSheetName,
       2,
@@ -469,7 +455,6 @@ class SheetDataController extends ChangeNotifier {
     setColumnType(
       sheet,
       analysisResults,
-      selection,
       lastSelectionBySheet,
       currentSheetName,
       3,
@@ -478,7 +463,6 @@ class SheetDataController extends ChangeNotifier {
     setColumnType(
       sheet,
       analysisResults,
-      selection,
       lastSelectionBySheet,
       currentSheetName,
       7,
@@ -487,7 +471,6 @@ class SheetDataController extends ChangeNotifier {
     setColumnType(
       sheet,
       analysisResults,
-      selection,
       lastSelectionBySheet,
       currentSheetName,
       8,

@@ -4,14 +4,15 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
 
 class StrInt {
-  List<String> strings = [""];
-  List<int> integers = [];
-  StrInt();
+  List<String> strings;
+  List<int> integers;
+  StrInt({List<String>? strings, List<int>? integers})
+      : strings = strings ?? [""],
+        integers = integers ?? [];
 }
 
 class AnalysisResult {
@@ -36,7 +37,6 @@ class AnalysisResult {
   Map<String, Cell> names;
   Map<String, List<int>> attToCol;
   List<int> nameIndexes;
-  List<int> pathIndexes;
   List<List<StrInt>> formatedTable;
 
   /// Maps attribute identifiers (row index or name)
@@ -44,17 +44,16 @@ class AnalysisResult {
   /// in this direction so it is easy to diffuse characteristics to pointers.
   Map<Attribute, Map<int, Cols>> attToRefFromAttColToCol;
   Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol;
-  List<HashSet<int>> rowToRefFromAttCol;
-  List<Map<InstrStruct, Cell>> instrTable;
   Map<int, HashSet<Attribute>> colToAtt;
-  Map<int, List<SortingRule>> myRules = {};
-  List<int> maximizeBetween = [];
-  List<bool> isMedium = [];
-  List<int> validRowIndexes = [];
+  Map<int, Map<int, List<SortingRule>>> myRules;
+  List<List<int>> groupsToMaximize;
+  List<List<int>> validAreas;
+  List<bool> isMedium;
+  List<int> validRowIndexes;
   List<int>? bestMediaSortOrder;
 
-  int rowCount;
-  int colCount;
+  bool sorted;
+  bool isBestSort;
 
   AnalysisResult({
     required List<NodeStruct> errorChildren,
@@ -65,17 +64,18 @@ class AnalysisResult {
     required this.names,
     required this.attToCol,
     required this.nameIndexes,
-    required this.pathIndexes,
     required this.attToRefFromAttColToCol,
     required this.attToRefFromDepColToCol,
     required this.formatedTable,
-    required this.rowToRefFromAttCol,
-    required this.instrTable,
     required this.colToAtt,
+    required this.myRules,
+    required this.validAreas,
+    required this.groupsToMaximize,
+    required this.isMedium,
     required this.validRowIndexes,
     required this.bestMediaSortOrder,
-    required this.rowCount,
-    required this.colCount,
+    required this.sorted,
+    required this.isBestSort,
   }) {
     errorRoot.newChildren = errorChildren;
     warningRoot.newChildren = warningChildren;
@@ -93,17 +93,18 @@ class AnalysisResult {
       names: {},
       attToCol: {},
       nameIndexes: [],
-      pathIndexes: [],
       attToRefFromAttColToCol: {},
       attToRefFromDepColToCol: {},
-      instrTable: [],
       colToAtt: {},
+      myRules: {},
+      validAreas: [],
+      groupsToMaximize: [],
+      isMedium: [],
       validRowIndexes: [],
-      rowCount: 0,
-      colCount: 0,
       formatedTable: [],
-      rowToRefFromAttCol: [],
-      bestMediaSortOrder: [],
+      bestMediaSortOrder: null,
+      sorted: false,
+      isBestSort: false,
     );
   }
 
@@ -143,7 +144,6 @@ class AnalysisResult {
         ),
       ),
       nameIndexes: List<int>.from(json['nameIndexes'] as List<dynamic>),
-      pathIndexes: List<int>.from(json['pathIndexes'] as List<dynamic>),
       attToRefFromAttColToCol: Map<Attribute, Map<int, Cols>>.fromEntries(
         (json['attToRefFromAttColToCol'] as Map<String, dynamic>).entries.map(
           (entry) => MapEntry(
@@ -185,23 +185,6 @@ class AnalysisResult {
                 .toList(),
           )
           .toList(),
-      rowToRefFromAttCol: (json['rowToRefFromAttCol'] as List)
-          .map((row) => HashSet<int>.from(row as List))
-          .toList(),
-      instrTable: (json['instrTable'] as List)
-          .map(
-            (row) => Map<InstrStruct, Cell>.fromEntries(
-              (row as Map<String, dynamic>).entries.map(
-                (entry) => MapEntry(
-                  InstrStruct.fromJson(
-                    jsonDecode(entry.key) as Map<String, dynamic>,
-                  ),
-                  Cell.fromJson(entry.value),
-                ),
-              ),
-            ),
-          )
-          .toList(),
       colToAtt: Map<int, HashSet<Attribute>>.fromEntries(
         (json['colToAtt'] as Map<String, dynamic>).entries.map(
           (entry) => MapEntry(
@@ -212,12 +195,30 @@ class AnalysisResult {
           ),
         ),
       ),
+      myRules: Map<String, dynamic>.from(json['myRules'] as Map<String, dynamic>)
+          .map((rowId, targetMap) => MapEntry(
+                int.parse(rowId),
+                Map<String, dynamic>.from(targetMap as Map<String, dynamic>)
+                    .map((target, rulesList) => MapEntry(
+                          int.parse(target),
+                          (rulesList as List)
+                              .map((rule) => SortingRule.fromJson(rule))
+                              .toList(),
+                        )),
+              )),
+      validAreas: (json['valid_areas'] as List)
+          .map((area) => List<int>.from(area as List))
+          .toList(),
+      groupsToMaximize: (json['groupsToMaximize'] as List)
+          .map((group) => List<int>.from(group as List))
+          .toList(),
+      isMedium: List<bool>.from(json['isMedium'] as List<dynamic>),
       validRowIndexes: List<int>.from(json['validRowIndexes'] as List<dynamic>),
-      bestMediaSortOrder: List<int>.from(
-        json['bestMediaSortOrder'] as List<dynamic>,
-      ),
-      rowCount: json['rowCount'] as int,
-      colCount: json['colCount'] as int,
+      bestMediaSortOrder: json['bestMediaSortOrder'] != null
+          ? List<int>.from(json['bestMediaSortOrder'] as List<dynamic>)
+          : null,
+      sorted: false,
+      isBestSort: false,
     );
   }
 
@@ -253,7 +254,6 @@ class AnalysisResult {
       'names': names.map((key, value) => MapEntry(key, value.toJson())),
       'attToCol': attToCol,
       'nameIndexes': nameIndexes,
-      'pathIndexes': pathIndexes,
       'attToRefFromAttColToCol': attToRefFromAttColToCol.map(
         (key, value) => MapEntry(
           jsonEncode(key.toJson()),
@@ -283,25 +283,12 @@ class AnalysisResult {
                 .toList(),
           )
           .toList(),
-      'rowToRefFromAttCol': rowToRefFromAttCol
-          .map((row) => row.toList())
-          .toList(),
-      'instrTable': instrTable
-          .map(
-            (row) => row.map(
-              (key, value) =>
-                  MapEntry(jsonEncode(key.toJson()), value.toJson()),
-            ),
-          )
-          .toList(),
       'colToAtt': colToAtt.map(
         (key, value) =>
             MapEntry(key.toString(), value.map((att) => att.toJson()).toList()),
       ),
       'validRowIndexes': validRowIndexes,
       'bestMediaSortOrder': bestMediaSortOrder,
-      'rowCount': rowCount,
-      'colCount': colCount,
     };
   }
 }
