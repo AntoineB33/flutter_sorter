@@ -886,9 +886,8 @@ class CalculateUsecase {
       ..addAll(List.generate(rowCount, (_) => {}));
 
     List<Attribute> stack = [];
-    Map<int, Map<Attribute, Cell>> isFstToAppearCopy = Map.fromEntries(isFstToAppear.entries.map(
-      (entry) => MapEntry(entry.key, Map.from(entry.value)),
-    ));
+    Map<int, bool> isFstToAppearBool = Map.fromEntries(isFstToAppear.entries.map(
+      (entry) => MapEntry(entry.key, true)));
     for (final MapEntry(key: k, value: vMap) in isFstToAppear.entries) {
       for (Attribute a in isFstToAppear[k]?.keys ?? []) {
         if (a.rowId == all && isFstToAppear[k]!.keys.length > 1) {
@@ -907,6 +906,9 @@ class CalculateUsecase {
         }
         while (stack.isNotEmpty) {
           Attribute currAtt = stack.removeLast();
+          if (currAtt.rowId != null) {
+            isFstToAppearBool[currAtt.rowId!] = false;
+          }
           if (isFstToAppear[currAtt.rowId]?.keys != null) {
             for (Attribute a in isFstToAppear[currAtt.rowId]?.keys ?? []) {
               stack.add(a);
@@ -939,14 +941,19 @@ class CalculateUsecase {
         }
       }
     }
-      //   errorRoot.newChildren!.add(
-      //     NodeStruct(
-      //       message:
-      //           "Cannot use '${SpreadsheetConstants.appearFirst}' since it is referenced by other attributes (feature not supported yet)",
-      //       cell: isFstToAppear[k]!.values.first,
-      //     ),
-      //   );
-      // }
+    for (final MapEntry(key: k, value: _) in isFstToAppear.entries) {
+      if (isFstToAppearBool[k] == true) {
+        warningRoot.newChildren!.add(
+          NodeStruct(
+            message:
+                "Cannot use '${SpreadsheetConstants.appearFirst}' since it is referenced by other attributes (feature not supported yet)",
+            cells: isFstToAppear[k]!.values.toList(),
+          ),
+        );
+      }
+    }
+    Map<int, Map<Attribute, bool>> isLstToAppearBool = Map.fromEntries(isLstToAppear.entries.map(
+      (entry) => MapEntry(entry.key, Map.fromEntries(entry.value.keys.map((k) => MapEntry(k, true))))));
     stack = [];
     for (final MapEntry(key: k, value: vMap) in isLstToAppear.entries) {
       for (Attribute a in isLstToAppear[k]?.keys ?? []) {
@@ -966,6 +973,9 @@ class CalculateUsecase {
         }
         while (stack.isNotEmpty) {
           Attribute currAtt = stack.removeLast();
+          if (currAtt.rowId != null) {
+            isLstToAppearBool[currAtt.rowId!]![currAtt] = false;
+          }
           if (isLstToAppear[currAtt.rowId]?.keys != null) {
             for (Attribute a in isLstToAppear[currAtt.rowId]?.keys ?? []) {
               stack.add(a);
@@ -1001,7 +1011,7 @@ class CalculateUsecase {
           NodeStruct(
             message:
                 "Cannot use '${SpreadsheetConstants.appearLast}' since it is referenced by other attributes (feature not supported yet)",
-            cell: isLstToAppear[k]!.values.first,
+            cells: isLstToAppear[k]!.values.toList(),
           ),
         );
       }
@@ -1470,6 +1480,7 @@ class CalculateUsecase {
         .where((entry) => isMedium[entry.key])
         .map((entry) => entry.value)
         .toList();
+    result.validAreas = List.generate(instrTable.length, (index) => List.generate(instrTable[index].length, (i) => i));
     return;
   }
 
