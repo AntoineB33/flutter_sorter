@@ -495,7 +495,7 @@ class WorkbookController extends ChangeNotifier {
     if (saveCalculationStatusBySheet) {
       _sortController.saveAllSortStatus(sortStatusBySheet);
     }
-    loadSheetByName(currentSheetName, init: true);
+    await loadSheetByName(currentSheetName, init: true);
     for (var name in sheetNames) {
       if (!sortStatusBySheet[name]!.resultCalculated || !sortStatusBySheet[name]!.validSortCalculated) {
         await loadAnalysisResult(name);
