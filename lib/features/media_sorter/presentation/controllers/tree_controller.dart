@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
@@ -73,7 +73,7 @@ class TreeController extends ChangeNotifier {
     AnalysisResult result,
     List<NodeStruct> roots,
   ) {
-    if (sheet.calculated) return;
+    if (!result.resultCalculated) return;
 
     for (final root in roots) {
       var stack = [root];

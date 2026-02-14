@@ -2,8 +2,8 @@ import 'dart:isolate';
 
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/sorting_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
 
 class IsolateService {
@@ -46,7 +46,7 @@ class IsolateService {
       result.bestMediaSortOrder = response.sortedIds;
     }
 
-    Isolate.exit(sendPort, result.bestMediaSortOrder);
+    Isolate.exit(sendPort, result);
   }
 
   Future<ThreadResult> runHeavyCalculationB(

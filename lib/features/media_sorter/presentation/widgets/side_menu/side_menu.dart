@@ -63,8 +63,7 @@ class _SideMenuState extends State<SideMenu> {
   Widget build(BuildContext context) {
     final WorkbookController workbookController =
         Provider.of<WorkbookController>(context);
-    final TreeController treeController =
-        Provider.of<TreeController>(context);
+    final TreeController treeController = Provider.of<TreeController>(context);
 
     if (_textEditingController.text != workbookController.currentSheetName) {
       _textEditingController.text = workbookController.currentSheetName;
@@ -93,7 +92,9 @@ class _SideMenuState extends State<SideMenu> {
             children: [
               // Existing Button (Now with background)
               ElevatedButton(
-                onPressed: workbookController.canBeSorted() && !workbookController.sorted()
+                onPressed:
+                    workbookController.canBeSorted() &&
+                        !workbookController.sorted()
                     ? workbookController.sortMedia
                     : null,
                 style: ElevatedButton.styleFrom(
@@ -101,7 +102,7 @@ class _SideMenuState extends State<SideMenu> {
                   foregroundColor: Colors.white, // Text color
                   disabledBackgroundColor: workbookController.sorted()
                       ? Colors.grey
-                      : Colors.blue.withValues(alpha: 0.5)
+                      : Colors.blue.withValues(alpha: 0.5),
                 ),
                 child: const Text("Sort media"),
               ),
@@ -109,7 +110,10 @@ class _SideMenuState extends State<SideMenu> {
               const SizedBox(width: 12), // Adds spacing between the two buttons
               // New Button to the right
               ElevatedButton(
-                onPressed: workbookController.canBeSorted() && !workbookController.findingBestSort && !workbookController.isBestSort
+                onPressed:
+                    workbookController.canBeSorted() &&
+                        !workbookController.isFindingBestSort &&
+                        !workbookController.isBestSort
                     ? workbookController.findBestSortToggle
                     : null,
                 style: ElevatedButton.styleFrom(
@@ -117,7 +121,7 @@ class _SideMenuState extends State<SideMenu> {
                   foregroundColor: Colors.white,
                 ),
                 child: Text(
-                  workbookController.findingBestSort
+                  workbookController.isFindingBestSort
                       ? "Stop sorting"
                       : "Find the best order",
                 ),

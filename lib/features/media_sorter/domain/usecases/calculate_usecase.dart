@@ -1480,7 +1480,7 @@ class CalculateUsecase {
         .where((entry) => isMedium[entry.key])
         .map((entry) => entry.value)
         .toList();
-    result.validAreas = List.generate(instrTable.length, (index) => List.generate(instrTable[index].length, (i) => i));
+    result.validAreas = List.generate(instrTable.length, (index) => List.generate(instrTable.length, (i) => i));
     return;
   }
 

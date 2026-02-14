@@ -16,7 +16,6 @@ class SheetData {
   List<bool> colsManuallyAdjustedWidth;
   double colHeaderHeight;
   double rowHeaderWidth;
-  bool calculated;
 
   UpdateHistory? currentUpdateHistory;
 
@@ -30,7 +29,6 @@ class SheetData {
     required this.colsManuallyAdjustedWidth,
     required this.colHeaderHeight,
     required this.rowHeaderWidth,
-    required this.calculated,
   });
 
   factory SheetData.empty() {
@@ -44,7 +42,6 @@ class SheetData {
       colsManuallyAdjustedWidth: [],
       colHeaderHeight: PageConstants.defaultColHeaderHeight,
       rowHeaderWidth: PageConstants.defaultRowHeaderWidth,
-      calculated: false,
     );
   }
 
@@ -117,7 +114,6 @@ class SheetData {
         colsManuallyAdjustedWidth: parsedColsManuallyAdjustedWidth,
         colHeaderHeight: json['colHeaderHeight'] as double,
         rowHeaderWidth: json['rowHeaderWidth'] as double,
-        calculated: json['calculated'] as bool,
       );
     } catch (e) {
       debugPrint("Error parsing SheetData from JSON: $e");
@@ -153,7 +149,6 @@ class SheetData {
       'colsManuallyAdjustedWidth': colsManuallyAdjustedWidth,
       'colHeaderHeight': colHeaderHeight,
       'rowHeaderWidth': rowHeaderWidth,
-      'calculated': calculated,
     };
   }
 }

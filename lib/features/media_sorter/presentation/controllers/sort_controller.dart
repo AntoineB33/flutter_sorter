@@ -2,13 +2,14 @@ import 'dart:collection';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/sorting_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
@@ -16,6 +17,7 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/parse_paste
 import 'dart:async';
 
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sort_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/services/isolate_service.dart';
 
 class ThreadResult {
@@ -87,7 +89,7 @@ class SortController extends ChangeNotifier {
 
   bool canBeSorted(SheetData sheet, AnalysisResult result) {
     debugPrint("hey");
-    return sheet.calculated &&
+    return result.resultCalculated && result.validSortCalculated &&
         result.bestMediaSortOrder != null &&
         !result.sorted;
   }
@@ -103,7 +105,7 @@ class SortController extends ChangeNotifier {
     String currentSheetName,
   ) async {
     AnalysisResult result = analysisResults[currentSheetName]!;
-    if (sheet.calculated && lightCalculations(result)) {
+    if (result.resultCalculated && lightCalculations(result)) {
       return;
     }
     clear(result);
@@ -113,11 +115,20 @@ class SortController extends ChangeNotifier {
         .runHeavyCalculationB(sheet.sheetContent, result);
     analysisResults[currentSheetName] = resultB.result;
     result = resultB.result;
+    result.resultCalculated = true;
     if (resultB.startSorter) {
-      result.bestMediaSortOrder = await _isolateServices[currentSheetName]!
+      try {
+        result.bestMediaSortOrder = await _isolateServices[currentSheetName]!
           .runHeavyCalculationC(result);
+        result.validSortCalculated = true;
+      } catch (e) {
+        result.errorRoot.newChildren!.add(
+          NodeStruct(
+            message: "An error occurred while trying to find a valid sorting satisfying all constraints : $e",
+          ),
+        );
+      }
     }
-    sheet.calculated = true;
     saveAnalysisResult(currentSheetName, result);
     onAnalysisComplete(
       result,
@@ -146,22 +157,15 @@ class SortController extends ChangeNotifier {
     if (result.errorRoot.newChildren!.isNotEmpty || nVal == 0) {
       return null;
     }
-    final service = SortingService();
-
+  
     try {
       // await for pauses the execution of this function
       // until the stream is closed by the server.
-      await for (final solution in service.solveSortingStream(
-        nVal,
-        result.myRules,
-        checkNaturalOrder: true,
-      )) {
-        return solution;
-      }
+      return SortUsecase.solveSorting(result.myRules, result.validAreas, nVal);
     } catch (error) {
       result.errorRoot.newChildren!.add(
         NodeStruct(
-          message: "Could not find a valid sorting satisfying all constraints.",
+          message: "An error occurred while trying to find a valid sorting satisfying all constraints : $error",
         ),
       );
     }
@@ -368,14 +372,14 @@ class SortController extends ChangeNotifier {
     double row1ToScreenBottomHeight,
     double colBToScreenRightWidth,
   ) async {
-    if (lastSelectionBySheet[currentSheetName]!.findingBestSort) {
-      lastSelectionBySheet[currentSheetName]!.findingBestSort = false;
+    AnalysisResult result = analysisResults[currentSheetName]!;
+    if (result.isFindingBestSort) {
+      result.isFindingBestSort = false;
       notifyListeners();
       return;
     }
+    result.isFindingBestSort = true;
     stopEditing(sheet, lastSelectionBySheet, currentSheetName, notify: false);
-    lastSelectionBySheet[currentSheetName]!.findingBestSort = true;
-    AnalysisResult result = analysisResults[currentSheetName]!;
     int nVal = result.tableToAtt.length;
     if (result.errorRoot.newChildren!.isNotEmpty || nVal == 0) {
       return;
@@ -390,13 +394,13 @@ class SortController extends ChangeNotifier {
         result.myRules,
         groupsToMaximize: result.groupsToMaximize,
       )) {
-        if (!lastSelectionBySheet[currentSheetName]!.findingBestSort) {
+        if (!result.isFindingBestSort) {
           // If the user has toggled off the "finding best sort" mode, we should stop processing results.
           break;
         }
         setBestMediaSortOrder(
           analysisResults,
-          solution.sortedIds,
+          solution.sortedIds!,
           sheet,
           lastSelectionBySheet,
           currentSheetName,

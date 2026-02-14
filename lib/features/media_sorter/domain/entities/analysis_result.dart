@@ -45,15 +45,21 @@ class AnalysisResult {
   Map<Attribute, Map<int, Cols>> attToRefFromAttColToCol;
   Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol;
   Map<int, HashSet<Attribute>> colToAtt;
-  Map<int, Map<int, List<SortingRule>>> myRules;
-  List<List<int>> groupsToMaximize;
-  List<List<int>> validAreas;
   List<bool> isMedium;
   List<int> validRowIndexes;
   List<int>? bestMediaSortOrder;
 
+  bool resultCalculated;
+  bool validSortCalculated;
   bool sorted;
+  bool isFindingBestSort;
+  bool isFindingBestSortAndSort;
   bool isBestSort;
+
+  List<List<int>> validAreas;
+  Map<int, Map<int, List<SortingRule>>> myRules;
+  List<List<int>> groupsToMaximize;
+  int idSorterProgress;
 
   AnalysisResult({
     required List<NodeStruct> errorChildren,
@@ -74,7 +80,12 @@ class AnalysisResult {
     required this.isMedium,
     required this.validRowIndexes,
     required this.bestMediaSortOrder,
+    required this.resultCalculated,
+    required this.validSortCalculated,
+    required this.isFindingBestSort,
+    required this.isFindingBestSortAndSort,
     required this.sorted,
+    required this.idSorterProgress,
     required this.isBestSort,
   }) {
     errorRoot.newChildren = errorChildren;
@@ -103,8 +114,13 @@ class AnalysisResult {
       validRowIndexes: [],
       formatedTable: [],
       bestMediaSortOrder: null,
-      sorted: false,
+      resultCalculated: false,
+      validSortCalculated: false,
       isBestSort: false,
+      isFindingBestSort: false,
+      isFindingBestSortAndSort: false,
+      sorted: false,
+      idSorterProgress: -1,
     );
   }
 
@@ -217,8 +233,13 @@ class AnalysisResult {
       bestMediaSortOrder: json['bestMediaSortOrder'] != null
           ? List<int>.from(json['bestMediaSortOrder'] as List<dynamic>)
           : null,
-      sorted: false,
-      isBestSort: false,
+      resultCalculated: json['resultCalculated'] as bool,
+      validSortCalculated: json['validSortCalculated'] as bool,
+      idSorterProgress: json['idSorterProgress'] as int,
+      isBestSort: json['isBestSort'] as bool,
+      isFindingBestSort: json['isFindingBestSort'] as bool,
+      isFindingBestSortAndSort: json['isFindingBestSortAndSort'] as bool,
+      sorted: json['sorted'] as bool,
     );
   }
 
@@ -289,6 +310,7 @@ class AnalysisResult {
       ),
       'validRowIndexes': validRowIndexes,
       'bestMediaSortOrder': bestMediaSortOrder,
+      'idSorterProgress': idSorterProgress,
     };
   }
 }

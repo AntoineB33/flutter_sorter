@@ -2,27 +2,35 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 class SelectionData {
-  List<Point<int>> selectedCells = [];
-  Point<int> primarySelectedCell = Point<int>(0, 0);
-  double scrollOffsetX = 0.0;
-  double scrollOffsetY = 0.0;
-  int tableViewRows = 0;
-  int tableViewCols = 0;
-  bool editingMode = false;
-  String previousContent = '';
-  bool findingBestSort = false;
+  List<Point<int>> selectedCells;
+  Point<int> primarySelectedCell;
+  double scrollOffsetX;
+  double scrollOffsetY;
+  int tableViewRows;
+  int tableViewCols;
+  bool editingMode;
+  String previousContent;
 
   SelectionData({
     required this.selectedCells,
     required this.primarySelectedCell,
     required this.scrollOffsetX,
     required this.scrollOffsetY,
+    required this.tableViewRows,
+    required this.tableViewCols,
     required this.editingMode,
     required this.previousContent,
-    required this.findingBestSort,
   });
 
-  SelectionData.empty();
+  SelectionData.empty()
+      : selectedCells = [],
+        primarySelectedCell = Point<int>(0, 0),
+        scrollOffsetX = 0.0,
+        scrollOffsetY = 0.0,
+        tableViewRows = 0,
+        tableViewCols = 0,
+        editingMode = false,
+        previousContent = '';
 
   factory SelectionData.fromJson(Map<String, dynamic> json) {
     try {
@@ -42,7 +50,8 @@ class SelectionData {
         scrollOffsetY: (json['scrollOffsetY'] as num).toDouble(),
         editingMode: json['editingMode'] as bool,
         previousContent: json['previousContent'] as String,
-        findingBestSort: json['findingBestSort'] as bool,
+        tableViewRows: json['tableViewRows'] as int,
+        tableViewCols: json['tableViewCols'] as int,
       );
     } catch (e) {
       debugPrint("Error parsing SelectionData from JSON: $e");
@@ -63,7 +72,8 @@ class SelectionData {
       'scrollOffsetY': scrollOffsetY,
       'editingMode': editingMode,
       'previousContent': previousContent,
-      'findingBestSort': findingBestSort,
+      'tableViewRows': tableViewRows,
+      'tableViewCols': tableViewCols,
     };
   }
 }

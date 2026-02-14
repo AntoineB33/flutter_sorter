@@ -1,14 +1,7 @@
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
-
-/// A simple container for the result
-class SortingResponse {
-  final List<int> sortedIds;
-  final bool isNaturalOrderValid;
-
-  SortingResponse({required this.sortedIds, required this.isNaturalOrderValid});
-}
+import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
 
 class SortingService {
   static const String wsUrl = 'ws://127.0.0.1:8000/ws/solve';

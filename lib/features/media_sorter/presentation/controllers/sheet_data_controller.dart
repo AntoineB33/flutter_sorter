@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
@@ -145,7 +145,7 @@ class SheetDataController extends ChangeNotifier {
       );
     }
     if (toCalculate) {
-      sheet.calculated = false;
+      analysisResults[currentSheetName]!.resultCalculated = false;
       calculate(
         sheet,
         analysisResults,

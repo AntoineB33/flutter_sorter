@@ -1,7 +1,7 @@
 import 'dart:math';
-import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:flutter/foundation.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
@@ -255,7 +255,7 @@ class SelectionController extends ChangeNotifier {
     String? initialInput,
   }) {
     SelectionData selection = lastSelectionBySheet[currentSheetName]!;
-    if (selection.findingBestSort) {
+    if (analysisResults[currentSheetName]!.isFindingBestSortAndSort) {
       return;
     }
     selection.previousContent = getCellContent(

@@ -5,8 +5,8 @@ import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_she
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 
 class FileSheetLocalDataSource implements IFileSheetLocalDataSource {

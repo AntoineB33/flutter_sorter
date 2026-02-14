@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/services.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 
