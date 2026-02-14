@@ -1,4 +1,5 @@
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
@@ -22,6 +23,10 @@ class GetSheetDataUseCase {
 
   Future<Map<String, SelectionData>> getAllLastSelected() async {
     return await repository.getAllLastSelected();
+  }
+
+  Future<Map<String, SortStatus>> getAllSortStatus() async {
+    return await repository.getAllSortStatus();
   }
 
   Future<AnalysisResult> getAnalysisResult(String sheetName) async {

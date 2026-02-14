@@ -1,4 +1,5 @@
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_repository.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
@@ -57,6 +58,16 @@ class SheetRepositoryImpl implements SheetRepository {
   @override
   Future<void> saveAllLastSelected(Map<String, SelectionData> cells) async {
     await dataSource.saveAllLastSelected(cells);
+  }
+
+  @override
+  Future<Map<String, SortStatus>> getAllSortStatus() async {
+    return await dataSource.getAllSortStatus();
+  }
+
+  @override
+  Future<void> saveAllSortStatus(Map<String, SortStatus> sortStatusBySheet) async {
+    await dataSource.saveAllSortStatus(sortStatusBySheet);
   }
 
   @override

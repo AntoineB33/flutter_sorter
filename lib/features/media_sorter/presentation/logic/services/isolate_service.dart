@@ -2,6 +2,7 @@ import 'dart:isolate';
 
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
@@ -37,12 +38,13 @@ class IsolateService {
   static Future<void> _isolateEntryC(List<dynamic> args) async {
     SendPort sendPort = args[0];
     AnalysisResult result = args[1];
+    SortStatus sortStatus = args[2];
 
     SortingResponse? response = await SortController.solveSatisfaction(
       result,
     );
     if (response != null) {
-      result.sorted = response.isNaturalOrderValid;
+      sortStatus.sorted = response.isNaturalOrderValid;
       result.bestMediaSortOrder = response.sortedIds;
     }
 
@@ -63,7 +65,6 @@ class IsolateService {
     _isolateB = await Isolate.spawn(CalculationService.runCalculation, [
       receivePort.sendPort,
       sheetContent,
-      result,
     ]);
 
     // Wait for the first message
@@ -79,7 +80,7 @@ class IsolateService {
     }
   }
 
-  Future<List<int>?> runHeavyCalculationC(AnalysisResult result) async {
+  Future<List<int>?> runHeavyCalculationC(AnalysisResult result, SortStatus sortStatus) async {
     cancelC();
 
     final receivePort = ReceivePort();
@@ -88,6 +89,7 @@ class IsolateService {
     _isolateC = await Isolate.spawn(_isolateEntryC, [
       receivePort.sendPort,
       result,
+      sortStatus,
     ]);
 
     try {

@@ -8,6 +8,7 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 
 class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   @override
@@ -74,7 +75,9 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
     );
     await file.create(recursive: true);
     final jsonString = jsonEncode(sheetNames);
-    await file.writeAsString(jsonString);
+    final tempFile = File('${file.path}.tmp');
+    await tempFile.writeAsString(jsonString, flush: true);
+    await tempFile.rename(file.path);
   }
 
   Future<File> _getFile(String sheetName) async {
@@ -106,14 +109,18 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
       await Future.delayed(
         const Duration(milliseconds: SpreadsheetConstants.debugDelayMs),
       );
+      
       final file = await _getFile(sheetName);
       final jsonString = jsonEncode(sheet.toJson());
-      await file.writeAsString(jsonString);
+      final tempFile = File('${file.path}.tmp');
+      await tempFile.writeAsString(jsonString, flush: true);
+      await tempFile.rename(file.path);
+      
     } catch (e) {
       throw Exception("Error saving sheet: $e");
     }
   }
-
+  
   @override
   Future<Map<String, SelectionData>> getAllLastSelected() async {
     final directory = await getApplicationDocumentsDirectory();
@@ -145,7 +152,43 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
     final file = File('${directory.path}/${SpreadsheetConstants.folderName}/${SpreadsheetConstants.allLastSelectedFileName}');
     await file.create(recursive: true);
     final jsonString = jsonEncode(lastSelected);
-    await file.writeAsString(jsonString);
+    final tempFile = File('${file.path}.tmp');
+    await tempFile.writeAsString(jsonString, flush: true);
+    await tempFile.rename(file.path);
+  }
+
+  @override
+  Future<Map<String, SortStatus>> getAllSortStatus() async {
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File(
+      '${directory.path}/${SpreadsheetConstants.folderName}/${SpreadsheetConstants.allSortStatusFileName}',
+    );
+    try {
+      final jsonString = await file.readAsString();
+      final Map<String, dynamic> decoded = jsonDecode(jsonString);
+      final Map<String, SortStatus> result = {};
+      decoded.forEach((key, value) {
+        result[key] = SortStatus.fromJson(value);
+      });
+      return result;
+    } catch (e) {
+      debugPrint("Error reading all sort status: $e");
+      return {};
+    }
+  }
+
+  @override
+  Future<void> saveAllSortStatus(Map<String, SortStatus> sortStatusBySheet) async {
+    await Future.delayed(
+      const Duration(milliseconds: SpreadsheetConstants.debugDelayMs),
+    );
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/${SpreadsheetConstants.folderName}/${SpreadsheetConstants.allSortStatusFileName}');
+    await file.create(recursive: true);
+    final jsonString = jsonEncode(sortStatusBySheet);
+    final tempFile = File('${file.path}.tmp');
+    await tempFile.writeAsString(jsonString, flush: true);
+    await tempFile.rename(file.path);
   }
 
   @override
@@ -176,7 +219,9 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
       );
       await file.create(recursive: true);
       final jsonString = jsonEncode(result.toJson());
-      await file.writeAsString(jsonString);
+      final tempFile = File('${file.path}.tmp');
+      await tempFile.writeAsString(jsonString, flush: true);
+      await tempFile.rename(file.path);
     } catch (e) {
       throw Exception("Error saving analysis result: $e");
     }

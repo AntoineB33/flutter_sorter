@@ -8,6 +8,7 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
@@ -29,7 +30,9 @@ class SheetDataController extends ChangeNotifier {
     SheetData sheet,
     Map<String, AnalysisResult> analysisResults,
     Map<String, SelectionData> lastSelectionBySheet,
+    SortStatus sortStatus,
     String currentSheetName,
+    {bool init}
   )
   calculate;
   late void Function(AnalysisResult result, Point<int> primarySelectedCell)
@@ -100,6 +103,7 @@ class SheetDataController extends ChangeNotifier {
     Map<String, AnalysisResult> analysisResults,
     SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
+    SortStatus sortStatus,
     double row1ToScreenBottomHeight,
     double colBToScreenRightWidth,
     String currentSheetName,
@@ -121,6 +125,7 @@ class SheetDataController extends ChangeNotifier {
       sheet,
       analysisResults,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
     );
   }
@@ -129,6 +134,7 @@ class SheetDataController extends ChangeNotifier {
     SheetData sheet,
     Map<String, AnalysisResult> analysisResults,
     Map<String, SelectionData> lastSelectionBySheet,
+    SortStatus sortStatus,
     String currentSheetName, {
     bool save = true,
     bool updateHistory = false,
@@ -145,11 +151,11 @@ class SheetDataController extends ChangeNotifier {
       );
     }
     if (toCalculate) {
-      analysisResults[currentSheetName]!.resultCalculated = false;
       calculate(
         sheet,
         analysisResults,
         lastSelectionBySheet,
+        sortStatus,
         currentSheetName,
       );
     }
@@ -276,6 +282,7 @@ class SheetDataController extends ChangeNotifier {
     SheetData sheet,
     Map<String, AnalysisResult> analysisResults,
     Map<String, SelectionData> lastSelectionBySheet,
+    SortStatus sortStatus,
     String currentSheetName,
     int col,
     ColumnType type, {
@@ -313,6 +320,7 @@ class SheetDataController extends ChangeNotifier {
       sheet,
       analysisResults,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       updateHistory: true,
     );
@@ -322,6 +330,7 @@ class SheetDataController extends ChangeNotifier {
     SheetData sheet,
     Map<String, AnalysisResult> analysisResults,
     SelectionData selection,
+    SortStatus sortStatus,
     String currentSheetName,
     double row1ToScreenBottomHeight,
     double colBToScreenRightWidth,
@@ -344,6 +353,7 @@ class SheetDataController extends ChangeNotifier {
       sheet,
       analysisResults,
       lastSelectionBySheet,
+      sortStatus,
       row1ToScreenBottomHeight,
       colBToScreenRightWidth,
       currentSheetName,
@@ -355,6 +365,7 @@ class SheetDataController extends ChangeNotifier {
     SheetData sheet,
     Map<String, AnalysisResult> analysisResults,
     Map<String, SelectionData> lastSelectionBySheet,
+    SortStatus sortStatus,
     double row1ToScreenBottomHeight,
     double colBToScreenRightWidth,
     String currentSheetName,
@@ -380,6 +391,7 @@ class SheetDataController extends ChangeNotifier {
       sheet,
       analysisResults,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       updateHistory: true,
       toCalculate: toCalculate,
@@ -392,6 +404,7 @@ class SheetDataController extends ChangeNotifier {
     SelectionData selection,
     String currentSheetName,
     Map<String, SelectionData> lastSelectionBySheet,
+    SortStatus sortStatus,
     double row1ToScreenBottomHeight,
     double colBToScreenRightWidth,
   ) {
@@ -424,6 +437,7 @@ class SheetDataController extends ChangeNotifier {
       sheet,
       analysisResults,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       updateHistory: true,
     );
@@ -434,12 +448,14 @@ class SheetDataController extends ChangeNotifier {
     Map<String, AnalysisResult> analysisResults,
     SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
+    SortStatus sortStatus,
     String currentSheetName,
   ) {
     setColumnType(
       sheet,
       analysisResults,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       1,
       ColumnType.dependencies,
@@ -448,6 +464,7 @@ class SheetDataController extends ChangeNotifier {
       sheet,
       analysisResults,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       2,
       ColumnType.dependencies,
@@ -456,6 +473,7 @@ class SheetDataController extends ChangeNotifier {
       sheet,
       analysisResults,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       3,
       ColumnType.dependencies,
@@ -464,6 +482,7 @@ class SheetDataController extends ChangeNotifier {
       sheet,
       analysisResults,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       7,
       ColumnType.urls,
@@ -472,6 +491,7 @@ class SheetDataController extends ChangeNotifier {
       sheet,
       analysisResults,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       8,
       ColumnType.dependencies,

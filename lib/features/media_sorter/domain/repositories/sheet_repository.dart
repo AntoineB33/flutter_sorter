@@ -1,6 +1,7 @@
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 
 abstract class SheetRepository {
   Future<SelectionData> getLastSelection();
@@ -13,6 +14,8 @@ abstract class SheetRepository {
   Future<void> saveAllSheetNames(List<String> sheetNames);
   Future<Map<String, SelectionData>> getAllLastSelected();
   Future<void> saveAllLastSelected(Map<String, SelectionData> cells);
+  Future<Map<String, SortStatus>> getAllSortStatus();
+  Future<void> saveAllSortStatus(Map<String, SortStatus> sortStatusBySheet);
   Future<AnalysisResult> getAnalysisResult(String sheetName);
   Future<void> saveAnalysisResult(String sheetName, AnalysisResult result);
   Future<void> clearAllData();

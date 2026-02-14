@@ -4,6 +4,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/selection_d
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/sheet_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
@@ -28,7 +29,7 @@ class WorkbookController extends ChangeNotifier {
   Map<String, SheetData> loadedSheetsData = {};
   Map<String, SelectionData> lastSelectionBySheet = {};
   Map<String, AnalysisResult> analysisResults = {};
-  Map<String, bool> calculationStatusBySheet = {};
+  Map<String, SortStatus> sortStatusBySheet = {};
   List<String> sheetNames = [];
   String currentSheetName = "";
 
@@ -80,7 +81,9 @@ class WorkbookController extends ChangeNotifier {
   // Point<int> get primarySelectedCell =>
   //     _selectionController.primarySelectedCell;
   String get previousContent => selection.previousContent;
-  bool get isFindingBestSort => result.isFindingBestSort;
+  SortStatus get sortStatus => sortStatusBySheet[currentSheetName] ?? SortStatus.empty();
+  bool get isFindingBestSort => sortStatus.isFindingBestSort;
+  bool get isFindingBestSortAndSort => sortStatus.isFindingBestSortAndSort;
   double get scrollOffsetX => selection.scrollOffsetX;
   double get scrollOffsetY => selection.scrollOffsetY;
   Point<int> get primarySelectedCell => selection.primarySelectedCell;
@@ -100,6 +103,7 @@ class WorkbookController extends ChangeNotifier {
       result,
       selection,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       node,
       isExpanded,
@@ -111,6 +115,7 @@ class WorkbookController extends ChangeNotifier {
       sheet,
       analysisResults,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       _gridController.row1ToScreenBottomHeight,
       _gridController.colBToScreenRightWidth,
@@ -122,6 +127,19 @@ class WorkbookController extends ChangeNotifier {
       sheet,
       analysisResults,
       lastSelectionBySheet,
+      sortStatus,
+      currentSheetName,
+      _gridController.row1ToScreenBottomHeight,
+      _gridController.colBToScreenRightWidth,
+    );
+  }
+
+  void findBestSortAndSortToggle() {
+    _sortController.findBestSortAndSortToggle(
+      sheet,
+      analysisResults,
+      lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       _gridController.row1ToScreenBottomHeight,
       _gridController.colBToScreenRightWidth,
@@ -169,6 +187,7 @@ class WorkbookController extends ChangeNotifier {
       sheet,
       analysisResults,
       lastSelectionBySheet,
+      sortStatus,
       _gridController.row1ToScreenBottomHeight,
       _gridController.colBToScreenRightWidth,
       currentSheetName,
@@ -198,7 +217,7 @@ class WorkbookController extends ChangeNotifier {
   }
 
   bool isRowValid(int row) {
-    return _gridController.isRowValid(sheet, row, result);
+    return _gridController.isRowValid(sheet, row, result, sortStatus);
   }
 
   bool isPrimarySelectedCell(int row, int col) {
@@ -239,6 +258,7 @@ class WorkbookController extends ChangeNotifier {
       sheet,
       analysisResults,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       _gridController.row1ToScreenBottomHeight,
       _gridController.colBToScreenRightWidth,
@@ -252,6 +272,7 @@ class WorkbookController extends ChangeNotifier {
       analysisResults,
       selection,
       lastSelectionBySheet,
+      sortStatus,
       _gridController.row1ToScreenBottomHeight,
       _gridController.colBToScreenRightWidth,
       currentSheetName,
@@ -277,6 +298,7 @@ class WorkbookController extends ChangeNotifier {
       sheet,
       analysisResults,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       col,
       type,
@@ -289,6 +311,7 @@ class WorkbookController extends ChangeNotifier {
       analysisResults,
       selection,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
     );
   }
@@ -430,11 +453,26 @@ class WorkbookController extends ChangeNotifier {
         debugPrint("No sheet data saved for selection of sheet $name");
       }
     }
-    for (var name in sheetNames) {
-      if (!lastSelectionBySheet.containsKey(name)) {
-        lastSelectionBySheet[name] = SelectionData.empty();
-        saveLastSelectionBySheet = true;
-        debugPrint("No last selection saved for sheet $name");
+
+    // --- get sort status by sheet ---
+    sortStatusBySheet.addAll(
+      await _sortController.getAllSortStatus(),
+    );
+    bool saveCalculationStatusBySheet = _sortController.completeMissing(
+      sortStatusBySheet,
+      sheetNames,
+    );
+    for (var name in sortStatusBySheet.keys.toList()) {
+      if (!CheckValidStrings.isValidSheetName(name)) {
+        debugPrint(
+          "Sort status found for sheet '$name' which is not in sheet names list, removing it.",
+        );
+        sortStatusBySheet.remove(name);
+        saveCalculationStatusBySheet = true;
+      } else if (!sheetNames.contains(name)) {
+        sheetNames.add(name);
+        saveAllSheetNames = true;
+        debugPrint("No sheet data saved for sort status of sheet $name");
       }
     }
 
@@ -454,19 +492,37 @@ class WorkbookController extends ChangeNotifier {
     if (saveLastSelectionBySheet) {
       await _selectionController.saveAllLastSelected(lastSelectionBySheet);
     }
-
+    if (saveCalculationStatusBySheet) {
+      _sortController.saveAllSortStatus(sortStatusBySheet);
+    }
     loadSheetByName(currentSheetName, init: true);
     for (var name in sheetNames) {
-      if (isFindingBestSort) {
-        _sortController.findBestSortToggle(
+      if (!sortStatusBySheet[name]!.resultCalculated || !sortStatusBySheet[name]!.validSortCalculated) {
+        await loadAnalysisResult(name);
+        _sortController.calculate(
           loadedSheetsData[name]!,
           analysisResults,
           lastSelectionBySheet,
+          sortStatus,
           name,
-          _gridController.row1ToScreenBottomHeight,
-          _gridController.colBToScreenRightWidth,
+          init: true,
         );
+      } else if (!sortStatusBySheet[name]!.isFindingBestSort) {
+        await loadAnalysisResult(name);
+        _sortController.findBestSortToggle(loadedSheetsData[name]!, analysisResults, lastSelectionBySheet, sortStatus, name, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth);
+      } else if (!sortStatusBySheet[name]!.isFindingBestSortAndSort) {
+        await loadAnalysisResult(name);
+        _sortController.findBestSortAndSortToggle(loadedSheetsData[name]!, analysisResults, lastSelectionBySheet, sortStatus, name, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth);
       }
+    }
+  }
+
+  Future<void> loadAnalysisResult(String name) async {
+    try {
+      analysisResults[name] = await _getDataUseCase.getAnalysisResult(name);
+    } catch (e) {
+      logger.e("Error getting analysis result for $name: $e");
+      analysisResults[name] = AnalysisResult.empty();
     }
   }
 
@@ -490,12 +546,7 @@ class WorkbookController extends ChangeNotifier {
           loadedSheetsData[name] = SheetData.empty();
           _selectionController.clearLastSelection(lastSelectionBySheet, name);
         }
-        try {
-          analysisResults[name] = await _getDataUseCase.getAnalysisResult(name);
-        } catch (e) {
-          logger.e("Error getting analysis result for $name: $e");
-          analysisResults[name] = AnalysisResult.empty();
-        }
+        await loadAnalysisResult(name);
       }
     } else {
       loadedSheetsData[name] = SheetData.empty();
@@ -527,14 +578,6 @@ class WorkbookController extends ChangeNotifier {
       y: selection.scrollOffsetY,
       animate: true,
     );
-    if (!result.resultCalculated || !result.validSortCalculated) {
-      _sortController.calculate(
-        sheet,
-        analysisResults,
-        lastSelectionBySheet,
-        currentSheetName,
-      );
-    }
     notifyListeners();
   }
 
@@ -553,6 +596,7 @@ class WorkbookController extends ChangeNotifier {
     _treeController.populateAllTrees(
       selection,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       sheet,
       result,
@@ -562,7 +606,7 @@ class WorkbookController extends ChangeNotifier {
   }
 
   bool canBeSorted() {
-    return _sortController.canBeSorted(sheet, result);
+    return _sortController.canBeSorted(sheet, result, sortStatus);
   }
 
   bool sorted() {

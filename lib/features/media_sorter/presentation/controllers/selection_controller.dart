@@ -5,6 +5,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
@@ -19,6 +20,7 @@ class SelectionController extends ChangeNotifier {
     Map<String, AnalysisResult> analysisResults,
     SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
+    SortStatus sortStatus,
     double row1ToScreenBottomHeight,
     double colBToScreenRightWidth,
     String currentSheetName,
@@ -249,13 +251,14 @@ class SelectionController extends ChangeNotifier {
     SheetData sheet,
     Map<String, AnalysisResult> analysisResults,
     Map<String, SelectionData> lastSelectionBySheet,
+    SortStatus sortStatus,
     String currentSheetName,
     double row1ToScreenBottomHeight,
     double colBToScreenRightWidth, {
     String? initialInput,
   }) {
     SelectionData selection = lastSelectionBySheet[currentSheetName]!;
-    if (analysisResults[currentSheetName]!.isFindingBestSortAndSort) {
+    if (sortStatus.isFindingBestSortAndSort) {
       return;
     }
     selection.previousContent = getCellContent(
@@ -269,6 +272,7 @@ class SelectionController extends ChangeNotifier {
         analysisResults,
         selection,
         lastSelectionBySheet,
+        sortStatus,
         row1ToScreenBottomHeight,
         colBToScreenRightWidth,
         currentSheetName,

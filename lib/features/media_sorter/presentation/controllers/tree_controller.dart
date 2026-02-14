@@ -10,6 +10,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 
 class TreeController extends ChangeNotifier {
   // --- states ---
@@ -42,6 +43,7 @@ class TreeController extends ChangeNotifier {
   void populateAllTrees(
     SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
+    SortStatus sortStatus,
     String currentSheetName,
     SheetData sheet,
     AnalysisResult result,
@@ -51,6 +53,7 @@ class TreeController extends ChangeNotifier {
     populateTree(
       selection,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       sheet,
       result,
@@ -68,12 +71,13 @@ class TreeController extends ChangeNotifier {
   void populateTree(
     SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
+    SortStatus sortStatus,
     String currentSheetName,
     SheetData sheet,
     AnalysisResult result,
     List<NodeStruct> roots,
   ) {
-    if (!result.resultCalculated) return;
+    if (!sortStatus.resultCalculated) return;
 
     for (final root in roots) {
       var stack = [root];
@@ -653,6 +657,7 @@ class TreeController extends ChangeNotifier {
   void updateMentionsContext(
     SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
+    SortStatus sortStatus,
     String currentSheetName,
     SheetData sheet,
     AnalysisResult result,
@@ -663,6 +668,7 @@ class TreeController extends ChangeNotifier {
     populateTree(
       selection,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       sheet,
       result,
@@ -686,6 +692,7 @@ class TreeController extends ChangeNotifier {
     AnalysisResult result,
     SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
+    SortStatus sortStatus,
     String currentSheetName,
     NodeStruct node,
     bool isExpanded,
@@ -697,6 +704,7 @@ class TreeController extends ChangeNotifier {
     populateTree(
       selection,
       lastSelectionBySheet,
+      sortStatus,
       currentSheetName,
       sheet,
       result,

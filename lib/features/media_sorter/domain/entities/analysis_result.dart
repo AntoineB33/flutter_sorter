@@ -49,11 +49,6 @@ class AnalysisResult {
   List<int> validRowIndexes;
   List<int>? bestMediaSortOrder;
 
-  bool resultCalculated;
-  bool validSortCalculated;
-  bool sorted;
-  bool isFindingBestSort;
-  bool isFindingBestSortAndSort;
   bool isBestSort;
 
   List<List<int>> validAreas;
@@ -80,11 +75,6 @@ class AnalysisResult {
     required this.isMedium,
     required this.validRowIndexes,
     required this.bestMediaSortOrder,
-    required this.resultCalculated,
-    required this.validSortCalculated,
-    required this.isFindingBestSort,
-    required this.isFindingBestSortAndSort,
-    required this.sorted,
     required this.idSorterProgress,
     required this.isBestSort,
   }) {
@@ -114,12 +104,7 @@ class AnalysisResult {
       validRowIndexes: [],
       formatedTable: [],
       bestMediaSortOrder: null,
-      resultCalculated: false,
-      validSortCalculated: false,
       isBestSort: false,
-      isFindingBestSort: false,
-      isFindingBestSortAndSort: false,
-      sorted: false,
       idSorterProgress: -1,
     );
   }
@@ -233,13 +218,8 @@ class AnalysisResult {
       bestMediaSortOrder: json['bestMediaSortOrder'] != null
           ? List<int>.from(json['bestMediaSortOrder'] as List<dynamic>)
           : null,
-      resultCalculated: json['resultCalculated'] as bool,
-      validSortCalculated: json['validSortCalculated'] as bool,
       idSorterProgress: json['idSorterProgress'] as int,
       isBestSort: json['isBestSort'] as bool,
-      isFindingBestSort: json['isFindingBestSort'] as bool,
-      isFindingBestSortAndSort: json['isFindingBestSortAndSort'] as bool,
-      sorted: json['sorted'] as bool,
     );
   }
 

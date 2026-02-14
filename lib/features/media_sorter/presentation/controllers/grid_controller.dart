@@ -5,6 +5,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/selection_d
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/layout_calculator.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
@@ -19,7 +20,7 @@ class GridController {
     double ? visibleWidth,
     bool notify,
     bool save}) updateRowColCount;
-  late bool Function(SheetData sheet, AnalysisResult result) canBeSorted;
+  late bool Function(SheetData sheet, AnalysisResult result, SortStatus sortStatus) canBeSorted;
   late String Function(List<List<String>> table, int row, int col) getCellContent;
 
   final SpreadsheetLayoutCalculator _layoutCalculator =
@@ -267,8 +268,8 @@ class GridController {
     );
   }
 
-  bool isRowValid(SheetData sheet, int rowId, AnalysisResult result) {
-    if (canBeSorted(sheet, result)) {
+  bool isRowValid(SheetData sheet, int rowId, AnalysisResult result, SortStatus sortStatus) {
+    if (canBeSorted(sheet, result, sortStatus)) {
       return rowId < result.isMedium.length && result.isMedium[rowId];
     }
     if (rowId == 0) {
