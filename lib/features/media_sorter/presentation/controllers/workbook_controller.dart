@@ -8,6 +8,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status
 import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/spreadsheet_mediator.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/check_valid_strings.dart';
 import 'package:trying_flutter/utils/logger.dart';
 import 'dart:math';
@@ -33,13 +34,7 @@ class WorkbookController extends ChangeNotifier {
   List<String> sheetNames = [];
   String currentSheetName = "";
 
-  final GridController _gridController;
-  final HistoryController _historyController;
-  final SelectionController _selectionController;
-  final SheetDataController _dataController;
-  final TreeController _treeController;
-  final SpreadsheetStreamController _streamController;
-  final SortController _sortController;
+  final SpreadsheetMediator _mediator;
 
   // --- usecases ---
   final SaveSheetDataUseCase _saveSheetDataUseCase = SaveSheetDataUseCase(
@@ -50,8 +45,15 @@ class WorkbookController extends ChangeNotifier {
   );
   final CalculationService calculationService = CalculationService();
 
-  // Delegates
-  final SpreadsheetKeyboardDelegate _keyboardDelegate;
+
+  GridController get _gridController => _mediator.gridController;
+  SheetDataController get _dataController => _mediator.dataController;
+  SelectionController get _selectionController => _mediator.selectionController;
+  TreeController get _treeController => _mediator.treeController;
+  SortController get _sortController => _mediator.sortController;
+  SpreadsheetStreamController get _streamController => _mediator.streamController;
+  HistoryController get _historyController => _mediator.historyController;
+  SpreadsheetKeyboardDelegate get _keyboardDelegate => _mediator.keyboardDelegate;
 
   SelectionData get selection =>
       lastSelectionBySheet[currentSheetName] ?? SelectionData.empty();
@@ -317,52 +319,10 @@ class WorkbookController extends ChangeNotifier {
   }
 
   WorkbookController(
-    this._gridController,
-    this._historyController,
-    this._selectionController,
-    this._dataController,
-    this._treeController,
-    this._streamController,
-    this._sortController,
-    this._keyboardDelegate,
+    this._mediator,
   ) {
-    _gridController.updateRowColCount = _selectionController.updateRowColCount;
-    _gridController.canBeSorted = _sortController.canBeSorted;
-    _gridController.getCellContent = _dataController.getCellContent;
-    _historyController.updateCell = _dataController.updateCell;
-    _historyController.setColumnType = _dataController.setColumnType;
-    _historyController.saveAndCalculate = _dataController.saveAndCalculate;
-    _selectionController.commitHistory = _historyController.commitHistory;
-    _selectionController.discardPendingChanges =
-        _historyController.discardPendingChanges;
-    _selectionController.onChanged = _dataController.onChanged;
-    _selectionController.getCellContent = _dataController.getCellContent;
-    _selectionController.updateMentionsContext =
-        _treeController.updateMentionsRoot;
-    _selectionController.triggerScrollTo = _streamController.triggerScrollTo;
-    _selectionController.getNewRowColCount = _gridController.getNewRowColCount;
-    _dataController.recordColumnTypeChange =
-        _historyController.recordColumnTypeChange;
-    _dataController.commitHistory = _historyController.commitHistory;
-    _dataController.calculate = _sortController.calculate;
     _dataController.onAnalysisComplete = onAnalysisComplete;
-    _dataController.recordCellChange = _historyController.recordCellChange;
-    _dataController.adjustRowHeightAfterUpdate =
-        _gridController.adjustRowHeightAfterUpdate;
-    _sortController.stopEditing = _selectionController.stopEditing;
-    _sortController.setTable = _dataController.setTable;
     _sortController.onAnalysisComplete = onAnalysisComplete;
-    _keyboardDelegate.startEditing = _selectionController.startEditing;
-    _keyboardDelegate.setPrimarySelection =
-        _selectionController.setPrimarySelection;
-    _keyboardDelegate.copySelectionToClipboard =
-        _dataController.copySelectionToClipboard;
-    _keyboardDelegate.pasteSelection = _dataController.pasteSelection;
-    _keyboardDelegate.delete = _dataController.delete;
-    _keyboardDelegate.undo = _historyController.undo;
-    _keyboardDelegate.redo = _historyController.redo;
-    _treeController.onCellSelected = _selectionController.setPrimarySelection;
-    _treeController.getCellContent = _dataController.getCellContent;
 
     _historyController.addListener(() {
       notifyListeners();

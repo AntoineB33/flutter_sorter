@@ -13,6 +13,7 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/tr
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/delegates/spreadsheet_keyboard_delegate.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/spreadsheet_mediator.dart';
 
 final sl = GetIt.instance; // sl = Service Locator
 
@@ -25,20 +26,21 @@ Future<void> init() async {
     SheetRepositoryImpl(FileSheetLocalDataSource()),
   );
   sl.registerLazySingleton<SortController>(() => SortController(saveSheetDataUseCase));
+  final SpreadsheetMediator mediator = SpreadsheetMediator(
+    gridController: GridController(),
+    historyController: HistoryController(),
+    selectionController: SelectionController(getDataUseCase, saveSheetDataUseCase),
+    dataController: SheetDataController(
+      saveSheetDataUseCase: saveSheetDataUseCase,
+    ),
+    treeController: sl<TreeController>(),
+    sortController: sl<SortController>(),
+    streamController: SpreadsheetStreamController(),
+    keyboardDelegate: SpreadsheetKeyboardDelegate(),
+  );
   sl.registerLazySingleton(
     () => WorkbookController(
-      GridController(),
-      HistoryController(),
-      SelectionController(getDataUseCase, saveSheetDataUseCase),
-      SheetDataController(
-        saveSheetDataUseCase: SaveSheetDataUseCase(
-          SheetRepositoryImpl(FileSheetLocalDataSource()),
-        ),
-      ),
-      sl<TreeController>(),
-      SpreadsheetStreamController(),
-      sl<SortController>(),
-      SpreadsheetKeyboardDelegate(),
+      mediator,
     ),
   );
 }
