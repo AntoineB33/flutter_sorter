@@ -34,8 +34,6 @@ class SelectionController extends ChangeNotifier {
   late (int, int) Function(
     SelectionData selection,
     SheetData sheet,
-    int rowCount,
-    int colCount,
     double? visibleHeight,
     double? visibleWidth,
   )
@@ -68,16 +66,10 @@ class SelectionController extends ChangeNotifier {
     bool notify = true,
     bool save = true,
   }) {
-    SelectionData? selection = lastSelectionBySheet[currentSheetName];
-    if (selection == null) {
-      debugPrint("No selection data found for current sheet when updating row/col count");
-      return;
-    }
+    SelectionData selection = lastSelectionBySheet[currentSheetName] ?? SelectionData.empty();
     var (targetRows, targetCols) = getNewRowColCount(
       selection,
       sheet,
-      rowCount(sheet.sheetContent),
-      colCount(sheet.sheetContent),
       visibleHeight,
       visibleWidth,
     );

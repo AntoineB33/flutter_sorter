@@ -458,14 +458,15 @@ class WorkbookController extends ChangeNotifier {
     await loadSheetByName(currentSheetName, init: true);
     for (var name in sheetNames) {
       if (!sortStatusBySheet[name]!.resultCalculated || !sortStatusBySheet[name]!.validSortCalculated) {
-        await loadAnalysisResult(name);
+        if (!analysisResults.containsKey(name)) {
+          await loadAnalysisResult(name);
+        }
         _sortController.calculate(
           loadedSheetsData[name]!,
           analysisResults,
           lastSelectionBySheet,
           sortStatus,
           name,
-          init: true,
         );
       } else if (!sortStatusBySheet[name]!.isFindingBestSort) {
         await loadAnalysisResult(name);
@@ -560,8 +561,6 @@ class WorkbookController extends ChangeNotifier {
       currentSheetName,
       sheet,
       result,
-      rowCount,
-      colCount,
     );
   }
 

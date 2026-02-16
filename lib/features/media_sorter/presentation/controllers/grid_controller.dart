@@ -44,7 +44,7 @@ class GridController {
     return rowCount;
   }
   
-  (int, int) getNewRowColCount(SelectionData selection, SheetData sheet, int rowCount, int colCount,     double? visibleHeight,
+  (int, int) getNewRowColCount(SelectionData selection, SheetData sheet, double? visibleHeight,
     double? visibleWidth,
   ) {
     int targetRows = selection.tableViewRows;
@@ -54,7 +54,7 @@ class GridController {
       targetRows = minRows(
         sheet,
         sheet.rowsBottomPos,
-        rowCount,
+        rowCount(sheet.sheetContent),
         row1ToScreenBottomHeight,
       );
     }
@@ -63,7 +63,7 @@ class GridController {
       targetCols = minCols(
         sheet,
         sheet.colRightPos,
-        colCount,
+        colCount(sheet.sheetContent),
         colBToScreenRightWidth,
       );
     }

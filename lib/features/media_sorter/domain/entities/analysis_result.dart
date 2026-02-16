@@ -288,6 +288,19 @@ class AnalysisResult {
         (key, value) =>
             MapEntry(key.toString(), value.map((att) => att.toJson()).toList()),
       ),
+      'myRules': myRules.map(
+        (rowId, targetMap) => MapEntry(
+          rowId.toString(),
+          targetMap.map(
+            (target, rulesList) => MapEntry(
+              target.toString(),
+              rulesList.map((rule) => rule.toJson()).toList(),
+            ),
+          ),
+        ),
+      ),
+      'valid_areas': validAreas,
+      'groupsToMaximize': groupsToMaximize,
       'validRowIndexes': validRowIndexes,
       'bestMediaSortOrder': bestMediaSortOrder,
       'idSorterProgress': idSorterProgress,

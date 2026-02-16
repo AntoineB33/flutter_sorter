@@ -132,27 +132,39 @@ class SortController extends ChangeNotifier {
     Map<String, AnalysisResult> analysisResults,
     Map<String, SelectionData> lastSelectionBySheet,
     SortStatus sortStatus,
-    String currentSheetName,
-    {init = false}
+    String currentSheetName
   ) async {
     AnalysisResult result = analysisResults[currentSheetName]!;
-    if (!init || !sortStatus.resultCalculated) {
+    if (!sortStatus.resultCalculated) {
       if (sortStatus.resultCalculated && lightCalculations(result)) {
         return;
       }
       _isolateServices[currentSheetName] ??= IsolateService();
       _isolateServices[currentSheetName]!.cancelB();
-      ThreadResult resultB = await _isolateServices[currentSheetName]!
-          .runHeavyCalculationB(sheet.sheetContent, result);
-      analysisResults[currentSheetName] = resultB.result;
-      result = resultB.result;
-      sortStatus.resultCalculated = true;
-      sortStatus.validSortCalculated = !resultB.startSorter && sortStatus.validSortCalculated;
+      try {
+        ThreadResult resultB = await _isolateServices[currentSheetName]!
+            .runHeavyCalculationB(sheet.sheetContent, result);
+        analysisResults[currentSheetName] = resultB.result;
+        result = resultB.result;
+        sortStatus.resultCalculated = true;
+        sortStatus.validSortCalculated = !resultB.startSorter && sortStatus.validSortCalculated;
+      } catch (e) {
+        result.errorRoot.newChildren!.add(
+          NodeStruct(
+            message: "An error occurred while trying to analyze the sheet : $e",
+          ),
+        );
+        return;
+      }
     }
     if (!sortStatus.validSortCalculated) {
       try {
-        result.bestMediaSortOrder = await _isolateServices[currentSheetName]!
-          .runHeavyCalculationC(result, sortStatus);
+        SortingResponse? response = await _isolateServices[currentSheetName]!
+          .runHeavyCalculationC(result);
+        if (response != null) {
+          sortStatus.sorted = response.isNaturalOrderValid;
+          result.bestMediaSortOrder = response.sortedIds;
+        }
         sortStatus.validSortCalculated = true;
       } catch (e) {
         result.errorRoot.newChildren!.add(
@@ -185,7 +197,7 @@ class SortController extends ChangeNotifier {
 
   static Future<SortingResponse?> solveSatisfaction(
     AnalysisResult result,
-  ) async {  
+  ) async {
     try {
       // await for pauses the execution of this function
       // until the stream is closed by the server.

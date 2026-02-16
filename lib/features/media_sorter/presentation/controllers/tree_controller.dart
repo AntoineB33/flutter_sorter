@@ -47,8 +47,6 @@ class TreeController extends ChangeNotifier {
     String currentSheetName,
     SheetData sheet,
     AnalysisResult result,
-    int rowCount,
-    int colCount,
   ) {
     populateTree(
       selection,
@@ -90,8 +88,6 @@ class TreeController extends ChangeNotifier {
           sheet,
           result,
           node,
-          rowCount(sheet.sheetContent),
-          colCount(sheet.sheetContent),
         ); // Internal call
         if (node.isExpanded) {
           _handleExpansion(node, stack);
@@ -134,8 +130,6 @@ class TreeController extends ChangeNotifier {
     SheetData sheet,
     AnalysisResult result,
     NodeStruct node,
-    int rowCount,
-    int colCount,
   ) {
     bool populateChildren = node.newChildren == null;
     if (populateChildren) {
@@ -189,8 +183,6 @@ class TreeController extends ChangeNotifier {
           result,
           sheet,
           node,
-          rowCount,
-          colCount,
           populateChildren,
         );
         break;
@@ -204,8 +196,6 @@ class TreeController extends ChangeNotifier {
     AnalysisResult result,
     SheetData sheet,
     NodeStruct node,
-    int rowCount,
-    int colCount,
     bool populateChildren,
   ) {
     if (node.rowId != null) {
@@ -222,8 +212,6 @@ class TreeController extends ChangeNotifier {
             sheet.sheetContent,
             result,
             node,
-            rowCount,
-            colCount,
             populateChildren,
           );
         }
@@ -391,15 +379,13 @@ class TreeController extends ChangeNotifier {
     SheetContent sheetContent,
     AnalysisResult lastAnalysis,
     NodeStruct node,
-    int rowCount,
-    int colCount,
     bool populateChildren,
   ) {
     int rowId = node.rowId!;
     int colId = node.colId!;
     node.cellsToSelect = node.cells;
 
-    if (rowId >= rowCount || colId >= colCount) {
+    if (rowId >= rowCount(sheetContent) || colId >= colCount(sheetContent)) {
       return;
     }
 

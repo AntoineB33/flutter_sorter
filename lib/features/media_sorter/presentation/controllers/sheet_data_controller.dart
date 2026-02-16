@@ -31,8 +31,7 @@ class SheetDataController extends ChangeNotifier {
     Map<String, AnalysisResult> analysisResults,
     Map<String, SelectionData> lastSelectionBySheet,
     SortStatus sortStatus,
-    String currentSheetName,
-    {bool init}
+    String currentSheetName
   )
   calculate;
   late void Function(AnalysisResult result, Point<int> primarySelectedCell)
@@ -163,13 +162,11 @@ class SheetDataController extends ChangeNotifier {
 
   void increaseColumnCount(
     int col,
-    int rowCount,
-    int colCount,
     SheetContent sheetContent,
   ) {
-    if (col >= colCount) {
-      final needed = col + 1 - colCount;
-      for (var r = 0; r < rowCount; r++) {
+    if (col >= colCount(sheetContent)) {
+      final needed = col + 1 - colCount(sheetContent);
+      for (var r = 0; r < rowCount(sheetContent); r++) {
         sheetContent.table[r].addAll(List.filled(needed, '', growable: true));
       }
       sheetContent.columnTypes.addAll(
@@ -216,8 +213,6 @@ class SheetDataController extends ChangeNotifier {
       }
       increaseColumnCount(
         col,
-        rowCount(sheetContent),
-        colCount(sheetContent),
         sheet.sheetContent,
       );
       prevValue = sheet.sheetContent.table[row][col];
@@ -309,8 +304,6 @@ class SheetDataController extends ChangeNotifier {
     } else {
       increaseColumnCount(
         col,
-        rowCount(sheet.sheetContent),
-        colCount(sheet.sheetContent),
         sheet.sheetContent,
       );
       sheet.sheetContent.columnTypes[col] = type;

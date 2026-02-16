@@ -2,7 +2,6 @@ import 'dart:isolate';
 
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
@@ -38,17 +37,12 @@ class IsolateService {
   static Future<void> _isolateEntryC(List<dynamic> args) async {
     SendPort sendPort = args[0];
     AnalysisResult result = args[1];
-    SortStatus sortStatus = args[2];
 
     SortingResponse? response = await SortController.solveSatisfaction(
       result,
     );
-    if (response != null) {
-      sortStatus.sorted = response.isNaturalOrderValid;
-      result.bestMediaSortOrder = response.sortedIds;
-    }
 
-    Isolate.exit(sendPort, result);
+    Isolate.exit(sendPort, response);
   }
 
   Future<ThreadResult> runHeavyCalculationB(
@@ -74,13 +68,13 @@ class IsolateService {
       return ThreadResult(result, startSorter);
     } catch (e) {
       // If port closes or isolate killed
-      throw Exception("Isolate B execution interrupted");
+      rethrow;
     } finally {
       _isolateB = null; // Cleanup
     }
   }
 
-  Future<List<int>?> runHeavyCalculationC(AnalysisResult result, SortStatus sortStatus) async {
+  Future<SortingResponse?> runHeavyCalculationC(AnalysisResult result) async {
     cancelC();
 
     final receivePort = ReceivePort();
@@ -89,14 +83,13 @@ class IsolateService {
     _isolateC = await Isolate.spawn(_isolateEntryC, [
       receivePort.sendPort,
       result,
-      sortStatus,
     ]);
 
     try {
       final result = await receivePort.first;
-      return result as List<int>?;
+      return result as SortingResponse?;
     } catch (e) {
-      throw Exception("Isolate C execution interrupted");
+      rethrow;
     } finally {
       _isolateC = null;
     }

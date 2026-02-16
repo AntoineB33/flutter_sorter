@@ -86,85 +86,79 @@ class _SideMenuState extends State<SideMenu> {
 
           const SizedBox(height: 10),
 
-          Row(
-            mainAxisAlignment:
-                MainAxisAlignment.center, // Centers the buttons horizontally
-            children: [
-              // 1. Sort Media Button (Blue)
-              ElevatedButton(
-                onPressed:
-                    workbookController.canBeSorted() &&
-                            !workbookController.sorted()
-                        ? workbookController.sortMedia
-                        : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  // Size reduction properties:
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  textStyle: const TextStyle(fontSize: 12),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  // Disabled state:
-                  disabledBackgroundColor: workbookController.sorted()
-                      ? Colors.grey
-                      : Colors.blue.withValues(alpha: 0.5),
-                ),
-                child: const Text("Sort media"),
-              ),
+          // 1. Sort Media Button (Blue)
+          ElevatedButton(
+            onPressed:
+                workbookController.canBeSorted() &&
+                        !workbookController.sorted()
+                    ? workbookController.sortMedia
+                    : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              // Size reduction properties:
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              textStyle: const TextStyle(fontSize: 12),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              // Disabled state:
+              disabledBackgroundColor: workbookController.sorted()
+                  ? Colors.grey
+                  : Colors.blue.withValues(alpha: 0.5),
+            ),
+            child: const Text("Sort media"),
+          ),
 
-              const SizedBox(width: 8), // Reduced spacing to match smaller buttons
+          const SizedBox(height: 8), // Reduced spacing to match smaller buttons
 
-              // 2. Find Best Sort Button (Orange)
-              ElevatedButton(
-                onPressed:
-                    workbookController.canBeSorted() &&
-                            !workbookController.isFindingBestSort &&
-                            !workbookController.isFindingBestSortAndSort &&
-                            !workbookController.isBestSort
-                        ? workbookController.findBestSortToggle
-                        : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange, // New color
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  textStyle: const TextStyle(fontSize: 12),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  workbookController.isFindingBestSort
-                      ? "Stop sorting"
-                      : "Find the best order",
-                ),
-              ),
+          // 2. Find Best Sort Button (Orange)
+          ElevatedButton(
+            onPressed:
+                workbookController.canBeSorted() &&
+                        !workbookController.isFindingBestSort &&
+                        !workbookController.isFindingBestSortAndSort &&
+                        !workbookController.isBestSort
+                    ? workbookController.findBestSortToggle
+                    : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange, // New color
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              textStyle: const TextStyle(fontSize: 12),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              workbookController.isFindingBestSort
+                  ? "Stop sorting"
+                  : "Find the best order",
+            ),
+          ),
 
-              const SizedBox(width: 8), 
+          const SizedBox(height: 8), 
 
-              // 3. Find Best Sort & Apply Button (Purple)
-              ElevatedButton(
-                onPressed:
-                    workbookController.canBeSorted() &&
-                            !workbookController.isFindingBestSort &&
-                            !workbookController.isFindingBestSortAndSort &&
-                            !workbookController.isBestSort
-                        ? workbookController.findBestSortAndSortToggle
-                        : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple, // New color
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  textStyle: const TextStyle(fontSize: 12),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  workbookController.isFindingBestSortAndSort // Corrected variable
-                      ? "Stop sorting"
-                      : "Find & apply order", // Slightly changed to differentiate from button 2
-                ),
-              ),
-            ],
+          // 3. Find Best Sort & Apply Button (Purple)
+          ElevatedButton(
+            onPressed:
+                workbookController.canBeSorted() &&
+                        !workbookController.isFindingBestSort &&
+                        !workbookController.isFindingBestSortAndSort &&
+                        !workbookController.isBestSort
+                    ? workbookController.findBestSortAndSortToggle
+                    : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple, // New color
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              textStyle: const TextStyle(fontSize: 12),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              workbookController.isFindingBestSortAndSort // Corrected variable
+                  ? "Stop sorting"
+                  : "Find & apply order", // Slightly changed to differentiate from button 2
+            ),
           ),
 
           const SizedBox(height: 20),
