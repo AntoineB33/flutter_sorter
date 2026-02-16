@@ -69,10 +69,7 @@ class SortController extends ChangeNotifier {
     return await _saveSheetDataUseCase.repository.getAllSortStatus();
   }
 
-  bool completeMissing(
-    Map<String, SortStatus> sortStatusBySheet,
-    List<String> sheetNames,
-  ) {
+  bool completeMissing(Map<String, SortStatus> sortStatusBySheet, List<String> sheetNames) {
     bool saveNeeded = false;
     for (var name in sheetNames) {
       if (!sortStatusBySheet.containsKey(name)) {
@@ -116,9 +113,13 @@ class SortController extends ChangeNotifier {
     );
   }
 
-  bool canBeSorted(SheetData sheet, AnalysisResult result, SortStatus sortStatus) {
-    debugPrint("hey");
-    return sortStatus.resultCalculated && sortStatus.validSortCalculated &&
+  bool canBeSorted(
+    SheetData sheet,
+    AnalysisResult result,
+    SortStatus sortStatus,
+  ) {
+    return sortStatus.resultCalculated &&
+        sortStatus.validSortCalculated &&
         result.bestMediaSortOrder != null &&
         !sortStatus.sorted;
   }
@@ -132,7 +133,7 @@ class SortController extends ChangeNotifier {
     Map<String, AnalysisResult> analysisResults,
     Map<String, SelectionData> lastSelectionBySheet,
     SortStatus sortStatus,
-    String currentSheetName
+    String currentSheetName,
   ) async {
     AnalysisResult result = analysisResults[currentSheetName]!;
     if (!sortStatus.resultCalculated) {
@@ -147,7 +148,8 @@ class SortController extends ChangeNotifier {
         analysisResults[currentSheetName] = resultB.result;
         result = resultB.result;
         sortStatus.resultCalculated = true;
-        sortStatus.validSortCalculated = !resultB.startSorter && sortStatus.validSortCalculated;
+        sortStatus.validSortCalculated =
+            !resultB.startSorter && sortStatus.validSortCalculated;
       } catch (e) {
         result.errorRoot.newChildren!.add(
           NodeStruct(
@@ -160,7 +162,7 @@ class SortController extends ChangeNotifier {
     if (!sortStatus.validSortCalculated) {
       try {
         SortingResponse? response = await _isolateServices[currentSheetName]!
-          .runHeavyCalculationC(result);
+            .runHeavyCalculationC(result);
         if (response != null) {
           sortStatus.sorted = response.isNaturalOrderValid;
           result.bestMediaSortOrder = response.sortedIds;
@@ -169,7 +171,8 @@ class SortController extends ChangeNotifier {
       } catch (e) {
         result.errorRoot.newChildren!.add(
           NodeStruct(
-            message: "An error occurred while trying to find a valid sorting satisfying all constraints : $e",
+            message:
+                "An error occurred while trying to find a valid sorting satisfying all constraints : $e",
           ),
         );
       }
@@ -201,11 +204,16 @@ class SortController extends ChangeNotifier {
     try {
       // await for pauses the execution of this function
       // until the stream is closed by the server.
-      return SortUsecase.solveSorting(result.myRules, result.validAreas, result.validRowIndexes.length);
+      return SortUsecase.solveSorting(
+        result.myRules,
+        result.validAreas,
+        result.validRowIndexes.length,
+      );
     } catch (error) {
       result.errorRoot.newChildren!.add(
         NodeStruct(
-          message: "An error occurred while trying to find a valid sorting satisfying all constraints : $error",
+          message:
+              "An error occurred while trying to find a valid sorting satisfying all constraints : $error",
         ),
       );
     }
@@ -291,10 +299,7 @@ class SortController extends ChangeNotifier {
           newInd[e.key],
           Map.fromEntries(
             e.value.entries.map(
-              (innerE) => MapEntry(
-                newInd[innerE.key],
-                innerE.value,
-              ),
+              (innerE) => MapEntry(newInd[innerE.key], innerE.value),
             ),
           ),
         ),
@@ -305,7 +310,7 @@ class SortController extends ChangeNotifier {
         .toList();
     result.validAreas = List.generate(
       rowCount,
-      (i) => result.validAreas[sortOrder[i]]
+      (i) => result.validAreas[sortOrder[i]],
     );
   }
 
@@ -342,7 +347,8 @@ class SortController extends ChangeNotifier {
           stack.removeLast();
           continue;
         }
-        for (Attribute ref in result.tableToAtt[current].expand((i) => i).toList()) {
+        for (Attribute ref
+            in result.tableToAtt[current].expand((i) => i).toList()) {
           if (ref.isRow() && added[ref.rowId!] != 2) {
             stack.add(ref.rowId!);
             added[ref.rowId!] = 1;
@@ -441,7 +447,8 @@ class SortController extends ChangeNotifier {
           // If the user has toggled off the "finding best sort" mode, we should stop processing results.
           break;
         }
-        analysisResults[currentSheetName]!.bestMediaSortOrder = solution.sortedIds!;
+        analysisResults[currentSheetName]!.bestMediaSortOrder =
+            solution.sortedIds!;
       }
     } catch (error) {
       result.errorRoot.newChildren!.add(

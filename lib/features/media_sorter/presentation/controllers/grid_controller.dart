@@ -15,25 +15,40 @@ class GridController {
   double row1ToScreenBottomHeight = 0.0;
   double colBToScreenRightWidth = 0.0;
 
-  late void Function(SheetData sheet, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {
-    double ? visibleHeight,
-    double ? visibleWidth,
+  late void Function(
+    SheetData sheet,
+    Map<String, SelectionData> lastSelectionBySheet,
+    String currentSheetName, {
+    double? visibleHeight,
+    double? visibleWidth,
     bool notify,
-    bool save}) updateRowColCount;
-  late bool Function(SheetData sheet, AnalysisResult result, SortStatus sortStatus) canBeSorted;
-  late String Function(List<List<String>> table, int row, int col) getCellContent;
+    bool save,
+  })
+  updateRowColCount;
+  late bool Function(
+    SheetData sheet,
+    AnalysisResult result,
+    SortStatus sortStatus,
+  )
+  canBeSorted;
+  late String Function(List<List<String>> table, int row, int col)
+  getCellContent;
 
   final SpreadsheetLayoutCalculator _layoutCalculator =
       SpreadsheetLayoutCalculator();
 
-  
   int rowCount(SheetContent content) => content.table.length;
-  int colCount(SheetContent content) => content.table.isNotEmpty ? content.table[0].length : 0;
-      
-  GridController(); 
+  int colCount(SheetContent content) =>
+      content.table.isNotEmpty ? content.table[0].length : 0;
 
+  GridController();
 
-  int minRows(SheetData sheet, List<double> rowsBottomPos, int rowCount, double height) {
+  int minRows(
+    SheetData sheet,
+    List<double> rowsBottomPos,
+    int rowCount,
+    double height,
+  ) {
     double tableHeight = getTargetTop(sheet, rowCount - 1);
     if (height >= tableHeight) {
       return rowsBottomPos.length +
@@ -43,8 +58,11 @@ class GridController {
     }
     return rowCount;
   }
-  
-  (int, int) getNewRowColCount(SelectionData selection, SheetData sheet, double? visibleHeight,
+
+  (int, int) getNewRowColCount(
+    SelectionData selection,
+    SheetData sheet,
+    double? visibleHeight,
     double? visibleWidth,
   ) {
     int targetRows = selection.tableViewRows;
@@ -69,7 +87,6 @@ class GridController {
     }
     return (targetRows, targetCols);
   }
-
 
   double getRowHeight(SheetData sheet, int row) {
     if (row < sheet.rowsBottomPos.length) {
@@ -110,7 +127,12 @@ class GridController {
     return targetRight;
   }
 
-  int minCols(SheetData sheet, List<double> colRightPos, int colCount, double width) {
+  int minCols(
+    SheetData sheet,
+    List<double> colRightPos,
+    int colCount,
+    double width,
+  ) {
     double tableWidth = getTargetLeft(sheet, colCount - 1);
     if (width >= tableWidth) {
       return colRightPos.length +
@@ -155,11 +177,7 @@ class GridController {
       return;
     }
 
-    double heightItNeeds = calculateRequiredRowHeight(
-      sheet,
-      newValue,
-      col,
-    );
+    double heightItNeeds = calculateRequiredRowHeight(sheet, newValue, col);
 
     if (heightItNeeds > GetDefaultSizes.getDefaultRowHeight() &&
         sheet.rowsBottomPos.length <= row) {
@@ -203,56 +221,39 @@ class GridController {
             }
             if (newHeight < heightItNeeded) {
               double heightDiff = currentHeight - newHeight;
-              for (
-                int r = row;
-                r < sheet.rowsBottomPos.length;
-                r++
-              ) {
+              for (int r = row; r < sheet.rowsBottomPos.length; r++) {
                 sheet.rowsBottomPos[r] -= heightDiff;
               }
               if (newHeight == GetDefaultSizes.getDefaultRowHeight()) {
                 int removeFrom = sheet.rowsBottomPos.length;
-                for (
-                  int r = sheet.rowsBottomPos.length - 1;
-                  r >= 0;
-                  r--
-                ) {
-                  if (r <
-                              sheet.rowsManuallyAdjustedHeight
-                                  .length &&
+                for (int r = sheet.rowsBottomPos.length - 1; r >= 0; r--) {
+                  if (r < sheet.rowsManuallyAdjustedHeight.length &&
                           sheet.rowsManuallyAdjustedHeight[r] ||
                       sheet.rowsBottomPos[r] >
-                          (r == 0
-                                  ? 0
-                                  : sheet.rowsBottomPos[r - 1]) +
+                          (r == 0 ? 0 : sheet.rowsBottomPos[r - 1]) +
                               GetDefaultSizes.getDefaultRowHeight()) {
                     break;
                   }
                   removeFrom--;
                 }
-                sheet.rowsBottomPos = sheet
-                    .rowsBottomPos
-                    .sublist(0, removeFrom);
+                sheet.rowsBottomPos = sheet.rowsBottomPos.sublist(
+                  0,
+                  removeFrom,
+                );
               }
             }
           }
         } else if (heightItNeeds > currentHeight) {
           double heightDiff = heightItNeeds - currentHeight;
-          for (
-            int r = row;
-            r < sheet.rowsBottomPos.length;
-            r++
-          ) {
-            sheet.rowsBottomPos[r] =
-                sheet.rowsBottomPos[r] + heightDiff;
+          for (int r = row; r < sheet.rowsBottomPos.length; r++) {
+            sheet.rowsBottomPos[r] = sheet.rowsBottomPos[r] + heightDiff;
           }
         }
       }
     } else if (heightItNeeds == GetDefaultSizes.getDefaultRowHeight() &&
         row == sheet.rowsBottomPos.length - 1) {
       int i = row;
-      while (sheet.rowsBottomPos[i] ==
-              GetDefaultSizes.getDefaultRowHeight() &&
+      while (sheet.rowsBottomPos[i] == GetDefaultSizes.getDefaultRowHeight() &&
           row > 0) {
         sheet.rowsBottomPos.removeLast();
         i--;
@@ -268,19 +269,32 @@ class GridController {
     );
   }
 
-  bool isRowValid(SheetData sheet, int rowId, AnalysisResult result, SortStatus sortStatus) {
-    if (canBeSorted(sheet, result, sortStatus)) {
+  bool isRowValid(
+    SheetData sheet,
+    int rowId,
+    AnalysisResult result,
+    SortStatus sortStatus,
+  ) {
+    if (sortStatus.resultCalculated) {
       return rowId < result.isMedium.length && result.isMedium[rowId];
     }
     if (rowId == 0) {
       return false;
     }
-    for (int srcColId = 0; srcColId < colCount(sheet.sheetContent); srcColId++) {
-      if (GetNames.isSourceColumn(sheet.sheetContent.columnTypes[srcColId]) && getCellContent(sheet.sheetContent.table, rowId, srcColId).isNotEmpty) {
+    for (
+      int srcColId = 0;
+      srcColId < colCount(sheet.sheetContent);
+      srcColId++
+    ) {
+      if (GetNames.isSourceColumn(sheet.sheetContent.columnTypes[srcColId]) &&
+          getCellContent(
+            sheet.sheetContent.table,
+            rowId,
+            srcColId,
+          ).isNotEmpty) {
         return true;
       }
     }
     return false;
   }
-
 }

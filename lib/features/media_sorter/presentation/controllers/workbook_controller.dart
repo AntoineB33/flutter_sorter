@@ -45,15 +45,16 @@ class WorkbookController extends ChangeNotifier {
   );
   final CalculationService calculationService = CalculationService();
 
-
   GridController get _gridController => _mediator.gridController;
   SheetDataController get _dataController => _mediator.dataController;
   SelectionController get _selectionController => _mediator.selectionController;
   TreeController get _treeController => _mediator.treeController;
   SortController get _sortController => _mediator.sortController;
-  SpreadsheetStreamController get _streamController => _mediator.streamController;
+  SpreadsheetStreamController get _streamController =>
+      _mediator.streamController;
   HistoryController get _historyController => _mediator.historyController;
-  SpreadsheetKeyboardDelegate get _keyboardDelegate => _mediator.keyboardDelegate;
+  SpreadsheetKeyboardDelegate get _keyboardDelegate =>
+      _mediator.keyboardDelegate;
 
   SelectionData get selection =>
       lastSelectionBySheet[currentSheetName] ?? SelectionData.empty();
@@ -83,7 +84,8 @@ class WorkbookController extends ChangeNotifier {
   // Point<int> get primarySelectedCell =>
   //     _selectionController.primarySelectedCell;
   String get previousContent => selection.previousContent;
-  SortStatus get sortStatus => sortStatusBySheet[currentSheetName] ?? SortStatus.empty();
+  SortStatus get sortStatus =>
+      sortStatusBySheet[currentSheetName] ?? SortStatus.empty();
   bool get isFindingBestSort => sortStatus.isFindingBestSort;
   bool get isFindingBestSortAndSort => sortStatus.isFindingBestSortAndSort;
   double get scrollOffsetX => selection.scrollOffsetX;
@@ -318,9 +320,7 @@ class WorkbookController extends ChangeNotifier {
     );
   }
 
-  WorkbookController(
-    this._mediator,
-  ) {
+  WorkbookController(this._mediator) {
     _dataController.onAnalysisComplete = onAnalysisComplete;
     _sortController.onAnalysisComplete = onAnalysisComplete;
 
@@ -415,9 +415,7 @@ class WorkbookController extends ChangeNotifier {
     }
 
     // --- get sort status by sheet ---
-    sortStatusBySheet.addAll(
-      await _sortController.getAllSortStatus(),
-    );
+    sortStatusBySheet.addAll(await _sortController.getAllSortStatus());
     bool saveCalculationStatusBySheet = _sortController.completeMissing(
       sortStatusBySheet,
       sheetNames,
@@ -457,7 +455,8 @@ class WorkbookController extends ChangeNotifier {
     }
     await loadSheetByName(currentSheetName, init: true);
     for (var name in sheetNames) {
-      if (!sortStatusBySheet[name]!.resultCalculated || !sortStatusBySheet[name]!.validSortCalculated) {
+      if (!sortStatusBySheet[name]!.resultCalculated ||
+          !sortStatusBySheet[name]!.validSortCalculated) {
         if (!analysisResults.containsKey(name)) {
           await loadAnalysisResult(name);
         }
@@ -470,10 +469,26 @@ class WorkbookController extends ChangeNotifier {
         );
       } else if (!sortStatusBySheet[name]!.isFindingBestSort) {
         await loadAnalysisResult(name);
-        _sortController.findBestSortToggle(loadedSheetsData[name]!, analysisResults, lastSelectionBySheet, sortStatus, name, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth);
+        _sortController.findBestSortToggle(
+          loadedSheetsData[name]!,
+          analysisResults,
+          lastSelectionBySheet,
+          sortStatus,
+          name,
+          _gridController.row1ToScreenBottomHeight,
+          _gridController.colBToScreenRightWidth,
+        );
       } else if (!sortStatusBySheet[name]!.isFindingBestSortAndSort) {
         await loadAnalysisResult(name);
-        _sortController.findBestSortAndSortToggle(loadedSheetsData[name]!, analysisResults, lastSelectionBySheet, sortStatus, name, _gridController.row1ToScreenBottomHeight, _gridController.colBToScreenRightWidth);
+        _sortController.findBestSortAndSortToggle(
+          loadedSheetsData[name]!,
+          analysisResults,
+          lastSelectionBySheet,
+          sortStatus,
+          name,
+          _gridController.row1ToScreenBottomHeight,
+          _gridController.colBToScreenRightWidth,
+        );
       }
     }
   }

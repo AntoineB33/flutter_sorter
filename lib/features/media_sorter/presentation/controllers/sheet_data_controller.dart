@@ -31,7 +31,7 @@ class SheetDataController extends ChangeNotifier {
     Map<String, AnalysisResult> analysisResults,
     Map<String, SelectionData> lastSelectionBySheet,
     SortStatus sortStatus,
-    String currentSheetName
+    String currentSheetName,
   )
   calculate;
   late void Function(AnalysisResult result, Point<int> primarySelectedCell)
@@ -160,10 +160,7 @@ class SheetDataController extends ChangeNotifier {
     }
   }
 
-  void increaseColumnCount(
-    int col,
-    SheetContent sheetContent,
-  ) {
+  void increaseColumnCount(int col, SheetContent sheetContent) {
     if (col >= colCount(sheetContent)) {
       final needed = col + 1 - colCount(sheetContent);
       for (var r = 0; r < rowCount(sheetContent); r++) {
@@ -211,10 +208,7 @@ class SheetDataController extends ChangeNotifier {
           ),
         );
       }
-      increaseColumnCount(
-        col,
-        sheet.sheetContent,
-      );
+      increaseColumnCount(col, sheet.sheetContent);
       prevValue = sheet.sheetContent.table[row][col];
       sheet.sheetContent.table[row][col] = newValue;
     }
@@ -302,10 +296,7 @@ class SheetDataController extends ChangeNotifier {
         }
       }
     } else {
-      increaseColumnCount(
-        col,
-        sheet.sheetContent,
-      );
+      increaseColumnCount(col, sheet.sheetContent);
       sheet.sheetContent.columnTypes[col] = type;
     }
     notifyListeners();
@@ -362,9 +353,9 @@ class SheetDataController extends ChangeNotifier {
     double row1ToScreenBottomHeight,
     double colBToScreenRightWidth,
     String currentSheetName,
-    List<CellUpdate> updates,
-    {bool toCalculate = true,}
-  ) {
+    List<CellUpdate> updates, {
+    bool toCalculate = true,
+  }) {
     sheet.currentUpdateHistory = null;
     for (var update in updates) {
       updateCell(

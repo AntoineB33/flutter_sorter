@@ -66,7 +66,8 @@ class SelectionController extends ChangeNotifier {
     bool notify = true,
     bool save = true,
   }) {
-    SelectionData selection = lastSelectionBySheet[currentSheetName] ?? SelectionData.empty();
+    SelectionData selection =
+        lastSelectionBySheet[currentSheetName] ?? SelectionData.empty();
     var (targetRows, targetCols) = getNewRowColCount(
       selection,
       sheet,
@@ -188,7 +189,9 @@ class SelectionController extends ChangeNotifier {
     bool updateHistory = true,
     bool notify = true,
   }) {
-    if (!lastSelectionBySheet[currentSheetName]!.editingMode) { return; }
+    if (!lastSelectionBySheet[currentSheetName]!.editingMode) {
+      return;
+    }
     lastSelectionBySheet[currentSheetName]!.editingMode = false;
     saveLastSelection(lastSelectionBySheet, currentSheetName);
     if (notify) {
