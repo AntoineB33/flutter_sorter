@@ -11,8 +11,8 @@ class StrInt {
   List<String> strings;
   List<int> integers;
   StrInt({List<String>? strings, List<int>? integers})
-      : strings = strings ?? [""],
-        integers = integers ?? [];
+    : strings = strings ?? [""],
+      integers = integers ?? [];
 }
 
 class AnalysisResult {
@@ -47,16 +47,45 @@ class AnalysisResult {
   Map<int, HashSet<Attribute>> colToAtt;
   List<bool> isMedium;
   List<int> validRowIndexes;
-  List<int>? bestMediaSortOrder;
+  List<int>? currentBestSort;
 
   List<List<int>> validAreas;
   Map<int, Map<int, List<SortingRule>>> myRules;
   List<List<int>> groupsToMaximize;
-  
+
   bool sorted;
   bool sortedWithCurrentBestSort;
   bool bestSortPossibleFound;
-  int idSorterProgress;
+  
+  bool okToCalculateResult;
+  bool resultCalculated;
+  bool okToFindValidSort;
+
+
+  static const String errorChildrenKey = 'errorChildren';
+  static const String warningChildrenKey = 'warningChildren';
+  static const String categoriesChildrenKey = 'categoriesChildren';
+  static const String distPairsChildrenKey = 'distPairsChildren';
+  static const String tableToAttKey = 'tableToAtt';
+  static const String namesKey = 'names';
+  static const String attToColKey = 'attToCol';
+  static const String nameIndexesKey = 'nameIndexes';
+  static const String attToRefFromAttColToColKey = 'attToRefFromAttColToCol';
+  static const String attToRefFromDepColToColKey = 'attToRefFromDepColToCol';
+  static const String formatedTableKey = 'formatedTable';
+  static const String colToAttKey = 'colToAtt';
+  static const String isMediumKey = 'isMedium';
+  static const String validRowIndexesKey = 'validRowIndexes';
+  static const String currentBestSortKey = 'currentBestSort';
+  static const String validAreasKey = 'valid_areas';
+  static const String myRulesKey = 'myRules';
+  static const String groupsToMaximizeKey = 'groupsToMaximize';
+  static const String sortedKey = 'sorted';
+  static const String sortedWithCurrentBestSortKey = 'sortedWithCurrentBestSort';
+  static const String bestSortPossibleFoundKey = 'bestSortPossibleFound';
+  static const String okToCalculateResultKey = 'okToCalculateResult';
+  static const String resultCalculatedKey = 'resultCalculated';
+  static const String okToFindValidSortKey = 'okToFindValidSort';
 
   AnalysisResult({
     required List<NodeStruct> errorChildren,
@@ -76,11 +105,13 @@ class AnalysisResult {
     required this.groupsToMaximize,
     required this.isMedium,
     required this.validRowIndexes,
-    required this.bestMediaSortOrder,
+    required this.currentBestSort,
     required this.sorted,
     required this.sortedWithCurrentBestSort,
     required this.bestSortPossibleFound,
-    required this.idSorterProgress,
+    required this.okToCalculateResult,
+    required this.resultCalculated,
+    required this.okToFindValidSort,
   }) {
     errorRoot.newChildren = errorChildren;
     warningRoot.newChildren = warningChildren;
@@ -107,29 +138,31 @@ class AnalysisResult {
       isMedium: [],
       validRowIndexes: [],
       formatedTable: [],
-      bestMediaSortOrder: null,
+      currentBestSort: null,
       sorted: false,
       sortedWithCurrentBestSort: false,
       bestSortPossibleFound: false,
-      idSorterProgress: 0,
+      okToCalculateResult: true,
+      resultCalculated: true,
+      okToFindValidSort: true,
     );
   }
 
   factory AnalysisResult.fromJson(Map<String, dynamic> json) {
     return AnalysisResult(
-      errorChildren: (json['errorRoot']['newChildren'] as List)
+      errorChildren: (json[errorChildrenKey] as List)
           .map((child) => NodeStruct.fromJson(child))
           .toList(),
-      warningChildren: (json['warningRoot']['newChildren'] as List)
+      warningChildren: (json[warningChildrenKey] as List)
           .map((child) => NodeStruct.fromJson(child))
           .toList(),
-      categoryChildren: (json['categoriesRoot']['newChildren'] as List)
+      categoryChildren: (json[categoriesChildrenKey] as List)
           .map((child) => NodeStruct.fromJson(child))
           .toList(),
-      distPairChildren: (json['distPairsRoot']['newChildren'] as List)
+      distPairChildren: (json[distPairsChildrenKey] as List)
           .map((child) => NodeStruct.fromJson(child))
           .toList(),
-      tableToAtt: (json['tableToAtt'] as List)
+      tableToAtt: (json[tableToAttKey] as List)
           .map(
             (row) => (row as List)
                 .map(
@@ -141,18 +174,18 @@ class AnalysisResult {
           )
           .toList(),
       names: Map<String, Cell>.fromEntries(
-        (json['names'] as Map<String, dynamic>).entries.map(
+        (json[namesKey] as Map<String, dynamic>).entries.map(
           (entry) => MapEntry(entry.key, Cell.fromJson(entry.value)),
         ),
       ),
       attToCol: Map<String, List<int>>.fromEntries(
-        (json['attToCol'] as Map<String, dynamic>).entries.map(
+        (json[attToColKey] as Map<String, dynamic>).entries.map(
           (entry) => MapEntry(entry.key, List<int>.from(entry.value as List)),
         ),
       ),
-      nameIndexes: List<int>.from(json['nameIndexes'] as List<dynamic>),
+      nameIndexes: List<int>.from(json[nameIndexesKey] as List<dynamic>),
       attToRefFromAttColToCol: Map<Attribute, Map<int, Cols>>.fromEntries(
-        (json['attToRefFromAttColToCol'] as Map<String, dynamic>).entries.map(
+        (json[attToRefFromAttColToColKey] as Map<String, dynamic>).entries.map(
           (entry) => MapEntry(
             Attribute.fromJson(jsonDecode(entry.key) as Map<String, dynamic>),
             Map<int, Cols>.fromEntries(
@@ -167,7 +200,7 @@ class AnalysisResult {
         ),
       ),
       attToRefFromDepColToCol: Map<Attribute, Map<int, List<int>>>.fromEntries(
-        (json['attToRefFromDepColToCol'] as Map<String, dynamic>).entries.map(
+        (json[attToRefFromDepColToColKey] as Map<String, dynamic>).entries.map(
           (entry) => MapEntry(
             Attribute.fromJson(jsonDecode(entry.key) as Map<String, dynamic>),
             Map<int, List<int>>.fromEntries(
@@ -181,7 +214,7 @@ class AnalysisResult {
           ),
         ),
       ),
-      formatedTable: (json['formatedTable'] as List)
+      formatedTable: (json[formatedTableKey] as List)
           .map(
             (row) => (row as List)
                 .map(
@@ -193,7 +226,7 @@ class AnalysisResult {
           )
           .toList(),
       colToAtt: Map<int, HashSet<Attribute>>.fromEntries(
-        (json['colToAtt'] as Map<String, dynamic>).entries.map(
+        (json[colToAttKey] as Map<String, dynamic>).entries.map(
           (entry) => MapEntry(
             int.parse(entry.key),
             HashSet<Attribute>.from(
@@ -202,32 +235,39 @@ class AnalysisResult {
           ),
         ),
       ),
-      myRules: Map<String, dynamic>.from(json['myRules'] as Map<String, dynamic>)
-          .map((rowId, targetMap) => MapEntry(
-                int.parse(rowId),
-                Map<String, dynamic>.from(targetMap as Map<String, dynamic>)
-                    .map((target, rulesList) => MapEntry(
-                          int.parse(target),
-                          (rulesList as List)
-                              .map((rule) => SortingRule.fromJson(rule))
-                              .toList(),
-                        )),
-              )),
-      validAreas: (json['valid_areas'] as List)
+      myRules:
+          Map<String, dynamic>.from(
+            json[myRulesKey] as Map<String, dynamic>,
+          ).map(
+            (rowId, targetMap) => MapEntry(
+              int.parse(rowId),
+              Map<String, dynamic>.from(targetMap as Map<String, dynamic>).map(
+                (target, rulesList) => MapEntry(
+                  int.parse(target),
+                  (rulesList as List)
+                      .map((rule) => SortingRule.fromJson(rule))
+                      .toList(),
+                ),
+              ),
+            ),
+          ),
+      validAreas: (json[validAreasKey] as List)
           .map((area) => List<int>.from(area as List))
           .toList(),
-      groupsToMaximize: (json['groupsToMaximize'] as List)
+      groupsToMaximize: (json[groupsToMaximizeKey] as List)
           .map((group) => List<int>.from(group as List))
           .toList(),
-      isMedium: List<bool>.from(json['isMedium'] as List<dynamic>),
-      validRowIndexes: List<int>.from(json['validRowIndexes'] as List<dynamic>),
-      bestMediaSortOrder: json['bestMediaSortOrder'] != null
-          ? List<int>.from(json['bestMediaSortOrder'] as List<dynamic>)
+      isMedium: List<bool>.from(json[isMediumKey] as List<dynamic>),
+      validRowIndexes: List<int>.from(json[validRowIndexesKey] as List<dynamic>),
+      currentBestSort: json[currentBestSortKey] != null
+          ? List<int>.from(json[currentBestSortKey] as List<dynamic>)
           : null,
-      sorted: json['sorted'] as bool,
-      sortedWithCurrentBestSort: json['sortedWithCurrentBestSort'] as bool,
-      bestSortPossibleFound: json['bestSortPossibleFound'] as bool,
-      idSorterProgress: json['idSorterProgress'] as int,
+      sorted: json[sortedKey] as bool,
+      sortedWithCurrentBestSort: json[sortedWithCurrentBestSortKey] as bool,
+      bestSortPossibleFound: json[bestSortPossibleFoundKey] as bool,
+      okToCalculateResult: json[okToCalculateResultKey] as bool,
+      resultCalculated: json[resultCalculatedKey] as bool,
+      okToFindValidSort: json[okToFindValidSortKey] as bool,
     );
   }
 
@@ -310,12 +350,11 @@ class AnalysisResult {
       'valid_areas': validAreas,
       'groupsToMaximize': groupsToMaximize,
       'validRowIndexes': validRowIndexes,
-      'bestMediaSortOrder': bestMediaSortOrder,
+      'currentBestSort': currentBestSort,
       'isMedium': isMedium,
       'sorted': sorted,
       'sortedWithCurrentBestSort': sortedWithCurrentBestSort,
       'bestSortPossibleFound': bestSortPossibleFound,
-      'idSorterProgress': idSorterProgress,
     };
   }
 }

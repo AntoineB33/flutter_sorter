@@ -10,12 +10,22 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_message.dart';
 
+class AnalysisReturn {
+  final AnalysisResult result;
+  final bool changed;
+  final bool noSortToFind;
+  final bool toFindValidSort;
+
+  AnalysisReturn(this.result, this.changed, this.noSortToFind, this.toFindValidSort);
+}
+
 class CalculationService {
   static Future<void> runCalculation(List<dynamic> args) async {
     SendPort sendPort = args[0];
     SheetContent sheetContent = args[1];
+    AnalysisResult prevResult = args[2];
     AnalysisResult result = _isolateHandler(getMessage(sheetContent));
-    Isolate.exit(sendPort, result);
+    Isolate.exit(sendPort, AnalysisReturn(result, true, false, true));
   }
   
   static IsolateMessage getMessage(SheetContent sheetContent) {

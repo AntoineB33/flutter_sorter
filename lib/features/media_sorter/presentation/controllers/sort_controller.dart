@@ -11,7 +11,6 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/thread_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/sorting_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
@@ -72,18 +71,6 @@ class SortController extends ChangeNotifier {
     });
   }
 
-  bool canBeSortedFunc(
-    SheetData sheet,
-    AnalysisResult result,
-    String currentSheetName,
-  ) {
-    SortStatus sortStatus = getSortStatus(currentSheetName);
-    return sortStatus.resultCalculated &&
-        sortStatus.validSortCalculated &&
-        result.bestMediaSortOrder != null &&
-        !sortStatus.sorted;
-  }
-
   bool lightCalculations(AnalysisResult result) {
     return false;
   }
@@ -96,47 +83,41 @@ class SortController extends ChangeNotifier {
     }
     _isolateServices[name] ??= IsolateService();
     _isolateServices[name]!.cancelB();
-    ThreadResult resultB = await _isolateServices[name]!.runHeavyCalculationB(
+    AnalysisReturn resultB = await _isolateServices[name]!.runHeavyCalculationB(
       loadedSheetsDataStore.getSheet(name).sheetContent,
       result,
     );
     sortStatusDataStore.updateSortStatus(name, (status) {
       status.resultCalculated = true;
-      status.validSortCalculated =
-          !resultB.startSorter && status.validSortCalculated;
+      status.validSortFound = !resultB.noSortToFind && status.validSortFound;
       if (resultB.result.validRowIndexes.isEmpty) {
-        status.validSortCalculated = true;
+        status.validSortFound = true;
       }
     });
     if (resultB.changed) {
       analysisDataStore.updateResults(name, resultB.result);
     }
     sortStatus = sortStatusDataStore.getSortStatus(name);
-    if (!sortStatus.validSortCalculated) {
+    if (!sortStatus.validSortFound) {
       try {
         SortingResponse? response = await _isolateServices[name]!
             .runHeavyCalculationC(result);
         if (response != null) {
           analysisDataStore.getAnalysisResult(name).sorted =
               response.isNaturalOrderValid;
-          result.bestMediaSortOrder = response.sortedIds;
+          result.currentBestSort = response.sortedIds;
         }
         if (sortStatus.toSort) {
           sortMedia(name);
           sortStatusDataStore.updateSortStatus(name, (status) {
-            status.validSortCalculated = true;
+            status.validSortFound = true;
             status.toSort = false;
           });
         } else if (sortStatus.isFindingBestSort) {
           sortStatusDataStore.updateSortStatus(name, (status) {
-            status.validSortCalculated = true;
+            status.validSortFound = true;
           });
-          findBestSortToggle();
-        } else if (sortStatus.sortWhileFindingBestSort) {
-          sortStatusDataStore.updateSortStatus(name, (status) {
-            status.validSortCalculated = true;
-          });
-          findBestSortAndSortToggle();
+          findBestSortToggleFunc(name);
         } else {
           sortStatusDataStore.removeSortStatus(name);
         }
@@ -283,7 +264,7 @@ class SortController extends ChangeNotifier {
   void sortMedia(String name) {
     List<int> sortOrder = [0];
     AnalysisResult result = analysisResults[currentSheetName]!;
-    List<int> stack = result.bestMediaSortOrder!
+    List<int> stack = result.currentBestSort!
         .asMap()
         .entries
         .map((e) => result.validRowIndexes[e.key])
@@ -370,15 +351,27 @@ class SortController extends ChangeNotifier {
   }
 
   bool sortToggleAvailable() {
-    return !sortStatusDataStore.currentSortStatus.resultCalculated || !sortStatusDataStore.currentSortStatus.errorInResult && (!sortStatusDataStore.currentSortStatus.validSortCalculated ||
-        analysisDataStore.currentSheetAnalysisResult.bestMediaSortOrder != null);
+    if (sortStatusDataStore.containsSheet(
+      loadedSheetsDataStore.currentSheetName,
+    )) {
+      return (!sortStatusDataStore.currentSortStatus.resultCalculated &&
+              sortStatusDataStore.currentSortStatus.okToCalculateResult) ||
+          sortStatusDataStore.currentSortStatus.okToFindValidSort &&
+              sortStatusDataStore.currentSortStatus.validSortFound;
+    } else {
+      return analysisDataStore.currentSheetAnalysisResult.currentBestSort !=
+          null;
+    }
   }
 
   void sortToggle() {
     if (!sortStatusDataStore.currentSortStatus.resultCalculated) {
-      sortStatusDataStore.updateSortStatus(loadedSheetsDataStore.currentSheetName, (status) {
-        status.toSort = true;
-      });
+      sortStatusDataStore.updateSortStatus(
+        loadedSheetsDataStore.currentSheetName,
+        (status) {
+          status.toSort = true;
+        },
+      );
     } else {
       sortMedia(loadedSheetsDataStore.currentSheetName);
     }
@@ -409,9 +402,12 @@ class SortController extends ChangeNotifier {
     if (!sortStatus.resultCalculated) {
       await calculate(sheetName);
     }
-    if (!sortStatus.resultCalculated) {
-      return;
+    if (sortStatus.resultCalculated) {
+      findBestSortToggleFunc(sheetName);
     }
+  }
+
+  Future<void> findBestSortToggleFunc(String sheetName) async {
     final service = SortingService();
 
     try {
@@ -422,52 +418,7 @@ class SortController extends ChangeNotifier {
         analysisDataStore.myRules,
         groupsToMaximize: analysisDataStore.groupsToMaximize,
       )) {
-        if (!sortStatus.isFindingBestSort) {
-          // If the user has toggled off the "finding best sort" mode, we should stop processing results.
-          break;
-        }
-        analysisDataStore.updateResults(sheetName, (result) {
-          result.bestMediaSortOrder = solution.sortedIds!;
-        });
-        sortMedia(sheetName);
-      }
-    } catch (error) {
-      result.errorRoot.newChildren!.add(
-        NodeStruct(
-          message: "Could not find a valid sorting satisfying all constraints.",
-        ),
-      );
-    }
-  }
-
-  Future<void> findBestSortAndSortToggle() async {
-    SortStatus sortStatus = getSortStatus(currentSheetName);
-    AnalysisResult result = analysisStore.analysisResults[currentSheetName]!;
-    if (sortStatus.sortWhileFindingBestSort) {
-      sortStatus.sortWhileFindingBestSort = false;
-      notifyListeners();
-      saveAllSortStatus(currentSheetName);
-      return;
-    }
-    sortStatus.sortWhileFindingBestSort = true;
-    notifyListeners();
-    saveAllSortStatus(currentSheetName);
-    stopEditing(sheet, lastSelectionBySheet, currentSheetName, notify: false);
-    int nVal = result.tableToAtt.length;
-    if (!sortStatus.resultCalculated) {
-      return;
-    }
-    final service = SortingService();
-
-    try {
-      // await for pauses the execution of this function
-      // until the stream is closed by the server.
-      await for (final solution in service.solveSortingStream(
-        nVal,
-        result.myRules,
-        groupsToMaximize: result.groupsToMaximize,
-      )) {
-        if (!sortStatus.sortWhileFindingBestSort) {
+        if (!sortStatusDataStore.getSortStatus(sheetName).isFindingBestSort) {
           // If the user has toggled off the "finding best sort" mode, we should stop processing results.
           break;
         }

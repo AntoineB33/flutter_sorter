@@ -184,7 +184,7 @@ class WorkbookController extends ChangeNotifier {
     await loadSheetByName(loadedSheetsDataStore.currentSheetName, init: true);
     for (var name in sortStatusDataStore.sortStatusBySheet.keys.toList()) {
       if (!sortStatusDataStore.getSortStatus(name).resultCalculated ||
-          !sortStatusDataStore.getSortStatus(name).validSortCalculated) {
+          !sortStatusDataStore.getSortStatus(name).validSortFound) {
         if (!analysisDataStore.analysisResults.containsKey(name)) {
           await sortController.loadAnalysisResult(name);
         }

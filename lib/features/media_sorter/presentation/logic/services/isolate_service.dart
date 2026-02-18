@@ -45,7 +45,7 @@ class IsolateService {
     Isolate.exit(sendPort, response);
   }
 
-  Future<ThreadResult> runHeavyCalculationB(
+  Future<AnalysisReturn> runHeavyCalculationB(
     SheetContent sheetContent,
     AnalysisResult result,
   ) async {
@@ -59,13 +59,13 @@ class IsolateService {
     _isolateB = await Isolate.spawn(CalculationService.runCalculation, [
       receivePort.sendPort,
       sheetContent,
+      result,
     ]);
 
     // Wait for the first message
     try {
-      AnalysisResult result = await receivePort.first;
-      bool startSorter = true;
-      return ThreadResult(result, startSorter);
+      AnalysisReturn analysisReturn = await receivePort.first;
+      return analysisReturn;
     } catch (e) {
       // If port closes or isolate killed
       rethrow;

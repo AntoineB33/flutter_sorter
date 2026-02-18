@@ -15,6 +15,10 @@ class SortStatusDataStore extends ChangeNotifier {
 
   SortStatusDataStore(this.loadedSheetsDataStore);
 
+  bool containsSheet(String sheetName) {
+    return _sortStatusBySheet.containsKey(sheetName);
+  }
+
   SortStatus getSortStatus(String sheetName) {
     return _sortStatusBySheet[sheetName] ??= SortStatus.empty();
   }

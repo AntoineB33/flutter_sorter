@@ -13,13 +13,17 @@ class AnalysisDataStore extends ChangeNotifier {
   final LoadedSheetsDataStore loadedSheetsDataStore;
 
   AnalysisDataStore(this.loadedSheetsDataStore);
-  
+
   // Getter for the data
   Map<String, AnalysisResult> get analysisResults => _analysisResults;
-  AnalysisResult get currentSheetAnalysisResult => getAnalysisResult(loadedSheetsDataStore.currentSheetName);
-  List<List<HashSet<Attribute>>> get tableToAtt => currentSheetAnalysisResult.tableToAtt;
-  Map<int, Map<int, List<SortingRule>>> get myRules => currentSheetAnalysisResult.myRules;
-  List<List<int>> get groupsToMaximize => currentSheetAnalysisResult.groupsToMaximize;
+  AnalysisResult get currentSheetAnalysisResult =>
+      getAnalysisResult(loadedSheetsDataStore.currentSheetName);
+  List<List<HashSet<Attribute>>> get tableToAtt =>
+      currentSheetAnalysisResult.tableToAtt;
+  Map<int, Map<int, List<SortingRule>>> get myRules =>
+      currentSheetAnalysisResult.myRules;
+  List<List<int>> get groupsToMaximize =>
+      currentSheetAnalysisResult.groupsToMaximize;
 
   AnalysisResult getAnalysisResult(String sheetName) {
     return _analysisResults[sheetName] ??= AnalysisResult.empty();
@@ -29,9 +33,9 @@ class AnalysisDataStore extends ChangeNotifier {
   void updateResults(String currentSheetName, AnalysisResult newResult) {
     _analysisResults[currentSheetName] = newResult;
     if (newResult.validRowIndexes.isEmpty) {
-      newResult.bestMediaSortOrder = null;
+      newResult.currentBestSort = null;
     }
-    
+
     // This broadcasts a signal to all listeners that the data changed
     notifyListeners();
   }
