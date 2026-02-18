@@ -60,7 +60,11 @@ class SelectionController extends ChangeNotifier {
     this.selectionDataStore,
     this.loadedSheetsDataStore,
     this.analysisStore,
-  );
+  ) {
+    selectionDataStore.addListener(() {
+      saveLastSelection();
+    });
+  }
 
   Future<void> getAllLastSelected() async {
     try {
@@ -98,13 +102,13 @@ class SelectionController extends ChangeNotifier {
   }
 
   Future<void> saveAllLastSelected() async {
-    await _saveSheetDataUseCase.saveAllLastSelected(lastSelectionBySheet);
+    await _saveSheetDataUseCase.saveAllLastSelected(selectionDataStore.lastSelectionBySheet);
   }
 
-  Future<void> saveLastSelection(String sheetName) async {
+  Future<void> saveLastSelection() async {
     _saveLastSelectionExecutor.execute(() async {
       await _saveSheetDataUseCase.saveLastSelection(
-        lastSelectionBySheet[sheetName]!,
+        selectionDataStore.selection,
       );
       await Future.delayed(
         Duration(milliseconds: SpreadsheetConstants.saveSheetDelayMs),

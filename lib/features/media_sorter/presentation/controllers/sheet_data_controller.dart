@@ -421,14 +421,7 @@ class SheetDataController extends ChangeNotifier {
     );
   }
 
-  void applyDefaultColumnSequence(
-    SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
-    Map<String, SelectionData> lastSelectionBySheet,
-    SortStatus sortStatus,
-    String currentSheetName,
-  ) {
+  void applyDefaultColumnSequence() {
     setColumnType(
       sheet,
       analysisResults,

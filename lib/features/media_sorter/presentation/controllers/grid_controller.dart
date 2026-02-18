@@ -87,10 +87,10 @@ class GridController {
     return GetDefaultSizes.getDefaultRowHeight();
   }
 
-  double getTargetTop(SheetData sheet, int row) {
+  double getTargetTop(int row) {
     if (row <= 0) return 0.0;
-    final int nbKnownBottomPos = sheet.rowsBottomPos.length;
-    var rowsBottomPos = sheet.rowsBottomPos;
+    final int nbKnownBottomPos = loadedSheetsDataStore.currentSheet.rowsBottomPos.length;
+    var rowsBottomPos = loadedSheetsDataStore.currentSheet.rowsBottomPos;
     final int tableHeight = nbKnownBottomPos == 0
         ? 0
         : rowsBottomPos.last.toInt();
@@ -101,10 +101,10 @@ class GridController {
     return targetTop;
   }
 
-  double getTargetLeft(SheetData sheet, int col) {
+  double getTargetLeft(int col) {
     if (col <= 0) return 0.0;
-    final int nbKnownRightPos = sheet.colRightPos.length;
-    var columnsRightPos = sheet.colRightPos;
+    final int nbKnownRightPos = loadedSheetsDataStore.currentSheet.colRightPos.length;
+    var columnsRightPos = loadedSheetsDataStore.currentSheet.colRightPos;
     final int tableWidth = nbKnownRightPos == 0
         ? 0
         : columnsRightPos.last.toInt();

@@ -9,9 +9,23 @@ class SelectionDataStore extends ChangeNotifier {
 
   SelectionData get selection =>
     lastSelectionBySheet[loadedSheetsDataStore.currentSheetName] ??= SelectionData.empty();
+  double get scrollOffsetX => selection.scrollOffsetX;
+  double get scrollOffsetY => selection.scrollOffsetY;
   int get tableViewRows => selection.tableViewRows;
   int get tableViewCols => selection.tableViewCols;
   bool get editingMode => selection.editingMode;
 
+  set scrollOffsetX(double value) {
+    selection.scrollOffsetX = value;
+  }
+
+  set scrollOffsetY(double value) {
+    selection.scrollOffsetY = value;
+  }
+
   SelectionDataStore(this.loadedSheetsDataStore);
+
+  void saveSelection() {
+    notifyListeners();
+  }
 }
