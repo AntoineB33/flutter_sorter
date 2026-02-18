@@ -2,22 +2,22 @@ class SortStatus {
   
   bool resultCalculated;
   bool validSortCalculated;
-  bool sorted;
+  bool toSort;
   bool isFindingBestSort;
   bool isFindingBestSortAndSort;
 
   SortStatus({
     required this.resultCalculated,
     required this.validSortCalculated,
-    required this.sorted,
+    required this.toSort,
     required this.isFindingBestSort,
     required this.isFindingBestSortAndSort,
   });
 
   SortStatus.empty()
-      : resultCalculated = false,
-        validSortCalculated = false,
-        sorted = false,
+      : resultCalculated = true,
+        validSortCalculated = true,
+        toSort = false,
         isFindingBestSort = false,
         isFindingBestSortAndSort = false;
 
@@ -25,7 +25,7 @@ class SortStatus {
     return SortStatus(
       resultCalculated: json['resultCalculated'] as bool,
       validSortCalculated: json['validSortCalculated'] as bool,
-      sorted: json['sorted'] as bool,
+      toSort: json['toSort'] as bool,
       isFindingBestSort: json['isFindingBestSort'] as bool,
       isFindingBestSortAndSort: json['isFindingBestSortAndSort'] as bool,
     );
@@ -35,7 +35,7 @@ class SortStatus {
     return {
       'resultCalculated': resultCalculated,
       'validSortCalculated': validSortCalculated,
-      'sorted': sorted,
+      'toSort': toSort,
       'isFindingBestSort': isFindingBestSort,
       'isFindingBestSortAndSort': isFindingBestSortAndSort,
     };

@@ -49,11 +49,13 @@ class AnalysisResult {
   List<int> validRowIndexes;
   List<int>? bestMediaSortOrder;
 
-  bool isBestSort;
-
   List<List<int>> validAreas;
   Map<int, Map<int, List<SortingRule>>> myRules;
   List<List<int>> groupsToMaximize;
+  
+  bool sorted;
+  bool sortedWithCurrentBestSort;
+  bool bestSortPossibleFound;
   int idSorterProgress;
 
   AnalysisResult({
@@ -75,8 +77,10 @@ class AnalysisResult {
     required this.isMedium,
     required this.validRowIndexes,
     required this.bestMediaSortOrder,
+    required this.sorted,
+    required this.sortedWithCurrentBestSort,
+    required this.bestSortPossibleFound,
     required this.idSorterProgress,
-    required this.isBestSort,
   }) {
     errorRoot.newChildren = errorChildren;
     warningRoot.newChildren = warningChildren;
@@ -104,8 +108,10 @@ class AnalysisResult {
       validRowIndexes: [],
       formatedTable: [],
       bestMediaSortOrder: null,
-      isBestSort: false,
-      idSorterProgress: -1,
+      sorted: false,
+      sortedWithCurrentBestSort: false,
+      bestSortPossibleFound: false,
+      idSorterProgress: 0,
     );
   }
 
@@ -218,8 +224,10 @@ class AnalysisResult {
       bestMediaSortOrder: json['bestMediaSortOrder'] != null
           ? List<int>.from(json['bestMediaSortOrder'] as List<dynamic>)
           : null,
+      sorted: json['sorted'] as bool,
+      sortedWithCurrentBestSort: json['sortedWithCurrentBestSort'] as bool,
+      bestSortPossibleFound: json['bestSortPossibleFound'] as bool,
       idSorterProgress: json['idSorterProgress'] as int,
-      isBestSort: json['isBestSort'] as bool,
     );
   }
 
@@ -303,6 +311,10 @@ class AnalysisResult {
       'groupsToMaximize': groupsToMaximize,
       'validRowIndexes': validRowIndexes,
       'bestMediaSortOrder': bestMediaSortOrder,
+      'isMedium': isMedium,
+      'sorted': sorted,
+      'sortedWithCurrentBestSort': sortedWithCurrentBestSort,
+      'bestSortPossibleFound': bestSortPossibleFound,
       'idSorterProgress': idSorterProgress,
     };
   }

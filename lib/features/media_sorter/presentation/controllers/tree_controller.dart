@@ -11,9 +11,11 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_re
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
 
 class TreeController extends ChangeNotifier {
   // --- states ---
+  final AnalysisDataStore analysisStore;
   final NodeStruct mentionsRoot = NodeStruct(
     instruction: SpreadsheetConstants.selectionMsg,
   );
@@ -22,8 +24,6 @@ class TreeController extends ChangeNotifier {
   );
 
   late Function(
-    SelectionData selection,
-    Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
     int row,
     int col,
@@ -33,12 +33,18 @@ class TreeController extends ChangeNotifier {
   onCellSelected;
   late String Function(List<List<String>> table, int row, int col)
   getCellContent;
+  late Function(
+    NodeStruct node,
+    bool isExpanded,
+  ) toggleNodeExpansion;
 
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) =>
       content.table.isNotEmpty ? content.table[0].length : 0;
 
-  TreeController();
+  TreeController({
+    required this.analysisStore,
+  });
 
   void populateAllTrees(
     SelectionData selection,
@@ -49,7 +55,6 @@ class TreeController extends ChangeNotifier {
     AnalysisResult result,
   ) {
     populateTree(
-      selection,
       lastSelectionBySheet,
       sortStatus,
       currentSheetName,
@@ -67,7 +72,6 @@ class TreeController extends ChangeNotifier {
   }
 
   void populateTree(
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     SortStatus sortStatus,
     String currentSheetName,
@@ -82,7 +86,6 @@ class TreeController extends ChangeNotifier {
       while (stack.isNotEmpty) {
         var node = stack.removeLast();
         _populateNode(
-          selection,
           lastSelectionBySheet,
           currentSheetName,
           sheet,
@@ -124,7 +127,6 @@ class TreeController extends ChangeNotifier {
   }
 
   void _populateNode(
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
     SheetData sheet,
@@ -154,7 +156,6 @@ class TreeController extends ChangeNotifier {
         break;
       case SpreadsheetConstants.nodeAttributeMsg:
         _populateAttributeNode(
-          selection,
           lastSelectionBySheet,
           currentSheetName,
           result,
@@ -165,7 +166,6 @@ class TreeController extends ChangeNotifier {
       case SpreadsheetConstants.cycleDetected:
         _handleCycleDetectedTap(
           node,
-          selection,
           lastSelectionBySheet,
           currentSheetName,
         );
@@ -177,7 +177,6 @@ class TreeController extends ChangeNotifier {
         break;
       default:
         _populateNodeDefault(
-          selection,
           lastSelectionBySheet,
           currentSheetName,
           result,
@@ -190,7 +189,6 @@ class TreeController extends ChangeNotifier {
   }
 
   void _populateNodeDefault(
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
     AnalysisResult result,
@@ -206,7 +204,6 @@ class TreeController extends ChangeNotifier {
           );
         } else {
           _populateCellNode(
-            selection,
             lastSelectionBySheet,
             currentSheetName,
             sheet.sheetContent,
@@ -224,7 +221,6 @@ class TreeController extends ChangeNotifier {
           _populateRowNode(
             sheet.sheetContent,
             result,
-            selection,
             lastSelectionBySheet,
             currentSheetName,
             node,
@@ -236,7 +232,6 @@ class TreeController extends ChangeNotifier {
       if (node.colId != null) {
         if (node.name != null) {
           _populateAttributeNode(
-            selection,
             lastSelectionBySheet,
             currentSheetName,
             result,
@@ -245,7 +240,6 @@ class TreeController extends ChangeNotifier {
           );
         } else {
           _populateColumnNode(
-            selection,
             lastSelectionBySheet,
             currentSheetName,
             sheet.sheetContent,
@@ -284,14 +278,12 @@ class TreeController extends ChangeNotifier {
     }
     _handleDefaultTapLogic(
       node,
-      selection,
       lastSelectionBySheet,
       currentSheetName,
     );
   }
 
   void _populateAttributeNode(
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
     AnalysisResult result,
@@ -327,12 +319,11 @@ class TreeController extends ChangeNotifier {
 
     node.message ??= node.name;
 
+    SelectionData selection = lastSelectionBySheet[currentSheetName]!;
     if (node.defaultOnTap) {
       node.onTap = (n) {
         if (node.rowId != null) {
           onCellSelected(
-            selection,
-            lastSelectionBySheet,
             currentSheetName,
             node.rowId!,
             0,
@@ -373,7 +364,6 @@ class TreeController extends ChangeNotifier {
   }
 
   void _populateCellNode(
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
     SheetContent sheetContent,
@@ -398,12 +388,9 @@ class TreeController extends ChangeNotifier {
             '${GetNames.getColumnLabel(colId)}$rowId: ${sheetContent.table[rowId][colId]}';
       }
     }
-
     if (node.defaultOnTap) {
       node.onTap = (n) {
         onCellSelected(
-          selection,
-          lastSelectionBySheet,
           currentSheetName,
           node.rowId!,
           node.colId!,
@@ -444,7 +431,6 @@ class TreeController extends ChangeNotifier {
   void _populateRowNode(
     SheetContent sheetContent,
     AnalysisResult lastAnalysis,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
     NodeStruct node,
@@ -475,7 +461,6 @@ class TreeController extends ChangeNotifier {
       );
     }
     _populateAttributeNode(
-      selection,
       lastSelectionBySheet,
       currentSheetName,
       lastAnalysis,
@@ -485,7 +470,6 @@ class TreeController extends ChangeNotifier {
   }
 
   void _populateColumnNode(
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
     SheetContent sheetContent,
@@ -526,8 +510,6 @@ class TreeController extends ChangeNotifier {
 
     int index = (found == -1) ? 0 : (found + 1) % cells.length;
     onCellSelected(
-      selection,
-      lastSelectionBySheet,
       currentSheetName,
       cells[index].rowId,
       cells[index].colId,
@@ -537,10 +519,10 @@ class TreeController extends ChangeNotifier {
 
   void _handleCycleDetectedTap(
     NodeStruct node,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
   ) {
+    SelectionData selection = lastSelectionBySheet[currentSheetName]!;
     node.onTap = (n) {
       int found = -1;
       for (int i = 0; i < n.newChildren!.length; i++) {
@@ -552,8 +534,6 @@ class TreeController extends ChangeNotifier {
       }
       if (found == -1) {
         onCellSelected(
-          selection,
-          lastSelectionBySheet,
           currentSheetName,
           n.newChildren![0].rowId!,
           n.newChildren![0].colId!,
@@ -562,8 +542,6 @@ class TreeController extends ChangeNotifier {
       } else {
         final nextChild = n.newChildren![(found + 1) % n.newChildren!.length];
         onCellSelected(
-          selection,
-          lastSelectionBySheet,
           currentSheetName,
           nextChild.rowId!,
           nextChild.colId!,
@@ -575,10 +553,10 @@ class TreeController extends ChangeNotifier {
 
   void _handleDefaultTapLogic(
     NodeStruct node,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
   ) {
+    SelectionData selection = lastSelectionBySheet[currentSheetName]!;
     if (node.defaultOnTap) {
       if (node.cellsToSelect == null) {
         node.cellsToSelect = node.cells;
@@ -615,8 +593,6 @@ class TreeController extends ChangeNotifier {
             ? 0
             : (found + 1) % node.cellsToSelect!.length;
         onCellSelected(
-          selection,
-          lastSelectionBySheet,
           currentSheetName,
           node.cellsToSelect![nextIndex].rowId,
           node.cellsToSelect![nextIndex].colId,
@@ -641,7 +617,6 @@ class TreeController extends ChangeNotifier {
   }
 
   void updateMentionsContext(
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     SortStatus sortStatus,
     String currentSheetName,
@@ -652,7 +627,6 @@ class TreeController extends ChangeNotifier {
   ) {
     updateMentionsRoot(row, col);
     populateTree(
-      selection,
       lastSelectionBySheet,
       sortStatus,
       currentSheetName,
@@ -662,8 +636,12 @@ class TreeController extends ChangeNotifier {
     );
   }
 
-  void updateMentionsRoot(int row, int col) {
+  void clearMentionsRoot() {
     mentionsRoot.newChildren = null;
+  }
+
+  void updateMentionsRoot(int row, int col) {
+    clearMentionsRoot();
     mentionsRoot.rowId = row;
     mentionsRoot.colId = col;
   }
@@ -673,10 +651,9 @@ class TreeController extends ChangeNotifier {
   }
 
   // Method to allow Controller to toggle expansion
-  void toggleNodeExpansion(
+  void nodeExpansion(
     SheetData sheet,
     AnalysisResult result,
-    SelectionData selection,
     Map<String, SelectionData> lastSelectionBySheet,
     SortStatus sortStatus,
     String currentSheetName,
@@ -688,7 +665,6 @@ class TreeController extends ChangeNotifier {
       child.isExpanded = false;
     }
     populateTree(
-      selection,
       lastSelectionBySheet,
       sortStatus,
       currentSheetName,
@@ -697,5 +673,25 @@ class TreeController extends ChangeNotifier {
       [node],
     );
     notifyListeners();
+  }
+
+  
+
+  /// Call this when the Controller finishes a calculation.
+  /// The Manager takes ownership of updating the tree state.
+  void onAnalysisComplete(
+    AnalysisResult result,
+    Point<int> primarySelectedCell,
+  ) {
+    _treeController.clearMentionsRoot();
+    _treeController.clearSearchRoot();
+    _treeController.populateAllTrees(
+      selectionController.selection,
+      selectionController.lastSelectionBySheet,
+      sortController.sortStatusBySheet[currentSheetName]!,
+      currentSheetName,
+      sheet,
+      result,
+    );
   }
 }

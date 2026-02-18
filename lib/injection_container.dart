@@ -25,8 +25,9 @@ Future<void> init() async {
   final SaveSheetDataUseCase saveSheetDataUseCase = SaveSheetDataUseCase(
     SheetRepositoryImpl(FileSheetLocalDataSource()),
   );
-  sl.registerLazySingleton<SortController>(() => SortController(saveSheetDataUseCase));
+  sl.registerLazySingleton<SortController>(() => SortController(getDataUseCase, saveSheetDataUseCase));
   final SpreadsheetMediator mediator = SpreadsheetMediator(
+    workbookController: WorkbookController(),
     gridController: GridController(),
     historyController: HistoryController(),
     selectionController: SelectionController(getDataUseCase, saveSheetDataUseCase),

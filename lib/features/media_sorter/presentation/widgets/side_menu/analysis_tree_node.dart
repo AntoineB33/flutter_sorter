@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
 
 class AnalysisTreeNode extends StatelessWidget {
   final NodeStruct node;
   final WorkbookController controller;
+  final TreeController treeController;
 
   const AnalysisTreeNode({
     super.key,
     required this.node,
     required this.controller,
+    required this.treeController,
   });
 
   @override
@@ -47,7 +50,7 @@ class AnalysisTreeNode extends StatelessWidget {
                       color: Colors.grey[700],
                     ),
                     onPressed: () {
-                      controller.toggleNodeExpansion(node, !isExpanded);
+                      treeController.toggleNodeExpansion(node, !isExpanded);
                     },
                   ),
                 ),
@@ -94,7 +97,7 @@ class AnalysisTreeNode extends StatelessWidget {
                 children: node.children
                     .map(
                       (child) =>
-                          AnalysisTreeNode(node: child, controller: controller),
+                          AnalysisTreeNode(node: child, controller: controller, treeController: treeController),
                     )
                     .toList(),
               ),

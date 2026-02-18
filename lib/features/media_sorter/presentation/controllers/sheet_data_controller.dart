@@ -14,10 +14,15 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/parse_paste
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/services/spreadsheet_clipboard_service.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
 
 class SheetDataController extends ChangeNotifier {
   // --- states ---
+  final LoadedSheetsDataStore loadedSheetsData;
+  final AnalysisDataStore analysisStore;
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
+  late final StreamSubscription<String> _storeSubscription;
   late void Function(
     SheetData sheet,
     int col,
@@ -28,9 +33,6 @@ class SheetDataController extends ChangeNotifier {
   late void Function(SheetData sheet) commitHistory;
   late void Function(
     SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    Map<String, SelectionData> lastSelectionBySheet,
-    SortStatus sortStatus,
     String currentSheetName,
   )
   calculate;
@@ -72,24 +74,19 @@ class SheetDataController extends ChangeNotifier {
   // --- usecases ---
   final SaveSheetDataUseCase _saveSheetDataUseCase;
 
-  // getters
-  // SheetData get currentSheet => sheet;
-  // Map<String, ManageWaitingTasks<void>> get saveExecutors => _saveExecutors;
-  // ManageWaitingTasks<void> get saveLastSelectionExecutor =>
-  //     _saveLastSelectionExecutor;
-  // SheetContent get sheetContent => sheet.sheetContent;
-  // int get rowCount => sheet.sheetContent.table.length;
-  // int get colCount => rowCount > 0 ? sheet.sheetContent.table[0].length : 0;
-  // ManageWaitingTasks<AnalysisResult> get calculateExecutor =>
-  //     _calculateExecutor;
+  SheetDataController({required SaveSheetDataUseCase saveSheetDataUseCase, required this.loadedSheetsData, required this.analysisStore})
+    : _saveSheetDataUseCase = saveSheetDataUseCase {
+    _storeSubscription = loadedSheetsData.onSheetUpdated.listen((
+      String sheetName,
+    ) {
+      scheduleSheetSave(sheetName);
+    });
+  }
 
-  SheetDataController({required SaveSheetDataUseCase saveSheetDataUseCase})
-    : _saveSheetDataUseCase = saveSheetDataUseCase;
-
-  void scheduleSheetSave(SheetData sheet, String sheetName, int saveDelayMs) {
+  void scheduleSheetSave(String sheetName) {
     _saveExecutors[sheetName]!.execute(() async {
-      await _saveSheetDataUseCase.saveSheet(sheetName, sheet);
-      await Future.delayed(Duration(milliseconds: saveDelayMs));
+      await _saveSheetDataUseCase.saveSheet(sheetName, loadedSheetsData.getSheet(sheetName));
+      await Future.delayed(Duration(milliseconds: SpreadsheetConstants.saveSheetDelayMs));
     });
   }
 
@@ -152,9 +149,6 @@ class SheetDataController extends ChangeNotifier {
     if (toCalculate) {
       calculate(
         sheet,
-        analysisResults,
-        lastSelectionBySheet,
-        sortStatus,
         currentSheetName,
       );
     }

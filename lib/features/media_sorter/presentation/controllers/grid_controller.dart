@@ -8,6 +8,8 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_conte
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/layout_calculator.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 
 class GridController {
@@ -15,20 +17,10 @@ class GridController {
   double row1ToScreenBottomHeight = 0.0;
   double colBToScreenRightWidth = 0.0;
 
-  late void Function(
-    SheetData sheet,
-    Map<String, SelectionData> lastSelectionBySheet,
-    String currentSheetName, {
-    double? visibleHeight,
-    double? visibleWidth,
-    bool notify,
-    bool save,
-  })
-  updateRowColCount;
+  LoadedSheetsDataStore loadedSheetsDataStore;
+  SelectionDataStore selectionDataStore;
+
   late bool Function(
-    SheetData sheet,
-    AnalysisResult result,
-    SortStatus sortStatus,
   )
   canBeSorted;
   late String Function(List<List<String>> table, int row, int col)
@@ -41,51 +33,47 @@ class GridController {
   int colCount(SheetContent content) =>
       content.table.isNotEmpty ? content.table[0].length : 0;
 
-  GridController();
+  GridController(this.loadedSheetsDataStore, this.selectionDataStore);
 
-  int minRows(
-    SheetData sheet,
-    List<double> rowsBottomPos,
-    int rowCount,
-    double height,
-  ) {
-    double tableHeight = getTargetTop(sheet, rowCount - 1);
-    if (height >= tableHeight) {
-      return rowsBottomPos.length +
-          ((height - getTargetTop(sheet, rowsBottomPos.length - 1) + 1) /
-                  GetDefaultSizes.getDefaultRowHeight())
-              .ceil();
-    }
-    return rowCount;
-  }
-
-  (int, int) getNewRowColCount(
-    SelectionData selection,
-    SheetData sheet,
+  void updateRowColCount({
     double? visibleHeight,
     double? visibleWidth,
-  ) {
-    int targetRows = selection.tableViewRows;
-    int targetCols = selection.tableViewCols;
+  }) {
+    int targetRows = selectionDataStore.tableViewRows;
+    int targetCols = selectionDataStore.tableViewCols;
     if (visibleHeight != null) {
       row1ToScreenBottomHeight = visibleHeight;
       targetRows = minRows(
-        sheet,
-        sheet.rowsBottomPos,
-        rowCount(sheet.sheetContent),
+        rowCount(loadedSheetsDataStore.currentSheet.sheetContent),
         row1ToScreenBottomHeight,
       );
     }
     if (visibleWidth != null) {
       colBToScreenRightWidth = visibleWidth;
       targetCols = minCols(
-        sheet,
-        sheet.colRightPos,
-        colCount(sheet.sheetContent),
+        colCount(loadedSheetsDataStore.currentSheet.sheetContent),
         colBToScreenRightWidth,
       );
     }
-    return (targetRows, targetCols);
+    if (targetRows != selectionDataStore.tableViewRows ||
+        targetCols != selectionDataStore.tableViewCols) {
+      selectionDataStore.setTableViewRows = targetRows;
+      selectionDataStore.tableViewCols = targetCols;
+    }
+  }
+
+  int minRows(
+    int rowCount,
+    double height,
+  ) {
+    double tableHeight = getTargetTop(loadedSheetsDataStore.currentSheet, rowCount - 1);
+    if (height >= tableHeight) {
+      return loadedSheetsDataStore.currentSheet.rowsBottomPos.length +
+          ((height - getTargetTop(loadedSheetsDataStore.currentSheet, loadedSheetsDataStore.currentSheet.rowsBottomPos.length - 1) + 1) /
+                  GetDefaultSizes.getDefaultRowHeight())
+              .ceil();
+    }
+    return rowCount;
   }
 
   double getRowHeight(SheetData sheet, int row) {
@@ -128,15 +116,13 @@ class GridController {
   }
 
   int minCols(
-    SheetData sheet,
-    List<double> colRightPos,
     int colCount,
     double width,
   ) {
-    double tableWidth = getTargetLeft(sheet, colCount - 1);
+    double tableWidth = getTargetLeft(loadedSheetsDataStore.currentSheet, colCount - 1);
     if (width >= tableWidth) {
-      return colRightPos.length +
-          ((width - getTargetLeft(sheet, colRightPos.length - 1) + 1) /
+      return loadedSheetsDataStore.currentSheet.colRightPos.length +
+          ((width - getTargetLeft(loadedSheetsDataStore.currentSheet, loadedSheetsDataStore.currentSheet.colRightPos.length - 1) + 1) /
                   GetDefaultSizes.getDefaultCellWidth())
               .ceil();
     }
@@ -168,7 +154,6 @@ class GridController {
         row >= rowCount(sheet.sheetContent)) {
       updateRowColCount(
         sheet,
-        lastSelectionBySheet,
         currentSheetName,
         visibleHeight: row1ToScreenBottomHeight,
         visibleWidth: colBToScreenRightWidth,
@@ -261,7 +246,6 @@ class GridController {
     }
     updateRowColCount(
       sheet,
-      lastSelectionBySheet,
       currentSheetName,
       visibleHeight: row1ToScreenBottomHeight,
       visibleWidth: colBToScreenRightWidth,

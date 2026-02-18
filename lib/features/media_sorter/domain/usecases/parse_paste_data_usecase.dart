@@ -15,11 +15,3 @@ class ParsePasteDataUseCase {
     return updates;
   }
 }
-
-// simple DTO
-class CellUpdate {
-  final int row;
-  final int col;
-  final String value;
-  CellUpdate({required this.row, required this.col, required this.value});
-}

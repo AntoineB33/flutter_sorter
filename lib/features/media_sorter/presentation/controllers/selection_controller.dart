@@ -9,8 +9,15 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status
 import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
 
 class SelectionController extends ChangeNotifier {
+  final LoadedSheetsDataStore loadedSheetsDataStore;
+  final AnalysisDataStore analysisStore;
+  final SelectionDataStore selectionDataStore;
+
   final ManageWaitingTasks<void> _saveLastSelectionExecutor =
       ManageWaitingTasks<void>();
   late void Function(SheetData sheet) commitHistory;
@@ -29,7 +36,8 @@ class SelectionController extends ChangeNotifier {
   onChanged;
   late String Function(List<List<String>> table, int row, int col)
   getCellContent;
-  late void Function(int, int) updateMentionsContext;
+  late void Function(String currentSheetName, int row, int col)
+  updateMentionsContext;
   late void Function(int row, int col) triggerScrollTo;
   late (int, int) Function(
     SelectionData selection,
@@ -46,51 +54,24 @@ class SelectionController extends ChangeNotifier {
   int colCount(SheetContent content) =>
       content.table.isNotEmpty ? content.table[0].length : 0;
 
-  SelectionController(this._getDataUseCase, this._saveSheetDataUseCase);
+  SelectionController(
+    this._getDataUseCase,
+    this._saveSheetDataUseCase,
+    this.selectionDataStore,
+    this.loadedSheetsDataStore,
+    this.analysisStore,
+  );
 
-  Future<Map<String, SelectionData>> getAllLastSelected() async {
+  Future<void> getAllLastSelected() async {
     try {
-      return await _getDataUseCase.getAllLastSelected();
+      selectionDataStore.lastSelectionBySheet = await _getDataUseCase
+          .getAllLastSelected();
     } catch (e) {
       debugPrint("Error getting all last selected cells: $e");
-      return {};
     }
   }
 
-  void updateRowColCount(
-    SheetData sheet,
-    Map<String, SelectionData> lastSelectionBySheet,
-    String currentSheetName, {
-    double? visibleHeight,
-    double? visibleWidth,
-    bool notify = true,
-    bool save = true,
-  }) {
-    SelectionData selection =
-        lastSelectionBySheet[currentSheetName] ?? SelectionData.empty();
-    var (targetRows, targetCols) = getNewRowColCount(
-      selection,
-      sheet,
-      visibleHeight,
-      visibleWidth,
-    );
-    if (targetRows != selection.tableViewRows ||
-        targetCols != selection.tableViewCols) {
-      selection.tableViewRows = targetRows;
-      selection.tableViewCols = targetCols;
-      if (notify) {
-        notifyListeners();
-      }
-    }
-    if (save) {
-      saveLastSelection(lastSelectionBySheet, currentSheetName);
-    }
-  }
-
-  bool completeMissing(
-    Map<String, SelectionData> lastSelectionBySheet,
-    List<String> sheetNames,
-  ) {
+  bool completeMissing(List<String> sheetNames) {
     bool saveLastSelectionBySheet = false;
     for (var name in sheetNames) {
       if (!lastSelectionBySheet.containsKey(name)) {
@@ -102,36 +83,25 @@ class SelectionController extends ChangeNotifier {
     return saveLastSelectionBySheet;
   }
 
-  Future<void> getLastSelection(
-    Map<String, SelectionData> lastSelectionBySheet,
-    String sheetName,
-  ) async {
+  Future<void> loadLastSelection() async {
     try {
-      lastSelectionBySheet[sheetName] = await _getDataUseCase
+      selectionDataStore.lastSelectionBySheet[loadedSheetsDataStore.currentSheetName] = await _getDataUseCase
           .getLastSelection();
     } catch (e) {
       debugPrint("Error getting last selection for current sheet: $e");
-      lastSelectionBySheet[sheetName] = SelectionData.empty();
+      selectionDataStore.lastSelectionBySheet[loadedSheetsDataStore.currentSheetName] = SelectionData.empty();
     }
   }
 
-  void clearLastSelection(
-    Map<String, SelectionData> lastSelectionBySheet,
-    String sheetName,
-  ) {
-    lastSelectionBySheet[sheetName] = SelectionData.empty();
+  void clearLastSelection(String sheetName) {
+    selectionDataStore.lastSelectionBySheet[sheetName] = SelectionData.empty();
   }
 
-  Future<void> saveAllLastSelected(
-    Map<String, SelectionData> lastSelectionBySheet,
-  ) async {
+  Future<void> saveAllLastSelected() async {
     await _saveSheetDataUseCase.saveAllLastSelected(lastSelectionBySheet);
   }
 
-  Future<void> saveLastSelection(
-    Map<String, SelectionData> lastSelectionBySheet,
-    String sheetName,
-  ) async {
+  Future<void> saveLastSelection(String sheetName) async {
     _saveLastSelectionExecutor.execute(() async {
       await _saveSheetDataUseCase.saveLastSelection(
         lastSelectionBySheet[sheetName]!,
@@ -159,21 +129,20 @@ class SelectionController extends ChangeNotifier {
       selection.primarySelectedCell.y == col;
 
   void setPrimarySelection(
-    SelectionData selection,
-    Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
     int row,
     int col,
     bool keepSelection, {
     bool scrollTo = true,
   }) {
+    SelectionData selection = lastSelectionBySheet[currentSheetName]!;
     if (!keepSelection) {
       selection.selectedCells.clear();
     }
     selection.primarySelectedCell = Point(row, col);
-    saveLastSelection(lastSelectionBySheet, currentSheetName);
+    saveLastSelection(currentSheetName);
 
-    updateMentionsContext(row, col);
+    updateMentionsContext(currentSheetName, row, col);
 
     // Request scroll to visible
     if (scrollTo) {
@@ -182,18 +151,15 @@ class SelectionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void stopEditing(
-    SheetData sheet,
-    Map<String, SelectionData> lastSelectionBySheet,
-    String currentSheetName, {
+  void stopEditing({
     bool updateHistory = true,
     bool notify = true,
   }) {
-    if (!lastSelectionBySheet[currentSheetName]!.editingMode) {
+    if (!selectionDataStore.editingMode) {
       return;
     }
     lastSelectionBySheet[currentSheetName]!.editingMode = false;
-    saveLastSelection(lastSelectionBySheet, currentSheetName);
+    saveLastSelection(currentSheetName);
     if (notify) {
       notifyListeners();
     }
@@ -237,7 +203,7 @@ class SelectionController extends ChangeNotifier {
       );
     }
     selection.editingMode = true;
-    saveLastSelection(lastSelectionBySheet, currentSheetName);
+    saveLastSelection(currentSheetName);
     notifyListeners();
   }
 
@@ -254,13 +220,6 @@ class SelectionController extends ChangeNotifier {
         selection.selectedCells.add(Point(r, c));
       }
     }
-    setPrimarySelection(
-      selection,
-      lastSelectionBySheet,
-      currentSheetName,
-      0,
-      0,
-      true,
-    );
+    setPrimarySelection(currentSheetName, 0, 0, true);
   }
 }

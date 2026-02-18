@@ -19,8 +19,6 @@ class SpreadsheetKeyboardDelegate {
   })
   startEditing;
   late void Function(
-    SelectionData selection,
-    Map<String, SelectionData> lastSelectionBySheet,
     String currentSheetName,
     int row,
     int col,
@@ -125,8 +123,6 @@ class SpreadsheetKeyboardDelegate {
 
     if (logicalKey == LogicalKeyboardKey.arrowUp) {
       setPrimarySelection(
-        selection,
-        lastSelectionBySheet,
         currentSheetName,
         max(selection.primarySelectedCell.x - 1, 0),
         selection.primarySelectedCell.y,
@@ -135,8 +131,6 @@ class SpreadsheetKeyboardDelegate {
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowDown) {
       setPrimarySelection(
-        selection,
-        lastSelectionBySheet,
         currentSheetName,
         selection.primarySelectedCell.x + 1,
         selection.primarySelectedCell.y,
@@ -146,8 +140,6 @@ class SpreadsheetKeyboardDelegate {
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowLeft) {
       setPrimarySelection(
-        selection,
-        lastSelectionBySheet,
         currentSheetName,
         selection.primarySelectedCell.x,
         max(0, selection.primarySelectedCell.y - 1),
@@ -156,8 +148,6 @@ class SpreadsheetKeyboardDelegate {
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowRight) {
       setPrimarySelection(
-        selection,
-        lastSelectionBySheet,
         currentSheetName,
         selection.primarySelectedCell.x,
         selection.primarySelectedCell.y + 1,

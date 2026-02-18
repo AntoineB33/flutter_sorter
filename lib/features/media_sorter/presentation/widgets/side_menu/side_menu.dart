@@ -1,7 +1,9 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:isar/isar.dart';
 import 'package:provider/provider.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
 import 'analysis_tree_node.dart';
@@ -63,6 +65,7 @@ class _SideMenuState extends State<SideMenu> {
   Widget build(BuildContext context) {
     final WorkbookController workbookController =
         Provider.of<WorkbookController>(context);
+    final SortController sortController = Provider.of<SortController>(context);
     final TreeController treeController = Provider.of<TreeController>(context);
 
     if (_textEditingController.text != workbookController.currentSheetName) {
@@ -89,9 +92,9 @@ class _SideMenuState extends State<SideMenu> {
           // 1. Sort Media Button (Blue)
           ElevatedButton(
             onPressed:
-                workbookController.canBeSorted() &&
-                        !workbookController.sorted()
-                    ? workbookController.sortMedia
+                sortController.canBeSorted() &&
+                        !sortController.currentSheetSorted()
+                    ? sortController.sortCurrentMedia
                     : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
@@ -102,7 +105,7 @@ class _SideMenuState extends State<SideMenu> {
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               // Disabled state:
-              disabledBackgroundColor: workbookController.sorted()
+              disabledBackgroundColor: sortController.currentSheetSorted()
                   ? Colors.grey
                   : Colors.blue.withValues(alpha: 0.5),
             ),
@@ -114,10 +117,10 @@ class _SideMenuState extends State<SideMenu> {
           // 2. Find Best Sort Button (Orange)
           ElevatedButton(
             onPressed:
-                workbookController.canBeSorted() &&
-                        !workbookController.isFindingBestSort &&
-                        !workbookController.isFindingBestSortAndSort &&
-                        !workbookController.isBestSort
+                sortController.canBeSorted() &&
+                        !sortController.isFindingBestSort() &&
+                        !sortController.isFindingBestSortAndSort() &&
+                        !sortController.isBestSort
                     ? workbookController.findBestSortToggle
                     : null,
             style: ElevatedButton.styleFrom(
