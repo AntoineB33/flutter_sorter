@@ -356,6 +356,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     BuildContext context,
     TableVicinity vicinity,
     WorkbookController controller,
+    SheetDataController dataController
   ) {
     final int r = vicinity.row;
     final int c = vicinity.column;
@@ -414,6 +415,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       onDoubleTap: () {
         controller.startEditing();
       },
+      onTapOutside: selectionController.stopEditing,
       onChanged: (newValue) {
         controller.onChanged(newValue);
       },
@@ -505,7 +507,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   void _showColumnContextMenu(
     BuildContext context,
     WorkbookController controller,
-    SheetDataController dataController,
     Offset position,
     int col,
   ) async {
@@ -532,7 +533,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     if (!context.mounted) return;
 
     if (result == 'change_type') {
-      await _showTypeMenu(context, controller, dataController, position, col);
+      await _showTypeMenu(context, controller, context.read<SheetDataController>(), position, col);
     } else if (result != null) {
       debugPrint("Action $result on column $col");
     }

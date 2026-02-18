@@ -57,7 +57,7 @@ class GridController {
     }
     if (targetRows != selectionDataStore.tableViewRows ||
         targetCols != selectionDataStore.tableViewCols) {
-      selectionDataStore.setTableViewRows = targetRows;
+      selectionDataStore.tableViewRows = targetRows;
       selectionDataStore.tableViewCols = targetCols;
     }
   }
@@ -66,10 +66,10 @@ class GridController {
     int rowCount,
     double height,
   ) {
-    double tableHeight = getTargetTop(loadedSheetsDataStore.currentSheet, rowCount - 1);
+    double tableHeight = getTargetTop(rowCount - 1);
     if (height >= tableHeight) {
       return loadedSheetsDataStore.currentSheet.rowsBottomPos.length +
-          ((height - getTargetTop(loadedSheetsDataStore.currentSheet, loadedSheetsDataStore.currentSheet.rowsBottomPos.length - 1) + 1) /
+          ((height - getTargetTop(loadedSheetsDataStore.currentSheet.rowsBottomPos.length - 1) + 1) /
                   GetDefaultSizes.getDefaultRowHeight())
               .ceil();
     }
@@ -119,10 +119,10 @@ class GridController {
     int colCount,
     double width,
   ) {
-    double tableWidth = getTargetLeft(loadedSheetsDataStore.currentSheet, colCount - 1);
+    double tableWidth = getTargetLeft(colCount - 1);
     if (width >= tableWidth) {
       return loadedSheetsDataStore.currentSheet.colRightPos.length +
-          ((width - getTargetLeft(loadedSheetsDataStore.currentSheet, loadedSheetsDataStore.currentSheet.colRightPos.length - 1) + 1) /
+          ((width - getTargetLeft(loadedSheetsDataStore.currentSheet.colRightPos.length - 1) + 1) /
                   GetDefaultSizes.getDefaultCellWidth())
               .ceil();
     }
@@ -130,7 +130,7 @@ class GridController {
   }
 
   double getColumnWidth(SheetData sheet, int col) {
-    return getTargetLeft(sheet, col + 1) - getTargetLeft(sheet, col);
+    return getTargetLeft(col + 1) - getTargetLeft(col);
   }
 
   double calculateRequiredRowHeight(SheetData sheet, String text, int colId) {

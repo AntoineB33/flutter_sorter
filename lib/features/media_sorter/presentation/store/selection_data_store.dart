@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
 
@@ -23,7 +24,19 @@ class SelectionDataStore extends ChangeNotifier {
     selection.scrollOffsetY = value;
   }
 
+  set tableViewRows(int value) {
+    selection.tableViewRows = value;
+  }
+
+  set tableViewCols(int value) {
+    selection.tableViewCols = value;
+  }
+
   SelectionDataStore(this.loadedSheetsDataStore);
+
+  SelectionData getSelection(String sheetName) {
+    return lastSelectionBySheet[sheetName] ??= SelectionData.empty();
+  }
 
   void saveSelection() {
     notifyListeners();

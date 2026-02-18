@@ -32,39 +32,12 @@ class SortController extends ChangeNotifier {
   final LoadedSheetsDataStore loadedSheetsDataStore;
   final SortStatusDataStore sortStatusDataStore;
   final Map<String, ManageWaitingTasks<void>> _saveResultExecutors = {};
-  final ManageWaitingTasks<void> _saveSortStatusExecutor = ManageWaitingTasks<void>();
+  final ManageWaitingTasks<void> _saveSortStatusExecutor =
+      ManageWaitingTasks<void>();
   final Map<String, IsolateService> _isolateServices = {};
 
   final SaveSheetDataUseCase _saveSheetDataUseCase;
   final GetSheetDataUseCase _getSheetDataUseCase;
-
-  late void Function(
-    SheetData sheet,
-    Map<String, SelectionData> lastSelectionBySheet,
-    String currentSheetName, {
-    bool updateHistory,
-    bool notify,
-  })
-  stopEditing;
-  late void Function(
-    SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    Map<String, SelectionData> lastSelectionBySheet,
-    SortStatus sortStatus,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
-    String currentSheetName,
-    List<CellUpdate> updates, {
-    bool toCalculate,
-  })
-  setTable;
-  late void Function(AnalysisResult result, Point<int> primarySelectedCell)
-  onAnalysisComplete;
-  late bool Function() canBeSorted;
-  late bool Function() currentSheetSorted;
-  late bool Function() isFindingBestSort;
-  late bool Function() isFindingBestSortAndSort;
-  late void Function() sortCurrentMedia;
 
   final CalculationService calculationService = CalculationService();
 
@@ -83,9 +56,9 @@ class SortController extends ChangeNotifier {
   }
 
   Future<void> loadAllSortStatus() async {
-    sortStatusDataStore.loadAllSortStatus(await _saveSheetDataUseCase
-        .repository
-        .getAllSortStatus());
+    sortStatusDataStore.loadAllSortStatus(
+      await _saveSheetDataUseCase.repository.getAllSortStatus(),
+    );
   }
 
   void saveAllSortStatus() {
@@ -97,19 +70,6 @@ class SortController extends ChangeNotifier {
         Duration(milliseconds: SpreadsheetConstants.saveAllSortStatusDelayMs),
       );
     });
-  }
-
-  void setBestMediaSortOrder(
-    Map<String, AnalysisResult> analysisResults,
-    List<int> order,
-    SheetData sheet,
-    Map<String, SelectionData> lastSelectionBySheet,
-    String currentSheetName,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
-  ) {
-    analysisResults[currentSheetName]!.bestMediaSortOrder = order;
-    sortMedia(loadedSheetsDataStore.currentSheet);
   }
 
   bool canBeSortedFunc(
@@ -162,7 +122,7 @@ class SortController extends ChangeNotifier {
           result.bestMediaSortOrder = response.sortedIds;
         }
         if (sortStatus.toSort) {
-          sortMedia();
+          sortMedia(name);
           sortStatusDataStore.updateSortStatus(name, (status) {
             status.validSortCalculated = true;
             status.toSort = false;
@@ -172,7 +132,7 @@ class SortController extends ChangeNotifier {
             status.validSortCalculated = true;
           });
           findBestSortToggle();
-        } else if (sortStatus.isFindingBestSortAndSort) {
+        } else if (sortStatus.sortWhileFindingBestSort) {
           sortStatusDataStore.updateSortStatus(name, (status) {
             status.validSortCalculated = true;
           });
@@ -409,20 +369,46 @@ class SortController extends ChangeNotifier {
     );
   }
 
-  Future<void> findBestSortToggle() async {
-    SortStatus sortStatus = getSortStatus(currentSheetName);
-    AnalysisResult result = analysisResults[currentSheetName]!;
-    if (sortStatus.isFindingBestSort) {
-      sortStatus.isFindingBestSort = false;
-      notifyListeners();
-      saveAllSortStatus(currentSheetName);
-      return;
+  bool sortToggleAvailable() {
+    return !sortStatusDataStore.currentSortStatus.resultCalculated || !sortStatusDataStore.currentSortStatus.errorInResult && (!sortStatusDataStore.currentSortStatus.validSortCalculated ||
+        analysisDataStore.currentSheetAnalysisResult.bestMediaSortOrder != null);
+  }
+
+  void sortToggle() {
+    if (!sortStatusDataStore.currentSortStatus.resultCalculated) {
+      sortStatusDataStore.updateSortStatus(loadedSheetsDataStore.currentSheetName, (status) {
+        status.toSort = true;
+      });
+    } else {
+      sortMedia(loadedSheetsDataStore.currentSheetName);
     }
-    sortStatus.isFindingBestSort = true;
-    notifyListeners();
-    saveAllSortStatus(currentSheetName);
-    stopEditing(sheet, lastSelectionBySheet, currentSheetName, notify: false);
-    int nVal = result.tableToAtt.length;
+  }
+
+  void findBestSortCurrentSheet() {
+    findBestSortToggle(loadedSheetsDataStore.currentSheetName, true);
+  }
+
+  Future<void> findBestSortToggle(String sheetName, bool sortTable) async {
+    SortStatus sortStatus = sortStatusDataStore.getSortStatus(sheetName);
+    if (sortStatus.isFindingBestSort) {
+      if (sortStatus.sortWhileFindingBestSort != sortTable) {
+        sortStatusDataStore.updateSortStatus(sheetName, (status) {
+          status.sortWhileFindingBestSort = sortTable;
+        });
+      } else {
+        sortStatusDataStore.updateSortStatus(sheetName, (status) {
+          status.isFindingBestSort = false;
+        });
+      }
+    } else {
+      sortStatusDataStore.updateSortStatus(sheetName, (status) {
+        status.isFindingBestSort = true;
+        status.sortWhileFindingBestSort = sortTable;
+      });
+    }
+    if (!sortStatus.resultCalculated) {
+      await calculate(sheetName);
+    }
     if (!sortStatus.resultCalculated) {
       return;
     }
@@ -432,16 +418,18 @@ class SortController extends ChangeNotifier {
       // await for pauses the execution of this function
       // until the stream is closed by the server.
       await for (final solution in service.solveSortingStream(
-        nVal,
-        result.myRules,
-        groupsToMaximize: result.groupsToMaximize,
+        analysisDataStore.tableToAtt.length,
+        analysisDataStore.myRules,
+        groupsToMaximize: analysisDataStore.groupsToMaximize,
       )) {
         if (!sortStatus.isFindingBestSort) {
           // If the user has toggled off the "finding best sort" mode, we should stop processing results.
           break;
         }
-        analysisResults[currentSheetName]!.bestMediaSortOrder =
-            solution.sortedIds!;
+        analysisDataStore.updateResults(sheetName, (result) {
+          result.bestMediaSortOrder = solution.sortedIds!;
+        });
+        sortMedia(sheetName);
       }
     } catch (error) {
       result.errorRoot.newChildren!.add(
@@ -455,13 +443,13 @@ class SortController extends ChangeNotifier {
   Future<void> findBestSortAndSortToggle() async {
     SortStatus sortStatus = getSortStatus(currentSheetName);
     AnalysisResult result = analysisStore.analysisResults[currentSheetName]!;
-    if (sortStatus.isFindingBestSortAndSort) {
-      sortStatus.isFindingBestSortAndSort = false;
+    if (sortStatus.sortWhileFindingBestSort) {
+      sortStatus.sortWhileFindingBestSort = false;
       notifyListeners();
       saveAllSortStatus(currentSheetName);
       return;
     }
-    sortStatus.isFindingBestSortAndSort = true;
+    sortStatus.sortWhileFindingBestSort = true;
     notifyListeners();
     saveAllSortStatus(currentSheetName);
     stopEditing(sheet, lastSelectionBySheet, currentSheetName, notify: false);
@@ -479,19 +467,14 @@ class SortController extends ChangeNotifier {
         result.myRules,
         groupsToMaximize: result.groupsToMaximize,
       )) {
-        if (!sortStatus.isFindingBestSortAndSort) {
+        if (!sortStatus.sortWhileFindingBestSort) {
           // If the user has toggled off the "finding best sort" mode, we should stop processing results.
           break;
         }
-        setBestMediaSortOrder(
-          analysisStore.analysisResults,
-          solution.sortedIds!,
-          sheet,
-          lastSelectionBySheet,
-          currentSheetName,
-          row1ToScreenBottomHeight,
-          colBToScreenRightWidth,
-        );
+        analysisDataStore.updateResults(sheetName, (result) {
+          result.bestMediaSortOrder = solution.sortedIds!;
+        });
+        sortMedia(sheetName);
       }
     } catch (error) {
       result.errorRoot.newChildren!.add(

@@ -194,7 +194,7 @@ class WorkbookController extends ChangeNotifier {
         sortController.findBestSortToggle();
       } else if (!sortStatusDataStore
           .getSortStatus(name)
-          .isFindingBestSortAndSort) {
+          .sortWhileFindingBestSort) {
         await sortController.loadAnalysisResult(name);
         sortController.findBestSortAndSortToggle(
           _dataController.sheet(name),

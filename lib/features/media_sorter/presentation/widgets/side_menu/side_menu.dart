@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:isar/isar.dart';
 import 'package:provider/provider.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
@@ -65,6 +66,8 @@ class _SideMenuState extends State<SideMenu> {
   Widget build(BuildContext context) {
     final WorkbookController workbookController =
         Provider.of<WorkbookController>(context);
+    final SelectionController selectionController =
+        Provider.of<SelectionController>(context);
     final SortController sortController = Provider.of<SortController>(context);
     final TreeController treeController = Provider.of<TreeController>(context);
 
@@ -91,11 +94,13 @@ class _SideMenuState extends State<SideMenu> {
 
           // 1. Sort Media Button (Blue)
           ElevatedButton(
-            onPressed:
-                sortController.canBeSorted() &&
-                        !sortController.currentSheetSorted()
-                    ? sortController.sortCurrentMedia
-                    : null,
+            onPressed: () {
+              if (!sortController.sortToggleAvailable()) {
+                return;
+              }
+              sortController.sortCurrentMedia();
+              selectionController.stopEditing();
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
@@ -116,13 +121,10 @@ class _SideMenuState extends State<SideMenu> {
 
           // 2. Find Best Sort Button (Orange)
           ElevatedButton(
-            onPressed:
-                sortController.canBeSorted() &&
-                        !sortController.isFindingBestSort() &&
-                        !sortController.isFindingBestSortAndSort() &&
-                        !sortController.isBestSort
-                    ? workbookController.findBestSortToggle
-                    : null,
+            onPressed: () {
+              sortController.findBestSortCurrentSheet();
+              selectionController.stopEditing();
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange, // New color
               foregroundColor: Colors.white,

@@ -140,11 +140,7 @@ class SheetDataController extends ChangeNotifier {
       if (updateHistory) {
         commitHistory(sheet);
       }
-      scheduleSheetSave(
-        sheet,
-        currentSheetName,
-        SpreadsheetConstants.saveSheetDelayMs,
-      );
+      scheduleSheetSave(currentSheetName);
     }
     if (toCalculate) {
       calculate(

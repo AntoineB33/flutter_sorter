@@ -89,11 +89,14 @@ class SelectionController extends ChangeNotifier {
 
   Future<void> loadLastSelection() async {
     try {
-      selectionDataStore.lastSelectionBySheet[loadedSheetsDataStore.currentSheetName] = await _getDataUseCase
+      selectionDataStore.lastSelectionBySheet[loadedSheetsDataStore
+          .currentSheetName] = await _getDataUseCase
           .getLastSelection();
     } catch (e) {
       debugPrint("Error getting last selection for current sheet: $e");
-      selectionDataStore.lastSelectionBySheet[loadedSheetsDataStore.currentSheetName] = SelectionData.empty();
+      selectionDataStore.lastSelectionBySheet[loadedSheetsDataStore
+              .currentSheetName] =
+          SelectionData.empty();
     }
   }
 
@@ -102,7 +105,9 @@ class SelectionController extends ChangeNotifier {
   }
 
   Future<void> saveAllLastSelected() async {
-    await _saveSheetDataUseCase.saveAllLastSelected(selectionDataStore.lastSelectionBySheet);
+    await _saveSheetDataUseCase.saveAllLastSelected(
+      selectionDataStore.lastSelectionBySheet,
+    );
   }
 
   Future<void> saveLastSelection() async {
@@ -155,10 +160,7 @@ class SelectionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void stopEditing({
-    bool updateHistory = true,
-    bool notify = true,
-  }) {
+  void stopEditing({bool updateHistory = true, bool notify = true}) {
     if (!selectionDataStore.editingMode) {
       return;
     }
@@ -185,7 +187,7 @@ class SelectionController extends ChangeNotifier {
     String? initialInput,
   }) {
     SelectionData selection = lastSelectionBySheet[currentSheetName]!;
-    if (sortStatus.isFindingBestSortAndSort) {
+    if (sortStatus.sortWhileFindingBestSort) {
       return;
     }
     selection.previousContent = getCellContent(

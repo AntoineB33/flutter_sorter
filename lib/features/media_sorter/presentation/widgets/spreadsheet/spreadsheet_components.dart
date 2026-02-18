@@ -93,6 +93,7 @@ class SpreadsheetDataCell extends StatefulWidget {
   final String previousContent;
   final VoidCallback onTap;
   final VoidCallback onDoubleTap;
+  final VoidCallback onTapOutside;
   final ValueChanged<String>? onChanged;
   final void Function(String value, {bool moveUp}) onSave;
   final void Function(String previousContent) onEscape;
@@ -109,6 +110,7 @@ class SpreadsheetDataCell extends StatefulWidget {
     required this.previousContent,
     required this.onTap,
     required this.onDoubleTap,
+    required this.onTapOutside,
     required this.onChanged,
     required this.onSave,
     required this.onEscape,
@@ -233,30 +235,36 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
             behavior: ScrollConfiguration.of(
               context,
             ).copyWith(scrollbars: false),
-            child: TextField(
-              controller: _textController,
-              focusNode: _editFocusNode,
-              autofocus: true,
-              maxLines: null,
-              minLines: 1,
-              onChanged: widget.onChanged,
-              textAlignVertical: TextAlignVertical.top,
-
-              // FIX: Use unified StrutStyle
-              strutStyle: effectiveStrut,
-              // FIX: Use unified TextStyle with fixed letterSpacing
-              style: PageConstants.cellStyle,
-
-              decoration: const InputDecoration(
-                contentPadding: EdgeInsets.zero,
-                isDense: true,
-                border: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
-              ),
-              onSubmitted: (value) => widget.onSave(value, moveUp: false),
+            child: TapRegion(
+              groupId: 'cell_editor', // Groups regions so they don't trigger each other
+              onTapOutside: (PointerDownEvent event) {
+                widget.onTapOutside();
+              },
+              child: TextField(
+                controller: _textController,
+                focusNode: _editFocusNode,
+                autofocus: true,
+                maxLines: null,
+                minLines: 1,
+                onChanged: widget.onChanged,
+                textAlignVertical: TextAlignVertical.top,
+              
+                // FIX: Use unified StrutStyle
+                strutStyle: effectiveStrut,
+                // FIX: Use unified TextStyle with fixed letterSpacing
+                style: PageConstants.cellStyle,
+              
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.zero,
+                  isDense: true,
+                  border: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                ),
+                onSubmitted: (value) => widget.onSave(value, moveUp: false),
+              )
             ),
           ),
         ),
