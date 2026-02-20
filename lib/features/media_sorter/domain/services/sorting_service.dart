@@ -3,7 +3,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
 
-class SortingService {
+class PythonSortingService {
   static const String wsUrl = 'ws://127.0.0.1:8000/ws/solve';
 
   /// Returns a Stream of SortingResponse.
@@ -19,9 +19,15 @@ class SortingService {
     final payload = jsonEncode({
       'n': n,
       'rules': rules.map(
-        (k, v) => MapEntry(k.toString(), v.map(
-          (innerK, innerV) => MapEntry(innerK.toString(), innerV.map((e) => e.toJson()).toList())
-        )),
+        (k, v) => MapEntry(
+          k.toString(),
+          v.map(
+            (innerK, innerV) => MapEntry(
+              innerK.toString(),
+              innerV.map((e) => e.toJson()).toList(),
+            ),
+          ),
+        ),
       ),
       'maximize_distance_between': groupsToMaximize,
       'check_natural_order': checkNaturalOrder,

@@ -1,6 +1,7 @@
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 
 abstract class SheetRepository {
@@ -18,5 +19,6 @@ abstract class SheetRepository {
   Future<void> saveAllSortStatus(Map<String, SortStatus> sortStatusBySheet);
   Future<AnalysisResult> getAnalysisResult(String sheetName);
   Future<void> saveAnalysisResult(String sheetName, AnalysisResult result);
+  Future<SortProgressData> getSortProgression(String sheetName);
   Future<void> clearAllData();
 }

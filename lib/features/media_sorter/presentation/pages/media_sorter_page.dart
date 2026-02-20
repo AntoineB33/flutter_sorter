@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/logic/delegates/spreadsheet_keyboard_delegate.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/sort_status_data_store.dart';
 import 'package:trying_flutter/injection_container.dart';
 import 'package:trying_flutter/shared/widgets/navigation_dropdown.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/widgets/side_menu/side_menu.dart';
@@ -9,7 +13,10 @@ import 'package:trying_flutter/shared/widgets/resizable_split_view.dart'; // Imp
 import 'package:trying_flutter/features/media_sorter/presentation/widgets/spreadsheet/spreadsheet_widget.dart';
 
 class MediaSorterPage extends StatelessWidget {
-  const MediaSorterPage({super.key});
+
+  const MediaSorterPage({
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,8 +26,8 @@ class MediaSorterPage extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => sl<WorkbookController>()),
         ChangeNotifierProvider(create: (_) => sl<TreeController>()),
       ],
-      child: const Scaffold(
-        appBar: NavigationDropdown(),
+      child: Scaffold(
+        appBar: const NavigationDropdown(),
         body: ResizableSplitView(
           initialWidth: 250,
           minWidth: 150,

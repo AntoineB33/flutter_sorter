@@ -23,43 +23,6 @@ class SheetDataController extends ChangeNotifier {
   final AnalysisDataStore analysisStore;
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
   late final StreamSubscription<String> _storeSubscription;
-  late void Function(
-    SheetData sheet,
-    int col,
-    ColumnType prevType,
-    ColumnType newType,
-  )
-  recordColumnTypeChange;
-  late void Function(SheetData sheet) commitHistory;
-  late void Function(
-    SheetData sheet,
-    String currentSheetName,
-  )
-  calculate;
-  late void Function(AnalysisResult result, Point<int> primarySelectedCell)
-  onAnalysisComplete;
-  late void Function(
-    SheetData sheet,
-    int row,
-    int col,
-    String prevValue,
-    String newValue,
-    bool onChange,
-    bool keepPrevious,
-  )
-  recordCellChange;
-  late void Function(
-    SheetData sheet,
-    Map<String, SelectionData> lastSelectionBySheet,
-    String currentSheetName,
-    int row,
-    int col,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
-    String newValue,
-    String prevValue,
-  )
-  adjustRowHeightAfterUpdate;
 
   late final SpreadsheetClipboardService _clipboardService =
       SpreadsheetClipboardService();
@@ -86,12 +49,11 @@ class SheetDataController extends ChangeNotifier {
   void scheduleSheetSave(String sheetName) {
     _saveExecutors[sheetName]!.execute(() async {
       await _saveSheetDataUseCase.saveSheet(sheetName, loadedSheetsData.getSheet(sheetName));
-      await Future.delayed(Duration(milliseconds: SpreadsheetConstants.saveSheetDelayMs));
     });
   }
 
   void createSaveExecutor(String name) {
-    _saveExecutors[name] = ManageWaitingTasks<void>();
+    _saveExecutors[name] = ManageWaitingTasks<void>(Duration(milliseconds: SpreadsheetConstants.saveSheetDelayMs));
   }
 
   void onChanged(
@@ -126,12 +88,7 @@ class SheetDataController extends ChangeNotifier {
     );
   }
 
-  void saveAndCalculate(
-    SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    Map<String, SelectionData> lastSelectionBySheet,
-    SortStatus sortStatus,
-    String currentSheetName, {
+  void saveAndCalculate({
     bool save = true,
     bool updateHistory = false,
     bool toCalculate = true,
@@ -518,5 +475,12 @@ class SheetDataController extends ChangeNotifier {
 
     final text = buffer.toString();
     await _clipboardService.copy(text);
+  }
+
+  void dispose() {
+    _storeSubscription.cancel();
+    for (var executor in _saveExecutors.values) {
+      executor.dispose();
+    }
   }
 }

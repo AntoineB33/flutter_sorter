@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:isolate';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -71,6 +72,13 @@ class SortController extends ChangeNotifier {
     });
   }
 
+  Future<void> saveSortProgression(
+    String sheetName,
+    SortProgressData data,
+  ) async {
+    await _saveSheetDataUseCase.saveSortProgression(sheetName, data);
+  }
+
   bool lightCalculations(AnalysisResult result) {
     return false;
   }
@@ -130,41 +138,6 @@ class SortController extends ChangeNotifier {
         );
       }
     }
-  }
-
-  Future<void> saveAnalysisResult(
-    String sheetName,
-    AnalysisResult result,
-  ) async {
-    _saveResultExecutors[sheetName] ??= ManageWaitingTasks<void>();
-    _saveResultExecutors[sheetName]!.execute(() async {
-      await _saveSheetDataUseCase.saveAnalysisResult(sheetName, result);
-      await Future.delayed(
-        Duration(milliseconds: SpreadsheetConstants.saveAnalysisResultDelayMs),
-      );
-    });
-  }
-
-  static Future<SortingResponse?> solveSatisfaction(
-    AnalysisResult result,
-  ) async {
-    try {
-      // await for pauses the execution of this function
-      // until the stream is closed by the server.
-      return SortUsecase.solveSorting(
-        result.myRules,
-        result.validAreas,
-        result.validRowIndexes.length,
-      );
-    } catch (error) {
-      result.errorRoot.newChildren!.add(
-        NodeStruct(
-          message:
-              "An error occurred while trying to find a valid sorting satisfying all constraints : $error",
-        ),
-      );
-    }
-    return null;
   }
 
   void sortResult(
@@ -355,8 +328,8 @@ class SortController extends ChangeNotifier {
       loadedSheetsDataStore.currentSheetName,
     )) {
       return (!sortStatusDataStore.currentSortStatus.resultCalculated &&
-              sortStatusDataStore.currentSortStatus.okToCalculateResult) ||
-          sortStatusDataStore.currentSortStatus.okToFindValidSort &&
+              analysisDataStore.currentSheetAnalysisResult.okToCalculateResult) ||
+          analysisDataStore.currentSheetAnalysisResult.okToFindValidSort &&
               sortStatusDataStore.currentSortStatus.validSortFound;
     } else {
       return analysisDataStore.currentSheetAnalysisResult.currentBestSort !=
@@ -377,8 +350,8 @@ class SortController extends ChangeNotifier {
     }
   }
 
-  void findBestSortCurrentSheet() {
-    findBestSortToggle(loadedSheetsDataStore.currentSheetName, true);
+  void findBestSortCurrentSheet(bool sortTable) {
+    findBestSortToggle(loadedSheetsDataStore.currentSheetName, sortTable);
   }
 
   Future<void> findBestSortToggle(String sheetName, bool sortTable) async {
@@ -408,7 +381,7 @@ class SortController extends ChangeNotifier {
   }
 
   Future<void> findBestSortToggleFunc(String sheetName) async {
-    final service = SortingService();
+    final service = PythonSortingService();
 
     try {
       // await for pauses the execution of this function

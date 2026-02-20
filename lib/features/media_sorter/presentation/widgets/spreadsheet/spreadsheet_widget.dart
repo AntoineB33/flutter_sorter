@@ -21,14 +21,14 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 
 class SpreadsheetWidget extends StatefulWidget {
-  final SelectionDataStore selectionStore; 
+  final SelectionDataStore selectionDataStore; 
   final LoadedSheetsDataStore dataStore;
   final SpreadsheetKeyboardDelegate spreadsheetKeyboardDelegate;
 
   // 2. Require it in the constructor
   const SpreadsheetWidget({
     super.key, 
-    required this.selectionStore,
+    required this.selectionDataStore,
     required this.dataStore,
     required this.spreadsheetKeyboardDelegate,
   });
@@ -152,11 +152,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       bool scroll = true;
       if (targetTop < _verticalController.offset) {
         saveSelection = true;
-        widget.selectionStore.scrollOffsetX = targetTop;
+        widget.selectionDataStore.scrollOffsetX = targetTop;
       } else if (targetBottom >
           _verticalController.offset + verticalViewport) {
         saveSelection = true;
-        widget.selectionStore.scrollOffsetX = targetBottom - verticalViewport;
+        widget.selectionDataStore.scrollOffsetX = targetBottom - verticalViewport;
         gridController.updateRowColCount(visibleHeight: targetBottom);
       } else {
         scroll = false;
@@ -165,7 +165,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       if (scroll) {
         _safelyScroll(
           _verticalController,
-          widget.selectionStore.scrollOffsetX,
+          widget.selectionDataStore.scrollOffsetX,
           true,
         );
       }
@@ -184,11 +184,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       bool scroll = true;
       if (targetLeft < _horizontalController.offset) {
         saveSelection = true;
-        widget.selectionStore.scrollOffsetY = targetLeft;
+        widget.selectionDataStore.scrollOffsetY = targetLeft;
       } else if (targetRight >
-          widget.selectionStore.scrollOffsetY + horizontalViewport) {
+          widget.selectionDataStore.scrollOffsetY + horizontalViewport) {
         saveSelection = true;
-        widget.selectionStore.scrollOffsetY = targetRight - horizontalViewport;
+        widget.selectionDataStore.scrollOffsetY = targetRight - horizontalViewport;
         gridController.updateRowColCount(visibleWidth: targetRight);
       } else {
         scroll = false;
@@ -197,13 +197,13 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       if (scroll) {
         _safelyScroll(
           _horizontalController,
-          widget.selectionStore.scrollOffsetY,
+          widget.selectionDataStore.scrollOffsetY,
           true,
         );
       }
     }
     if (saveSelection) {
-      widget.selectionStore.saveSelection();
+      widget.selectionDataStore.saveSelection();
     }
   }
 
@@ -262,7 +262,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                       notification.metrics.axis == Axis.horizontal,
 
                   child: ListenableBuilder(
-                    listenable: widget.selectionStore,
+                    listenable: widget.selectionDataStore,
                     builder: (context, child) {
                       return NotificationListener<ScrollNotification>(
                         onNotification: (notification) =>
@@ -274,10 +274,10 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                           horizontalDetails: ScrollableDetails.horizontal(
                             controller: _horizontalController,
                           ),
-                          pinnedRowCount: min(2, widget.selectionStore.tableViewRows + 1),
-                          pinnedColumnCount: min(2, widget.selectionStore.tableViewCols + 1),
-                          rowCount: widget.selectionStore.tableViewRows + 1,
-                          columnCount: widget.selectionStore.tableViewCols + 1,
+                          pinnedRowCount: min(2, widget.selectionDataStore.tableViewRows + 1),
+                          pinnedColumnCount: min(2, widget.selectionDataStore.tableViewCols + 1),
+                          rowCount: widget.selectionDataStore.tableViewRows + 1,
+                          columnCount: widget.selectionDataStore.tableViewCols + 1,
                           columnBuilder: (index) => _buildColumnSpan(index),
                           rowBuilder: (index) =>
                               _buildRowSpan(index, controller),

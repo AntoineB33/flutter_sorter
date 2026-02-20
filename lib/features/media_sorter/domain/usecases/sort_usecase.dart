@@ -1,3 +1,5 @@
+import 'dart:isolate';
+
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 
@@ -149,11 +151,10 @@ class SortUsecase {
   }
 
   /// Main solver function using backtracking.
-  static SortingResponse solveSorting(
-    Map<int, Map<int, List<SortingRule>>> rules,
-    List<List<int>> validAreas,
-    int n,
-  ) {
+  static SortingResponse solveSorting((SendPort, Map<int, Map<int, List<SortingRule>>>, List<List<int>>, int) args) {
+    // Destructure the record back into individual variables for easy use
+    final (sendPort, rules, validAreas, n) = args;
+    
     List<int>? sortedList = List.filled(n, -1);
     List<List<int>> possibleIntsById = List.generate(n, (_) => []);
     List<int> cursors = List.filled(n, 0);

@@ -1,13 +1,13 @@
+import 'dart:async';
 import 'dart:isolate';
 
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sort_usecase.dart';
 
 class IsolateService {
-
   Isolate? _isolateB;
   Isolate? _isolateC;
 
@@ -23,26 +23,23 @@ class IsolateService {
     if (_isolateB != null) {
       _isolateB!.kill(priority: Isolate.immediate);
       _isolateB = null;
-      _portB?.close();
+    }
+    if (_portB != null) {
+      _portB!.close();
+      _portB = null;
     }
   }
   void cancelC() {
     if (_isolateC != null) {
-      _isolateC!.kill(priority: Isolate.immediate);
+      // Kill the isolate immediately
+      _isolateC?.kill(priority: Isolate.immediate);
       _isolateC = null;
-      _portC?.close();
     }
-  }
-  
-  static Future<void> _isolateEntryC(List<dynamic> args) async {
-    SendPort sendPort = args[0];
-    AnalysisResult result = args[1];
-
-    SortingResponse? response = await SortController.solveSatisfaction(
-      result,
-    );
-
-    Isolate.exit(sendPort, response);
+    // Close the ReceivePort to prevent memory leaks
+    if (_portC != null) {
+      _portC?.close();
+      _portC = null;
+    }
   }
 
   Future<AnalysisReturn> runHeavyCalculationB(
@@ -74,25 +71,19 @@ class IsolateService {
     }
   }
 
-  Future<SortingResponse?> runHeavyCalculationC(AnalysisResult result) async {
-    cancelC();
+  Future<void> runHeavyCalculationC(outputReceiver, Map<int, Map<int, List<SortingRule>>> rules, List<List<int>> validAreas, int n) async {
+    // 1. Create a ReceivePort to listen for messages from the isolate
+    _portC = ReceivePort();
 
-    final receivePort = ReceivePort();
-    _portC = receivePort;
+    // 2. Listen to the port
+    _portC?.listen(outputReceiver);
 
-    _isolateC = await Isolate.spawn(_isolateEntryC, [
-      receivePort.sendPort,
-      result,
-    ]);
-
+    // 3. Spawn the isolate, passing the SendPort so it knows where to send data
     try {
-      final result = await receivePort.first;
-      return result as SortingResponse?;
+      final arguments = (_portC!.sendPort, rules, validAreas, n);
+      _isolateC = await Isolate.spawn(SortUsecase.solveSorting, arguments);
     } catch (e) {
-      rethrow;
-    } finally {
-      _isolateC = null;
+      cancelC();
     }
   }
-
 }

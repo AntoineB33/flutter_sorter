@@ -1,4 +1,5 @@
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_repository.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
@@ -78,6 +79,16 @@ class SheetRepositoryImpl implements SheetRepository {
   @override
   Future<void> saveAnalysisResult(String sheetName, AnalysisResult result) async {
     await dataSource.saveAnalysisResult(sheetName, result);
+  }
+
+  @override
+  Future<SortProgressData> getSortProgression(String sheetName) async {
+    return await dataSource.getSortProgression(sheetName);
+  }
+
+  @override
+  Future<void> saveSortProgression(String sheetName, SortProgressData progress) async {
+    await dataSource.saveSortProgression(sheetName, progress);
   }
 
   @override

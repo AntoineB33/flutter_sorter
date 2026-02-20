@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/sort_status_data_store.dart';
@@ -18,6 +19,10 @@ class AnalysisDataStore extends ChangeNotifier {
   Map<String, AnalysisResult> get analysisResults => _analysisResults;
   AnalysisResult get currentSheetAnalysisResult =>
       getAnalysisResult(loadedSheetsDataStore.currentSheetName);
+  List<NodeStruct>? get errorChildren => currentSheetAnalysisResult.errorRoot.newChildren;
+  List<NodeStruct>? get warningChildren => currentSheetAnalysisResult.warningRoot.newChildren;
+  List<NodeStruct>? get categoriesChildren => currentSheetAnalysisResult.categoriesRoot.newChildren;
+  List<NodeStruct>? get distPairsChildren => currentSheetAnalysisResult.distPairsRoot.newChildren;
   List<List<HashSet<Attribute>>> get tableToAtt =>
       currentSheetAnalysisResult.tableToAtt;
   Map<int, Map<int, List<SortingRule>>> get myRules =>

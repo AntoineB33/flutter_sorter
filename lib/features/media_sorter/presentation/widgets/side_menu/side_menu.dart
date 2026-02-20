@@ -7,6 +7,9 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/se
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/sort_status_data_store.dart';
 import 'analysis_tree_node.dart';
 
 class SideMenu extends StatefulWidget {
@@ -71,9 +74,7 @@ class _SideMenuState extends State<SideMenu> {
     final SortController sortController = Provider.of<SortController>(context);
     final TreeController treeController = Provider.of<TreeController>(context);
 
-    if (_textEditingController.text != workbookController.currentSheetName) {
-      _textEditingController.text = workbookController.currentSheetName;
-    }
+    _textEditingController.text = widget.loadDataStore.currentSheetName;
 
     return Container(
       color: Colors.grey[50],
@@ -98,7 +99,7 @@ class _SideMenuState extends State<SideMenu> {
               if (!sortController.sortToggleAvailable()) {
                 return;
               }
-              sortController.sortCurrentMedia();
+              sortController.sortToggle();
               selectionController.stopEditing();
             },
             style: ElevatedButton.styleFrom(
@@ -110,7 +111,7 @@ class _SideMenuState extends State<SideMenu> {
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               // Disabled state:
-              disabledBackgroundColor: sortController.currentSheetSorted()
+              disabledBackgroundColor: sortController.sortToggleAvailable()
                   ? Colors.grey
                   : Colors.blue.withValues(alpha: 0.5),
             ),
@@ -122,7 +123,10 @@ class _SideMenuState extends State<SideMenu> {
           // 2. Find Best Sort Button (Orange)
           ElevatedButton(
             onPressed: () {
-              sortController.findBestSortCurrentSheet();
+              if (!sortController.sortToggleAvailable()) {
+                return;
+              }
+              sortController.findBestSortCurrentSheet(false);
               selectionController.stopEditing();
             },
             style: ElevatedButton.styleFrom(
@@ -134,8 +138,9 @@ class _SideMenuState extends State<SideMenu> {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: Text(
-              workbookController.isFindingBestSort
-                  ? "Stop sorting"
+              widget.sortStatusDataStore.currentSortStatus.isFindingBestSort && 
+                  !widget.sortStatusDataStore.currentSortStatus.sortWhileFindingBestSort
+                  ? "Stop Find the best order"
                   : "Find the best order",
             ),
           ),
@@ -144,13 +149,13 @@ class _SideMenuState extends State<SideMenu> {
 
           // 3. Find Best Sort & Apply Button (Purple)
           ElevatedButton(
-            onPressed:
-                workbookController.canBeSorted() &&
-                        !workbookController.isFindingBestSort &&
-                        !workbookController.isFindingBestSortAndSort &&
-                        !workbookController.isBestSort
-                    ? workbookController.findBestSortAndSortToggle
-                    : null,
+            onPressed: () {
+              if (!sortController.sortToggleAvailable()) {
+                return;
+              }
+              sortController.findBestSortCurrentSheet(true);
+              selectionController.stopEditing();
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.purple, // New color
               foregroundColor: Colors.white,
@@ -160,9 +165,10 @@ class _SideMenuState extends State<SideMenu> {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: Text(
-              workbookController.isFindingBestSortAndSort // Corrected variable
-                  ? "Stop sorting"
-                  : "Find & apply order", // Slightly changed to differentiate from button 2
+              widget.sortStatusDataStore.currentSortStatus.isFindingBestSort && 
+                  widget.sortStatusDataStore.currentSortStatus.sortWhileFindingBestSort
+                  ? "Stop Find the best order & Apply"
+                  : "Find & apply order",
             ),
           ),
 
@@ -201,8 +207,9 @@ class _SideMenuState extends State<SideMenu> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             AnalysisTreeNode(
-                              node: workbookController.errorRoot,
+                              node: widget.analysisDataStore.error,
                               controller: workbookController,
+                              treeController: treeController,
                             ),
                             AnalysisTreeNode(
                               node: workbookController.warningRoot,

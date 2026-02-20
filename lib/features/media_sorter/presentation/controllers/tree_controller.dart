@@ -675,7 +675,19 @@ class TreeController extends ChangeNotifier {
     notifyListeners();
   }
 
-  
+
+  Future<void> saveAnalysisResult(
+    String sheetName,
+    AnalysisResult result,
+  ) async {
+    _saveResultExecutors[sheetName] ??= ManageWaitingTasks<void>();
+    _saveResultExecutors[sheetName]!.execute(() async {
+      await _saveSheetDataUseCase.saveAnalysisResult(sheetName, result);
+      await Future.delayed(
+        Duration(milliseconds: SpreadsheetConstants.saveAnalysisResultDelayMs),
+      );
+    });
+  }
 
   /// Call this when the Controller finishes a calculation.
   /// The Manager takes ownership of updating the tree state.
