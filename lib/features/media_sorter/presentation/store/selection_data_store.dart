@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
@@ -10,6 +12,7 @@ class SelectionDataStore extends ChangeNotifier {
 
   SelectionData get selection =>
     lastSelectionBySheet[loadedSheetsDataStore.currentSheetName] ??= SelectionData.empty();
+  Point<int> get primarySelectedCell => selection.primarySelectedCell;
   double get scrollOffsetX => selection.scrollOffsetX;
   double get scrollOffsetY => selection.scrollOffsetY;
   int get tableViewRows => selection.tableViewRows;
@@ -39,6 +42,13 @@ class SelectionDataStore extends ChangeNotifier {
   }
 
   void saveSelection() {
+    notifyListeners();
+  }
+
+  void setEditingMode(bool isEditing) {
+    String currentSheetName = loadedSheetsDataStore.currentSheetName;
+    SelectionData selection = lastSelectionBySheet[currentSheetName] ??= SelectionData.empty();
+    selection.editingMode = isEditing;
     notifyListeners();
   }
 }

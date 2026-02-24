@@ -1,83 +1,25 @@
 import 'dart:math';
 import 'package:flutter/services.dart';
+import 'package:isar/isar.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_manager.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data/sheet_data_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort/sort_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort/sort_service.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
 
 class SpreadsheetKeyboardDelegate {
-  late void Function(
-    SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    Map<String, SelectionData> lastSelectionBySheet,
-    SortStatus sortStatus,
-    String currentSheetName,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth, {
-    String? initialInput,
-  })
-  startEditing;
-  late void Function(
-    String currentSheetName,
-    int row,
-    int col,
-    bool keepSelection, {
-    bool scrollTo,
-  })
-  setPrimarySelection;
-  late Future<void> Function(
-    SheetData sheet,
-    SelectionData selection,
-    String currentSheetName,
-  )
-  copySelectionToClipboard;
-  late Future<void> Function(
-    SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
-    SortStatus sortStatus,
-    String currentSheetName,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
-    Map<String, SelectionData> lastSelectionBySheet,
-  )
-  pasteSelection;
-  late void Function(
-    SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
-    String currentSheetName,
-    Map<String, SelectionData> lastSelectionBySheet,
-    SortStatus sortStatus,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
-  )
-  delete;
-  late void Function(
-    SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
-    Map<String, SelectionData> lastSelectionBySheet,
-    SortStatus sortStatus,
-    String currentSheetName,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
-  )
-  undo;
-  late void Function(
-    SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
-    Map<String, SelectionData> lastSelectionBySheet,
-    SortStatus sortStatus,
-    String currentSheetName,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
-  )
-  redo;
+  final HistoryManager historyManager;
 
-  SpreadsheetKeyboardDelegate();
+  final SortService sortService;
+
+   SpreadsheetKeyboardDelegate(this.historyManager, this.sortService);
 
   KeyEventResult handle(
     BuildContext context,
@@ -166,17 +108,11 @@ class SpreadsheetKeyboardDelegate {
       );
       return KeyEventResult.handled;
     } else if (isControl && keyLabel == 'v') {
-      pasteSelection(
-        sheet,
-        analysisResults,
-        selection,
-        sortStatus,
-        currentSheetName,
-        row1ToScreenBottomHeight,
-        colBToScreenRightWidth,
-        lastSelectionBySheet,
-      );
-      return KeyEventResult.handled;
+      sheetDataController.pasteSelection().then((toCalculate) {
+        if (toCalculate) {
+          sortService.calculate(currentSheetName);
+        }
+      });
     } else if (keyLabel == 'delete' || keyLabel == 'backspace') {
       delete(
         sheet,
@@ -190,16 +126,7 @@ class SpreadsheetKeyboardDelegate {
       );
       return KeyEventResult.handled;
     } else if (isControl && keyLabel == 'z') {
-      undo(
-        sheet,
-        analysisResults,
-        selection,
-        lastSelectionBySheet,
-        sortStatus,
-        currentSheetName,
-        row1ToScreenBottomHeight,
-        colBToScreenRightWidth,
-      );
+      historyManager.undo();
       return KeyEventResult.handled;
     } else if (isControl && keyLabel == 'y') {
       redo(

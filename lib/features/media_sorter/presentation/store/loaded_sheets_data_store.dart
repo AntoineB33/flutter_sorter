@@ -1,13 +1,9 @@
 import 'dart:async';
 
+import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 
-class CellUpdate {
-  final int row;
-  final int col;
-  final String value;
-  CellUpdate({required this.row, required this.col, required this.value});
-}
+
 
 class LoadedSheetsDataStore {
   final Map<String, SheetData> _loadedSheetsData = {};
@@ -17,6 +13,7 @@ class LoadedSheetsDataStore {
   final _updateController = StreamController<String>.broadcast();
   
   Stream<String> get onSheetUpdated => _updateController.stream;
+  List<String> get sheetNames => _sheetNames;
   String get currentSheetName => _currentSheetName;
   SheetData get currentSheet => _loadedSheetsData[_currentSheetName]!;
 

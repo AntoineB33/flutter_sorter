@@ -1,14 +1,14 @@
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 
 class SheetData {
   SheetContent sheetContent;
-  List<UpdateHistory> updateHistories;
+  List<UpdateData> updateHistories;
   int historyIndex;
   List<double> rowsBottomPos;
   List<double> colRightPos;
@@ -16,8 +16,6 @@ class SheetData {
   List<bool> colsManuallyAdjustedWidth;
   double colHeaderHeight;
   double rowHeaderWidth;
-
-  UpdateHistory? currentUpdateHistory;
 
   SheetData({
     required this.sheetContent,
@@ -54,9 +52,9 @@ class SheetData {
       var rawUpdateHistories = json['updateHistories'] as List;
       List<UpdateHistory> parsedUpdateHistories = rawUpdateHistories.map((uh) {
         var updatedCellsRaw = uh['updatedCells'] as List;
-        List<CellUpdateHistory> parsedUpdatedCells = updatedCellsRaw.map((uch) {
+        List<CellUpdate> parsedUpdatedCells = updatedCellsRaw.map((uch) {
           var cellPoint = uch['cell'] as Map<String, dynamic>;
-          return CellUpdateHistory(
+          return CellUpdate(
             cell: Point<int>(cellPoint['x'] as int, cellPoint['y'] as int),
             previousValue: uch['previousValue'] as String,
             newValue: uch['newValue'] as String,

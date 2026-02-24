@@ -3,11 +3,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/spreadsheet_scroll_request.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_service.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection/selection_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/delegates/spreadsheet_keyboard_delegate.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/managers/spreadsheet_keyboard_delegate.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
@@ -356,7 +358,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     BuildContext context,
     TableVicinity vicinity,
     WorkbookController controller,
-    SheetDataController dataController
+    SheetDataController dataController,
+    SelectionController selectionController,
+    HistoryService historyService,
   ) {
     final int r = vicinity.row;
     final int c = vicinity.column;
@@ -419,18 +423,26 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       onChanged: (newValue) {
         controller.onChanged(newValue);
       },
-      onSave: (newValue, {bool moveUp = false}) {
+      onSave: (String newValue, String previousContent, {bool moveUp = false}) {
         if (moveUp) {
-          controller.setPrimarySelection(
+          selectionController.setPrimarySelection(
             max(0, dataRow - 1),
             dataCol,
             false,
             true,
           );
         } else {
-          controller.setPrimarySelection(dataRow + 1, dataCol, false, true);
+          selectionController.setPrimarySelection(dataRow + 1, dataCol, false, true);
         }
-        controller.stopEditing();
+        selectionController.stopEditing();
+        historyService.commitHistory(
+          [CellUpdate(
+            rowId: dataRow,
+            colId: dataCol,
+            previousValue: previousContent,
+            newValue: newValue,
+          )]
+        );
         _focusNode.requestFocus();
       },
       onEscape: (String previousContent) {

@@ -95,7 +95,7 @@ class SpreadsheetDataCell extends StatefulWidget {
   final VoidCallback onDoubleTap;
   final VoidCallback onTapOutside;
   final ValueChanged<String>? onChanged;
-  final void Function(String value, {bool moveUp}) onSave;
+  final void Function(String value, String previousContent, {bool moveUp}) onSave;
   final void Function(String previousContent) onEscape;
 
   const SpreadsheetDataCell({
@@ -263,7 +263,6 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
                   errorBorder: InputBorder.none,
                   disabledBorder: InputBorder.none,
                 ),
-                onSubmitted: (value) => widget.onSave(value, moveUp: false),
               )
             ),
           ),

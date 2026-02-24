@@ -8,8 +8,8 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/spreadsheet_mediator.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_service.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
@@ -21,20 +21,18 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_conte
 import 'package:trying_flutter/features/media_sorter/domain/entities/spreadsheet_scroll_request.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/history_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/delegates/spreadsheet_keyboard_delegate.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection/selection_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort/sort_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree/tree_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/managers/spreadsheet_keyboard_delegate.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart'; // Import AnalysisResult
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_stream_controller.dart';
 
 class WorkbookController extends ChangeNotifier {
-  final SelectionController selectionController;
-  final SheetDataController sheetDataController;
-  final SortController sortController;
+  final HistoryService historyService;
 
   final LoadedSheetsDataStore loadedSheetsDataStore;
   final AnalysisDataStore analysisDataStore;
@@ -62,11 +60,11 @@ class WorkbookController extends ChangeNotifier {
   //     selectionController.primarySelectedCell;
 
   WorkbookController({
-    required this.selectionController,
-    required this.sheetDataController,
+    required this.historyService,
     required this.loadedSheetsDataStore,
     required this.analysisDataStore,
     required this.selectionDataStore,
+    required this.sortStatusDataStore,
   }) {
     init();
   }

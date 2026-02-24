@@ -17,7 +17,7 @@ class NodeStruct {
   final bool hideIfEmpty;
   final bool startOpen;
   bool isExpanded = false;
-  void Function(NodeStruct) onTap = (_) {};
+  final String? idOnTap;
   bool defaultOnTap = true;
   List<Cell>? cellsToSelect;
 

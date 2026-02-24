@@ -9,6 +9,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_re
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
@@ -16,18 +17,25 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_wait
 import 'package:trying_flutter/features/media_sorter/presentation/logic/services/spreadsheet_clipboard_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
 
 class SheetDataController extends ChangeNotifier {
   // --- states ---
-  final LoadedSheetsDataStore loadedSheetsData;
-  final AnalysisDataStore analysisStore;
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
   late final StreamSubscription<String> _storeSubscription;
+
+  final LoadedSheetsDataStore loadedSheetsData;
+  final AnalysisDataStore analysisStore;
+  final SelectionDataStore selectionDataStore;
+
+  final SortService sortService;
 
   late final SpreadsheetClipboardService _clipboardService =
       SpreadsheetClipboardService();
   final ParsePasteDataUseCase _parsePasteDataUseCase = ParsePasteDataUseCase();
 
+  SheetData get currentSheet => loadedSheetsData.currentSheet;
+  String get currentSheetName => loadedSheetsData.currentSheetName;
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) =>
       content.table.isNotEmpty ? content.table[0].length : 0;
@@ -37,7 +45,7 @@ class SheetDataController extends ChangeNotifier {
   // --- usecases ---
   final SaveSheetDataUseCase _saveSheetDataUseCase;
 
-  SheetDataController({required SaveSheetDataUseCase saveSheetDataUseCase, required this.loadedSheetsData, required this.analysisStore})
+  SheetDataController({required SaveSheetDataUseCase saveSheetDataUseCase, required this.loadedSheetsData, required this.analysisStore, required this.selectionDataStore, required this.sortService})
     : _saveSheetDataUseCase = saveSheetDataUseCase {
     _storeSubscription = loadedSheetsData.onSheetUpdated.listen((
       String sheetName,
@@ -68,24 +76,14 @@ class SheetDataController extends ChangeNotifier {
     String newValue,
   ) {
     updateCell(
-      sheet,
-      lastSelectionBySheet,
-      row1ToScreenBottomHeight,
-      colBToScreenRightWidth,
-      currentSheetName,
       selection.primarySelectedCell.x,
       selection.primarySelectedCell.y,
       newValue,
       onChange: true,
     );
     notifyListeners();
-    saveAndCalculate(
-      sheet,
-      analysisResults,
-      lastSelectionBySheet,
-      sortStatus,
-      currentSheetName,
-    );
+    scheduleSheetSave(currentSheetName);
+    sortService.calculate(currentSheetName);
   }
 
   void saveAndCalculate({
@@ -130,11 +128,6 @@ class SheetDataController extends ChangeNotifier {
   }
 
   void updateCell(
-    SheetData sheet,
-    Map<String, SelectionData> lastSelectionBySheet,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
-    String currentSheetName,
     int row,
     int col,
     String newValue, {
@@ -214,16 +207,7 @@ class SheetDataController extends ChangeNotifier {
     );
   }
 
-  void setColumnType(
-    SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    Map<String, SelectionData> lastSelectionBySheet,
-    SortStatus sortStatus,
-    String currentSheetName,
-    int col,
-    ColumnType type, {
-    bool updateHistory = true,
-  }) {
+  void setColumnType(Update update) {
     ColumnType previousType = GetNames.getColumnType(sheet.sheetContent, col);
     if (updateHistory) {
       recordColumnTypeChange(sheet, col, previousType, type);
@@ -257,76 +241,22 @@ class SheetDataController extends ChangeNotifier {
     );
   }
 
-  Future<void> pasteSelection(
-    SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
-    SortStatus sortStatus,
-    String currentSheetName,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
-    Map<String, SelectionData> lastSelectionBySheet,
-  ) async {
+  Future<bool> pasteSelection() async {
     final text = await _clipboardService.getText();
-    if (text == null) return;
+    if (text == null) return false;
     // if contains "
     if (text.contains('"')) {
       debugPrint('Paste data contains unsupported characters.');
-      return;
+      return false;
     }
 
-    final List<CellUpdate> updates = _parsePasteDataUseCase.pasteText(
+    final Update updates = _parsePasteDataUseCase.pasteText(
       text,
-      selection.primarySelectedCell.x,
-      selection.primarySelectedCell.y,
+      selectionDataStore.primarySelectedCell.x,
+      selectionDataStore.primarySelectedCell.y,
     );
-    setTable(
-      sheet,
-      analysisResults,
-      lastSelectionBySheet,
-      sortStatus,
-      row1ToScreenBottomHeight,
-      colBToScreenRightWidth,
-      currentSheetName,
-      updates,
-    );
-  }
-
-  void setTable(
-    SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    Map<String, SelectionData> lastSelectionBySheet,
-    SortStatus sortStatus,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
-    String currentSheetName,
-    List<CellUpdate> updates, {
-    bool toCalculate = true,
-  }) {
-    sheet.currentUpdateHistory = null;
-    for (var update in updates) {
-      updateCell(
-        sheet,
-        lastSelectionBySheet,
-        row1ToScreenBottomHeight,
-        colBToScreenRightWidth,
-        currentSheetName,
-        update.row,
-        update.col,
-        update.value,
-        keepPrevious: true,
-      );
-    }
-    notifyListeners();
-    saveAndCalculate(
-      sheet,
-      analysisResults,
-      lastSelectionBySheet,
-      sortStatus,
-      currentSheetName,
-      updateHistory: true,
-      toCalculate: toCalculate,
-    );
+    update(updates);
+    return true;
   }
 
   void delete(
@@ -482,5 +412,19 @@ class SheetDataController extends ChangeNotifier {
     for (var executor in _saveExecutors.values) {
       executor.dispose();
     }
+  }
+
+  void update(Update updates) {
+    for (var update in updates.updates) {
+      if (update is CellUpdate) {
+        currentSheet.sheetContent.table[update.rowId][update.colId] = update.newValue;
+      } else if (update is ColumnTypeUpdate) {
+        currentSheet.sheetContent.columnTypes[update.colId] = update.newColumnType;
+      } else {
+        renameCurrentSheet(update);
+      }
+    }
+    notifyListeners();
+    scheduleSheetSave(currentSheetName);
   }
 }

@@ -28,13 +28,8 @@ import 'package:trying_flutter/features/media_sorter/presentation/store/sort_sta
 import 'package:trying_flutter/utils/logger.dart';
 
 class SortController extends ChangeNotifier {
-  final AnalysisDataStore analysisDataStore;
-  final LoadedSheetsDataStore loadedSheetsDataStore;
-  final SortStatusDataStore sortStatusDataStore;
-  final Map<String, ManageWaitingTasks<void>> _saveResultExecutors = {};
   final ManageWaitingTasks<void> _saveSortStatusExecutor =
       ManageWaitingTasks<void>();
-  final Map<String, IsolateService> _isolateServices = {};
 
   final SaveSheetDataUseCase _saveSheetDataUseCase;
   final GetSheetDataUseCase _getSheetDataUseCase;
@@ -81,63 +76,6 @@ class SortController extends ChangeNotifier {
 
   bool lightCalculations(AnalysisResult result) {
     return false;
-  }
-
-  Future<void> calculate(String name) async {
-    SortStatus sortStatus = sortStatusDataStore.getSortStatus(name);
-    AnalysisResult result = analysisDataStore.getAnalysisResult(name);
-    if (sortStatus.resultCalculated && lightCalculations(result)) {
-      return;
-    }
-    _isolateServices[name] ??= IsolateService();
-    _isolateServices[name]!.cancelB();
-    AnalysisReturn resultB = await _isolateServices[name]!.runHeavyCalculationB(
-      loadedSheetsDataStore.getSheet(name).sheetContent,
-      result,
-    );
-    sortStatusDataStore.updateSortStatus(name, (status) {
-      status.resultCalculated = true;
-      status.validSortFound = !resultB.noSortToFind && status.validSortFound;
-      if (resultB.result.validRowIndexes.isEmpty) {
-        status.validSortFound = true;
-      }
-    });
-    if (resultB.changed) {
-      analysisDataStore.updateResults(name, resultB.result);
-    }
-    sortStatus = sortStatusDataStore.getSortStatus(name);
-    if (!sortStatus.validSortFound) {
-      try {
-        SortingResponse? response = await _isolateServices[name]!
-            .runHeavyCalculationC(result);
-        if (response != null) {
-          analysisDataStore.getAnalysisResult(name).sorted =
-              response.isNaturalOrderValid;
-          result.currentBestSort = response.sortedIds;
-        }
-        if (sortStatus.toSort) {
-          sortMedia(name);
-          sortStatusDataStore.updateSortStatus(name, (status) {
-            status.validSortFound = true;
-            status.toSort = false;
-          });
-        } else if (sortStatus.isFindingBestSort) {
-          sortStatusDataStore.updateSortStatus(name, (status) {
-            status.validSortFound = true;
-          });
-          findBestSortToggleFunc(name);
-        } else {
-          sortStatusDataStore.removeSortStatus(name);
-        }
-      } catch (e) {
-        result.errorRoot.newChildren!.add(
-          NodeStruct(
-            message:
-                "An error occurred while trying to find a valid sorting satisfying all constraints : $e",
-          ),
-        );
-      }
-    }
   }
 
   void sortResult(

@@ -8,6 +8,7 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 
 class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
@@ -226,6 +227,23 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
       throw Exception("Error saving analysis result: $e");
     }
   }
+
+  @override
+  Future<SortProgressData> getSortProgression(String sheetName) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File(
+      '${directory.path}/${SpreadsheetConstants.folderName}/sort_progress_$sheetName.json',
+    );
+    try {
+      final jsonString = await file.readAsString();
+      var decoded = jsonDecode(jsonString);
+      return SortProgressData.fromJson(decoded);
+    } catch (e) {
+      debugPrint("Error decoding JSON for sort progression of sheet $sheetName: $e");
+      return SortProgressData.empty();
+    }
+  }
+    
 
   @override
   Future<void> clearAllData() async {

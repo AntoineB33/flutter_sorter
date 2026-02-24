@@ -1,15 +1,4 @@
---- wip ---
-
-
-
-
---- later features ---
-
-att1 with "att2 -appear_fst" means the first medium with att2 is a att1
-att1 with "att2 -fst" means all media with att1 come before other media with att2
-
-
-OR and AND in dependencies
+ctrl + Z in edit mode
 
 
 

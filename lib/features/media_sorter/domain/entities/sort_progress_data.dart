@@ -10,6 +10,13 @@ class SortProgressData {
     required this.bestDistFound,
   });
 
+  static SortProgressData empty() {
+    return SortProgressData(
+      choicesMade: [],
+      bestDistFound: [],
+    );
+  }
+
   factory SortProgressData.fromJson(Map<String, dynamic> json) {
     return SortProgressData(
       choicesMade: List<int>.from(json[choicesMadeKey] as List<dynamic>),

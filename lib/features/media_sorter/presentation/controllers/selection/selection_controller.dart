@@ -9,6 +9,8 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status
 import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
@@ -17,35 +19,11 @@ class SelectionController extends ChangeNotifier {
   final LoadedSheetsDataStore loadedSheetsDataStore;
   final AnalysisDataStore analysisStore;
   final SelectionDataStore selectionDataStore;
+  final HistoryController historyController;
+  final HistoryService historyService;
 
   final ManageWaitingTasks<void> _saveLastSelectionExecutor =
-      ManageWaitingTasks<void>();
-  late void Function(SheetData sheet) commitHistory;
-  late void Function(SheetData sheet) discardPendingChanges;
-  late void Function(
-    SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
-    Map<String, SelectionData> lastSelectionBySheet,
-    SortStatus sortStatus,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
-    String currentSheetName,
-    String newValue,
-  )
-  onChanged;
-  late String Function(List<List<String>> table, int row, int col)
-  getCellContent;
-  late void Function(String currentSheetName, int row, int col)
-  updateMentionsContext;
-  late void Function(int row, int col) triggerScrollTo;
-  late (int, int) Function(
-    SelectionData selection,
-    SheetData sheet,
-    double? visibleHeight,
-    double? visibleWidth,
-  )
-  getNewRowColCount;
+      ManageWaitingTasks<void>(Duration(milliseconds: 1000));
 
   final GetSheetDataUseCase _getDataUseCase;
   final SaveSheetDataUseCase _saveSheetDataUseCase;
@@ -60,6 +38,8 @@ class SelectionController extends ChangeNotifier {
     this.selectionDataStore,
     this.loadedSheetsDataStore,
     this.analysisStore,
+    this.historyController,
+    this.historyService,
   ) {
     selectionDataStore.addListener(() {
       saveLastSelection();
@@ -138,20 +118,18 @@ class SelectionController extends ChangeNotifier {
       selection.primarySelectedCell.y == col;
 
   void setPrimarySelection(
-    String currentSheetName,
     int row,
     int col,
     bool keepSelection, {
     bool scrollTo = true,
   }) {
-    SelectionData selection = lastSelectionBySheet[currentSheetName]!;
+    SelectionData selection = selectionDataStore.selection;
     if (!keepSelection) {
       selection.selectedCells.clear();
     }
     selection.primarySelectedCell = Point(row, col);
-    saveLastSelection(currentSheetName);
+    saveLastSelection();
 
-    updateMentionsContext(currentSheetName, row, col);
 
     // Request scroll to visible
     if (scrollTo) {
@@ -160,20 +138,15 @@ class SelectionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void stopEditing({bool updateHistory = true, bool notify = true}) {
+  void stopEditing({bool updateHistory = true}) {
     if (!selectionDataStore.editingMode) {
       return;
     }
-    lastSelectionBySheet[currentSheetName]!.editingMode = false;
-    saveLastSelection(currentSheetName);
-    if (notify) {
-      notifyListeners();
+    saveLastSelection();
+    if (updateHistory) {
+      historyService.commitHistory();
     }
-    if (updateHistory && sheet.currentUpdateHistory != null) {
-      commitHistory(sheet);
-    } else {
-      discardPendingChanges(sheet);
-    }
+    selectionDataStore.setEditingMode(false);
   }
 
   void startEditing(
