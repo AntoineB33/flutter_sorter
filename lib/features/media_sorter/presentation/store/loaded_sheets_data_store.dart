@@ -23,11 +23,10 @@ class LoadedSheetsDataStore {
     return _loadedSheetsData[sheetName]!;
   }
 
-  String getCellContent(String sheetName, int row, int col) {
-    final sheet = getSheet(sheetName);
-    if (row < sheet.sheetContent.table.length &&
-        col < sheet.sheetContent.table[row].length) {
-      return sheet.sheetContent.table[row][col];
+  String getCellContent(int row, int col) {
+    if (row < currentSheet.sheetContent.table.length &&
+        col < currentSheet.sheetContent.table[row].length) {
+      return currentSheet.sheetContent.table[row][col];
     }
     return "";
   }

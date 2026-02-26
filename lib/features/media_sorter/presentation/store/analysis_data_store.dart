@@ -27,7 +27,7 @@ class AnalysisDataStore extends ChangeNotifier {
       currentSheetAnalysisResult.categoriesRoot.newChildren;
   List<NodeStruct>? get distPairsChildren =>
       currentSheetAnalysisResult.distPairsRoot.newChildren;
-  List<List<HashSet<Attribute>>> get tableToAtt =>
+  List<List<Set<Attribute>>> get tableToAtt =>
       currentSheetAnalysisResult.tableToAtt;
   Map<int, Map<int, List<SortingRule>>> get myRules =>
       currentSheetAnalysisResult.myRules;

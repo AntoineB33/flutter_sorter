@@ -212,6 +212,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<WorkbookController>();
+    final gridController = context.watch<GridController>();
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -219,12 +220,11 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           _initialLayoutDone = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) {
-              controller.updateRowColCount(
+              gridController.updateRowColCount(
                 visibleHeight:
                     constraints.maxHeight - controller.sheet.colHeaderHeight,
                 visibleWidth:
                     constraints.maxWidth - controller.sheet.rowHeaderWidth,
-                save: false,
               );
             }
           });

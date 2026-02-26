@@ -1,11 +1,14 @@
-import 'dart:math';
-
 import 'package:flutter/foundation.dart';
+import 'package:json_annotation/json_annotation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 
+// This is the file that build_runner will generate
+part 'sheet_data.g.dart';
+
+@JsonSerializable(explicitToJson: true)
 class SheetData {
   SheetContent sheetContent;
   List<List<UpdateData>> updateHistories;
@@ -43,91 +46,15 @@ class SheetData {
     );
   }
 
-  // This factory handles the ugly 'dynamic' parsing in one isolated place
+  // Uses the generated code, but keeps your custom error handling!
   factory SheetData.fromJson(Map<String, dynamic> json) {
     try {
-      var rawSheetContent = json['sheetContent'] as Map<String, dynamic>;
-      var rawTable = rawSheetContent['table'] as List;
-
-      var rawUpdateHistories = json['updateHistories'] as List;
-      List<List<UpdateData>> parsedUpdateHistories = rawUpdateHistories
-          .map((historyList) => (historyList as List)
-              .map((updateJson) =>
-                  UpdateData.fromJson(updateJson as Map<String, dynamic>))
-              .toList())
-          .toList();
-
-      // Safely convert the table, handling non-string values gracefully
-      List<List<String>> parsedTable = rawTable.map((row) {
-        if (row is List) {
-          return row.map((cell) => cell.toString()).toList();
-        }
-        return <String>[]; // Handle malformed rows safely
-      }).toList();
-
-      var rawTypes = rawSheetContent['columnTypes'] as List;
-      List<ColumnType> parsedTypes = rawTypes
-          .map(
-            (e) => ColumnType.values.firstWhere(
-              (ct) => ct.toString() == e.toString(),
-            ),
-          )
-          .toList();
-
-      List<double> parsedHeight = (json['rowsBottomPos'] as List)
-          .map((e) => e as double)
-          .toList();
-      List<double> parsedWidth = (json['colRightPos'] as List)
-          .map((e) => e as double)
-          .toList();
-      List<bool> parsedRowsManuallyAdjustedHeight =
-          (json['rowsManuallyAdjustedHeight'] as List)
-              .map((e) => e as bool)
-              .toList();
-      List<bool> parsedColsManuallyAdjustedWidth =
-          (json['colsManuallyAdjustedWidth'] as List)
-              .map((e) => e as bool)
-              .toList();
-
-      return SheetData(
-        sheetContent: SheetContent(
-          table: parsedTable,
-          columnTypes: parsedTypes,
-        ),
-        updateHistories: parsedUpdateHistories,
-        historyIndex: json['historyIndex'] as int,
-        rowsBottomPos: parsedHeight,
-        colRightPos: parsedWidth,
-        rowsManuallyAdjustedHeight: parsedRowsManuallyAdjustedHeight,
-        colsManuallyAdjustedWidth: parsedColsManuallyAdjustedWidth,
-        colHeaderHeight: json['colHeaderHeight'] as double,
-        rowHeaderWidth: json['rowHeaderWidth'] as double,
-      );
+      return _$SheetDataFromJson(json);
     } catch (e) {
       debugPrint("Error parsing SheetData from JSON: $e");
       return SheetData.empty();
     }
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'updateHistories': updateHistories.map((historyList) => historyList
-              .map((update) => update.toJson())
-              .toList())
-          .toList(),
-      'historyIndex': historyIndex,
-      'sheetContent': {
-        'table': sheetContent.table,
-        'columnTypes': sheetContent.columnTypes
-            .map((ct) => ct.toString())
-            .toList(),
-      },
-      'rowsBottomPos': rowsBottomPos,
-      'colRightPos': colRightPos,
-      'rowsManuallyAdjustedHeight': rowsManuallyAdjustedHeight,
-      'colsManuallyAdjustedWidth': colsManuallyAdjustedWidth,
-      'colHeaderHeight': colHeaderHeight,
-      'rowHeaderWidth': rowHeaderWidth,
-    };
-  }
+  Map<String, dynamic> toJson() => _$SheetDataToJson(this);
 }

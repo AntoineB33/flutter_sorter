@@ -14,6 +14,8 @@ import 'package:trying_flutter/features/media_sorter/domain/services/calculation
 import 'package:trying_flutter/features/media_sorter/domain/usecases/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_service.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort/sort_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/services/spreadsheet_clipboard_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
@@ -29,6 +31,7 @@ class SheetDataController extends ChangeNotifier {
   final SelectionDataStore selectionDataStore;
 
   final SortService sortService;
+  final HistoryService historyService;
 
   late final SpreadsheetClipboardService _clipboardService =
       SpreadsheetClipboardService();
@@ -75,19 +78,11 @@ class SheetDataController extends ChangeNotifier {
   }
 
   void onChanged(
-    SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
-    Map<String, SelectionData> lastSelectionBySheet,
-    SortStatus sortStatus,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
-    String currentSheetName,
     String newValue,
   ) {
     updateCell(
-      selection.primarySelectedCell.x,
-      selection.primarySelectedCell.y,
+      selectionDataStore.primarySelectedCell.x,
+      selectionDataStore.primarySelectedCell.y,
       newValue,
       onChange: true,
     );
@@ -103,7 +98,7 @@ class SheetDataController extends ChangeNotifier {
   }) {
     if (save) {
       if (updateHistory) {
-        commitHistory(sheet);
+        commitHistory();
       }
       scheduleSheetSave(currentSheetName);
     }
@@ -143,21 +138,21 @@ class SheetDataController extends ChangeNotifier {
     bool keepPrevious = false,
   }) {
     String prevValue = '';
-    SheetContent sheetContent = sheet.sheetContent;
+    SheetContent sheetContent = currentSheet.sheetContent;
     if (newValue.isNotEmpty ||
         (row < rowCount(sheetContent) && col < colCount(sheetContent))) {
       if (row >= rowCount(sheetContent)) {
         final needed = row + 1 - rowCount(sheetContent);
-        sheet.sheetContent.table.addAll(
+        sheetContent.table.addAll(
           List.generate(
             needed,
             (_) => List.filled(colCount(sheetContent), '', growable: true),
           ),
         );
       }
-      increaseColumnCount(col, sheet.sheetContent);
-      prevValue = sheet.sheetContent.table[row][col];
-      sheet.sheetContent.table[row][col] = newValue;
+      increaseColumnCount(col, sheetContent);
+      prevValue = sheetContent.table[row][col];
+      sheetContent.table[row][col] = newValue;
     }
 
     // Clean up empty rows/cols at the end
@@ -167,20 +162,20 @@ class SheetDataController extends ChangeNotifier {
         (row == rowCount(sheetContent) - 1 ||
             col == colCount(sheetContent) - 1) &&
         prevValue.isNotEmpty) {
-      decreaseRowCount(row, rowCount(sheetContent), sheet.sheetContent);
+      decreaseRowCount(row, rowCount(sheetContent), sheetContent);
       if (col == colCount(sheetContent) - 1) {
         int colId = col;
         bool canRemove = true;
         while (canRemove && colId >= 0) {
           for (var r = 0; r < rowCount(sheetContent); r++) {
-            if (sheet.sheetContent.table[r][colId].isNotEmpty) {
+            if (sheetContent.table[r][colId].isNotEmpty) {
               canRemove = false;
               break;
             }
           }
           if (canRemove) {
             for (var r = 0; r < rowCount(sheetContent); r++) {
-              sheet.sheetContent.table[r].removeLast();
+              sheetContent.table[r].removeLast();
             }
             colId--;
           }
@@ -190,7 +185,7 @@ class SheetDataController extends ChangeNotifier {
 
     if (!historyNavigation) {
       recordCellChange(
-        sheet,
+        sheetContent,
         row,
         col,
         prevValue,
@@ -261,6 +256,7 @@ class SheetDataController extends ChangeNotifier {
       selectionDataStore.primarySelectedCell.y,
     );
     update(updates);
+    historyService.commitHistory(updates);
     return true;
   }
 
@@ -431,7 +427,6 @@ class SheetDataController extends ChangeNotifier {
         throw Exception('Unsupported update type: ${update.runtimeType}');
       }
     }
-    notifyListeners();
     scheduleSheetSave(currentSheetName);
   }
 }

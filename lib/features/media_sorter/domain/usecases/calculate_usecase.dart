@@ -22,7 +22,9 @@ class Cols {
 
   factory Cols.fromJson(Map<String, dynamic> json) {
     final colIndexes = List<int>.from(json['colIndexes'] as List<dynamic>);
-    final toInformFstDep = List<bool>.from(json['toInformFstDep'] as List<dynamic>);
+    final toInformFstDep = List<bool>.from(
+      json['toInformFstDep'] as List<dynamic>,
+    );
     final cols = Cols();
     cols.colIndexes.addAll(colIndexes);
     cols.toInformFstDep.addAll(toInformFstDep);
@@ -30,10 +32,7 @@ class Cols {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'colIndexes': colIndexes,
-      'toInformFstDep': toInformFstDep,
-    };
+    return {'colIndexes': colIndexes, 'toInformFstDep': toInformFstDep};
   }
 }
 
@@ -49,7 +48,7 @@ class CalculateUsecase {
   NodeStruct get warningRoot => result.warningRoot;
   NodeStruct get categoriesRoot => result.categoriesRoot;
   NodeStruct get distPairsRoot => result.distPairsRoot;
-  List<List<HashSet<Attribute>>> get tableToAtt => result.tableToAtt;
+  List<List<Set<Attribute>>> get tableToAtt => result.tableToAtt;
 
   Map<String, Cell> get names => result.names;
   Map<String, List<int>> get attToCol => result.attToCol;
@@ -65,7 +64,7 @@ class CalculateUsecase {
   Map<Attribute, Map<int, List<int>>> get attToRefFromDepColToCol =>
       result.attToRefFromDepColToCol;
 
-  Map<int, HashSet<Attribute>> get colToAtt => result.colToAtt;
+  Map<int, Set<Attribute>> get colToAtt => result.colToAtt;
   List<bool> get isMedium => result.isMedium;
 
   static const int maxInt = -1 >>> 1;
@@ -86,7 +85,10 @@ class CalculateUsecase {
 
   AnalysisResult run() {
     _decodeData(dataPackage);
-    List<Map<InstrStruct, Cell>> instrTable = List.generate(rowCount, (_) => {});
+    List<Map<InstrStruct, Cell>> instrTable = List.generate(
+      rowCount,
+      (_) => {},
+    );
     _getEverything(instrTable);
     getRules(result, instrTable);
     return result;
@@ -502,7 +504,14 @@ class CalculateUsecase {
     return att;
   }
 
-  void _addRulesBefAftOthers(List<int> newIndexList, List<int> newIndexes, Map<int, Map<Attribute, Cell>> beforeAllOthers, List<Map<InstrStruct, Cell>> instrTable, List<List<int>> intervals, String errorMessage) {
+  void _addRulesBefAftOthers(
+    List<int> newIndexList,
+    List<int> newIndexes,
+    Map<int, Map<Attribute, Cell>> beforeAllOthers,
+    List<Map<InstrStruct, Cell>> instrTable,
+    List<List<int>> intervals,
+    String errorMessage,
+  ) {
     List<bool> addToRelTo = List.filled(newIndexList.length, true);
     for (final MapEntry(key: k, value: vMap) in beforeAllOthers.entries) {
       for (Attribute a in beforeAllOthers[k]?.keys ?? []) {
@@ -520,14 +529,23 @@ class CalculateUsecase {
         List<int> relTo;
         addToRelTo.fillRange(0, addToRelTo.length, a.rowId == all);
         if (a.rowId != all) {
-          for (int rowId in attToRefFromAttColToCol[Attribute.row(k)]?.keys ?? []) {
+          for (int rowId
+              in attToRefFromAttColToCol[Attribute.row(k)]?.keys ?? []) {
             addToRelTo[newIndexes[rowId]] = true;
           }
         }
-        if (isMedium[k] && !attToRefFromAttColToCol.containsKey(Attribute.row(k))) {
-          relTo = newIndexList.where((entry) => entry != newIndexes[k] && (a.rowId == all || addToRelTo[entry])).toList();
+        if (isMedium[k] &&
+            !attToRefFromAttColToCol.containsKey(Attribute.row(k))) {
+          relTo = newIndexList
+              .where(
+                (entry) =>
+                    entry != newIndexes[k] &&
+                    (a.rowId == all || addToRelTo[entry]),
+              )
+              .toList();
         } else {
-          for (int rowId in attToRefFromAttColToCol[Attribute.row(k)]?.keys ?? []) {
+          for (int rowId
+              in attToRefFromAttColToCol[Attribute.row(k)]?.keys ?? []) {
             addToRelTo[newIndexes[rowId]] = false;
           }
           if (isMedium[k]) {
@@ -535,14 +553,8 @@ class CalculateUsecase {
           }
           relTo = newIndexList.where((entry) => addToRelTo[entry]).toList();
         }
-        instrTable[k][InstrStruct(
-          true,
-          false,
-          relTo,
-          intervals,
-        )] = vMap
-            .values
-            .first;
+        instrTable[k][InstrStruct(true, false, relTo, intervals)] =
+            vMap.values.first;
       }
     }
   }
@@ -557,7 +569,9 @@ class CalculateUsecase {
       return;
     }
 
-    isMedium..clear()..addAll(List<bool>.filled(rowCount, false));
+    isMedium
+      ..clear()
+      ..addAll(List<bool>.filled(rowCount, false));
     for (int rowId = 1; rowId < rowCount; rowId++) {
       for (int colId = 0; colId < colCount; colId++) {
         if (GetNames.isSourceColumn(columnTypes[colId])) {
@@ -572,12 +586,12 @@ class CalculateUsecase {
     final Map<int, Map<Attribute, Cell>> isLstToAppear = {};
     final Map<int, Map<Attribute, Cell>> beforeAllOthers = {};
     final Map<int, Map<Attribute, Cell>> afterAllOthers = {};
-    colToAtt[all] = HashSet<Attribute>();
-    colToAtt[notUsedCst] = HashSet<Attribute>();
+    colToAtt[all] = Set<Attribute>();
+    colToAtt[notUsedCst] = Set<Attribute>();
     for (int colId = 0; colId < colCount; colId++) {
       if (columnTypes[colId] == ColumnType.attributes ||
           columnTypes[colId] == ColumnType.sprawl) {
-        colToAtt[colId] = HashSet<Attribute>();
+        colToAtt[colId] = Set<Attribute>();
       }
     }
     List<NodeStruct> children = [];
@@ -647,7 +661,6 @@ class CalculateUsecase {
             if (attWritten.isEmpty) {
               att = Attribute.row(all);
             } else {
-
               att = getAttAndCol(attWritten, rowId, colId);
               if (errorRoot.newChildren!.isNotEmpty) {
                 return;
@@ -775,7 +788,9 @@ class CalculateUsecase {
         }
       }
     }
-    isMedium..clear()..addAll(isMediumCopy);
+    isMedium
+      ..clear()
+      ..addAll(isMediumCopy);
 
     validRowIndexes.clear();
     final newIndexes = List.generate(rowCount, (i) => i);
@@ -886,8 +901,9 @@ class CalculateUsecase {
       ..addAll(List.generate(rowCount, (_) => {}));
 
     List<Attribute> stack = [];
-    Map<int, bool> isFstToAppearBool = Map.fromEntries(isFstToAppear.entries.map(
-      (entry) => MapEntry(entry.key, true)));
+    Map<int, bool> isFstToAppearBool = Map.fromEntries(
+      isFstToAppear.entries.map((entry) => MapEntry(entry.key, true)),
+    );
     for (final MapEntry(key: k, value: vMap) in isFstToAppear.entries) {
       for (Attribute a in isFstToAppear[k]?.keys ?? []) {
         if (a.rowId == all && isFstToAppear[k]!.keys.length > 1) {
@@ -900,7 +916,8 @@ class CalculateUsecase {
           );
         }
       }
-      if (isMedium[k] && !attToRefFromAttColToCol.containsKey(Attribute.row(k))) {
+      if (isMedium[k] &&
+          !attToRefFromAttColToCol.containsKey(Attribute.row(k))) {
         for (Attribute a in isFstToAppear[k]?.keys ?? []) {
           stack.add(a);
         }
@@ -952,8 +969,14 @@ class CalculateUsecase {
         );
       }
     }
-    Map<int, Map<Attribute, bool>> isLstToAppearBool = Map.fromEntries(isLstToAppear.entries.map(
-      (entry) => MapEntry(entry.key, Map.fromEntries(entry.value.keys.map((k) => MapEntry(k, true))))));
+    Map<int, Map<Attribute, bool>> isLstToAppearBool = Map.fromEntries(
+      isLstToAppear.entries.map(
+        (entry) => MapEntry(
+          entry.key,
+          Map.fromEntries(entry.value.keys.map((k) => MapEntry(k, true))),
+        ),
+      ),
+    );
     stack = [];
     for (final MapEntry(key: k, value: vMap) in isLstToAppear.entries) {
       for (Attribute a in isLstToAppear[k]?.keys ?? []) {
@@ -967,7 +990,8 @@ class CalculateUsecase {
           );
         }
       }
-      if (isMedium[k] && !attToRefFromAttColToCol.containsKey(Attribute.row(k))) {
+      if (isMedium[k] &&
+          !attToRefFromAttColToCol.containsKey(Attribute.row(k))) {
         for (Attribute a in isLstToAppear[k]?.keys ?? []) {
           stack.add(a);
         }
@@ -1016,12 +1040,26 @@ class CalculateUsecase {
         );
       }
     }
-    _addRulesBefAftOthers(newIndexList, newIndexes, beforeAllOthers, instrTable, [
-      [-maxInt, -1],
-    ], "before");
-    _addRulesBefAftOthers(newIndexList, newIndexes, afterAllOthers, instrTable, [
-      [1, maxInt],
-    ], "after");
+    _addRulesBefAftOthers(
+      newIndexList,
+      newIndexes,
+      beforeAllOthers,
+      instrTable,
+      [
+        [-maxInt, -1],
+      ],
+      "before",
+    );
+    _addRulesBefAftOthers(
+      newIndexList,
+      newIndexes,
+      afterAllOthers,
+      instrTable,
+      [
+        [1, maxInt],
+      ],
+      "after",
+    );
 
     // for (final MapEntry(key: k, value: v) in lstCat.entries) {
     //   if (isMedium[k]) {
@@ -1365,7 +1403,10 @@ class CalculateUsecase {
     }
     int index = 0;
     instrTable.retainWhere((_) => isMedium[index++]);
-    result.validAreas = List.generate(instrTable.length, (index) => List.generate(instrTable.length, (i) => i));
+    result.validAreas = List.generate(
+      instrTable.length,
+      (index) => List.generate(instrTable.length, (i) => i),
+    );
     return;
   }
 
@@ -1389,7 +1430,7 @@ class CalculateUsecase {
       ..addAll(
         List.generate(
           rowCount,
-          (_) => List.generate(colCount, (_) => HashSet<Attribute>()),
+          (_) => List.generate(colCount, (_) => Set<Attribute>()),
         ),
       );
     for (int i = 1; i < rowCount; i++) {
@@ -1476,8 +1517,11 @@ class CalculateUsecase {
     }
     _getCategories(instrTable);
   }
-  
-  void getRules(AnalysisResult result, List<Map<InstrStruct, Cell>> instrTable) {
+
+  void getRules(
+    AnalysisResult result,
+    List<Map<InstrStruct, Cell>> instrTable,
+  ) {
     int nVal = instrTable.length;
     result.myRules = {};
     for (int rowId = 0; rowId < nVal; rowId++) {
@@ -1492,15 +1536,11 @@ class CalculateUsecase {
             int maxVal = interval[1];
             result.myRules[rowId]![target] ??= [];
             result.myRules[rowId]![target]!.add(
-              SortingRule(
-                minVal: minVal,
-                maxVal: maxVal,
-              ),
+              SortingRule(minVal: minVal, maxVal: maxVal),
             );
           }
         }
       }
     }
   }
-
 }

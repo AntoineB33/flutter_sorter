@@ -1,33 +1,28 @@
-class SortProgressData {
-  List<int> choicesMade;
-  List<int> bestDistFound;
+import 'package:json_annotation/json_annotation.dart';
 
-  static const String choicesMadeKey = 'choicesMade';
-  static const String bestDistFoundKey = 'bestDistFound';
+part 'sort_progress_data.g.dart';
+
+@JsonSerializable()
+class SortProgressData {
+  // Note: It's generally best practice to make entity fields 'final' 
+  // unless you specifically need to mutate them directly.
+  final List<int> choicesMade;
+  final List<int> bestDistFound;
 
   SortProgressData({
     required this.choicesMade,
     required this.bestDistFound,
   });
 
-  static SortProgressData empty() {
+  factory SortProgressData.empty() {
     return SortProgressData(
       choicesMade: [],
       bestDistFound: [],
     );
   }
 
-  factory SortProgressData.fromJson(Map<String, dynamic> json) {
-    return SortProgressData(
-      choicesMade: List<int>.from(json[choicesMadeKey] as List<dynamic>),
-      bestDistFound: List<int>.from(json[bestDistFoundKey] as List<dynamic>),
-    );
-  }
+  factory SortProgressData.fromJson(Map<String, dynamic> json) =>
+      _$SortProgressDataFromJson(json);
 
-  Map<String, dynamic> toJson() {
-    return {
-      choicesMadeKey: choicesMade,
-      bestDistFoundKey: bestDistFound,
-    };
-  }
+  Map<String, dynamic> toJson() => _$SortProgressDataToJson(this);
 }

@@ -7,7 +7,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_conte
 
 
 class GetNames {
-  static String getRowName(List<int> nameIndexes, List<List<HashSet<Attribute>>> tableToAtt, int row) {
+  static String getRowName(List<int> nameIndexes, List<List<Set<Attribute>>> tableToAtt, int row) {
     List<String> rowNames = [];
     for (final index in nameIndexes) {
       for (final name in tableToAtt[row][index]) {
@@ -33,7 +33,7 @@ class GetNames {
     return columnLabel;
   }
 
-  static String getAttName(List<int> nameIndexes, List<List<HashSet<Attribute>>> tableToAtt, Attribute att) {
+  static String getAttName(List<int> nameIndexes, List<List<Set<Attribute>>> tableToAtt, Attribute att) {
     if (att.isRow()) {
       return getRowName(nameIndexes, tableToAtt, att.rowId!);
     } else {

@@ -11,7 +11,7 @@ class ParsePasteDataUseCase {
       for (int c = 0; c < columns.length; c++) {
         String val = columns[c].replaceAll('\r', '');
         updates.add(
-          CellUpdate(rowId: startRow + r, colId: startCol + c, newValue: val),
+          CellUpdate(DateTime.timestamp(), startRow + r, startCol + c, val),
         );
       }
     }

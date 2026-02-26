@@ -1,39 +1,106 @@
 import 'dart:collection';
-import 'dart:convert';
+import 'package:json_annotation/json_annotation.dart';
+
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
+import 'dart:convert';
 
+// IMPORTANT: Replace 'analysis_result' with the actual name of this dart file.
+part 'analysis_result.g.dart';
+
+@JsonSerializable()
 class StrInt {
   List<String> strings;
   List<int> integers;
+
   StrInt({List<String>? strings, List<int>? integers})
-    : strings = strings ?? [""],
-      integers = integers ?? [];
+      : strings = strings ?? [""],
+        integers = integers ?? [];
+
+  factory StrInt.fromJson(Map<String, dynamic> json) => _$StrIntFromJson(json);
+  Map<String, dynamic> toJson() => _$StrIntToJson(this);
 }
 
+Map<Attribute, Map<int, Cols>> _attColMapFromJson(Map<String, dynamic> json) {
+  return json.map((key, value) {
+    // Decode the stringified JSON key back into an Attribute
+    final attr = Attribute.fromJson(jsonDecode(key) as Map<String, dynamic>);
+    
+    // Parse the inner map (Assuming Cols has a .fromJson method)
+    final innerMap = (value as Map<String, dynamic>).map(
+      (k, v) => MapEntry(int.parse(k), Cols.fromJson(v as Map<String, dynamic>)),
+    );
+    return MapEntry(attr, innerMap);
+  });
+}
+
+Map<String, dynamic> _attColMapToJson(Map<Attribute, Map<int, Cols>> map) {
+  return map.map((key, value) {
+    // Encode the Attribute into a stringified JSON key
+    final stringKey = jsonEncode(key.toJson());
+    
+    // Encode the inner map
+    final innerMap = value.map((k, v) => MapEntry(k.toString(), v.toJson()));
+    return MapEntry(stringKey, innerMap);
+  });
+}
+
+Map<Attribute, Map<int, List<int>>> _depColMapFromJson(Map<String, dynamic> json) {
+  return json.map((key, value) {
+    final attr = Attribute.fromJson(jsonDecode(key) as Map<String, dynamic>);
+    final innerMap = (value as Map<String, dynamic>).map(
+      (k, v) => MapEntry(int.parse(k), List<int>.from(v as List)),
+    );
+    return MapEntry(attr, innerMap);
+  });
+}
+
+Map<String, dynamic> _depColMapToJson(Map<Attribute, Map<int, List<int>>> map) {
+  return map.map((key, value) {
+    final stringKey = jsonEncode(key.toJson());
+    final innerMap = value.map((k, v) => MapEntry(k.toString(), v));
+    return MapEntry(stringKey, innerMap);
+  });
+}
+
+@JsonSerializable(explicitToJson: true)
 class AnalysisResult {
+  // Excluded from JSON. Reconstituted in the constructor.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   final NodeStruct errorRoot = NodeStruct(
     instruction: SpreadsheetConstants.errorMsg,
     hideIfEmpty: true,
   );
+  
+  @JsonKey(includeFromJson: false, includeToJson: false)
   final NodeStruct warningRoot = NodeStruct(
     instruction: SpreadsheetConstants.warningMsg,
     hideIfEmpty: true,
   );
+  
+  @JsonKey(includeFromJson: false, includeToJson: false)
   final NodeStruct categoriesRoot = NodeStruct(
     instruction: SpreadsheetConstants.categoryMsg,
   );
+  
+  @JsonKey(includeFromJson: false, includeToJson: false)
   final NodeStruct distPairsRoot = NodeStruct(
     instruction: SpreadsheetConstants.distPairsMsg,
   );
 
+  // Added as fields so json_serializable can automatically save/load them
+  final List<NodeStruct> errorChildren;
+  final List<NodeStruct> warningChildren;
+  final List<NodeStruct> categoryChildren;
+  final List<NodeStruct> distPairChildren;
+
   /// 2D table of attribute identifiers (row index or name)
   /// mentioned in each cell.
-  List<List<HashSet<Attribute>>> tableToAtt;
+  List<List<Set<Attribute>>> tableToAtt;
   Map<String, Cell> names;
   Map<String, List<int>> attToCol;
   List<int> nameIndexes;
@@ -42,9 +109,11 @@ class AnalysisResult {
   /// Maps attribute identifiers (row index or name)
   /// to a map of pointers (row index) to the column index,
   /// in this direction so it is easy to diffuse characteristics to pointers.
+  @JsonKey(fromJson: _attColMapFromJson, toJson: _attColMapToJson)
   Map<Attribute, Map<int, Cols>> attToRefFromAttColToCol;
+  @JsonKey(fromJson: _depColMapFromJson, toJson: _depColMapToJson)
   Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol;
-  Map<int, HashSet<Attribute>> colToAtt;
+  Map<int, Set<Attribute>> colToAtt;
   List<bool> isMedium;
   List<int> validRowIndexes;
   List<int>? currentBestSort;
@@ -56,42 +125,16 @@ class AnalysisResult {
   bool sorted;
   bool sortedWithCurrentBestSort;
   bool bestSortPossibleFound;
-  
+
   bool okToCalculateResult;
   bool resultCalculated;
   bool okToFindValidSort;
 
-
-  static const String errorChildrenKey = 'errorChildren';
-  static const String warningChildrenKey = 'warningChildren';
-  static const String categoriesChildrenKey = 'categoriesChildren';
-  static const String distPairsChildrenKey = 'distPairsChildren';
-  static const String tableToAttKey = 'tableToAtt';
-  static const String namesKey = 'names';
-  static const String attToColKey = 'attToCol';
-  static const String nameIndexesKey = 'nameIndexes';
-  static const String attToRefFromAttColToColKey = 'attToRefFromAttColToCol';
-  static const String attToRefFromDepColToColKey = 'attToRefFromDepColToCol';
-  static const String formatedTableKey = 'formatedTable';
-  static const String colToAttKey = 'colToAtt';
-  static const String isMediumKey = 'isMedium';
-  static const String validRowIndexesKey = 'validRowIndexes';
-  static const String currentBestSortKey = 'currentBestSort';
-  static const String validAreasKey = 'valid_areas';
-  static const String myRulesKey = 'myRules';
-  static const String groupsToMaximizeKey = 'groupsToMaximize';
-  static const String sortedKey = 'sorted';
-  static const String sortedWithCurrentBestSortKey = 'sortedWithCurrentBestSort';
-  static const String bestSortPossibleFoundKey = 'bestSortPossibleFound';
-  static const String okToCalculateResultKey = 'okToCalculateResult';
-  static const String resultCalculatedKey = 'resultCalculated';
-  static const String okToFindValidSortKey = 'okToFindValidSort';
-
   AnalysisResult({
-    required List<NodeStruct> errorChildren,
-    required List<NodeStruct> warningChildren,
-    required List<NodeStruct> categoryChildren,
-    required List<NodeStruct> distPairChildren,
+    required this.errorChildren,
+    required this.warningChildren,
+    required this.categoryChildren,
+    required this.distPairChildren,
     required this.tableToAtt,
     required this.names,
     required this.attToCol,
@@ -148,213 +191,8 @@ class AnalysisResult {
     );
   }
 
-  factory AnalysisResult.fromJson(Map<String, dynamic> json) {
-    return AnalysisResult(
-      errorChildren: (json[errorChildrenKey] as List)
-          .map((child) => NodeStruct.fromJson(child))
-          .toList(),
-      warningChildren: (json[warningChildrenKey] as List)
-          .map((child) => NodeStruct.fromJson(child))
-          .toList(),
-      categoryChildren: (json[categoriesChildrenKey] as List)
-          .map((child) => NodeStruct.fromJson(child))
-          .toList(),
-      distPairChildren: (json[distPairsChildrenKey] as List)
-          .map((child) => NodeStruct.fromJson(child))
-          .toList(),
-      tableToAtt: (json[tableToAttKey] as List)
-          .map(
-            (row) => (row as List)
-                .map(
-                  (cellAtts) => HashSet<Attribute>.from(
-                    (cellAtts as List).map((att) => Attribute.fromJson(att)),
-                  ),
-                )
-                .toList(),
-          )
-          .toList(),
-      names: Map<String, Cell>.fromEntries(
-        (json[namesKey] as Map<String, dynamic>).entries.map(
-          (entry) => MapEntry(entry.key, Cell.fromJson(entry.value)),
-        ),
-      ),
-      attToCol: Map<String, List<int>>.fromEntries(
-        (json[attToColKey] as Map<String, dynamic>).entries.map(
-          (entry) => MapEntry(entry.key, List<int>.from(entry.value as List)),
-        ),
-      ),
-      nameIndexes: List<int>.from(json[nameIndexesKey] as List<dynamic>),
-      attToRefFromAttColToCol: Map<Attribute, Map<int, Cols>>.fromEntries(
-        (json[attToRefFromAttColToColKey] as Map<String, dynamic>).entries.map(
-          (entry) => MapEntry(
-            Attribute.fromJson(jsonDecode(entry.key) as Map<String, dynamic>),
-            Map<int, Cols>.fromEntries(
-              (entry.value as Map<String, dynamic>).entries.map(
-                (innerEntry) => MapEntry(
-                  int.parse(innerEntry.key),
-                  Cols.fromJson(innerEntry.value),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-      attToRefFromDepColToCol: Map<Attribute, Map<int, List<int>>>.fromEntries(
-        (json[attToRefFromDepColToColKey] as Map<String, dynamic>).entries.map(
-          (entry) => MapEntry(
-            Attribute.fromJson(jsonDecode(entry.key) as Map<String, dynamic>),
-            Map<int, List<int>>.fromEntries(
-              (entry.value as Map<String, dynamic>).entries.map(
-                (innerEntry) => MapEntry(
-                  int.parse(innerEntry.key),
-                  List<int>.from(innerEntry.value as List),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-      formatedTable: (json[formatedTableKey] as List)
-          .map(
-            (row) => (row as List)
-                .map(
-                  (cell) => StrInt()
-                    ..strings = List<String>.from(cell['strings'] as List)
-                    ..integers = List<int>.from(cell['integers'] as List),
-                )
-                .toList(),
-          )
-          .toList(),
-      colToAtt: Map<int, HashSet<Attribute>>.fromEntries(
-        (json[colToAttKey] as Map<String, dynamic>).entries.map(
-          (entry) => MapEntry(
-            int.parse(entry.key),
-            HashSet<Attribute>.from(
-              (entry.value as List).map((att) => Attribute.fromJson(att)),
-            ),
-          ),
-        ),
-      ),
-      myRules:
-          Map<String, dynamic>.from(
-            json[myRulesKey] as Map<String, dynamic>,
-          ).map(
-            (rowId, targetMap) => MapEntry(
-              int.parse(rowId),
-              Map<String, dynamic>.from(targetMap as Map<String, dynamic>).map(
-                (target, rulesList) => MapEntry(
-                  int.parse(target),
-                  (rulesList as List)
-                      .map((rule) => SortingRule.fromJson(rule))
-                      .toList(),
-                ),
-              ),
-            ),
-          ),
-      validAreas: (json[validAreasKey] as List)
-          .map((area) => List<int>.from(area as List))
-          .toList(),
-      groupsToMaximize: (json[groupsToMaximizeKey] as List)
-          .map((group) => List<int>.from(group as List))
-          .toList(),
-      isMedium: List<bool>.from(json[isMediumKey] as List<dynamic>),
-      validRowIndexes: List<int>.from(json[validRowIndexesKey] as List<dynamic>),
-      currentBestSort: json[currentBestSortKey] != null
-          ? List<int>.from(json[currentBestSortKey] as List<dynamic>)
-          : null,
-      sorted: json[sortedKey] as bool,
-      sortedWithCurrentBestSort: json[sortedWithCurrentBestSortKey] as bool,
-      bestSortPossibleFound: json[bestSortPossibleFoundKey] as bool,
-      okToCalculateResult: json[okToCalculateResultKey] as bool,
-      resultCalculated: json[resultCalculatedKey] as bool,
-      okToFindValidSort: json[okToFindValidSortKey] as bool,
-    );
-  }
+  factory AnalysisResult.fromJson(Map<String, dynamic> json) =>
+      _$AnalysisResultFromJson(json);
 
-  Map<String, dynamic> toJson() {
-    return {
-      'errorRoot': {
-        'newChildren': errorRoot.newChildren
-            ?.map((child) => child.toJson())
-            .toList(),
-      },
-      'warningRoot': {
-        'newChildren': warningRoot.newChildren
-            ?.map((child) => child.toJson())
-            .toList(),
-      },
-      'categoriesRoot': {
-        'newChildren': categoriesRoot.newChildren
-            ?.map((child) => child.toJson())
-            .toList(),
-      },
-      'distPairsRoot': {
-        'newChildren': distPairsRoot.newChildren
-            ?.map((child) => child.toJson())
-            .toList(),
-      },
-      'tableToAtt': tableToAtt
-          .map(
-            (row) => row
-                .map((cellAtts) => cellAtts.map((att) => att.toJson()).toList())
-                .toList(),
-          )
-          .toList(),
-      'names': names.map((key, value) => MapEntry(key, value.toJson())),
-      'attToCol': attToCol,
-      'nameIndexes': nameIndexes,
-      'attToRefFromAttColToCol': attToRefFromAttColToCol.map(
-        (key, value) => MapEntry(
-          jsonEncode(key.toJson()),
-          value.map(
-            (innerKey, innerValue) =>
-                MapEntry(innerKey.toString(), innerValue.toJson()),
-          ),
-        ),
-      ),
-      'attToRefFromDepColToCol': attToRefFromDepColToCol.map(
-        (key, value) => MapEntry(
-          jsonEncode(key.toJson()),
-          value.map(
-            (innerKey, innerValue) => MapEntry(innerKey.toString(), innerValue),
-          ),
-        ),
-      ),
-      'formatedTable': formatedTable
-          .map(
-            (row) => row
-                .map(
-                  (cell) => {
-                    'strings': cell.strings,
-                    'integers': cell.integers,
-                  },
-                )
-                .toList(),
-          )
-          .toList(),
-      'colToAtt': colToAtt.map(
-        (key, value) =>
-            MapEntry(key.toString(), value.map((att) => att.toJson()).toList()),
-      ),
-      'myRules': myRules.map(
-        (rowId, targetMap) => MapEntry(
-          rowId.toString(),
-          targetMap.map(
-            (target, rulesList) => MapEntry(
-              target.toString(),
-              rulesList.map((rule) => rule.toJson()).toList(),
-            ),
-          ),
-        ),
-      ),
-      'valid_areas': validAreas,
-      'groupsToMaximize': groupsToMaximize,
-      'validRowIndexes': validRowIndexes,
-      'currentBestSort': currentBestSort,
-      'isMedium': isMedium,
-      'sorted': sorted,
-      'sortedWithCurrentBestSort': sortedWithCurrentBestSort,
-      'bestSortPossibleFound': bestSortPossibleFound,
-    };
-  }
+  Map<String, dynamic> toJson() => _$AnalysisResultToJson(this);
 }

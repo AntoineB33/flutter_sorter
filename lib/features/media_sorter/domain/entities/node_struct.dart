@@ -1,6 +1,10 @@
+import 'package:json_annotation/json_annotation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 
+part 'node_struct.g.dart';
+
+@JsonSerializable()
 class NodeStruct {
   final String? instruction;
   String? message;
@@ -81,31 +85,7 @@ class NodeStruct {
       hideIfEmpty.hashCode ^
       startOpen.hashCode;
 
-  factory NodeStruct.fromJson(Map<String, dynamic> json) {
-    return NodeStruct(
-      instruction: json['instruction'],
-      message: json['message'],
-      rowId: json['rowId'],
-      colId: json['colId'],
-      name: json['name'],
-      dist: json['dist'],
-      minDist: json['minDist'],
-      hideIfEmpty: json['hideIfEmpty'] ?? false,
-      startOpen: json['startOpen'] ?? false,
-    );
-  }
+  factory NodeStruct.fromJson(Map<String, dynamic> json) => _$NodeStructFromJson(json);
 
-  Map<String, dynamic> toJson() {
-    return {
-      'instruction': instruction,
-      'message': message,
-      'rowId': rowId,
-      'colId': colId,
-      'name': name,
-      'dist': dist,
-      'minDist': minDist,
-      'hideIfEmpty': hideIfEmpty,
-      'startOpen': startOpen,
-    };
-  }
+  Map<String, dynamic> toJson() => _$NodeStructToJson(this);
 }

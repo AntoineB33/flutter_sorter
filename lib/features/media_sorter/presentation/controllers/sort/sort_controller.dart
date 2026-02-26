@@ -97,7 +97,7 @@ class SortController extends ChangeNotifier {
       rowCount,
       (i) => List.generate(
         colCount,
-        (j) => HashSet<Attribute>.from(
+        (j) => Set<Attribute>.from(
           result.tableToAtt[sortOrder[i]][j].map(
             (e) => e.rowId != null ? Attribute.row(newInd[e.rowId!]) : e,
           ),
@@ -142,7 +142,7 @@ class SortController extends ChangeNotifier {
       result.colToAtt.entries.map(
         (e) => MapEntry(
           e.key,
-          HashSet<Attribute>.from(
+          Set<Attribute>.from(
             e.value.map(
               (att) =>
                   att.rowId != null ? Attribute.row(newInd[att.rowId!]) : att,
@@ -266,7 +266,9 @@ class SortController extends ChangeNotifier {
       loadedSheetsDataStore.currentSheetName,
     )) {
       return (!sortStatusDataStore.currentSortStatus.resultCalculated &&
-              analysisDataStore.currentSheetAnalysisResult.okToCalculateResult) ||
+              analysisDataStore
+                  .currentSheetAnalysisResult
+                  .okToCalculateResult) ||
           analysisDataStore.currentSheetAnalysisResult.okToFindValidSort &&
               sortStatusDataStore.currentSortStatus.validSortFound;
     } else {
