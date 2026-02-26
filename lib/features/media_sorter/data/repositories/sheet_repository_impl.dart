@@ -22,23 +22,13 @@ class SheetRepositoryImpl implements SheetRepository {
   }
 
   @override
-  Future<String?> getLastOpenedSheetName() async {
-    return await dataSource.getLastOpenedSheetName();
+  Future<List<String>> recentSheetIds() async {
+    return await dataSource.recentSheetIds();
   }
 
   @override
-  Future<void> saveLastOpenedSheetName(String sheetName) async {
-    await dataSource.saveLastOpenedSheetName(sheetName);
-  }
-
-  @override
-  Future<List<String>> getAllSheetNames() async {
-    return await dataSource.getAllSheetNames();
-  }
-
-  @override
-  Future<void> saveAllSheetNames(List<String> sheetNames) async {
-    await dataSource.saveAllSheetNames(sheetNames);
+  Future<void> saveRecentSheetIds(List<String> sheetIds) async {
+    await dataSource.saveRecentSheetIds(sheetIds);
   }
 
   @override
@@ -67,7 +57,9 @@ class SheetRepositoryImpl implements SheetRepository {
   }
 
   @override
-  Future<void> saveAllSortStatus(Map<String, SortStatus> sortStatusBySheet) async {
+  Future<void> saveAllSortStatus(
+    Map<String, SortStatus> sortStatusBySheet,
+  ) async {
     await dataSource.saveAllSortStatus(sortStatusBySheet);
   }
 
@@ -77,7 +69,10 @@ class SheetRepositoryImpl implements SheetRepository {
   }
 
   @override
-  Future<void> saveAnalysisResult(String sheetName, AnalysisResult result) async {
+  Future<void> saveAnalysisResult(
+    String sheetName,
+    AnalysisResult result,
+  ) async {
     await dataSource.saveAnalysisResult(sheetName, result);
   }
 
@@ -87,7 +82,10 @@ class SheetRepositoryImpl implements SheetRepository {
   }
 
   @override
-  Future<void> saveSortProgression(String sheetName, SortProgressData progress) async {
+  Future<void> saveSortProgression(
+    String sheetName,
+    SortProgressData progress,
+  ) async {
     await dataSource.saveSortProgression(sheetName, progress);
   }
 

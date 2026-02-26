@@ -11,7 +11,7 @@ class SortStatusDataStore extends ChangeNotifier {
   Map<String, SortStatus> get sortStatusBySheet =>
       Map.unmodifiable(_sortStatusBySheet);
   SortStatus get currentSortStatus =>
-      getSortStatus(loadedSheetsDataStore.currentSheetName);
+      getSortStatus(loadedSheetsDataStore.currentSheetId);
 
   SortStatusDataStore(this.loadedSheetsDataStore);
 

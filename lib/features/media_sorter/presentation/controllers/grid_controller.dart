@@ -140,21 +140,14 @@ class GridController {
   }
 
   void adjustRowHeightAfterUpdate(
-    SheetData sheet,
-    Map<String, SelectionData> lastSelectionBySheet,
-    String currentSheetName,
     int row,
     int col,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
     String newValue,
     String prevValue,
   ) {
     if (row >= sheet.rowsBottomPos.length &&
         row >= rowCount(sheet.sheetContent)) {
       updateRowColCount(
-        sheet,
-        currentSheetName,
         visibleHeight: row1ToScreenBottomHeight,
         visibleWidth: colBToScreenRightWidth,
         notify: false,

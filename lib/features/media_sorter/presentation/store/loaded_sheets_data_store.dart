@@ -3,19 +3,21 @@ import 'dart:async';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 
-
-
 class LoadedSheetsDataStore {
   final Map<String, SheetData> _loadedSheetsData = {};
-  final List<String> _sheetNames = [];
-  final String _currentSheetName = "";
+  final List<String> _recentSheetIds = [];
 
   final _updateController = StreamController<String>.broadcast();
-  
+
   Stream<String> get onSheetUpdated => _updateController.stream;
-  List<String> get sheetNames => _sheetNames;
-  String get currentSheetName => _currentSheetName;
-  SheetData get currentSheet => _loadedSheetsData[_currentSheetName]!;
+  List<String> get recentSheetIds => List.unmodifiable(_recentSheetIds);
+  String get currentSheetId => _recentSheetIds.first;
+  SheetData get currentSheet => _loadedSheetsData[currentSheetId]!;
+
+  set recentSheetIds(List<String> names) {
+    _recentSheetIds.clear();
+    _recentSheetIds.addAll(names);
+  }
 
   SheetData getSheet(String sheetName) {
     return _loadedSheetsData[sheetName]!;
@@ -30,14 +32,6 @@ class LoadedSheetsDataStore {
     return "";
   }
 
-  void setCellsContent(String sheetName, List<CellUpdate> updates) {
-    final sheet = getSheet(sheetName);
-    for (var update in updates) {
-      sheet.sheetContent.table[update.row][update.col] = update.value;
-    }
-    _updateController.add(sheetName);
-  }
-  
   void dispose() {
     _updateController.close();
   }

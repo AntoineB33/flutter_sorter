@@ -9,21 +9,26 @@ import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_s
 class HistoryManager extends ChangeNotifier {
   final HistoryController historyController;
   final SheetDataController sheetDataController;
-  
+
   final SortService sortService;
   final LoadedSheetsDataStore loadedSheetsDataStore;
 
-  HistoryManager(this.historyController, this.sheetDataController, this.sortService, this.loadedSheetsDataStore) {
+  HistoryManager(
+    this.historyController,
+    this.sheetDataController,
+    this.sortService,
+    this.loadedSheetsDataStore,
+  ) {
     historyController.addListener(() {
       notifyListeners();
     });
   }
-  
-  void undo() {
-    final Update? updates = historyController.undo();
-    if (updates != null) {
+
+  void moveInUpdateHistory(int direction) {
+    final List<UpdateData> updates = historyController.moveInUpdateHistory(direction);
+    if (updates.isNotEmpty) {
       sheetDataController.update(updates);
-      sortService.calculate(loadedSheetsDataStore.currentSheetName);
+      sortService.calculate(loadedSheetsDataStore.currentSheetId);
     }
   }
 }

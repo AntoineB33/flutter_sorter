@@ -30,12 +30,12 @@ class TreeController extends ChangeNotifier {
   final SelectionDataStore selectionDataStore;
   final SortStatusDataStore sortStatusDataStore;
 
-  final void Function(NodeStruct node) onTapCellSelect;
+  static const String onTapKey = 'onTapCellSelect';
+  static const String setPrimarySelectionKey = 'setPrimarySelection';
 
   AnalysisResult get result => analysisDataStore.currentSheetAnalysisResult;
   SheetData get sheet => loadedSheetsDataStore.currentSheet;
   SheetContent get sheetContent => sheet.sheetContent;
-
 
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) =>
@@ -46,7 +46,6 @@ class TreeController extends ChangeNotifier {
     required this.loadedSheetsDataStore,
     required this.selectionDataStore,
     required this.sortStatusDataStore,
-    required this.onTapCellSelect,
   });
 
   void populateAllTrees(
@@ -58,11 +57,6 @@ class TreeController extends ChangeNotifier {
     AnalysisResult result,
   ) {
     populateTree(
-      lastSelectionBySheet,
-      sortStatus,
-      currentSheetName,
-      sheet,
-      result,
       [
         result.errorRoot,
         result.warningRoot,
@@ -74,18 +68,14 @@ class TreeController extends ChangeNotifier {
     );
   }
 
-  void populateTree(
-    List<NodeStruct> roots,
-  ) {
-    if (!sortStatus.resultCalculated) return;
+  void populateTree(List<NodeStruct> roots) {
+    if (!sortStatusDataStore.currentSortStatus.resultCalculated) return;
 
     for (final root in roots) {
       var stack = [root];
       while (stack.isNotEmpty) {
         var node = stack.removeLast();
-        _populateNode(
-          node,
-        ); // Internal call
+        _populateNode(node); // Internal call
         if (node.isExpanded) {
           _handleExpansion(node, stack);
         }
@@ -120,9 +110,7 @@ class TreeController extends ChangeNotifier {
     }
   }
 
-  void _populateNode(
-    NodeStruct node,
-  ) {
+  void _populateNode(NodeStruct node) {
     bool populateChildren = node.newChildren == null;
     if (populateChildren) {
       node.newChildren = [];
@@ -145,15 +133,10 @@ class TreeController extends ChangeNotifier {
         }
         break;
       case SpreadsheetConstants.nodeAttributeMsg:
-        _populateAttributeNode(
-          node,
-          populateChildren,
-        );
+        _populateAttributeNode(node, populateChildren);
         break;
       case SpreadsheetConstants.cycleDetected:
-        _handleCycleDetectedTap(
-          node,
-        );
+        _handleCycleDetectedTap(node);
         break;
       case SpreadsheetConstants.attToRefFromDepCol:
         // Delegates back to specific logic inside TreeController if strictly necessary,
@@ -161,18 +144,12 @@ class TreeController extends ChangeNotifier {
         populateAttToRefFromDepColNode(result, node, populateChildren);
         break;
       default:
-        _populateNodeDefault(
-          node,
-          populateChildren,
-        );
+        _populateNodeDefault(node, populateChildren);
         break;
     }
   }
 
-  void _populateNodeDefault(
-    NodeStruct node,
-    bool populateChildren,
-  ) {
+  void _populateNodeDefault(NodeStruct node, bool populateChildren) {
     if (node.rowId != null) {
       if (node.colId != null) {
         if (node.name != null) {
@@ -180,10 +157,7 @@ class TreeController extends ChangeNotifier {
             "CellWithName with name, row and col not implemented",
           );
         } else {
-          _populateCellNode(
-            node,
-            populateChildren,
-          );
+          _populateCellNode(node, populateChildren);
         }
       } else {
         if (node.name != null) {
@@ -191,24 +165,15 @@ class TreeController extends ChangeNotifier {
             "CellWithName with name and row not implemented",
           );
         } else {
-          _populateRowNode(
-            node,
-            populateChildren,
-          );
+          _populateRowNode(node, populateChildren);
         }
       }
     } else {
       if (node.colId != null) {
         if (node.name != null) {
-          _populateAttributeNode(
-            node,
-            populateChildren,
-          );
+          _populateAttributeNode(node, populateChildren);
         } else {
-          _populateColumnNode(
-            node,
-            populateChildren,
-          );
+          _populateColumnNode(node, populateChildren);
         }
       } else {
         if (node.name != null) {
@@ -238,15 +203,10 @@ class TreeController extends ChangeNotifier {
         }
       }
     }
-    _handleDefaultTapLogic(
-      node,
-    );
+    _handleDefaultTapLogic(node);
   }
 
-  void _populateAttributeNode(
-    NodeStruct node,
-    bool populateChildren,
-  ) {
+  void _populateAttributeNode(NodeStruct node, bool populateChildren) {
     if (populateChildren) {
       if (result.attToRefFromAttColToCol.containsKey(node.att)) {
         node.newChildren!.add(
@@ -277,15 +237,12 @@ class TreeController extends ChangeNotifier {
     node.message ??= node.name;
 
     if (node.defaultOnTap) {
-      node.onTap = onTapCellSelect;
+      node.idOnTap = onTapKey;
       node.defaultOnTap = false;
     }
   }
 
-  void _populateCellNode(
-    NodeStruct node,
-    bool populateChildren,
-  ) {
+  void _populateCellNode(NodeStruct node, bool populateChildren) {
     int rowId = node.rowId!;
     int colId = node.colId!;
     node.cellsToSelect = node.cells;
@@ -304,14 +261,7 @@ class TreeController extends ChangeNotifier {
       }
     }
     if (node.defaultOnTap) {
-      node.onTap = (n) {
-        onCellSelected(
-          currentSheetName,
-          node.rowId!,
-          node.colId!,
-          false,
-        );
-      };
+      node.idOnTap = setPrimarySelectionKey;
       node.defaultOnTap = false;
     }
 
@@ -343,10 +293,7 @@ class TreeController extends ChangeNotifier {
     }
   }
 
-  void _populateRowNode(
-    NodeStruct node,
-    bool populateChildren,
-  ) {
+  void _populateRowNode(NodeStruct node, bool populateChildren) {
     int rowId = node.rowId!;
     node.message ??= GetNames.getRowName(
       result.nameIndexes,
@@ -380,10 +327,7 @@ class TreeController extends ChangeNotifier {
     );
   }
 
-  void _populateColumnNode(
-    NodeStruct node,
-    bool populateChildren,
-  ) {
+  void _populateColumnNode(NodeStruct node, bool populateChildren) {
     node.message ??= node.colId == -1
         ? "Rows"
         : 'Column ${GetNames.getColumnLabel(node.colId!)} "${sheetContent.table[0][node.colId!]}"';
@@ -398,25 +342,19 @@ class TreeController extends ChangeNotifier {
 
   // --- Tap Logic Helpers ---
 
-  void _handleSelectionCycling(
-    SelectionData selection,
-    Map<String, SelectionData> lastSelectionBySheet,
-    String currentSheetName,
-    NodeStruct node,
-    List<Cell> cells,
-  ) {
+  void handleSelectionCycling(NodeStruct node, List<Cell> cells) {
     int found = -1;
     for (int i = 0; i < cells.length; i++) {
       final child = cells[i];
-      if (selection.primarySelectedCell.x == child.rowId &&
-          selection.primarySelectedCell.y == child.colId) {
+      if (selectionDataStore.selection.primarySelectedCell.x == child.rowId &&
+          selectionDataStore.selection.primarySelectedCell.y == child.colId) {
         found = i;
         break;
       }
     }
 
     int index = (found == -1) ? 0 : (found + 1) % cells.length;
-    onCellSelected(
+    selectionController.setPrimarySelection(
       currentSheetName,
       cells[index].rowId,
       cells[index].colId,
@@ -424,9 +362,7 @@ class TreeController extends ChangeNotifier {
     );
   }
 
-  void _handleCycleDetectedTap(
-    NodeStruct node,
-  ) {
+  void _handleCycleDetectedTap(NodeStruct node) {
     SelectionData selection = lastSelectionBySheet[currentSheetName]!;
     node.onTap = (n) {
       int found = -1;
@@ -438,7 +374,7 @@ class TreeController extends ChangeNotifier {
         }
       }
       if (found == -1) {
-        onCellSelected(
+        selectionController.setPrimarySelection(
           currentSheetName,
           n.newChildren![0].rowId!,
           n.newChildren![0].colId!,
@@ -446,7 +382,7 @@ class TreeController extends ChangeNotifier {
         );
       } else {
         final nextChild = n.newChildren![(found + 1) % n.newChildren!.length];
-        onCellSelected(
+        selectionController.setPrimarySelection(
           currentSheetName,
           nextChild.rowId!,
           nextChild.colId!,
@@ -456,9 +392,7 @@ class TreeController extends ChangeNotifier {
     };
   }
 
-  void _handleDefaultTapLogic(
-    NodeStruct node,
-  ) {
+  void _handleDefaultTapLogic(NodeStruct node) {
     if (node.defaultOnTap) {
       if (node.cellsToSelect == null) {
         node.cellsToSelect = node.cells;
@@ -494,7 +428,7 @@ class TreeController extends ChangeNotifier {
         final nextIndex = (found == -1)
             ? 0
             : (found + 1) % node.cellsToSelect!.length;
-        onCellSelected(
+        selectionController.setPrimarySelection(
           currentSheetName,
           node.cellsToSelect![nextIndex].rowId,
           node.cellsToSelect![nextIndex].colId,
@@ -518,14 +452,9 @@ class TreeController extends ChangeNotifier {
     }
   }
 
-  void updateMentionsContext(
-    int row,
-    int col,
-  ) {
+  void updateMentionsContext(int row, int col) {
     updateMentionsRoot(row, col);
-    populateTree(
-      [mentionsRoot],
-    );
+    populateTree([mentionsRoot]);
   }
 
   void clearMentionsRoot() {

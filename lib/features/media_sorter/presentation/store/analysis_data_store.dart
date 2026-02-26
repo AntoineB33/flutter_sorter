@@ -18,11 +18,15 @@ class AnalysisDataStore extends ChangeNotifier {
   // Getter for the data
   Map<String, AnalysisResult> get analysisResults => _analysisResults;
   AnalysisResult get currentSheetAnalysisResult =>
-      getAnalysisResult(loadedSheetsDataStore.currentSheetName);
-  List<NodeStruct>? get errorChildren => currentSheetAnalysisResult.errorRoot.newChildren;
-  List<NodeStruct>? get warningChildren => currentSheetAnalysisResult.warningRoot.newChildren;
-  List<NodeStruct>? get categoriesChildren => currentSheetAnalysisResult.categoriesRoot.newChildren;
-  List<NodeStruct>? get distPairsChildren => currentSheetAnalysisResult.distPairsRoot.newChildren;
+      getAnalysisResult(loadedSheetsDataStore.currentSheetId);
+  List<NodeStruct>? get errorChildren =>
+      currentSheetAnalysisResult.errorRoot.newChildren;
+  List<NodeStruct>? get warningChildren =>
+      currentSheetAnalysisResult.warningRoot.newChildren;
+  List<NodeStruct>? get categoriesChildren =>
+      currentSheetAnalysisResult.categoriesRoot.newChildren;
+  List<NodeStruct>? get distPairsChildren =>
+      currentSheetAnalysisResult.distPairsRoot.newChildren;
   List<List<HashSet<Attribute>>> get tableToAtt =>
       currentSheetAnalysisResult.tableToAtt;
   Map<int, Map<int, List<SortingRule>>> get myRules =>

@@ -70,12 +70,12 @@ class SelectionController extends ChangeNotifier {
   Future<void> loadLastSelection() async {
     try {
       selectionDataStore.lastSelectionBySheet[loadedSheetsDataStore
-          .currentSheetName] = await _getDataUseCase
+          .currentSheetId] = await _getDataUseCase
           .getLastSelection();
     } catch (e) {
       debugPrint("Error getting last selection for current sheet: $e");
       selectionDataStore.lastSelectionBySheet[loadedSheetsDataStore
-              .currentSheetName] =
+              .currentSheetId] =
           SelectionData.empty();
     }
   }
@@ -129,7 +129,6 @@ class SelectionController extends ChangeNotifier {
     }
     selection.primarySelectedCell = Point(row, col);
     saveLastSelection();
-
 
     // Request scroll to visible
     if (scrollTo) {

@@ -58,12 +58,15 @@ dependencies:
   web_socket_channel: ^3.0.3
   crypto: ^3.0.7
   flutter_bloc: ^8.1.0
+  path: ^1.9.1
+  json_annotation: ^4.8.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  build_runner: any
   isar_generator: ^3.1.0
+  build_runner: ^2.4.0
+  json_serializable: ^6.7.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

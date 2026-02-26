@@ -13,12 +13,8 @@ class GetSheetDataUseCase {
     return repository.getLastSelection();
   }
 
-  Future<String?> getLastOpenedSheetName() {
-    return repository.getLastOpenedSheetName();
-  }
-
-  Future<List<String>> getAllSheetNames() {
-    return repository.getAllSheetNames();
+  Future<List<String>> recentSheetIds() {
+    return repository.recentSheetIds();
   }
 
   Future<Map<String, SelectionData>> getAllLastSelected() async {

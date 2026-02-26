@@ -71,60 +71,12 @@ class HistoryController extends ChangeNotifier {
     );
   }
 
-  Update? undo() {
+  List<UpdateData> moveInUpdateHistory(int direction) {
     if (currentSheet.historyIndex < 0 || currentSheet.updateHistories.isEmpty) {
-      return null;
+      return [];
     }
-    currentSheet.historyIndex--;
+    currentSheet.historyIndex += direction;
     final lastUpdate = currentSheet.updateHistories[currentSheet.historyIndex];
     return lastUpdate;
-  }
-
-  void redo(
-    SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
-    Map<String, SelectionData> lastSelectionBySheet,
-    SortStatus sortStatus,
-    String currentSheetName,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
-  ) {
-    if (sheet.historyIndex + 1 == sheet.updateHistories.length) {
-      return;
-    }
-    final nextUpdate = sheet.updateHistories[sheet.historyIndex + 1];
-    if (nextUpdate.key == UpdateHistory.updateCellContent) {
-      for (var cellUpdate in nextUpdate.updatedCells!) {
-        updateCell(
-          sheet,
-          lastSelectionBySheet,
-          row1ToScreenBottomHeight,
-          colBToScreenRightWidth,
-          currentSheetName,
-          cellUpdate.cell.x,
-          cellUpdate.cell.y,
-          cellUpdate.newValue,
-          historyNavigation: true,
-        );
-      }
-    } else if (nextUpdate.key == UpdateHistory.updateColumnType) {
-      for (var typeUpdate in nextUpdate.updatedColumnTypes!) {
-        setColumnType(
-          sheet,
-          analysisResults,
-          lastSelectionBySheet,
-          sortStatus,
-          currentSheetName,
-          typeUpdate.colId!,
-          typeUpdate.newColumnType!,
-          updateHistory: false,
-        );
-      }
-    }
-    sheet.historyIndex++;
-    notifyListeners();
-    scheduleSheetSave(currentSheetName);
-    calculate(currentSheetName);
   }
 }

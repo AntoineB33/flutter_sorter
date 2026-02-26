@@ -74,10 +74,10 @@ class WorkbookController extends ChangeNotifier {
 
     // --- get current sheet name and all sheet names ---
     String? lastOpenedSheetName;
-    bool saveLastOpenedSheetName = false;
-    bool saveAllSheetNames = false;
+    bool saveRecentSheetIds = false;
+    bool saveRecentSheetIds = false;
     try {
-      lastOpenedSheetName = await _getDataUseCase.getLastOpenedSheetName();
+      lastOpenedSheetName = await _getDataUseCase.recentSheetIds();
     } catch (e) {
       debugPrint("Error getting last opened sheet name: $e");
     }
@@ -99,7 +99,7 @@ class WorkbookController extends ChangeNotifier {
           "Invalid sheet name '$name' found in sheet names list, removing it.",
         );
         loadedSheetsDataStore.sheetNames.remove(name);
-        saveAllSheetNames = true;
+        saveRecentSheetIds = true;
       }
     }
     if (lastOpenedSheetName == null) {
@@ -109,7 +109,7 @@ class WorkbookController extends ChangeNotifier {
         lastOpenedSheetName = SpreadsheetConstants.defaultSheetName;
         loadedSheetsDataStore.sheetNames = [lastOpenedSheetName];
       }
-      saveLastOpenedSheetName = true;
+      saveRecentSheetIds = true;
     } else if (!loadedSheetsDataStore.sheetNames.contains(
       lastOpenedSheetName,
     )) {
@@ -117,9 +117,9 @@ class WorkbookController extends ChangeNotifier {
         "Last opened sheet name '$lastOpenedSheetName' not found in sheet names list, adding it.",
       );
       loadedSheetsDataStore.sheetNames.add(lastOpenedSheetName);
-      saveAllSheetNames = true;
+      saveRecentSheetIds = true;
     }
-    loadedSheetsDataStore.currentSheetName = lastOpenedSheetName;
+    loadedSheetsDataStore.currentSheetId = lastOpenedSheetName;
 
     // --- get last selection by sheet ---
     await selectionController.getAllLastSelected();
@@ -135,7 +135,7 @@ class WorkbookController extends ChangeNotifier {
         saveLastSelectionBySheet = true;
       } else if (!loadedSheetsDataStore.sheetNames.contains(name)) {
         loadedSheetsDataStore.sheetNames.add(name);
-        saveAllSheetNames = true;
+        saveRecentSheetIds = true;
         debugPrint("No sheet data saved for selection of sheet $name");
       }
     }
@@ -152,7 +152,7 @@ class WorkbookController extends ChangeNotifier {
         saveCalculationStatusBySheet = true;
       } else if (!loadedSheetsDataStore.sheetNames.contains(name)) {
         loadedSheetsDataStore.sheetNames.add(name);
-        saveAllSheetNames = true;
+        saveRecentSheetIds = true;
         selectionDataStore.lastSelectionBySheet[name] = SelectionData.empty();
         saveLastSelectionBySheet = true;
         debugPrint("No sheet data saved for sort status of sheet $name");
@@ -163,13 +163,13 @@ class WorkbookController extends ChangeNotifier {
     selectionController.loadLastSelection();
 
     // --- save any correction if needed ---
-    if (saveLastOpenedSheetName) {
-      await _saveSheetDataUseCase.saveLastOpenedSheetName(
-        loadedSheetsDataStore.currentSheetName,
+    if (saveRecentSheetIds) {
+      await _saveSheetDataUseCase.saveRecentSheetIds(
+        loadedSheetsDataStore.currentSheetId,
       );
     }
-    if (saveAllSheetNames) {
-      await _saveSheetDataUseCase.saveAllSheetNames(
+    if (saveRecentSheetIds) {
+      await _saveSheetDataUseCase.saveRecentSheetIds(
         loadedSheetsDataStore.sheetNames,
       );
     }
@@ -177,9 +177,9 @@ class WorkbookController extends ChangeNotifier {
       await selectionController.saveAllLastSelected();
     }
     if (saveCalculationStatusBySheet) {
-      sortController.saveAllSortStatus(loadedSheetsDataStore.currentSheetName);
+      sortController.saveAllSortStatus(loadedSheetsDataStore.currentSheetId);
     }
-    await loadSheetByName(loadedSheetsDataStore.currentSheetName, init: true);
+    await loadSheetByName(loadedSheetsDataStore.currentSheetId, init: true);
     for (var name in sortStatusDataStore.sortStatusBySheet.keys.toList()) {
       if (!sortStatusDataStore.getSortStatus(name).resultCalculated ||
           !sortStatusDataStore.getSortStatus(name).validSortFound) {
@@ -212,7 +212,7 @@ class WorkbookController extends ChangeNotifier {
   }) async {
     if (!init) {
       selectionController.saveAllLastSelected();
-      _saveSheetDataUseCase.saveLastOpenedSheetName(name);
+      _saveSheetDataUseCase.saveRecentSheetIds(name);
     }
 
     if (sheetNames.contains(name)) {
@@ -233,7 +233,7 @@ class WorkbookController extends ChangeNotifier {
       sortController.analysisResults[name] = AnalysisResult.empty();
       selectionController.clearLastSelection(name);
       sheetNames.add(name);
-      _saveSheetDataUseCase.saveAllSheetNames(sheetNames);
+      _saveSheetDataUseCase.saveRecentSheetIds(sheetNames);
       _dataController.createSaveExecutor(name);
     }
     currentSheetName = name;

@@ -11,7 +11,8 @@ class SelectionDataStore extends ChangeNotifier {
   LoadedSheetsDataStore loadedSheetsDataStore;
 
   SelectionData get selection =>
-    lastSelectionBySheet[loadedSheetsDataStore.currentSheetName] ??= SelectionData.empty();
+      lastSelectionBySheet[loadedSheetsDataStore.currentSheetId] ??=
+          SelectionData.empty();
   Point<int> get primarySelectedCell => selection.primarySelectedCell;
   double get scrollOffsetX => selection.scrollOffsetX;
   double get scrollOffsetY => selection.scrollOffsetY;
@@ -46,8 +47,9 @@ class SelectionDataStore extends ChangeNotifier {
   }
 
   void setEditingMode(bool isEditing) {
-    String currentSheetName = loadedSheetsDataStore.currentSheetName;
-    SelectionData selection = lastSelectionBySheet[currentSheetName] ??= SelectionData.empty();
+    String currentSheetName = loadedSheetsDataStore.currentSheetId;
+    SelectionData selection = lastSelectionBySheet[currentSheetName] ??=
+        SelectionData.empty();
     selection.editingMode = isEditing;
     notifyListeners();
   }

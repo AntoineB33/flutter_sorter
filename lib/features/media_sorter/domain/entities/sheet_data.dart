@@ -8,7 +8,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_conte
 
 class SheetData {
   SheetContent sheetContent;
-  List<UpdateData> updateHistories;
+  List<List<UpdateData>> updateHistories;
   int historyIndex;
   List<double> rowsBottomPos;
   List<double> colRightPos;
@@ -50,22 +50,12 @@ class SheetData {
       var rawTable = rawSheetContent['table'] as List;
 
       var rawUpdateHistories = json['updateHistories'] as List;
-      List<UpdateHistory> parsedUpdateHistories = rawUpdateHistories.map((uh) {
-        var updatedCellsRaw = uh['updatedCells'] as List;
-        List<CellUpdate> parsedUpdatedCells = updatedCellsRaw.map((uch) {
-          var cellPoint = uch['cell'] as Map<String, dynamic>;
-          return CellUpdate(
-            cell: Point<int>(cellPoint['x'] as int, cellPoint['y'] as int),
-            previousValue: uch['previousValue'] as String,
-            newValue: uch['newValue'] as String,
-          );
-        }).toList();
-
-        return UpdateHistory(
-          key: uh['key'] as String,
-          timestamp: DateTime.parse(uh['timestamp'] as String),
-        )..updatedCells?.addAll(parsedUpdatedCells);
-      }).toList();
+      List<List<UpdateData>> parsedUpdateHistories = rawUpdateHistories
+          .map((historyList) => (historyList as List)
+              .map((updateJson) =>
+                  UpdateData.fromJson(updateJson as Map<String, dynamic>))
+              .toList())
+          .toList();
 
       // Safely convert the table, handling non-string values gracefully
       List<List<String>> parsedTable = rawTable.map((row) {
@@ -121,19 +111,10 @@ class SheetData {
 
   Map<String, dynamic> toJson() {
     return {
-      'updateHistories': updateHistories.map((uh) {
-        return {
-          'key': uh.key,
-          'timestamp': uh.timestamp.toIso8601String(),
-          'updatedCells': uh.updatedCells?.map((uch) {
-            return {
-              'cell': {'x': uch.cell.x, 'y': uch.cell.y},
-              'previousValue': uch.previousValue,
-              'newValue': uch.newValue,
-            };
-          }).toList(),
-        };
-      }).toList(),
+      'updateHistories': updateHistories.map((historyList) => historyList
+              .map((update) => update.toJson())
+              .toList())
+          .toList(),
       'historyIndex': historyIndex,
       'sheetContent': {
         'table': sheetContent.table,

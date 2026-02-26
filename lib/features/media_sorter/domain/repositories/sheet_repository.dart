@@ -7,18 +7,17 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status
 abstract class SheetRepository {
   Future<SelectionData> getLastSelection();
   Future<void> saveLastSelection(SelectionData selection);
-  Future<String?> getLastOpenedSheetName();
-  Future<List<String>> getAllSheetNames();
-  Future<SheetData> loadSheet(String sheetName);
-  Future<void> updateSheet(String sheetName, SheetData sheet);
-  Future<void> saveLastOpenedSheetName(String sheetName);
-  Future<void> saveAllSheetNames(List<String> sheetNames);
+  Future<List<String>> recentSheetIds();
+  Future<void> saveRecentSheetIds(List<String> sheetIds);
   Future<Map<String, SelectionData>> getAllLastSelected();
   Future<void> saveAllLastSelected(Map<String, SelectionData> cells);
   Future<Map<String, SortStatus>> getAllSortStatus();
   Future<void> saveAllSortStatus(Map<String, SortStatus> sortStatusBySheet);
   Future<AnalysisResult> getAnalysisResult(String sheetName);
-  Future<void> saveAnalysisResult(String sheetName, AnalysisResult result);
-  Future<SortProgressData> getSortProgression(String sheetName);
+  Future<void> saveAnalysisResult(String sheetId, AnalysisResult result);
+  Future<SheetData> loadSheet(String sheetId);
+  Future<void> updateSheet(String sheetId, SheetData sheet);
+  Future<SortProgressData> getSortProgression(String sheetId);
+  Future<void> saveSortProgression(String sheetId, SortProgressData progressData);
   Future<void> clearAllData();
 }

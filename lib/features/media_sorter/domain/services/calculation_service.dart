@@ -40,7 +40,6 @@ class CalculationService {
   }
 
   static AnalysisResult _isolateHandler(IsolateMessage message) {
-    sleep(Duration(milliseconds: SpreadsheetConstants.debugDelayMs));
     final worker = CalculateUsecase(message);
     return worker.run();
   }

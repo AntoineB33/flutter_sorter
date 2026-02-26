@@ -1,12 +1,17 @@
 import 'package:flutter/foundation.dart';
+import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree/tree_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
 
 class TreeManager extends ChangeNotifier {
+  final AnalysisDataStore analysisDataStore;
   final TreeController treeController;
+  final SelectionController selectionController;
 
-  TreeManager(this.treeController) {
+  TreeManager(this.analysisDataStore, this.treeController, this.selectionController) {
     treeController.addListener(() {
       notifyListeners();
     });
@@ -14,20 +19,22 @@ class TreeManager extends ChangeNotifier {
 
   void onNodeTapped(NodeStruct node) {
     switch (node.idOnTap) {
-      case SpreadsheetConstants.moveToUniqueMentionSprawlCol:
-        treeController.onTapMoveToUniqueMentionSprawlCol(node);
+      case TreeController.onTapKey:
+        onTapCellSelect(node);
         break;
-      default:
-        if (node.defaultOnTap) {
-          treeController.onTapCellSelect(node);
-        }
+      case TreeController.setPrimarySelectionKey:
+        selectionController.setPrimarySelection(
+          node.rowId!,
+          node.colId!,
+          false,
+        );
+        break;
     }
   }
 
   void onTapCellSelect(NodeStruct node) {
     if (node.rowId != null) {
-      (
-        currentSheetName,
+      selectionController.setPrimarySelection(
         node.rowId!,
         0,
         false,
@@ -39,13 +46,13 @@ class TreeManager extends ChangeNotifier {
     List<MapEntry> entries = [];
 
     if (node.colId != SpreadsheetConstants.notUsedCst) {
-      entries = result.attToRefFromAttColToCol[node.att]!.entries.toList();
+      entries = analysisDataStore.currentSheetAnalysisResult.attToRefFromAttColToCol[node.att]!.entries.toList();
     }
 
     if (node.instruction !=
         SpreadsheetConstants.moveToUniqueMentionSprawlCol) {
       entries.addAll(
-        result.attToRefFromDepColToCol[node.att]!.entries.toList(),
+        analysisDataStore.currentSheetAnalysisResult.attToRefFromDepColToCol[node.att]!.entries.toList(),
       );
     }
 
@@ -54,10 +61,7 @@ class TreeManager extends ChangeNotifier {
         cells.add(Cell(rowId: rowId, colId: colId));
       }
     }
-    _handleSelectionCycling(
-      selection,
-      lastSelectionBySheet,
-      currentSheetName,
+    treeController.handleSelectionCycling(
       node,
       cells,
     );

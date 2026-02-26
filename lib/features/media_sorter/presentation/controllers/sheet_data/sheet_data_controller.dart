@@ -35,7 +35,7 @@ class SheetDataController extends ChangeNotifier {
   final ParsePasteDataUseCase _parsePasteDataUseCase = ParsePasteDataUseCase();
 
   SheetData get currentSheet => loadedSheetsData.currentSheet;
-  String get currentSheetName => loadedSheetsData.currentSheetName;
+  String get currentSheetName => loadedSheetsData.currentSheetId;
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) =>
       content.table.isNotEmpty ? content.table[0].length : 0;
@@ -45,8 +45,13 @@ class SheetDataController extends ChangeNotifier {
   // --- usecases ---
   final SaveSheetDataUseCase _saveSheetDataUseCase;
 
-  SheetDataController({required SaveSheetDataUseCase saveSheetDataUseCase, required this.loadedSheetsData, required this.analysisStore, required this.selectionDataStore, required this.sortService})
-    : _saveSheetDataUseCase = saveSheetDataUseCase {
+  SheetDataController({
+    required SaveSheetDataUseCase saveSheetDataUseCase,
+    required this.loadedSheetsData,
+    required this.analysisStore,
+    required this.selectionDataStore,
+    required this.sortService,
+  }) : _saveSheetDataUseCase = saveSheetDataUseCase {
     _storeSubscription = loadedSheetsData.onSheetUpdated.listen((
       String sheetName,
     ) {
@@ -56,12 +61,17 @@ class SheetDataController extends ChangeNotifier {
 
   void scheduleSheetSave(String sheetName) {
     _saveExecutors[sheetName]!.execute(() async {
-      await _saveSheetDataUseCase.saveSheet(sheetName, loadedSheetsData.getSheet(sheetName));
+      await _saveSheetDataUseCase.saveSheet(
+        sheetName,
+        loadedSheetsData.getSheet(sheetName),
+      );
     });
   }
 
   void createSaveExecutor(String name) {
-    _saveExecutors[name] = ManageWaitingTasks<void>(Duration(milliseconds: SpreadsheetConstants.saveSheetDelayMs));
+    _saveExecutors[name] = ManageWaitingTasks<void>(
+      Duration(milliseconds: SpreadsheetConstants.saveSheetDelayMs),
+    );
   }
 
   void onChanged(
@@ -98,10 +108,7 @@ class SheetDataController extends ChangeNotifier {
       scheduleSheetSave(currentSheetName);
     }
     if (toCalculate) {
-      calculate(
-        sheet,
-        currentSheetName,
-      );
+      calculate(sheet, currentSheetName);
     }
   }
 
@@ -195,8 +202,6 @@ class SheetDataController extends ChangeNotifier {
 
     // Delegate layout calculation to GridManager
     adjustRowHeightAfterUpdate(
-      sheet,
-      lastSelectionBySheet,
       currentSheetName,
       row,
       col,
@@ -414,14 +419,16 @@ class SheetDataController extends ChangeNotifier {
     }
   }
 
-  void update(Update updates) {
-    for (var update in updates.updates) {
+  void update(List<UpdateData> updates) {
+    for (var update in updates) {
       if (update is CellUpdate) {
-        currentSheet.sheetContent.table[update.rowId][update.colId] = update.newValue;
+        currentSheet.sheetContent.table[update.rowId][update.colId] =
+            update.newValue;
       } else if (update is ColumnTypeUpdate) {
-        currentSheet.sheetContent.columnTypes[update.colId] = update.newColumnType;
+        currentSheet.sheetContent.columnTypes[update.colId] =
+            update.newColumnType;
       } else {
-        renameCurrentSheet(update);
+        throw Exception('Unsupported update type: ${update.runtimeType}');
       }
     }
     notifyListeners();

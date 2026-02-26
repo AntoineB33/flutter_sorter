@@ -18,15 +18,9 @@ class SaveSheetDataUseCase {
     return repository.updateSheet(sheetName, sheet);
   }
 
-  Future<void> saveLastOpenedSheetName(String sheetName) {
+  Future<void> saveRecentSheetIds(List<String> sheetIds) {
     // Assuming the repository has a method to save the last opened sheet name
-    return repository.saveLastOpenedSheetName(sheetName);
-  }
-
-  Future<void> saveAllSheetNames(List<String> sheetNames) {
-    // Assuming the repository has a method to save all sheet names
-    // You might need to implement this method in the repository if it doesn't exist
-    return repository.saveAllSheetNames(sheetNames);
+    return repository.saveRecentSheetIds(sheetIds);
   }
 
   Future<void> saveAllLastSelected(Map<String, SelectionData> cells) {
