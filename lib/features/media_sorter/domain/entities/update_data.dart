@@ -5,81 +5,103 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'update_data.g.dart';
 
-sealed class UpdateData {
+@JsonSerializable()
+class UpdateData {
+  final String id;
   final DateTime timestamp;
-  UpdateData(this.timestamp);
-  
-  // 1. Polymorphic Deserialization
-  factory UpdateData.fromJson(Map<String, dynamic> json) {
-    final type = json['type'] as String?;
-    
-    // Switch on the discriminator key to return the correct subclass
-    return switch (type) {
-      'sheetName' => SheetNameUpdate.fromJson(json),
-      'cell' => CellUpdate.fromJson(json),
-      'columnType' => ColumnTypeUpdate.fromJson(json),
-      _ => throw FormatException('Unknown UpdateData type: $type'),
-    };
-  }
+  @UpdateUnitConverter()
+  final List<UpdateUnit> updates;
 
-  // 2. Polymorphic Serialization
-  Map<String, dynamic> toJson() {
-    // Dart 3 exhaustiveness checking ensures we don't miss a subclass
-    return switch (this) {
-      SheetNameUpdate s => s.toJson()..['type'] = 'sheetName',
-      CellUpdate c => c.toJson()..['type'] = 'cell',
-      ColumnTypeUpdate ct => ct.toJson()..['type'] = 'columnType',
-    };
-  }
+  UpdateData(this.id, this.timestamp, this.updates);
+
+  factory UpdateData.fromJson(Map<String, dynamic> json) =>
+      _$UpdateDataFromJson(json);
+
+  Map<String, dynamic> toJson() => _$UpdateDataToJson(this);
 }
 
+sealed class UpdateUnit {}
+
 @JsonSerializable()
-class SheetNameUpdate extends UpdateData {
+class SheetNameUpdate extends UpdateUnit {
   final String newName;
   final String? previousName;
 
-  SheetNameUpdate(super.timestamp, this.newName, this.previousName);
-  
+  SheetNameUpdate(this.newName, this.previousName);
+
   factory SheetNameUpdate.fromJson(Map<String, dynamic> json) =>
       _$SheetNameUpdateFromJson(json);
 
-  @override
   Map<String, dynamic> toJson() => _$SheetNameUpdateToJson(this);
 }
 
 @JsonSerializable()
-class CellUpdate extends UpdateData {
+class CellUpdate extends UpdateUnit {
   int rowId;
   int colId;
   @JsonKey(includeFromJson: false, includeToJson: false)
   Point<int> cell;
-  String previousValue;
+  String prevValue;
   String newValue;
-  CellUpdate(super.timestamp, this.rowId, this.colId,
+  CellUpdate(
+    this.rowId,
+    this.colId,
     this.newValue,
-    {this.previousValue = "",
-  }) : cell = Point<int>(rowId, colId);
+    this.prevValue) : cell = Point<int>(rowId, colId);
 
   factory CellUpdate.fromJson(Map<String, dynamic> json) =>
       _$CellUpdateFromJson(json);
-  
-  @override
+
   Map<String, dynamic> toJson() => _$CellUpdateToJson(this);
 }
 
 @JsonSerializable()
-class ColumnTypeUpdate extends UpdateData {
+class ColumnTypeUpdate extends UpdateUnit {
   int colId;
   ColumnType newColumnType;
   ColumnType? previousColumnType;
-  ColumnTypeUpdate(super.timestamp, this.colId,
+  ColumnTypeUpdate(
+    this.colId,
     this.newColumnType,
     this.previousColumnType,
   );
 
   factory ColumnTypeUpdate.fromJson(Map<String, dynamic> json) =>
       _$ColumnTypeUpdateFromJson(json);
-  
-  @override
+
   Map<String, dynamic> toJson() => _$ColumnTypeUpdateToJson(this);
+}
+
+class UpdateUnitConverter implements JsonConverter<UpdateUnit, Map<String, dynamic>> {
+  const UpdateUnitConverter();
+
+  @override
+  UpdateUnit fromJson(Map<String, dynamic> json) {
+    // Look for a 'type' key to figure out which subclass to build
+    final type = json['type'] as String?;
+    
+    switch (type) {
+      case 'SheetNameUpdate':
+        return SheetNameUpdate.fromJson(json);
+      case 'CellUpdate':
+        return CellUpdate.fromJson(json);
+      case 'ColumnTypeUpdate':
+        return ColumnTypeUpdate.fromJson(json);
+      default:
+        throw ArgumentError('Unknown UpdateUnit type: $type');
+    }
+  }
+
+  @override
+  Map<String, dynamic> toJson(UpdateUnit object) {
+    // Serialize the specific subclass and inject the 'type' discriminator
+    if (object is SheetNameUpdate) {
+      return object.toJson()..['type'] = 'SheetNameUpdate';
+    } else if (object is CellUpdate) {
+      return object.toJson()..['type'] = 'CellUpdate';
+    } else if (object is ColumnTypeUpdate) {
+      return object.toJson()..['type'] = 'ColumnTypeUpdate';
+    }
+    throw ArgumentError('Unknown UpdateUnit instance');
+  }
 }

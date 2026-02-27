@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
@@ -6,14 +7,17 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_service.dart';
+import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
+import 'package:uuid/uuid.dart';
 
 class SelectionController extends ChangeNotifier {
   final LoadedSheetsDataStore loadedSheetsDataStore;
@@ -21,6 +25,8 @@ class SelectionController extends ChangeNotifier {
   final SelectionDataStore selectionDataStore;
   final HistoryController historyController;
   final HistoryService historyService;
+
+  final GridController gridController;
 
   final ManageWaitingTasks<void> _saveLastSelectionExecutor =
       ManageWaitingTasks<void>(Duration(milliseconds: 1000));
@@ -40,6 +46,7 @@ class SelectionController extends ChangeNotifier {
     this.analysisStore,
     this.historyController,
     this.historyService,
+    this.gridController,
   ) {
     selectionDataStore.addListener(() {
       saveLastSelection();
@@ -47,19 +54,23 @@ class SelectionController extends ChangeNotifier {
   }
 
   Future<void> getAllLastSelected() async {
-    try {
-      selectionDataStore.lastSelectionBySheet = await _getDataUseCase
-          .getAllLastSelected();
-    } catch (e) {
-      debugPrint("Error getting all last selected cells: $e");
-    }
+    final result = await _getDataUseCase
+        .getAllLastSelected();
+    result.fold(
+      (failure) {
+        debugPrint("Error getting all last selected: $failure");
+      },
+      (lastSelected) {
+        selectionDataStore.lastSelectionBySheet = lastSelected;
+      },
+    );
   }
 
   bool completeMissing(List<String> sheetNames) {
     bool saveLastSelectionBySheet = false;
     for (var name in sheetNames) {
-      if (!lastSelectionBySheet.containsKey(name)) {
-        lastSelectionBySheet[name] = SelectionData.empty();
+      if (!selectionDataStore.lastSelectionBySheet.containsKey(name)) {
+        selectionDataStore.lastSelectionBySheet[name] = SelectionData.empty();
         saveLastSelectionBySheet = true;
         debugPrint("No last selection saved for sheet $name");
       }
@@ -68,16 +79,21 @@ class SelectionController extends ChangeNotifier {
   }
 
   Future<void> loadLastSelection() async {
-    try {
-      selectionDataStore.lastSelectionBySheet[loadedSheetsDataStore
-          .currentSheetId] = await _getDataUseCase
+    final result = await _getDataUseCase
           .getLastSelection();
-    } catch (e) {
-      debugPrint("Error getting last selection for current sheet: $e");
-      selectionDataStore.lastSelectionBySheet[loadedSheetsDataStore
-              .currentSheetId] =
-          SelectionData.empty();
-    }
+    result.fold(
+      (failure) {
+        debugPrint("Error getting last selection for current sheet: $failure");
+        selectionDataStore.lastSelectionBySheet[loadedSheetsDataStore
+                .currentSheetId] =
+            SelectionData.empty();
+      },
+      (selection) {
+        selectionDataStore.lastSelectionBySheet[loadedSheetsDataStore
+                .currentSheetId] =
+            selection;
+      }
+    );
   }
 
   void clearLastSelection(String sheetName) {
@@ -94,9 +110,6 @@ class SelectionController extends ChangeNotifier {
     _saveLastSelectionExecutor.execute(() async {
       await _saveSheetDataUseCase.saveLastSelection(
         selectionDataStore.selection,
-      );
-      await Future.delayed(
-        Duration(milliseconds: SpreadsheetConstants.saveSheetDelayMs),
       );
     });
   }
@@ -132,18 +145,30 @@ class SelectionController extends ChangeNotifier {
 
     // Request scroll to visible
     if (scrollTo) {
-      triggerScrollTo(row, col);
+      gridController.scrollToCell(row, col);
     }
     notifyListeners();
   }
 
-  void stopEditing({bool updateHistory = true}) {
+  void stopEditing(String prevValue, {bool updateHistory = true}) {
     if (!selectionDataStore.editingMode) {
       return;
     }
     saveLastSelection();
     if (updateHistory) {
-      historyService.commitHistory();
+      historyService.commitHistory(
+        UpdateData(Uuid().v4(), DateTime.now(), [
+          CellUpdate(
+            selectionDataStore.primarySelectedCell.x,
+            selectionDataStore.primarySelectedCell.y,
+            loadedSheetsDataStore.getCellContent(
+              selectionDataStore.primarySelectedCell.x,
+              selectionDataStore.primarySelectedCell.y,
+            ),
+            prevValue,
+          ),
+        ]),
+      );
     }
     selectionDataStore.setEditingMode(false);
   }
@@ -162,8 +187,7 @@ class SelectionController extends ChangeNotifier {
     if (sortStatus.sortWhileFindingBestSort) {
       return;
     }
-    selection.previousContent = getCellContent(
-      sheet.sheetContent.table,
+    selection.previousContent = loadedSheetsDataStore.getCellContent(
       selection.primarySelectedCell.x,
       selection.primarySelectedCell.y,
     );
@@ -199,5 +223,11 @@ class SelectionController extends ChangeNotifier {
       }
     }
     setPrimarySelection(currentSheetName, 0, 0, true);
+  }
+
+  @override
+  void dispose() {
+    _saveLastSelectionExecutor.dispose();
+    super.dispose();
   }
 }

@@ -251,7 +251,7 @@ class _SideMenuState extends State<SideMenu> {
         return Autocomplete<String>(
           optionsBuilder: (TextEditingValue textEditingValue) {
             final query = textEditingValue.text.toLowerCase();
-            final allSheets = workbookController.sheetNames;
+            final allSheets = workbookController.getRecentSheetNames();
             if (query.isEmpty) {
               final sorted = List<String>.from(allSheets);
               sorted.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));

@@ -6,7 +6,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sort/calculate_usecase.dart';
 import 'dart:convert';
 
 // IMPORTANT: Replace 'analysis_result' with the actual name of this dart file.

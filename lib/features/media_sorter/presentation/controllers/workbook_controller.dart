@@ -6,9 +6,9 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.
 import 'package:trying_flutter/features/media_sorter/data/repositories/sheet_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_service.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/get_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
@@ -40,12 +40,8 @@ class WorkbookController extends ChangeNotifier {
   final SortStatusDataStore sortStatusDataStore;
 
   // --- usecases ---
-  final SaveSheetDataUseCase _saveSheetDataUseCase = SaveSheetDataUseCase(
-    SheetRepositoryImpl(FileSheetLocalDataSource()),
-  );
-  final GetSheetDataUseCase _getDataUseCase = GetSheetDataUseCase(
-    SheetRepositoryImpl(FileSheetLocalDataSource()),
-  );
+  final SaveSheetDataUseCase saveSheetDataUseCase;
+  final GetSheetDataUseCase getDataUseCase;
   final CalculationService calculationService = CalculationService();
 
   List<List<String>> get table => sheet.sheetContent.table;
@@ -61,6 +57,8 @@ class WorkbookController extends ChangeNotifier {
 
   WorkbookController({
     required this.historyService,
+    required this.saveSheetDataUseCase,
+    required this.getDataUseCase,
     required this.loadedSheetsDataStore,
     required this.analysisDataStore,
     required this.selectionDataStore,
@@ -70,19 +68,18 @@ class WorkbookController extends ChangeNotifier {
   }
 
   Future<void> init() async {
-    await _saveSheetDataUseCase.clearAllData();
+    await saveSheetDataUseCase.clearAllData();
 
     // --- get current sheet name and all sheet names ---
-    String? lastOpenedSheetName;
-    bool saveRecentSheetIds = false;
+    List<String> recentSheetIds;
     bool saveRecentSheetIds = false;
     try {
-      lastOpenedSheetName = await _getDataUseCase.recentSheetIds();
+      recentSheetIds = await getDataUseCase.recentSheetIds();
     } catch (e) {
-      debugPrint("Error getting last opened sheet name: $e");
+      debugPrint("Error getting recent sheet names: $e");
     }
     try {
-      loadedSheetsDataStore.sheetNames = await _getDataUseCase
+      loadedSheetsDataStore.sheetNames = await getDataUseCase
           .getAllSheetNames();
     } catch (e) {
       debugPrint("Error initializing AllSheetsController: $e");
@@ -164,12 +161,12 @@ class WorkbookController extends ChangeNotifier {
 
     // --- save any correction if needed ---
     if (saveRecentSheetIds) {
-      await _saveSheetDataUseCase.saveRecentSheetIds(
+      await saveSheetDataUseCase.saveRecentSheetIds(
         loadedSheetsDataStore.currentSheetId,
       );
     }
     if (saveRecentSheetIds) {
-      await _saveSheetDataUseCase.saveRecentSheetIds(
+      await saveSheetDataUseCase.saveRecentSheetIds(
         loadedSheetsDataStore.sheetNames,
       );
     }
@@ -212,14 +209,14 @@ class WorkbookController extends ChangeNotifier {
   }) async {
     if (!init) {
       selectionController.saveAllLastSelected();
-      _saveSheetDataUseCase.saveRecentSheetIds(name);
+      saveSheetDataUseCase.saveRecentSheetIds(name);
     }
 
     if (sheetNames.contains(name)) {
       if (!_dataController.loadedSheetsData.containsKey(name)) {
         _dataController.createSaveExecutor(name);
         try {
-          _dataController.loadedSheetsData[name] = await _getDataUseCase
+          _dataController.loadedSheetsData[name] = await getDataUseCase
               .loadSheet(name);
         } catch (e) {
           logger.e("Error parsing sheet data for $name: $e");
@@ -233,7 +230,7 @@ class WorkbookController extends ChangeNotifier {
       sortController.analysisResults[name] = AnalysisResult.empty();
       selectionController.clearLastSelection(name);
       sheetNames.add(name);
-      _saveSheetDataUseCase.saveRecentSheetIds(sheetNames);
+      saveSheetDataUseCase.saveRecentSheetIds(sheetNames);
       _dataController.createSaveExecutor(name);
     }
     currentSheetName = name;
@@ -260,5 +257,9 @@ class WorkbookController extends ChangeNotifier {
       animate: true,
     );
     notifyListeners();
+  }
+
+  List<String> getRecentSheetNames() {
+    return loadedSheetsDataStore.recentSheetIds.map((id) => loadedSheetsDataStore.getSheet(id).sheetName).toList();
   }
 }

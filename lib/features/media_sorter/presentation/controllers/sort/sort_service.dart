@@ -14,13 +14,13 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/sorting_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/parse_paste_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/parse_paste_data_usecase.dart';
 import 'dart:async';
 
-import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sort_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sort/sort_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/services/isolate_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
@@ -32,7 +32,6 @@ class SortService {
   final AnalysisDataStore analysisDataStore;
   final LoadedSheetsDataStore loadedSheetsDataStore;
   final SortStatusDataStore sortStatusDataStore;
-  final Map<String, ManageWaitingTasks<void>> _saveResultExecutors = {};
   final Map<String, IsolateService> _isolateServices = {};
 
   SortService(

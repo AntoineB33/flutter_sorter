@@ -15,68 +15,18 @@ class HistoryController extends ChangeNotifier {
   final LoadedSheetsDataStore loadedSheetsDataStore;
 
   SheetData get currentSheet => loadedSheetsDataStore.currentSheet;
+  List<UpdateData> get currentHistory => currentSheet.updateHistories;
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) =>
       content.table.isNotEmpty ? content.table[0].length : 0;
 
   HistoryController(this.loadedSheetsDataStore);
 
-  /// Adds a cell change to the current temporary history object.
-  /// Handles the logic for continuous typing (keeping the very first previous value).
-  void recordCellChange(
-    SheetData sheet,
-    int row,
-    int col,
-    String prevValue,
-    String newValue,
-    bool onChange,
-    bool keepPrevious,
-  ) {
-    String previousValue = onChange && sheet.currentUpdateHistory != null
-        ? sheet.currentUpdateHistory!.updatedCells![0].previousValue
-        : prevValue;
-    if (!keepPrevious) {
-      sheet.currentUpdateHistory = null;
-    }
-    sheet.currentUpdateHistory ??= UpdateHistory(
-      key: UpdateHistory.updateCellContent,
-      timestamp: DateTime.now(),
-    );
-    sheet.currentUpdateHistory!.updatedCells!.add(
-      CellUpdate(
-        cell: Point(row, col),
-        previousValue: previousValue,
-        newValue: newValue,
-      ),
-    );
-  }
-
-  /// Sets up a history record for a column type change.
-  void recordColumnTypeChange(
-    SheetData sheet,
-    int col,
-    ColumnType prevType,
-    ColumnType newType,
-  ) {
-    sheet.currentUpdateHistory ??= UpdateHistory(
-      key: UpdateHistory.updateColumnType,
-      timestamp: DateTime.now(),
-    );
-    sheet.currentUpdateHistory!.updatedColumnTypes!.add(
-      ColumnTypeUpdate(
-        colId: col,
-        previousColumnType: prevType,
-        newColumnType: newType,
-      ),
-    );
-  }
-
-  List<UpdateData> moveInUpdateHistory(int direction) {
-    if (currentSheet.historyIndex < 0 || currentSheet.updateHistories.isEmpty) {
-      return [];
+  UpdateData? moveInUpdateHistory(int direction) {
+    if (currentSheet.historyIndex + direction < 0 || currentSheet.historyIndex + direction >= currentSheet.updateHistories.length) {
+      return null;
     }
     currentSheet.historyIndex += direction;
-    final lastUpdate = currentSheet.updateHistories[currentSheet.historyIndex];
-    return lastUpdate;
+    return currentSheet.updateHistories[currentSheet.historyIndex];
   }
 }

@@ -11,20 +11,27 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_conte
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/parse_paste_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/parse_paste_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_service.dart';
+import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort/sort_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/services/spreadsheet_clipboard_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
+import 'package:uuid/uuid.dart';
 
 class SheetDataController extends ChangeNotifier {
   // --- states ---
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
-  late final StreamSubscription<String> _storeSubscription;
+  
+  final SheetDataController sheetDataController;
+  final HistoryController historyController;
+  final GridController gridController;
 
   final LoadedSheetsDataStore loadedSheetsData;
   final AnalysisDataStore analysisStore;
@@ -33,9 +40,11 @@ class SheetDataController extends ChangeNotifier {
   final SortService sortService;
   final HistoryService historyService;
 
+  final SheetDataUsecase sheetDataUsecase;
+
   late final SpreadsheetClipboardService _clipboardService =
       SpreadsheetClipboardService();
-  final ParsePasteDataUseCase _parsePasteDataUseCase = ParsePasteDataUseCase();
+  final ParsePasteDataUseCase _parsePasteDataUseCase;
 
   SheetData get currentSheet => loadedSheetsData.currentSheet;
   String get currentSheetName => loadedSheetsData.currentSheetId;
@@ -48,19 +57,16 @@ class SheetDataController extends ChangeNotifier {
   // --- usecases ---
   final SaveSheetDataUseCase _saveSheetDataUseCase;
 
-  SheetDataController({
-    required SaveSheetDataUseCase saveSheetDataUseCase,
-    required this.loadedSheetsData,
-    required this.analysisStore,
-    required this.selectionDataStore,
-    required this.sortService,
-  }) : _saveSheetDataUseCase = saveSheetDataUseCase {
-    _storeSubscription = loadedSheetsData.onSheetUpdated.listen((
-      String sheetName,
-    ) {
-      scheduleSheetSave(sheetName);
-    });
-  }
+  SheetDataController(this.sheetDataController, this.historyController, this.gridController,
+    SaveSheetDataUseCase saveSheetDataUseCase,
+    this.loadedSheetsData,
+    this.analysisStore,
+    this.selectionDataStore,
+     this.sortService,
+    this.historyService,
+     this.sheetDataUsecase,
+      this._parsePasteDataUseCase,
+  ) : _saveSheetDataUseCase = saveSheetDataUseCase;
 
   void scheduleSheetSave(String sheetName) {
     _saveExecutors[sheetName]!.execute(() async {
@@ -80,165 +86,23 @@ class SheetDataController extends ChangeNotifier {
   void onChanged(
     String newValue,
   ) {
-    updateCell(
-      selectionDataStore.primarySelectedCell.x,
-      selectionDataStore.primarySelectedCell.y,
-      newValue,
-      onChange: true,
-    );
+    update(
+      UpdateData(
+        Uuid().v4(),
+        DateTime.now(),
+        [CellUpdate(
+          selectionDataStore.primarySelectedCell.x,
+          selectionDataStore.primarySelectedCell.y,
+          newValue,
+          loadedSheetsData.getCellContent(
+            selectionDataStore.primarySelectedCell.x,
+            selectionDataStore.primarySelectedCell.y,
+          ),
+        )],
+      ), false);
     notifyListeners();
     scheduleSheetSave(currentSheetName);
     sortService.calculate(currentSheetName);
-  }
-
-  void saveAndCalculate({
-    bool save = true,
-    bool updateHistory = false,
-    bool toCalculate = true,
-  }) {
-    if (save) {
-      if (updateHistory) {
-        commitHistory();
-      }
-      scheduleSheetSave(currentSheetName);
-    }
-    if (toCalculate) {
-      calculate(sheet, currentSheetName);
-    }
-  }
-
-  void increaseColumnCount(int col, SheetContent sheetContent) {
-    if (col >= colCount(sheetContent)) {
-      final needed = col + 1 - colCount(sheetContent);
-      for (var r = 0; r < rowCount(sheetContent); r++) {
-        sheetContent.table[r].addAll(List.filled(needed, '', growable: true));
-      }
-      sheetContent.columnTypes.addAll(
-        List.filled(needed, ColumnType.attributes),
-      );
-    }
-  }
-
-  void decreaseRowCount(int row, int rowCount, SheetContent sheetContent) {
-    if (row == rowCount - 1) {
-      while (row >= 0 &&
-          !sheetContent.table[row].any((cell) => cell.isNotEmpty)) {
-        sheetContent.table.removeLast();
-        row--;
-      }
-    }
-  }
-
-  void updateCell(
-    int row,
-    int col,
-    String newValue, {
-    bool onChange = false,
-    bool historyNavigation = false,
-    bool keepPrevious = false,
-  }) {
-    String prevValue = '';
-    SheetContent sheetContent = currentSheet.sheetContent;
-    if (newValue.isNotEmpty ||
-        (row < rowCount(sheetContent) && col < colCount(sheetContent))) {
-      if (row >= rowCount(sheetContent)) {
-        final needed = row + 1 - rowCount(sheetContent);
-        sheetContent.table.addAll(
-          List.generate(
-            needed,
-            (_) => List.filled(colCount(sheetContent), '', growable: true),
-          ),
-        );
-      }
-      increaseColumnCount(col, sheetContent);
-      prevValue = sheetContent.table[row][col];
-      sheetContent.table[row][col] = newValue;
-    }
-
-    // Clean up empty rows/cols at the end
-    if (newValue.isEmpty &&
-        row < rowCount(sheetContent) &&
-        col < colCount(sheetContent) &&
-        (row == rowCount(sheetContent) - 1 ||
-            col == colCount(sheetContent) - 1) &&
-        prevValue.isNotEmpty) {
-      decreaseRowCount(row, rowCount(sheetContent), sheetContent);
-      if (col == colCount(sheetContent) - 1) {
-        int colId = col;
-        bool canRemove = true;
-        while (canRemove && colId >= 0) {
-          for (var r = 0; r < rowCount(sheetContent); r++) {
-            if (sheetContent.table[r][colId].isNotEmpty) {
-              canRemove = false;
-              break;
-            }
-          }
-          if (canRemove) {
-            for (var r = 0; r < rowCount(sheetContent); r++) {
-              sheetContent.table[r].removeLast();
-            }
-            colId--;
-          }
-        }
-      }
-    }
-
-    if (!historyNavigation) {
-      recordCellChange(
-        sheetContent,
-        row,
-        col,
-        prevValue,
-        newValue,
-        onChange,
-        keepPrevious,
-      );
-    }
-
-    // Delegate layout calculation to GridManager
-    adjustRowHeightAfterUpdate(
-      currentSheetName,
-      row,
-      col,
-      row1ToScreenBottomHeight,
-      colBToScreenRightWidth,
-      newValue,
-      prevValue,
-    );
-  }
-
-  void setColumnType(Update update) {
-    ColumnType previousType = GetNames.getColumnType(sheet.sheetContent, col);
-    if (updateHistory) {
-      recordColumnTypeChange(sheet, col, previousType, type);
-    }
-    if (type == ColumnType.attributes) {
-      if (col < colCount(sheet.sheetContent)) {
-        sheet.sheetContent.columnTypes[col] = type;
-        if (col == sheet.sheetContent.columnTypes.length - 1) {
-          while (col > 0) {
-            col--;
-            if (sheet.sheetContent.columnTypes[col] != ColumnType.attributes) {
-              break;
-            }
-          }
-          sheet.sheetContent.columnTypes = sheet.sheetContent.columnTypes
-              .sublist(0, col + 1);
-        }
-      }
-    } else {
-      increaseColumnCount(col, sheet.sheetContent);
-      sheet.sheetContent.columnTypes[col] = type;
-    }
-    notifyListeners();
-    saveAndCalculate(
-      sheet,
-      analysisResults,
-      lastSelectionBySheet,
-      sortStatus,
-      currentSheetName,
-      updateHistory: true,
-    );
   }
 
   Future<bool> pasteSelection() async {
@@ -250,13 +114,12 @@ class SheetDataController extends ChangeNotifier {
       return false;
     }
 
-    final Update updates = _parsePasteDataUseCase.pasteText(
+    final UpdateData updateData = _parsePasteDataUseCase.pasteText(
       text,
       selectionDataStore.primarySelectedCell.x,
       selectionDataStore.primarySelectedCell.y,
     );
-    update(updates);
-    historyService.commitHistory(updates);
+    update(updateData, true);
     return true;
   }
 
@@ -270,94 +133,53 @@ class SheetDataController extends ChangeNotifier {
     double row1ToScreenBottomHeight,
     double colBToScreenRightWidth,
   ) {
+    List<UpdateUnit> updates = [];
     for (Point<int> cell in selection.selectedCells) {
-      updateCell(
-        sheet,
-        lastSelectionBySheet,
-        row1ToScreenBottomHeight,
-        colBToScreenRightWidth,
-        currentSheetName,
+      updates.add(CellUpdate(
         cell.x,
         cell.y,
         '',
-        keepPrevious: true,
-      );
+        loadedSheetsData.getCellContent(cell.x, cell.y),
+      ));
     }
-    updateCell(
-      sheet,
-      lastSelectionBySheet,
-      row1ToScreenBottomHeight,
-      colBToScreenRightWidth,
-      currentSheetName,
-      selection.primarySelectedCell.x,
-      selection.primarySelectedCell.y,
-      '',
-      keepPrevious: true,
+    UpdateData updateData = UpdateData(
+      Uuid().v4(),
+      DateTime.now(),
+      updates,
     );
+    update(updateData, true);
     notifyListeners();
-    saveAndCalculate(
-      sheet,
-      analysisResults,
-      lastSelectionBySheet,
-      sortStatus,
-      currentSheetName,
-      updateHistory: true,
-    );
+    scheduleSheetSave(currentSheetName);
+    sortService.calculate(currentSheetName);
   }
 
   void applyDefaultColumnSequence() {
-    setColumnType(
-      sheet,
-      analysisResults,
-      lastSelectionBySheet,
-      sortStatus,
-      currentSheetName,
-      1,
-      ColumnType.dependencies,
-    );
-    setColumnType(
-      sheet,
-      analysisResults,
-      lastSelectionBySheet,
-      sortStatus,
-      currentSheetName,
-      2,
-      ColumnType.dependencies,
-    );
-    setColumnType(
-      sheet,
-      analysisResults,
-      lastSelectionBySheet,
-      sortStatus,
-      currentSheetName,
-      3,
-      ColumnType.dependencies,
-    );
-    setColumnType(
-      sheet,
-      analysisResults,
-      lastSelectionBySheet,
-      sortStatus,
-      currentSheetName,
-      7,
-      ColumnType.urls,
-    );
-    setColumnType(
-      sheet,
-      analysisResults,
-      lastSelectionBySheet,
-      sortStatus,
-      currentSheetName,
-      8,
-      ColumnType.dependencies,
-    );
-  }
-
-  String getCellContent(List<List<String>> table, int row, int col) {
-    if (row < table.length && col < table[row].length) {
-      return table[row][col];
-    }
-    return '';
+    update(UpdateData(Uuid().v4(), DateTime.now(), [
+      ColumnTypeUpdate(
+        1,
+        ColumnType.dependencies,
+        loadedSheetsData.getColumnType(1),
+      ),
+      ColumnTypeUpdate(
+        2,
+        ColumnType.dependencies,
+        loadedSheetsData.getColumnType(2),
+      ),
+      ColumnTypeUpdate(
+        3,
+        ColumnType.dependencies,
+        loadedSheetsData.getColumnType(3),
+      ),
+      ColumnTypeUpdate(
+        7,
+        ColumnType.urls,
+        loadedSheetsData.getColumnType(7),
+      ),
+      ColumnTypeUpdate(
+        8,
+        ColumnType.dependencies,
+        loadedSheetsData.getColumnType(8),
+      )]), true);
   }
 
   Future<void> copySelectionToClipboard(
@@ -384,8 +206,7 @@ class SheetDataController extends ChangeNotifier {
     }
     if (!selectedCellsTable.every((row) => row.every((cell) => !cell))) {
       await _clipboardService.copy(
-        getCellContent(
-          sheet.sheetContent.table,
+        loadedSheetsData.getCellContent(
           selection.primarySelectedCell.x,
           selection.primarySelectedCell.y,
         ),
@@ -398,7 +219,7 @@ class SheetDataController extends ChangeNotifier {
     for (int r = startRow; r <= endRow; r++) {
       List<String> rowData = [];
       for (int c = startCol; c <= endCol; c++) {
-        rowData.add(getCellContent(sheet.sheetContent.table, r, c));
+        rowData.add(loadedSheetsData.getCellContent(r, c));
       }
       buffer.write(rowData.join('\t')); // Tab separated for Excel compat
       if (r < endRow) buffer.write('\n');
@@ -408,25 +229,26 @@ class SheetDataController extends ChangeNotifier {
     await _clipboardService.copy(text);
   }
 
+  @override
   void dispose() {
-    _storeSubscription.cancel();
     for (var executor in _saveExecutors.values) {
       executor.dispose();
     }
+    super.dispose();
   }
 
-  void update(List<UpdateData> updates) {
-    for (var update in updates) {
-      if (update is CellUpdate) {
-        currentSheet.sheetContent.table[update.rowId][update.colId] =
-            update.newValue;
-      } else if (update is ColumnTypeUpdate) {
-        currentSheet.sheetContent.columnTypes[update.colId] =
-            update.newColumnType;
-      } else {
-        throw Exception('Unsupported update type: ${update.runtimeType}');
-      }
-    }
+  void update(UpdateData updateData, bool updateHistory) {
+    sheetDataUsecase.update(updateData, updateHistory);
+    gridController.adjustRowHeightAfterUpdate(updateData);
+    notifyListeners();
     scheduleSheetSave(currentSheetName);
+  }
+
+  void moveInUpdateHistory(int direction) {
+    final lastUpdate = historyController.moveInUpdateHistory(direction);
+    if (lastUpdate != null) {
+      sheetDataController.update(lastUpdate, false);
+      sortService.calculate(loadedSheetsData.currentSheetId);
+    }
   }
 }

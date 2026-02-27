@@ -11,6 +11,8 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_re
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
@@ -24,6 +26,9 @@ class TreeController extends ChangeNotifier {
   final NodeStruct searchRoot = NodeStruct(
     instruction: SpreadsheetConstants.searchMsg,
   );
+  final Map<String, ManageWaitingTasks<void>> _saveResultExecutors = {};
+
+  final SaveSheetDataUseCase saveSheetDataUseCase;
 
   final AnalysisDataStore analysisDataStore;
   final LoadedSheetsDataStore loadedSheetsDataStore;
@@ -46,6 +51,7 @@ class TreeController extends ChangeNotifier {
     required this.loadedSheetsDataStore,
     required this.selectionDataStore,
     required this.sortStatusDataStore,
+    required this.saveSheetDataUseCase,
   });
 
   void populateAllTrees(
@@ -475,12 +481,11 @@ class TreeController extends ChangeNotifier {
     String sheetName,
     AnalysisResult result,
   ) async {
-    _saveResultExecutors[sheetName] ??= ManageWaitingTasks<void>();
+    _saveResultExecutors[sheetName] ??= ManageWaitingTasks<void>(
+      Duration(milliseconds: SpreadsheetConstants.saveAnalysisResultDelayMs),
+    );
     _saveResultExecutors[sheetName]!.execute(() async {
-      await _saveSheetDataUseCase.saveAnalysisResult(sheetName, result);
-      await Future.delayed(
-        Duration(milliseconds: SpreadsheetConstants.saveAnalysisResultDelayMs),
-      );
+      await saveSheetDataUseCase.saveAnalysisResult(sheetName, result);
     });
   }
 

@@ -4,7 +4,7 @@ import 'dart:isolate';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/calculate_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sort/calculate_usecase.dart';
 import 'dart:io';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:fpdart/fpdart.dart';

@@ -11,12 +11,13 @@ part 'sheet_data.g.dart';
 @JsonSerializable(explicitToJson: true)
 class SheetData {
   SheetContent sheetContent;
-  List<List<UpdateData>> updateHistories;
+  List<UpdateData> updateHistories;
   int historyIndex;
   List<double> rowsBottomPos;
   List<double> colRightPos;
   List<bool> rowsManuallyAdjustedHeight;
   List<bool> colsManuallyAdjustedWidth;
+  String sheetName;
   double colHeaderHeight;
   double rowHeaderWidth;
 
@@ -28,6 +29,7 @@ class SheetData {
     required this.colRightPos,
     required this.rowsManuallyAdjustedHeight,
     required this.colsManuallyAdjustedWidth,
+    required this.sheetName,
     required this.colHeaderHeight,
     required this.rowHeaderWidth,
   });
@@ -41,6 +43,7 @@ class SheetData {
       colRightPos: [],
       rowsManuallyAdjustedHeight: [],
       colsManuallyAdjustedWidth: [],
+      sheetName: '',
       colHeaderHeight: PageConstants.defaultColHeaderHeight,
       rowHeaderWidth: PageConstants.defaultRowHeaderWidth,
     );

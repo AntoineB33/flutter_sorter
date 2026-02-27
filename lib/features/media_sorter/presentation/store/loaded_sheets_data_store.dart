@@ -7,9 +7,6 @@ class LoadedSheetsDataStore {
   final Map<String, SheetData> _loadedSheetsData = {};
   final List<String> _recentSheetIds = [];
 
-  final _updateController = StreamController<String>.broadcast();
-
-  Stream<String> get onSheetUpdated => _updateController.stream;
   List<String> get recentSheetIds => List.unmodifiable(_recentSheetIds);
   String get currentSheetId => _recentSheetIds.first;
   SheetData get currentSheet => _loadedSheetsData[currentSheetId]!;
@@ -19,8 +16,8 @@ class LoadedSheetsDataStore {
     _recentSheetIds.addAll(names);
   }
 
-  SheetData getSheet(String sheetName) {
-    return _loadedSheetsData[sheetName]!;
+  SheetData getSheet(String sheetId) {
+    return _loadedSheetsData[sheetId]!;
   }
 
   String getCellContent(int row, int col) {
@@ -29,6 +26,13 @@ class LoadedSheetsDataStore {
       return currentSheet.sheetContent.table[row][col];
     }
     return "";
+  }
+
+  ColumnType getColumnType(int col) {
+    if (col < currentSheet.sheetContent.columnTypes.length) {
+      return currentSheet.sheetContent.columnTypes[col];
+    }
+    return ColumnType.attributes;
   }
 
   void dispose() {

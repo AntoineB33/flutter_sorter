@@ -1,18 +1,20 @@
 import 'dart:math';
 
+import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/layout_calculator.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 
-class GridController {
+class GridController extends ChangeNotifier {
   // --- states ---
   double row1ToScreenBottomHeight = 0.0;
   double colBToScreenRightWidth = 0.0;
@@ -31,7 +33,8 @@ class GridController {
 
   GridController(this.loadedSheetsDataStore, this.selectionDataStore);
 
-  void updateRowColCount({
+  void updateRowColCount(
+    bool notify,{
     double? visibleHeight,
     double? visibleWidth,
   }) {
@@ -55,6 +58,9 @@ class GridController {
         targetCols != selectionDataStore.tableViewCols) {
       selectionDataStore.tableViewRows = targetRows;
       selectionDataStore.tableViewCols = targetCols;
+      if (notify) {
+        notifyListeners();
+      }
     }
   }
 
@@ -135,104 +141,105 @@ class GridController {
     return _layoutCalculator.calculateRowHeight(text, availableWidth);
   }
 
-  void adjustRowHeightAfterUpdate(
-    int row,
-    int col,
-    String newValue,
-    String prevValue,
-  ) {
-    if (row >= currentSheet.rowsBottomPos.length &&
-        row >= rowCount(currentSheet.sheetContent)) {
-      updateRowColCount(
-        visibleHeight: row1ToScreenBottomHeight,
-        visibleWidth: colBToScreenRightWidth,
-      );
-      return;
-    }
+  void adjustRowHeightAfterUpdate(UpdateData updateData) {
+    for (var update in updateData.updates) {
+      if (update is CellUpdate) {
+        final int row = update.rowId;
+        final int col = update.colId;
+        final String newValue = update.newValue;
+        final String prevValue = update.prevValue;
 
-    double heightItNeeds = calculateRequiredRowHeight(currentSheet, newValue, col);
+        if (row >= currentSheet.rowsBottomPos.length &&
+            row >= rowCount(currentSheet.sheetContent)) {
+          break;
+        }
 
-    if (heightItNeeds > GetDefaultSizes.getDefaultRowHeight() &&
-        currentSheet.rowsBottomPos.length <= row) {
-      int prevRowsBottomPosLength = currentSheet.rowsBottomPos.length;
-      currentSheet.rowsBottomPos.addAll(
-        List.filled(row + 1 - currentSheet.rowsBottomPos.length, 0),
-      );
-      for (int i = prevRowsBottomPosLength; i <= row; i++) {
-        currentSheet.rowsBottomPos[i] = i == 0
-            ? GetDefaultSizes.getDefaultRowHeight()
-            : currentSheet.rowsBottomPos[i - 1] +
-                  GetDefaultSizes.getDefaultRowHeight();
-      }
-    }
+        double heightItNeeds = calculateRequiredRowHeight(currentSheet, newValue, col);
 
-    if (row < currentSheet.rowsBottomPos.length) {
-      if (currentSheet.rowsManuallyAdjustedHeight.length <= row ||
-          !currentSheet.rowsManuallyAdjustedHeight[row]) {
-        double currentHeight = getRowHeight(currentSheet, row);
-        if (heightItNeeds < currentHeight) {
-          double heightItNeeded = calculateRequiredRowHeight(
-            currentSheet,
-            prevValue,
-            col,
+        if (heightItNeeds > GetDefaultSizes.getDefaultRowHeight() &&
+            currentSheet.rowsBottomPos.length <= row) {
+          int prevRowsBottomPosLength = currentSheet.rowsBottomPos.length;
+          currentSheet.rowsBottomPos.addAll(
+            List.filled(row + 1 - currentSheet.rowsBottomPos.length, 0),
           );
-          if (heightItNeeded == currentHeight) {
-            double newHeight = heightItNeeds;
-            if (row < currentSheet.sheetContent.table.length) {
-              for (int j = 0; j < colCount(currentSheet.sheetContent); j++) {
-                if (j == col) continue;
-                newHeight = max(
-                  calculateRequiredRowHeight(
-                    currentSheet,
-                    currentSheet.sheetContent.table[row][j],
-                    j,
-                  ),
-                  newHeight,
-                );
-                if (newHeight == heightItNeeded) break;
-              }
-            }
-            if (newHeight < heightItNeeded) {
-              double heightDiff = currentHeight - newHeight;
-              for (int r = row; r < currentSheet.rowsBottomPos.length; r++) {
-                currentSheet.rowsBottomPos[r] -= heightDiff;
-              }
-              if (newHeight == GetDefaultSizes.getDefaultRowHeight()) {
-                int removeFrom = currentSheet.rowsBottomPos.length;
-                for (int r = currentSheet.rowsBottomPos.length - 1; r >= 0; r--) {
-                  if (r < currentSheet.rowsManuallyAdjustedHeight.length &&
-                          currentSheet.rowsManuallyAdjustedHeight[r] ||
-                      currentSheet.rowsBottomPos[r] >
-                          (r == 0 ? 0 : currentSheet.rowsBottomPos[r - 1]) +
-                              GetDefaultSizes.getDefaultRowHeight()) {
-                    break;
+          for (int i = prevRowsBottomPosLength; i <= row; i++) {
+            currentSheet.rowsBottomPos[i] = i == 0
+                ? GetDefaultSizes.getDefaultRowHeight()
+                : currentSheet.rowsBottomPos[i - 1] +
+                      GetDefaultSizes.getDefaultRowHeight();
+          }
+        }
+
+        if (row < currentSheet.rowsBottomPos.length) {
+          if (currentSheet.rowsManuallyAdjustedHeight.length <= row ||
+              !currentSheet.rowsManuallyAdjustedHeight[row]) {
+            double currentHeight = getRowHeight(currentSheet, row);
+            if (heightItNeeds < currentHeight) {
+              double heightItNeeded = calculateRequiredRowHeight(
+                currentSheet,
+                prevValue,
+                col,
+              );
+              if (heightItNeeded == currentHeight) {
+                double newHeight = heightItNeeds;
+                if (row < currentSheet.sheetContent.table.length) {
+                  for (int j = 0; j < colCount(currentSheet.sheetContent); j++) {
+                    if (j == col) continue;
+                    newHeight = max(
+                      calculateRequiredRowHeight(
+                        currentSheet,
+                        currentSheet.sheetContent.table[row][j],
+                        j,
+                      ),
+                      newHeight,
+                    );
+                    if (newHeight == heightItNeeded) break;
                   }
-                  removeFrom--;
                 }
-                currentSheet.rowsBottomPos = currentSheet.rowsBottomPos.sublist(
-                  0,
-                  removeFrom,
-                );
+                if (newHeight < heightItNeeded) {
+                  double heightDiff = currentHeight - newHeight;
+                  for (int r = row; r < currentSheet.rowsBottomPos.length; r++) {
+                    currentSheet.rowsBottomPos[r] -= heightDiff;
+                  }
+                  if (newHeight == GetDefaultSizes.getDefaultRowHeight()) {
+                    int removeFrom = currentSheet.rowsBottomPos.length;
+                    for (int r = currentSheet.rowsBottomPos.length - 1; r >= 0; r--) {
+                      if (r < currentSheet.rowsManuallyAdjustedHeight.length &&
+                              currentSheet.rowsManuallyAdjustedHeight[r] ||
+                          currentSheet.rowsBottomPos[r] >
+                              (r == 0 ? 0 : currentSheet.rowsBottomPos[r - 1]) +
+                                  GetDefaultSizes.getDefaultRowHeight()) {
+                        break;
+                      }
+                      removeFrom--;
+                    }
+                    currentSheet.rowsBottomPos = currentSheet.rowsBottomPos.sublist(
+                      0,
+                      removeFrom,
+                    );
+                  }
+                }
+              }
+            } else if (heightItNeeds > currentHeight) {
+              double heightDiff = heightItNeeds - currentHeight;
+              for (int r = row; r < currentSheet.rowsBottomPos.length; r++) {
+                currentSheet.rowsBottomPos[r] = currentSheet.rowsBottomPos[r] + heightDiff;
               }
             }
           }
-        } else if (heightItNeeds > currentHeight) {
-          double heightDiff = heightItNeeds - currentHeight;
-          for (int r = row; r < currentSheet.rowsBottomPos.length; r++) {
-            currentSheet.rowsBottomPos[r] = currentSheet.rowsBottomPos[r] + heightDiff;
+        } else if (heightItNeeds == GetDefaultSizes.getDefaultRowHeight() &&
+            row == currentSheet.rowsBottomPos.length - 1) {
+          int i = row;
+          while (currentSheet.rowsBottomPos[i] == GetDefaultSizes.getDefaultRowHeight() &&
+              row > 0) {
+            currentSheet.rowsBottomPos.removeLast();
+            i--;
           }
         }
       }
-    } else if (heightItNeeds == GetDefaultSizes.getDefaultRowHeight() &&
-        row == currentSheet.rowsBottomPos.length - 1) {
-      int i = row;
-      while (currentSheet.rowsBottomPos[i] == GetDefaultSizes.getDefaultRowHeight() &&
-          row > 0) {
-        currentSheet.rowsBottomPos.removeLast();
-        i--;
-      }
     }
     updateRowColCount(
+      false,
       visibleHeight: row1ToScreenBottomHeight,
       visibleWidth: colBToScreenRightWidth,
     );
@@ -264,5 +271,111 @@ class GridController {
       }
     }
     return false;
+  }
+
+  /// Calculates offsets and scrolls to ensure the target cell is visible.
+  bool scrollToCell(
+    Point<int> cell,
+    ScrollController verticalController,
+    ScrollController horizontalController,
+    bool isProgrammaticScroll,
+  ) {
+    if (!verticalController.hasClients || !horizontalController.hasClients) {
+      return isProgrammaticScroll;
+    }
+    bool saveSelection = false;
+    if (cell.x > 0) {
+      // Vertical Logic
+      final double targetTop =
+          getTargetTop(cell.x) - getTargetTop(1);
+      final double targetBottom = getTargetTop(cell.x + 1);
+      final double verticalViewport =
+          verticalController.position.viewportDimension -
+          currentSheet.rowHeaderWidth;
+
+      bool scroll = true;
+      if (targetTop < verticalController.offset) {
+        saveSelection = true;
+        selectionDataStore.scrollOffsetX = targetTop;
+      } else if (targetBottom > verticalController.offset + verticalViewport) {
+        saveSelection = true;
+        selectionDataStore.scrollOffsetX =
+            targetBottom - verticalViewport;
+        updateRowColCount(true, visibleHeight: targetBottom);
+      } else {
+        scroll = false;
+      }
+
+      if (scroll) {
+        isProgrammaticScroll = safelyScroll(
+          verticalController,
+          selectionDataStore.scrollOffsetX,
+          true,
+          isProgrammaticScroll,
+        );
+      }
+    }
+
+    if (cell.y > 0) {
+      // Horizontal Logic
+      final double targetLeft =
+          getTargetLeft(cell.y) -
+          getTargetLeft(1);
+      final double targetRight = getTargetLeft(cell.y + 1);
+      final double horizontalViewport =
+          horizontalController.position.viewportDimension -
+          currentSheet.rowHeaderWidth;
+
+      bool scroll = true;
+      if (targetLeft < horizontalController.offset) {
+        saveSelection = true;
+        selectionDataStore.scrollOffsetY = targetLeft;
+      } else if (targetRight >
+          selectionDataStore.scrollOffsetY + horizontalViewport) {
+        saveSelection = true;
+        selectionDataStore.scrollOffsetY =
+            targetRight - horizontalViewport;
+        updateRowColCount(true, visibleWidth: targetRight);
+      } else {
+        scroll = false;
+      }
+
+      if (scroll) {
+        isProgrammaticScroll = safelyScroll(
+          horizontalController,
+          selectionDataStore.scrollOffsetY,
+          true,
+          isProgrammaticScroll,
+        );
+      }
+    }
+    if (saveSelection) {
+      selectionDataStore.saveSelection();
+    }
+    return isProgrammaticScroll;
+  }
+  
+  bool safelyScroll(ScrollController controller, double offset, bool animate, bool isProgrammaticScroll) {
+    final double clampedOffset = max(offset, 0);
+
+    if (animate) {
+      isProgrammaticScroll = true;
+      controller.animateTo(
+        clampedOffset,
+        duration: const Duration(
+          milliseconds: SpreadsheetConstants.animationDurationMs,
+        ),
+        curve: Curves.easeOut,
+      );
+      Future.delayed(
+        const Duration(milliseconds: SpreadsheetConstants.animationDurationMs),
+        () {
+          isProgrammaticScroll = false;
+        },
+      );
+    } else {
+      controller.jumpTo(clampedOffset);
+    }
+    return isProgrammaticScroll;
   }
 }

@@ -23,12 +23,4 @@ class HistoryManager extends ChangeNotifier {
       notifyListeners();
     });
   }
-
-  void moveInUpdateHistory(int direction) {
-    final List<UpdateData> updates = historyController.moveInUpdateHistory(direction);
-    if (updates.isNotEmpty) {
-      sheetDataController.update(updates);
-      sortService.calculate(loadedSheetsDataStore.currentSheetId);
-    }
-  }
 }

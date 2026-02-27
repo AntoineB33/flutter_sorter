@@ -5,7 +5,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_re
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sort_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sort/sort_usecase.dart';
 
 class IsolateService {
   Isolate? _isolateB;

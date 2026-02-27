@@ -10,9 +10,7 @@ SheetData _$SheetDataFromJson(Map<String, dynamic> json) => SheetData(
       sheetContent:
           SheetContent.fromJson(json['sheetContent'] as Map<String, dynamic>),
       updateHistories: (json['updateHistories'] as List<dynamic>)
-          .map((e) => (e as List<dynamic>)
-              .map((e) => UpdateData.fromJson(e as Map<String, dynamic>))
-              .toList())
+          .map((e) => UpdateData.fromJson(e as Map<String, dynamic>))
           .toList(),
       historyIndex: (json['historyIndex'] as num).toInt(),
       rowsBottomPos: (json['rowsBottomPos'] as List<dynamic>)
@@ -29,20 +27,21 @@ SheetData _$SheetDataFromJson(Map<String, dynamic> json) => SheetData(
           (json['colsManuallyAdjustedWidth'] as List<dynamic>)
               .map((e) => e as bool)
               .toList(),
+      sheetName: json['sheetName'] as String,
       colHeaderHeight: (json['colHeaderHeight'] as num).toDouble(),
       rowHeaderWidth: (json['rowHeaderWidth'] as num).toDouble(),
     );
 
 Map<String, dynamic> _$SheetDataToJson(SheetData instance) => <String, dynamic>{
       'sheetContent': instance.sheetContent.toJson(),
-      'updateHistories': instance.updateHistories
-          .map((e) => e.map((e) => e.toJson()).toList())
-          .toList(),
+      'updateHistories':
+          instance.updateHistories.map((e) => e.toJson()).toList(),
       'historyIndex': instance.historyIndex,
       'rowsBottomPos': instance.rowsBottomPos,
       'colRightPos': instance.colRightPos,
       'rowsManuallyAdjustedHeight': instance.rowsManuallyAdjustedHeight,
       'colsManuallyAdjustedWidth': instance.colsManuallyAdjustedWidth,
+      'sheetName': instance.sheetName,
       'colHeaderHeight': instance.colHeaderHeight,
       'rowHeaderWidth': instance.rowHeaderWidth,
     };

@@ -1,3 +1,8 @@
+import 'dart:io';
+
+import 'package:fpdart/fpdart.dart';
+import 'package:trying_flutter/core/error/exceptions.dart';
+import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
@@ -12,85 +17,195 @@ class SheetRepositoryImpl implements SheetRepository {
   SheetRepositoryImpl(this.dataSource);
 
   @override
-  Future<SelectionData> getLastSelection() async {
-    return await dataSource.getLastSelection();
+  Future<Either<Failure, SelectionData>> getLastSelection() async {
+    try {
+      final selection = await dataSource.getLastSelection();
+      return Right(selection);
+    } on CacheNotFoundException {
+      return Left(CacheNotFoundFailure());
+    } on CacheParsingException catch (e) {
+      return Left(CacheParsingFailure(e.e));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.e));
+    }
   }
 
   @override
-  Future<void> saveLastSelection(SelectionData selection) async {
-    await dataSource.saveLastSelection(selection);
+  Future<Either<CacheFailure, void>> saveLastSelection(SelectionData selection) async {
+    try {
+      await dataSource.saveLastSelection(selection);
+      return Right(null);
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.e));
+    }
   }
 
   @override
-  Future<List<String>> recentSheetIds() async {
-    return await dataSource.recentSheetIds();
+  Future<Either<Failure, List<String>>> recentSheetIds() async {
+    try {
+      final sheetIds = await dataSource.recentSheetIds();
+      return Right(sheetIds);
+    } on CacheParsingException catch (e) {
+      return Left(CacheParsingFailure(e.e));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.e));
+    }
   }
 
   @override
-  Future<void> saveRecentSheetIds(List<String> sheetIds) async {
-    await dataSource.saveRecentSheetIds(sheetIds);
+  Future<Either<Failure, void>> saveRecentSheetIds(List<String> sheetIds) async {
+    try {
+      await dataSource.saveRecentSheetIds(sheetIds);
+      return Right(null);
+    } on FileNotFoundException catch (e) {
+      return Left(FileNotFoundFailure(e.e));
+    } on CacheParsingException catch (e) {
+      return Left(CacheParsingFailure(e.e));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.e));
+    }
   }
 
   @override
-  Future<SheetData> loadSheet(String sheetName) async {
-    return await dataSource.getSheet(sheetName);
+  Future<Either<Failure, SheetData>> loadSheet(String sheetName) async {
+    try {
+      final sheet = await dataSource.getSheet(sheetName);
+      return Right(sheet);
+    } on CacheParsingException catch (e) {
+      return Left(CacheParsingFailure(e.e));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.e));
+    }
   }
 
   @override
-  Future<void> updateSheet(String sheetName, SheetData sheet) async {
-    return await dataSource.saveSheet(sheetName, sheet);
+  Future<Either<Failure, void>> updateSheet(String sheetName, SheetData sheet) async {
+    try {
+      await dataSource.saveSheet(sheetName, sheet);
+      return Right(null);
+    } on FileNotFoundException catch (e) {
+      return Left(FileNotFoundFailure(e.e));
+    } on CacheParsingException catch (e) {
+      return Left(CacheParsingFailure(e.e));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.e));
+    }
   }
 
   @override
-  Future<Map<String, SelectionData>> getAllLastSelected() async {
-    return await dataSource.getAllLastSelected();
+  Future<Either<Failure, Map<String, SelectionData>>> getAllLastSelected() async {
+    try {
+      final cells = await dataSource.getAllLastSelected();
+      return Right(cells);
+    } on FileNotFoundException catch (e) {
+      return Left(FileNotFoundFailure(e.e));
+    } on CacheParsingException catch (e) {
+      return Left(CacheParsingFailure(e.e));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.e));
+    }
   }
 
   @override
-  Future<void> saveAllLastSelected(Map<String, SelectionData> cells) async {
-    await dataSource.saveAllLastSelected(cells);
+  Future<Either<Failure, void>> saveAllLastSelected(Map<String, SelectionData> cells) async {
+    try {
+      await dataSource.saveAllLastSelected(cells);
+      return Right(null);
+    } on CacheParsingException catch (e) {
+      return Left(CacheParsingFailure(e.e));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.e));
+    }
   }
 
   @override
-  Future<Map<String, SortStatus>> getAllSortStatus() async {
-    return await dataSource.getAllSortStatus();
+  Future<Either<Failure, Map<String, SortStatus>>> getAllSortStatus() async {
+    try {
+      final sortStatus = await dataSource.getAllSortStatus();
+      return Right(sortStatus);
+    } on FileNotFoundException catch (e) {
+      return Left(FileNotFoundFailure(e.e));
+    } on CacheParsingException catch (e) {
+      return Left(CacheParsingFailure(e.e));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.e));
+    }
   }
 
   @override
-  Future<void> saveAllSortStatus(
+  Future<Either<Failure, void>> saveAllSortStatus(
     Map<String, SortStatus> sortStatusBySheet,
   ) async {
-    await dataSource.saveAllSortStatus(sortStatusBySheet);
+    try {
+      await dataSource.saveAllSortStatus(sortStatusBySheet);
+      return Right(null);
+    } on CacheParsingException catch (e) {
+      return Left(CacheParsingFailure(e.e));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.e));
+    }
   }
 
   @override
-  Future<AnalysisResult> getAnalysisResult(String sheetName) async {
-    return await dataSource.getAnalysisResult(sheetName);
+  Future<Either<Failure, AnalysisResult>> getAnalysisResult(String sheetName) async {
+    try {
+      final result = await dataSource.getAnalysisResult(sheetName);
+      return Right(result);
+    } on FileSystemException catch (e) {
+      return Left(FileNotFoundFailure(e));
+    } on CacheParsingException catch (e) {
+      return Left(CacheParsingFailure(e.e));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.e));
+    }
   }
 
   @override
-  Future<void> saveAnalysisResult(
+  Future<Either<Failure, void>> saveAnalysisResult(
     String sheetName,
     AnalysisResult result,
   ) async {
-    await dataSource.saveAnalysisResult(sheetName, result);
+    try {
+      await dataSource.saveAnalysisResult(sheetName, result);
+      return Right(null);
+    } on CacheParsingException catch (e) {
+      return Left(CacheParsingFailure(e.e));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.e));
+    }
   }
 
   @override
-  Future<SortProgressData> getSortProgression(String sheetName) async {
-    return await dataSource.getSortProgression(sheetName);
+  Future<Either<Failure, SortProgressData>> getSortProgression(String sheetName) async {
+    try {
+      final progress = await dataSource.getSortProgression(sheetName);
+      return Right(progress);
+    } on FileNotFoundException catch (e) {
+      return Left(FileNotFoundFailure(e.e));
+    } on CacheParsingException catch (e) {
+      return Left(CacheParsingFailure(e.e));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.e));
+    }
   }
 
   @override
-  Future<void> saveSortProgression(
+  Future<Either<Failure, void>> saveSortProgression(
     String sheetName,
     SortProgressData progress,
   ) async {
-    await dataSource.saveSortProgression(sheetName, progress);
+    try {
+      await dataSource.saveSortProgression(sheetName, progress);
+      return Right(null);
+    } on CacheParsingException catch (e) {
+      return Left(CacheParsingFailure(e.e));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.e));
+    }
   }
 
   @override
   Future<void> clearAllData() async {
-    await dataSource.clearAllData();
+    return await dataSource.clearAllData();
   }
 }

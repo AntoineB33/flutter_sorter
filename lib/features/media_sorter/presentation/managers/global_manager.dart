@@ -6,10 +6,10 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.
 import 'package:trying_flutter/features/media_sorter/data/repositories/sheet_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/get_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_manager.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_service.dart';
+import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data/sheet_data_manager.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';

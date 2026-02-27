@@ -10,29 +10,39 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_re
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/sorting_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/get_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/parse_paste_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/parse_paste_data_usecase.dart';
 import 'dart:async';
 
-import 'package:trying_flutter/features/media_sorter/domain/usecases/save_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sort_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sort/sort_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/logic/services/isolate_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/sort_status_data_store.dart';
 import 'package:trying_flutter/utils/logger.dart';
+import 'package:uuid/uuid.dart';
 
 class SortController extends ChangeNotifier {
   final ManageWaitingTasks<void> _saveSortStatusExecutor =
-      ManageWaitingTasks<void>();
+      ManageWaitingTasks<void>(Duration(milliseconds: SpreadsheetConstants.saveAllSortStatusDelayMs));
+  
+  final SheetDataController sheetDataController;
 
   final SaveSheetDataUseCase _saveSheetDataUseCase;
   final GetSheetDataUseCase _getSheetDataUseCase;
+
+  final SortStatusDataStore sortStatusDataStore;
+  final AnalysisDataStore analysisDataStore;
+  final LoadedSheetsDataStore loadedSheetsDataStore;
 
   final CalculationService calculationService = CalculationService();
 
@@ -41,6 +51,7 @@ class SortController extends ChangeNotifier {
       content.table.isNotEmpty ? content.table[0].length : 0;
 
   SortController(
+    this.sheetDataController,
     this._getSheetDataUseCase,
     this._saveSheetDataUseCase,
     this.sortStatusDataStore,
@@ -61,10 +72,13 @@ class SortController extends ChangeNotifier {
       await _saveSheetDataUseCase.saveAllSortStatus(
         sortStatusDataStore.sortStatusBySheet,
       );
-      await Future.delayed(
-        Duration(milliseconds: SpreadsheetConstants.saveAllSortStatusDelayMs),
-      );
     });
+  }
+
+  @override
+  void dispose() {
+    _saveSortStatusExecutor.dispose();
+    super.dispose();
   }
 
   Future<void> saveSortProgression(
@@ -79,11 +93,9 @@ class SortController extends ChangeNotifier {
   }
 
   void sortResult(
-    Map<String, AnalysisResult> analysisResults,
-    String currentSheetName,
     List<int> sortOrder,
   ) {
-    AnalysisResult result = analysisResults[currentSheetName]!;
+    AnalysisResult result = analysisDataStore.currentSheetAnalysisResult;
     int rowCount = result.tableToAtt.length;
     if (rowCount == 0) {
       return;
@@ -174,7 +186,7 @@ class SortController extends ChangeNotifier {
 
   void sortMedia(String name) {
     List<int> sortOrder = [0];
-    AnalysisResult result = analysisResults[currentSheetName]!;
+    AnalysisResult result = analysisDataStore.currentSheetAnalysisResult;
     List<int> stack = result.currentBestSort!
         .asMap()
         .entries
@@ -182,7 +194,7 @@ class SortController extends ChangeNotifier {
         .toList()
         .reversed
         .toList();
-    final table = sheet.sheetContent.table;
+    final table = loadedSheetsDataStore.currentSheet.sheetContent.table;
     List<int> added = List.filled(table.length, 0);
     for (int i in stack) {
       added[i] = 1;
@@ -217,8 +229,8 @@ class SortController extends ChangeNotifier {
       }
     }
     List<List<String>> sortedTable = sortOrder.map((i) => table[i]).toList();
-    for (int rowId = 1; rowId < rowCount(sheet.sheetContent); rowId++) {
-      for (int colId = 0; colId < colCount(sheet.sheetContent); colId++) {
+    for (int rowId = 1; rowId < rowCount(loadedSheetsDataStore.currentSheet.sheetContent); rowId++) {
+      for (int colId = 0; colId < colCount(loadedSheetsDataStore.currentSheet.sheetContent); colId++) {
         if (result.formatedTable[rowId][colId].integers.isEmpty) {
           continue;
         }
@@ -243,27 +255,17 @@ class SortController extends ChangeNotifier {
     for (int rowId = 1; rowId < sortedTable.length; rowId++) {
       for (int colId = 0; colId < sortedTable[rowId].length; colId++) {
         updates.add(
-          CellUpdate(row: rowId, col: colId, value: sortedTable[rowId][colId]),
+          CellUpdate(rowId, colId, sortedTable[rowId][colId], loadedSheetsDataStore.getCellContent(rowId, colId)),
         );
       }
     }
-    sortResult(analysisResults, currentSheetName, sortOrder);
-    setTable(
-      sheet,
-      analysisResults,
-      lastSelectionBySheet,
-      getSortStatus(currentSheetName),
-      row1ToScreenBottomHeight,
-      colBToScreenRightWidth,
-      currentSheetName,
-      updates,
-      toCalculate: false,
-    );
+    sortResult(sortOrder);
+    sheetDataController.update(UpdateData(Uuid().v4(), DateTime.now(), updates), false);
   }
 
   bool sortToggleAvailable() {
     if (sortStatusDataStore.containsSheet(
-      loadedSheetsDataStore.currentSheetName,
+      loadedSheetsDataStore.currentSheetId,
     )) {
       return (!sortStatusDataStore.currentSortStatus.resultCalculated &&
               analysisDataStore
