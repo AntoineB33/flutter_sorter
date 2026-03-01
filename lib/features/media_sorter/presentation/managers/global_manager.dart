@@ -8,9 +8,9 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_manager.dart';
+import 'package:trying_flutter/features/media_sorter/application/coordinators/history_coordinator.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data/sheet_data_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data/sheet_data_manager.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
@@ -24,20 +24,18 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_conte
 import 'package:trying_flutter/features/media_sorter/domain/entities/spreadsheet_scroll_request.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection/selection_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort/sort_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree/tree_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/history_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/managers/spreadsheet_keyboard_delegate.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart'; // Import AnalysisResult
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_stream_controller.dart';
 
-
-
 class GlobalManager extends ChangeNotifier {
-  final HistoryManager historyManager;
+  final HistoryCoordinator historyManager;
   final SheetDataManager sheetDataManager;
   final SelectionController selectionController;
   final SortController sortController;
@@ -46,8 +44,18 @@ class GlobalManager extends ChangeNotifier {
   final SpreadsheetKeyboardDelegate spreadsheetKeyboardDelegate;
   final WorkbookController workbookController;
   final SpreadsheetStreamController spreadsheetStreamController;
-  
-  GlobalManager(this.historyManager, this.sheetDataManager, this.selectionController, this.sortController, this.treeController, this.gridController, this.spreadsheetKeyboardDelegate, this.workbookController, this.spreadsheetStreamController) {
+
+  GlobalManager(
+    this.historyManager,
+    this.sheetDataManager,
+    this.selectionController,
+    this.sortController,
+    this.treeController,
+    this.gridController,
+    this.spreadsheetKeyboardDelegate,
+    this.workbookController,
+    this.spreadsheetStreamController,
+  ) {
     historyManager.addListener(() {
       notifyListeners();
     });
@@ -67,6 +75,4 @@ class GlobalManager extends ChangeNotifier {
       notifyListeners();
     });
   }
-
-  
 }

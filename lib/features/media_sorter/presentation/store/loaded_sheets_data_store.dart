@@ -34,8 +34,4 @@ class LoadedSheetsDataStore {
     }
     return ColumnType.attributes;
   }
-
-  void dispose() {
-    _updateController.close();
-  }
 }

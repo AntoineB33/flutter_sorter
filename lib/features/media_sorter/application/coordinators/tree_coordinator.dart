@@ -2,16 +2,16 @@ import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection/selection_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree/tree_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
 
-class TreeManager extends ChangeNotifier {
+class TreeCoordinator extends ChangeNotifier {
   final AnalysisDataStore analysisDataStore;
   final TreeController treeController;
   final SelectionController selectionController;
 
-  TreeManager(this.analysisDataStore, this.treeController, this.selectionController) {
+  TreeCoordinator(this.analysisDataStore, this.treeController, this.selectionController) {
     treeController.addListener(() {
       notifyListeners();
     });

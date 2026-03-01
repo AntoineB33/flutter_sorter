@@ -16,8 +16,6 @@ class SelectionDataStore extends ChangeNotifier {
   Point<int> get primarySelectedCell => selection.primarySelectedCell;
   double get scrollOffsetX => selection.scrollOffsetX;
   double get scrollOffsetY => selection.scrollOffsetY;
-  int get tableViewRows => selection.tableViewRows;
-  int get tableViewCols => selection.tableViewCols;
   bool get editingMode => selection.editingMode;
 
   set scrollOffsetX(double value) {
@@ -26,14 +24,6 @@ class SelectionDataStore extends ChangeNotifier {
 
   set scrollOffsetY(double value) {
     selection.scrollOffsetY = value;
-  }
-
-  set tableViewRows(int value) {
-    selection.tableViewRows = value;
-  }
-
-  set tableViewCols(int value) {
-    selection.tableViewCols = value;
   }
 
   SelectionDataStore(this.loadedSheetsDataStore);

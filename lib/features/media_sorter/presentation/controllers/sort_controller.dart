@@ -3,6 +3,7 @@ import 'dart:isolate';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:trying_flutter/features/media_sorter/domain/services/sort_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
@@ -15,7 +16,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/sorting_service.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/sorting_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/parse_paste_data_usecase.dart';
@@ -23,8 +24,8 @@ import 'dart:async';
 
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sort/sort_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data/sheet_data_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/services/isolate_service.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/isolate_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/sort_status_data_store.dart';
@@ -40,6 +41,8 @@ class SortController extends ChangeNotifier {
   final SaveSheetDataUseCase _saveSheetDataUseCase;
   final GetSheetDataUseCase _getSheetDataUseCase;
 
+  final SortService sortingService;
+
   final SortStatusDataStore sortStatusDataStore;
   final AnalysisDataStore analysisDataStore;
   final LoadedSheetsDataStore loadedSheetsDataStore;
@@ -54,6 +57,7 @@ class SortController extends ChangeNotifier {
     this.sheetDataController,
     this._getSheetDataUseCase,
     this._saveSheetDataUseCase,
+    this.sortingService,
     this.sortStatusDataStore,
     this.loadedSheetsDataStore,
     this.analysisDataStore,
@@ -62,8 +66,10 @@ class SortController extends ChangeNotifier {
   }
 
   Future<void> loadAllSortStatus() async {
-    sortStatusDataStore.loadAllSortStatus(
-      await _saveSheetDataUseCase.repository.getAllSortStatus(),
+    final result = await _saveSheetDataUseCase.repository.getAllSortStatus();
+    result.fold(
+      (failure) => logger.e("Failed to load sort status: $failure"),
+      (sortStatusMap) => sortStatusDataStore.loadAllSortStatus(sortStatusMap),
     );
   }
 
@@ -86,10 +92,6 @@ class SortController extends ChangeNotifier {
     SortProgressData data,
   ) async {
     await _saveSheetDataUseCase.saveSortProgression(sheetName, data);
-  }
-
-  bool lightCalculations(AnalysisResult result) {
-    return false;
   }
 
   void sortResult(
@@ -282,49 +284,60 @@ class SortController extends ChangeNotifier {
   void sortToggle() {
     if (!sortStatusDataStore.currentSortStatus.resultCalculated) {
       sortStatusDataStore.updateSortStatus(
-        loadedSheetsDataStore.currentSheetName,
+        loadedSheetsDataStore.currentSheetId,
         (status) {
           status.toSort = true;
         },
       );
     } else {
-      sortMedia(loadedSheetsDataStore.currentSheetName);
+      sortMedia(loadedSheetsDataStore.currentSheetId);
     }
   }
 
   void findBestSortCurrentSheet(bool sortTable) {
-    findBestSortToggle(loadedSheetsDataStore.currentSheetName, sortTable);
+    findBestSortToggle(loadedSheetsDataStore.currentSheetId, sortTable);
   }
 
-  Future<void> findBestSortToggle(String sheetName, bool sortTable) async {
-    SortStatus sortStatus = sortStatusDataStore.getSortStatus(sheetName);
+  Future<void> findBestSortToggle(String sheetId, bool sortTable) async {
+    SortStatus sortStatus = sortStatusDataStore.getSortStatus(sheetId);
     if (sortStatus.isFindingBestSort) {
       if (sortStatus.sortWhileFindingBestSort != sortTable) {
-        sortStatusDataStore.updateSortStatus(sheetName, (status) {
+        sortStatusDataStore.updateSortStatus(sheetId, (status) {
           status.sortWhileFindingBestSort = sortTable;
         });
       } else {
-        sortStatusDataStore.updateSortStatus(sheetName, (status) {
+        sortingService.cancelFindingBestSort(sheetId);
+        sortStatusDataStore.updateSortStatus(sheetId, (status) {
           status.isFindingBestSort = false;
         });
       }
     } else {
-      sortStatusDataStore.updateSortStatus(sheetName, (status) {
+      sortStatusDataStore.updateSortStatus(sheetId, (status) {
         status.isFindingBestSort = true;
         status.sortWhileFindingBestSort = sortTable;
       });
     }
     if (!sortStatus.resultCalculated) {
-      await calculate(sheetName);
+      await for (final solution in sortingService.findBestSort(sheetId)) {
+        analysisDataStore.updateResults(sheetId, (result) {
+          result.bestMediaSortOrder = solution.sortedIds!;
+        });
+      }
     }
     if (sortStatus.resultCalculated) {
-      findBestSortToggleFunc(sheetName);
+      findBestSortToggleFunc(sheetId);
     }
   }
 
-  Future<void> findBestSortToggleFunc(String sheetName) async {
-    final service = PythonSortingService();
-
+  Future<void> findBestSortToggleFunc(String sheetId) async {
+    await for (final yieldedResult in sortingService.findBestSort()) {
+      
+      // 2. This block runs every time the service yields a new result
+      print('Received yielded result: $yieldedResult');
+      
+      // TODO: Update your state (e.g., notifyListeners(), emit(state), etc.)
+      // so the UI reflects the newly yielded result.
+    }
     try {
       // await for pauses the execution of this function
       // until the stream is closed by the server.
@@ -333,14 +346,14 @@ class SortController extends ChangeNotifier {
         analysisDataStore.myRules,
         groupsToMaximize: analysisDataStore.groupsToMaximize,
       )) {
-        if (!sortStatusDataStore.getSortStatus(sheetName).isFindingBestSort) {
+        if (!sortStatusDataStore.getSortStatus(sheetId).isFindingBestSort) {
           // If the user has toggled off the "finding best sort" mode, we should stop processing results.
           break;
         }
-        analysisDataStore.updateResults(sheetName, (result) {
+        analysisDataStore.updateResults(sheetId, (result) {
           result.bestMediaSortOrder = solution.sortedIds!;
         });
-        sortMedia(sheetName);
+        sortMedia(sheetId);
       }
     } catch (error) {
       result.errorRoot.newChildren!.add(

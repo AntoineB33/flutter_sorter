@@ -13,7 +13,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_conte
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/sorting_service.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/sorting_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/parse_paste_data_usecase.dart';
@@ -21,12 +21,11 @@ import 'dart:async';
 
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sort/sort_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/logic/services/isolate_service.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/isolate_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/sort_status_data_store.dart';
 import 'package:trying_flutter/utils/logger.dart';
-
 
 class SortService {
   final AnalysisDataStore analysisDataStore;
@@ -35,12 +34,13 @@ class SortService {
   final Map<String, IsolateService> _isolateServices = {};
 
   SortService(
-    this._getSheetDataUseCase,
-    this._saveSheetDataUseCase,
     this.sortStatusDataStore,
     this.loadedSheetsDataStore,
     this.analysisDataStore,
-  ) {
+  );
+
+  bool lightCalculations(AnalysisResult result) {
+    return false;
   }
 
   Future<void> calculate(String name) async {
@@ -68,8 +68,10 @@ class SortService {
     sortStatus = sortStatusDataStore.getSortStatus(name);
     if (!sortStatus.validSortFound) {
       try {
-        SortingResponse? response = await _isolateServices[name]!
-            .runHeavyCalculationC(result);
+        SortingResponse? response = await _isolateServices[name]!.findBestSort(
+          result,
+          false,
+        );
         if (response != null) {
           analysisDataStore.getAnalysisResult(name).sorted =
               response.isNaturalOrderValid;
@@ -97,6 +99,21 @@ class SortService {
           ),
         );
       }
+    }
+  }
+
+  void cancelFindingBestSort(String sheetId) {
+    if (_isolateServices.containsKey(sheetId)) {
+      _isolateServices[sheetId]!.cancelC();
+    }
+  }
+
+  Stream<SortingResponse> findBestSort(String sheetId) async* {
+    if (!_isolateServices.containsKey(sheetId)) {
+      _isolateServices[sheetId] = IsolateService();
+    }
+    await for (final solution in _isolateServices[sheetId]!.findBestSort()) {
+      yield solution;
     }
   }
 

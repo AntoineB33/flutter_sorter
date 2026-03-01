@@ -4,21 +4,14 @@ part 'sort_progress_data.g.dart';
 
 @JsonSerializable()
 class SortProgressData {
-  // Note: It's generally best practice to make entity fields 'final' 
-  // unless you specifically need to mutate them directly.
-  final List<int> choicesMade;
+  List<List<int>> possibleIntsById;
+  final List<int> cursors;
   final List<int> bestDistFound;
 
-  SortProgressData({
-    required this.choicesMade,
-    required this.bestDistFound,
-  });
+  SortProgressData({required this.possibleIntsById, required this.cursors, required this.bestDistFound});
 
   factory SortProgressData.empty() {
-    return SortProgressData(
-      choicesMade: [],
-      bestDistFound: [],
-    );
+    return SortProgressData(possibleIntsById: [], cursors: [], bestDistFound: []);
   }
 
   factory SortProgressData.fromJson(Map<String, dynamic> json) =>

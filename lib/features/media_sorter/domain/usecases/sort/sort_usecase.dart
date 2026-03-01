@@ -151,11 +151,11 @@ class SortUsecase {
   }
 
   /// Main solver function using backtracking.
-  static SortingResponse solveSorting((SendPort, Map<int, Map<int, List<SortingRule>>>, List<List<int>>, int) args) {
+  static void solveSorting((SendPort, Map<int, Map<int, List<SortingRule>>>, List<List<int>>, List<int>, int) args) {
     // Destructure the record back into individual variables for easy use
-    final (sendPort, rules, validAreas, n) = args;
+    final (sendPort, rules, validAreas, bestDistFound, n) = args;
     
-    List<int>? sortedList = List.filled(n, -1);
+    List<int> sortedList = List.filled(n, -1);
     List<List<int>> possibleIntsById = List.generate(n, (_) => []);
     List<int> cursors = List.filled(n, 0);
     
@@ -164,7 +164,7 @@ class SortUsecase {
     validAreasById[0] = validAreas;
 
     int id = 0;
-    while (id >= 0 && id < n) {
+    while (id >= 0) {
       possibleIntsById[id] = getValidStarters(n, id, validAreasById[id]);
       
       bool found = false;
@@ -198,31 +198,48 @@ class SortUsecase {
           break; 
         }
       }
-
+      if (found) {
+        List<int> newDist = getDist();
+        int comparison = compareDist(bestDistFound, newDist, id);
+        if (comparison == -1) {
+          found = false;
+        } else if (id == n) {
+          if (comparison == 1) {
+            bool isNaturalOrderValid = true;
+            if (bestDistFound.isEmpty) {
+              for (int k = 0; k < sortedList.length; k++) {
+                if (sortedList[k] != k) {
+                  isNaturalOrderValid = false;
+                  break;
+                }
+              }
+            }
+            bestDistFound.setAll(0, newDist);
+            sendPort.send(SortingResponse(sortedIds: sortedList, isNaturalOrderValid: isNaturalOrderValid));
+          } else {
+            found = false;
+          }
+        }
+      }
       if (!found) {
-        // Backtrack
-        cursors[id] = 0; // Reset cursor for this level (optional depending on logic)
         id -= 1;
-        // In a robust backtracking implementation, we would increment the cursor of the 
-        // previous level here to ensure we don't retry the same failing option.
         if (id >= 0) {
           cursors[id]++; 
         }
       }
     }
-    bool isNaturalOrderValid = true;
-    for (int k = 0; k < sortedList!.length; k++) {
-      if (sortedList[k] == -1) {
-        sortedList = null;
-        break;
-      }
-      if (sortedList[k] != k) {
-        isNaturalOrderValid = false;
-        break;
-      }
+    if (bestDistFound.isEmpty) {
+      sendPort.send(SortingResponse(sortedIds: null, isNaturalOrderValid: false));
     }
-
-
-    return SortingResponse(sortedIds: sortedList, isNaturalOrderValid: isNaturalOrderValid);
   }
+
+  static List<int> getDist() {
+    return;
+  }
+
+  // Returns 1 if distNew is better, -1 if distRef is better, 0 if equal.
+  static int compareDist(List<int> distRef, List<int> distNew, int id) {
+    return;
+  }
+
 }

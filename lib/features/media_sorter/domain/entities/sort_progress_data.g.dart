@@ -8,7 +8,7 @@ part of 'sort_progress_data.dart';
 
 SortProgressData _$SortProgressDataFromJson(Map<String, dynamic> json) =>
     SortProgressData(
-      choicesMade: (json['choicesMade'] as List<dynamic>)
+      cursors: (json['choicesMade'] as List<dynamic>)
           .map((e) => (e as num).toInt())
           .toList(),
       bestDistFound: (json['bestDistFound'] as List<dynamic>)
@@ -18,6 +18,6 @@ SortProgressData _$SortProgressDataFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$SortProgressDataToJson(SortProgressData instance) =>
     <String, dynamic>{
-      'choicesMade': instance.choicesMade,
+      'choicesMade': instance.cursors,
       'bestDistFound': instance.bestDistFound,
     };

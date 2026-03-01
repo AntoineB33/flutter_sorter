@@ -2,12 +2,11 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/spreadsheet_scroll_request.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection/selection_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data/sheet_data_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/managers/spreadsheet_keyboard_delegate.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
@@ -23,6 +22,12 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 
 class SpreadsheetWidget extends StatefulWidget {
+  final GridController gridController;
+  final WorkbookController workbookController;
+  final SheetDataController dataController;
+  final SelectionController selectionController;
+  final HistoryService historyService;
+
   final SelectionDataStore selectionDataStore;
   final LoadedSheetsDataStore dataStore;
   final SpreadsheetKeyboardDelegate spreadsheetKeyboardDelegate;
@@ -30,6 +35,11 @@ class SpreadsheetWidget extends StatefulWidget {
   // 2. Require it in the constructor
   const SpreadsheetWidget({
     super.key,
+    required this.gridController,
+    required this.workbookController,
+    required this.dataController,
+    required this.selectionController,
+    required this.historyService,
     required this.selectionDataStore,
     required this.dataStore,
     required this.spreadsheetKeyboardDelegate,
@@ -45,11 +55,46 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   final ScrollController _horizontalController = ScrollController();
   StreamSubscription? _scrollSubscription;
   bool _initialLayoutDone = false;
-  bool _isProgrammaticScroll = true;
+  bool _isProgrammaticScroll = false;
 
   @override
   void initState() {
     super.initState();
+    _scrollSubscription = widget.gridController.onScrollEvent.listen((request) async {
+      if (!_verticalController.hasClients || !_horizontalController.hasClients) return;
+      _isProgrammaticScroll = true;
+      List<Future<void>> animations = [];
+
+      if (request.yOffset != null && _verticalController.hasClients) {
+        animations.add(
+          _verticalController.animateTo(
+            request.yOffset!,
+            duration: request.duration,
+            curve: request.curve,
+          )
+        );
+      }
+
+      if (request.xOffset != null && _horizontalController.hasClients) {
+        animations.add(
+          _horizontalController.animateTo(
+            request.xOffset!,
+            duration: request.duration,
+            curve: request.curve,
+          )
+        );
+      }
+
+      // Run both animations at the exact same time and wait for them to finish
+      if (animations.isNotEmpty) {
+        await Future.wait(animations);
+      }
+      
+      // 3. Resets safely ONLY after the animation completes
+      if (mounted) {
+        _isProgrammaticScroll = false;
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -66,8 +111,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<WorkbookController>();
-    final gridController = context.watch<GridController>();
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -75,12 +118,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           _initialLayoutDone = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) {
-              gridController.updateRowColCount(
+              widget.gridController.updateRowColCount(
                 true,
                 visibleHeight:
-                    constraints.maxHeight - controller.sheet.colHeaderHeight,
+                    constraints.maxHeight - widget.workbookController.sheet.colHeaderHeight,
                 visibleWidth:
-                    constraints.maxWidth - controller.sheet.rowHeaderWidth,
+                    constraints.maxWidth - widget.workbookController.sheet.rowHeaderWidth,
               );
             }
           });
@@ -90,7 +133,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           focusNode: _focusNode,
           autofocus: true,
           onKeyEvent: (node, event) {
-            return widget.spreadsheetKeyboardDelegate.handleKeyboard(
+            return widget.spreadsheetKeyboardDelegate.handle(
               context,
               event,
             );
@@ -127,7 +170,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                     builder: (context, child) {
                       return NotificationListener<ScrollNotification>(
                         onNotification: (notification) =>
-                            _handleScrollNotification(notification, controller),
+                            _handleScrollNotification(notification, widget.workbookController, widget.gridController),
                         child: TableView.builder(
                           verticalDetails: ScrollableDetails.vertical(
                             controller: _verticalController,
@@ -137,23 +180,26 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                           ),
                           pinnedRowCount: min(
                             2,
-                            widget.selectionDataStore.tableViewRows + 1,
+                            widget.gridController.tableViewRows + 1,
                           ),
                           pinnedColumnCount: min(
                             2,
-                            widget.selectionDataStore.tableViewCols + 1,
+                            widget.gridController.tableViewCols + 1,
                           ),
-                          rowCount: widget.selectionDataStore.tableViewRows + 1,
+                          rowCount: widget.gridController.tableViewRows + 1,
                           columnCount:
-                              widget.selectionDataStore.tableViewCols + 1,
+                              widget.gridController.tableViewCols + 1,
                           columnBuilder: (index) => _buildColumnSpan(index),
                           rowBuilder: (index) =>
-                              _buildRowSpan(index, controller),
+                              _buildRowSpan(index, widget.workbookController, widget.gridController),
                           cellBuilder: (context, vicinity) =>
                               _buildCellDispatcher(
                                 context,
                                 vicinity,
-                                controller,
+                                widget.workbookController,
+                                widget.dataController,
+                                widget.selectionController,
+                                widget.historyService,
                               ),
                         ),
                       );
@@ -171,21 +217,23 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   bool _handleScrollNotification(
     ScrollNotification notification,
     WorkbookController controller,
-    bool isProgrammaticScroll
+    GridController gridController,
   ) {
     if (notification is ScrollUpdateNotification) {
-      if (isProgrammaticScroll) {
+      if (_isProgrammaticScroll) {
         return false;
       }
       if (notification.metrics.axis == Axis.vertical) {
-        controller.updateRowColCount(
+        gridController.updateRowColCount(
+          true,
           visibleHeight:
               notification.metrics.pixels +
               notification.metrics.viewportDimension -
               controller.sheet.colHeaderHeight,
         );
       } else if (notification.metrics.axis == Axis.horizontal) {
-        controller.updateRowColCount(
+        gridController.updateRowColCount(
+          true,
           visibleWidth:
               notification.metrics.pixels +
               notification.metrics.viewportDimension -
@@ -206,7 +254,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     );
   }
 
-  TableSpan _buildRowSpan(int index, WorkbookController controller) {
+  TableSpan _buildRowSpan(int index, WorkbookController controller, GridController gridController) {
     if (index == 0) {
       return TableSpan(
         extent: FixedTableSpanExtent(controller.sheet.colHeaderHeight),
@@ -214,7 +262,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     }
 
     final int dataRowIndex = index - 1;
-    final double rowHeight = controller.getRowHeight(dataRowIndex);
+    final double rowHeight = gridController.getRowHeight(dataRowIndex);
 
     return TableSpan(extent: FixedTableSpanExtent(rowHeight));
   }
@@ -231,7 +279,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     final int c = vicinity.column;
 
     if (r == 0 && c == 0) {
-      return SpreadsheetSelectAllCorner(onTap: () => controller.selectAll());
+      return SpreadsheetSelectAllCorner(onTap: () => selectionController.selectAll());
     }
     if (r == 0) {
       return SpreadsheetColumnHeader(

@@ -90,7 +90,22 @@ class TreeController extends ChangeNotifier {
     }
   }
 
-  // --- Helper Logic ---
+  
+
+  // Method to allow Controller to toggle expansion
+  void nodeExpansion(
+    NodeStruct node,
+    bool isExpanded,
+  ) {
+    node.isExpanded = isExpanded;
+    for (NodeStruct child in node.newChildren ?? []) {
+      child.isExpanded = false;
+    }
+    populateTree(
+      [node],
+    );
+    notifyListeners();
+  }
 
   void _handleExpansion(NodeStruct node, List<NodeStruct> stack) {
     for (int i = 0; i < node.children.length; i++) {
@@ -245,6 +260,60 @@ class TreeController extends ChangeNotifier {
     if (node.defaultOnTap) {
       node.idOnTap = onTapKey;
       node.defaultOnTap = false;
+    }
+  }
+
+  void onTap(NodeStruct node) {
+    switch (node.idOnTap) {
+      case onTapKey:
+        if (node.rowId != null) {
+          selectionController.setPrimarySelection(
+            currentSheetName,
+            node.rowId!,
+            node.colId ?? 0,
+            false,
+          );
+          return;
+        }
+
+        List<Cell> cells = [];
+        List<MapEntry> entries = [];
+
+        if (node.colId != SpreadsheetConstants.notUsedCst) {
+          entries = result.attToRefFromAttColToCol[node.att]!.entries.toList();
+        }
+
+        if (node.instruction !=
+            SpreadsheetConstants.moveToUniqueMentionSprawlCol) {
+          entries.addAll(
+            result.attToRefFromDepColToCol[node.att]!.entries.toList(),
+          );
+        }
+
+        for (final MapEntry(key: rowId, value: colIds) in entries) {
+          for (final colId in colIds) {
+            cells.add(Cell(rowId: rowId, colId: colId));
+          }
+        }
+        _handleSelectionCycling(
+          selection,
+          lastSelectionBySheet,
+          currentSheetName,
+          node,
+          cells,
+        );
+      case setPrimarySelectionKey:
+        if (node.rowId != null && node.colId != null) {
+          selectionController.setPrimarySelection(
+            currentSheetName,
+            node.rowId!,
+            node.colId!,
+            false,
+          );
+        }
+        break;
+      default:
+        debugPrint("No onTap handler for node: ${node.message}");
     }
   }
 

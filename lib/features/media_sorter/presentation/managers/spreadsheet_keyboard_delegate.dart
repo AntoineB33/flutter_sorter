@@ -7,34 +7,38 @@ import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/history/history_manager.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data/sheet_data_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort/sort_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort/sort_service.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/history_controller.dart';
+import 'package:trying_flutter/features/media_sorter/application/coordinators/history_coordinator.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
+import 'package:trying_flutter/features/media_sorter/application/coordinators/selection_coordinator.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
+import 'package:trying_flutter/features/media_sorter/domain/services/sort_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
 
 class SpreadsheetKeyboardDelegate {
-  final HistoryManager historyManager;
+  final SelectionController selectionController;
+  final SelectionCoordinator selectionCoordinator;
+
+  final HistoryCoordinator historyManager;
 
   final SortService sortService;
 
-   SpreadsheetKeyboardDelegate(this.historyManager, this.sortService);
+  final LoadedSheetsDataStore loadedSheetsDataStore;
+  final SelectionDataStore selectionDataStore;
 
-  KeyEventResult handle(
-    BuildContext context,
-    KeyEvent event,
-    SelectionData selection,
-    bool editingMode,
-    SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    Map<String, SelectionData> lastSelectionBySheet,
-    SortStatus sortStatus,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
-    String currentSheetName,
-  ) {
-    if (editingMode) {
+  SpreadsheetKeyboardDelegate(
+    this.historyManager,
+    this.selectionController,
+    this.selectionCoordinator,
+    this.sortService,
+    this.loadedSheetsDataStore,
+    this.selectionDataStore,
+  );
+
+  KeyEventResult handle(BuildContext context, KeyEvent event) {
+    if (selectionDataStore.editingMode) {
       return KeyEventResult.ignored;
     }
 
@@ -51,48 +55,36 @@ class SpreadsheetKeyboardDelegate {
 
     if (logicalKey == LogicalKeyboardKey.enter ||
         logicalKey == LogicalKeyboardKey.numpadEnter) {
-      startEditing(
-        sheet,
-        analysisResults,
-        lastSelectionBySheet,
-        sortStatus,
-        currentSheetName,
-        row1ToScreenBottomHeight,
-        colBToScreenRightWidth,
-      );
+      selectionController.startEditing();
       return KeyEventResult.handled;
     }
 
     if (logicalKey == LogicalKeyboardKey.arrowUp) {
-      setPrimarySelection(
-        currentSheetName,
-        max(selection.primarySelectedCell.x - 1, 0),
-        selection.primarySelectedCell.y,
+      selectionController.setPrimarySelection(
+        max(selectionController.selection.primarySelectedCell.x - 1, 0),
+        selectionController.selection.primarySelectedCell.y,
         false,
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowDown) {
-      setPrimarySelection(
-        currentSheetName,
-        selection.primarySelectedCell.x + 1,
-        selection.primarySelectedCell.y,
+      selectionController.setPrimarySelection(
+        selectionDataStore.selection.primarySelectedCell.x + 1,
+        selectionDataStore.selection.primarySelectedCell.y,
         false,
       );
-      debugPrint("${selection.primarySelectedCell.x}");
+      debugPrint("${selectionDataStore.selection.primarySelectedCell.x}");
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowLeft) {
-      setPrimarySelection(
-        currentSheetName,
-        selection.primarySelectedCell.x,
-        max(0, selection.primarySelectedCell.y - 1),
+      selectionController.setPrimarySelection(
+        selectionDataStore.selection.primarySelectedCell.x,
+        max(0, selectionDataStore.selection.primarySelectedCell.y - 1),
         false,
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowRight) {
-      setPrimarySelection(
-        currentSheetName,
-        selection.primarySelectedCell.x,
-        selection.primarySelectedCell.y + 1,
+      selectionController.setPrimarySelection(
+        selectionDataStore.selection.primarySelectedCell.x,
+        selectionDataStore.selection.primarySelectedCell.y + 1,
         false,
       );
       return KeyEventResult.handled;
@@ -150,16 +142,7 @@ class SpreadsheetKeyboardDelegate {
         logicalKey.keyId > 32;
 
     if (isPrintable) {
-      startEditing(
-        sheet,
-        analysisResults,
-        lastSelectionBySheet,
-        sortStatus,
-        currentSheetName,
-        row1ToScreenBottomHeight,
-        colBToScreenRightWidth,
-        initialInput: event.character,
-      );
+      selectionCoordinator.startEditing(initialInput: event.character);
       return KeyEventResult.handled;
     }
 

@@ -3,6 +3,7 @@ import 'dart:isolate';
 
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sort/sort_usecase.dart';
@@ -18,7 +19,6 @@ class IsolateService {
 
   IsolateService();
 
-
   void cancelB() {
     if (_isolateB != null) {
       _isolateB!.kill(priority: Isolate.immediate);
@@ -29,6 +29,7 @@ class IsolateService {
       _portB = null;
     }
   }
+
   void cancelC() {
     if (_isolateC != null) {
       // Kill the isolate immediately
@@ -46,10 +47,6 @@ class IsolateService {
     SheetContent sheetContent,
     AnalysisResult result,
   ) async {
-    // Requirements: "If A starts... cancel B if it was running."
-    // This is handled by the Bloc calling cancelB() before A,
-    // but we double check here to ensure clean state.
-
     final receivePort = ReceivePort();
     _portB = receivePort;
 
@@ -59,19 +56,17 @@ class IsolateService {
       result,
     ]);
 
-    // Wait for the first message
-    try {
-      AnalysisReturn analysisReturn = await receivePort.first;
-      return analysisReturn;
-    } catch (e) {
-      // If port closes or isolate killed
-      rethrow;
-    } finally {
-      _isolateB = null; // Cleanup
-    }
+    AnalysisReturn analysisReturn = await receivePort.first;
+    _isolateB = null;
+    return analysisReturn;
   }
 
-  Future<void> runHeavyCalculationC(outputReceiver, Map<int, Map<int, List<SortingRule>>> rules, List<List<int>> validAreas, int n) async {
+  Stream<SortingResponse> findBestSort(
+    Map<int, Map<int, List<SortingRule>>> rules,
+    List<List<int>> validAreas,
+    int n,
+    bool isFindingBestSort,
+  ) async* {
     // 1. Create a ReceivePort to listen for messages from the isolate
     _portC = ReceivePort();
 
@@ -81,9 +76,10 @@ class IsolateService {
     // 3. Spawn the isolate, passing the SendPort so it knows where to send data
     try {
       final arguments = (_portC!.sendPort, rules, validAreas, n);
-      _isolateC = await Isolate.spawn(SortUsecase.solveSorting, arguments);
+    _isolateC = await Isolate.spawn(SortUsecase.solveSorting, arguments);
     } catch (e) {
       cancelC();
     }
   }
+
 }

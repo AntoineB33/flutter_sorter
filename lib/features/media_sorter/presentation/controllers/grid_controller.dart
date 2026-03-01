@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/layout_calculator.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/models/scroll_request.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
@@ -18,12 +20,16 @@ class GridController extends ChangeNotifier {
   // --- states ---
   double row1ToScreenBottomHeight = 0.0;
   double colBToScreenRightWidth = 0.0;
+  int tableViewRows = 0;
+  int tableViewCols = 0;
 
   LoadedSheetsDataStore loadedSheetsDataStore;
   SelectionDataStore selectionDataStore;
 
   final SpreadsheetLayoutCalculator _layoutCalculator =
       SpreadsheetLayoutCalculator();
+  final _scrollEventController = StreamController<ScrollRequest>.broadcast();
+  Stream<ScrollRequest> get onScrollEvent => _scrollEventController.stream;
 
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) =>
@@ -38,8 +44,8 @@ class GridController extends ChangeNotifier {
     double? visibleHeight,
     double? visibleWidth,
   }) {
-    int targetRows = selectionDataStore.tableViewRows;
-    int targetCols = selectionDataStore.tableViewCols;
+    int targetRows = tableViewRows;
+    int targetCols = tableViewCols;
     if (visibleHeight != null) {
       row1ToScreenBottomHeight = visibleHeight;
       targetRows = minRows(
@@ -54,10 +60,10 @@ class GridController extends ChangeNotifier {
         colBToScreenRightWidth,
       );
     }
-    if (targetRows != selectionDataStore.tableViewRows ||
-        targetCols != selectionDataStore.tableViewCols) {
-      selectionDataStore.tableViewRows = targetRows;
-      selectionDataStore.tableViewCols = targetCols;
+    if (targetRows != tableViewRows ||
+        targetCols != tableViewCols) {
+      tableViewRows = targetRows;
+      tableViewCols = targetCols;
       if (notify) {
         notifyListeners();
       }
@@ -78,12 +84,12 @@ class GridController extends ChangeNotifier {
     return rowCount;
   }
 
-  double getRowHeight(SheetData sheet, int row) {
-    if (row < sheet.rowsBottomPos.length) {
+  double getRowHeight(int row) {
+    if (row < currentSheet.rowsBottomPos.length) {
       if (row == 0) {
-        return sheet.rowsBottomPos[0];
+        return currentSheet.rowsBottomPos[0];
       } else {
-        return sheet.rowsBottomPos[row] - sheet.rowsBottomPos[row - 1];
+        return currentSheet.rowsBottomPos[row] - currentSheet.rowsBottomPos[row - 1];
       }
     }
     return GetDefaultSizes.getDefaultRowHeight();
@@ -131,13 +137,13 @@ class GridController extends ChangeNotifier {
     return colCount;
   }
 
-  double getColumnWidth(SheetData sheet, int col) {
+  double getColumnWidth(int col) {
     return getTargetLeft(col + 1) - getTargetLeft(col);
   }
 
-  double calculateRequiredRowHeight(SheetData sheet, String text, int colId) {
+  double calculateRequiredRowHeight(String text, int colId) {
     final double availableWidth =
-        getColumnWidth(sheet, colId) - PageConstants.horizontalPadding;
+        getColumnWidth(colId) - PageConstants.horizontalPadding;
     return _layoutCalculator.calculateRowHeight(text, availableWidth);
   }
 
@@ -154,7 +160,7 @@ class GridController extends ChangeNotifier {
           break;
         }
 
-        double heightItNeeds = calculateRequiredRowHeight(currentSheet, newValue, col);
+        double heightItNeeds = calculateRequiredRowHeight(newValue, col);
 
         if (heightItNeeds > GetDefaultSizes.getDefaultRowHeight() &&
             currentSheet.rowsBottomPos.length <= row) {
@@ -173,10 +179,9 @@ class GridController extends ChangeNotifier {
         if (row < currentSheet.rowsBottomPos.length) {
           if (currentSheet.rowsManuallyAdjustedHeight.length <= row ||
               !currentSheet.rowsManuallyAdjustedHeight[row]) {
-            double currentHeight = getRowHeight(currentSheet, row);
+            double currentHeight = getRowHeight(row);
             if (heightItNeeds < currentHeight) {
               double heightItNeeded = calculateRequiredRowHeight(
-                currentSheet,
                 prevValue,
                 col,
               );
@@ -187,7 +192,6 @@ class GridController extends ChangeNotifier {
                     if (j == col) continue;
                     newHeight = max(
                       calculateRequiredRowHeight(
-                        currentSheet,
                         currentSheet.sheetContent.table[row][j],
                         j,
                       ),
@@ -274,26 +278,22 @@ class GridController extends ChangeNotifier {
   }
 
   /// Calculates offsets and scrolls to ensure the target cell is visible.
-  bool scrollToCell(
-    Point<int> cell,
-    ScrollController verticalController,
-    ScrollController horizontalController,
-    bool isProgrammaticScroll,
+  void scrollToCell(
+    int rowId,
+    int colId,
   ) {
-    if (!verticalController.hasClients || !horizontalController.hasClients) {
-      return isProgrammaticScroll;
-    }
     bool saveSelection = false;
-    if (cell.x > 0) {
+    bool scrollX = true;
+    bool scrollY = true;
+    if (rowId > 0) {
       // Vertical Logic
       final double targetTop =
-          getTargetTop(cell.x) - getTargetTop(1);
-      final double targetBottom = getTargetTop(cell.x + 1);
+          getTargetTop(rowId) - getTargetTop(1);
+      final double targetBottom = getTargetTop(rowId + 1);
       final double verticalViewport =
           verticalController.position.viewportDimension -
           currentSheet.rowHeaderWidth;
 
-      bool scroll = true;
       if (targetTop < verticalController.offset) {
         saveSelection = true;
         selectionDataStore.scrollOffsetX = targetTop;
@@ -303,16 +303,7 @@ class GridController extends ChangeNotifier {
             targetBottom - verticalViewport;
         updateRowColCount(true, visibleHeight: targetBottom);
       } else {
-        scroll = false;
-      }
-
-      if (scroll) {
-        isProgrammaticScroll = safelyScroll(
-          verticalController,
-          selectionDataStore.scrollOffsetX,
-          true,
-          isProgrammaticScroll,
-        );
+        scrollY = false;
       }
     }
 
@@ -326,7 +317,6 @@ class GridController extends ChangeNotifier {
           horizontalController.position.viewportDimension -
           currentSheet.rowHeaderWidth;
 
-      bool scroll = true;
       if (targetLeft < horizontalController.offset) {
         saveSelection = true;
         selectionDataStore.scrollOffsetY = targetLeft;
@@ -337,45 +327,26 @@ class GridController extends ChangeNotifier {
             targetRight - horizontalViewport;
         updateRowColCount(true, visibleWidth: targetRight);
       } else {
-        scroll = false;
+        scrollX = false;
       }
-
-      if (scroll) {
-        isProgrammaticScroll = safelyScroll(
-          horizontalController,
-          selectionDataStore.scrollOffsetY,
-          true,
-          isProgrammaticScroll,
-        );
-      }
+    }
+    if (scrollX || scrollY) {
+      _scrollEventController.add(
+        ScrollRequest(
+          xOffset: scrollX ? selectionDataStore.scrollOffsetY : null,
+          yOffset: scrollY ? selectionDataStore.scrollOffsetX : null,
+        ),
+      );
     }
     if (saveSelection) {
       selectionDataStore.saveSelection();
     }
-    return isProgrammaticScroll;
   }
   
-  bool safelyScroll(ScrollController controller, double offset, bool animate, bool isProgrammaticScroll) {
-    final double clampedOffset = max(offset, 0);
 
-    if (animate) {
-      isProgrammaticScroll = true;
-      controller.animateTo(
-        clampedOffset,
-        duration: const Duration(
-          milliseconds: SpreadsheetConstants.animationDurationMs,
-        ),
-        curve: Curves.easeOut,
-      );
-      Future.delayed(
-        const Duration(milliseconds: SpreadsheetConstants.animationDurationMs),
-        () {
-          isProgrammaticScroll = false;
-        },
-      );
-    } else {
-      controller.jumpTo(clampedOffset);
-    }
-    return isProgrammaticScroll;
+  @override
+  void dispose() {
+    _scrollEventController.close();
+    super.dispose();
   }
 }
