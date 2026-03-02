@@ -4,14 +4,15 @@ part 'sort_progress_data.g.dart';
 
 @JsonSerializable()
 class SortProgressData {
-  List<List<int>> possibleIntsById;
   final List<int> cursors;
+  final List<List<int>> possibleIntsById;
+  final List<List<List<int>>> validAreasById;
   final List<int> bestDistFound;
 
-  SortProgressData({required this.possibleIntsById, required this.cursors, required this.bestDistFound});
+  SortProgressData({required this.possibleIntsById, required this.cursors, required this.bestDistFound, required this.validAreasById});
 
-  factory SortProgressData.empty() {
-    return SortProgressData(possibleIntsById: [], cursors: [], bestDistFound: []);
+  factory SortProgressData.empty(int n) {
+    return SortProgressData(possibleIntsById: List.generate(n, (_) => []), cursors: List.filled(n, 0), bestDistFound: [], validAreasById: List.generate(n + 1, (_) => []));
   }
 
   factory SortProgressData.fromJson(Map<String, dynamic> json) =>

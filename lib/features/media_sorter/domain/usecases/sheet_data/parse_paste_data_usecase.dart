@@ -1,9 +1,9 @@
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:uuid/uuid.dart';
 
 class ParsePasteDataUseCase {
-  final LoadedSheetsDataStore loadedSheetDataStore;
+  final LoadedSheetsCache loadedSheetDataStore;
 
   ParsePasteDataUseCase(this.loadedSheetDataStore);
 
@@ -25,10 +25,6 @@ class ParsePasteDataUseCase {
         );
       }
     }
-    return UpdateData(
-      Uuid().v4(),
-      DateTime.now(),
-      updates,
-    );
+    return UpdateData(Uuid().v4(), DateTime.now(), updates);
   }
 }

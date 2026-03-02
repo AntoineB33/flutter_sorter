@@ -13,10 +13,10 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_conte
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/analysis_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/sort_status_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 
 class TreeController extends ChangeNotifier {
   // --- states ---
@@ -30,10 +30,10 @@ class TreeController extends ChangeNotifier {
 
   final SaveSheetDataUseCase saveSheetDataUseCase;
 
-  final AnalysisDataStore analysisDataStore;
-  final LoadedSheetsDataStore loadedSheetsDataStore;
+  final AnalysisCache analysisDataStore;
+  final LoadedSheetsCache loadedSheetsDataStore;
   final SelectionDataStore selectionDataStore;
-  final SortStatusDataStore sortStatusDataStore;
+  final SortStatusCache sortStatusDataStore;
 
   static const String onTapKey = 'onTapCellSelect';
   static const String setPrimarySelectionKey = 'setPrimarySelection';
@@ -62,16 +62,14 @@ class TreeController extends ChangeNotifier {
     SheetData sheet,
     AnalysisResult result,
   ) {
-    populateTree(
-      [
-        result.errorRoot,
-        result.warningRoot,
-        mentionsRoot,
-        searchRoot,
-        result.categoriesRoot,
-        result.distPairsRoot,
-      ],
-    );
+    populateTree([
+      result.errorRoot,
+      result.warningRoot,
+      mentionsRoot,
+      searchRoot,
+      result.categoriesRoot,
+      result.distPairsRoot,
+    ]);
   }
 
   void populateTree(List<NodeStruct> roots) {
@@ -90,20 +88,13 @@ class TreeController extends ChangeNotifier {
     }
   }
 
-  
-
   // Method to allow Controller to toggle expansion
-  void nodeExpansion(
-    NodeStruct node,
-    bool isExpanded,
-  ) {
+  void nodeExpansion(NodeStruct node, bool isExpanded) {
     node.isExpanded = isExpanded;
     for (NodeStruct child in node.newChildren ?? []) {
       child.isExpanded = false;
     }
-    populateTree(
-      [node],
-    );
+    populateTree([node]);
     notifyListeners();
   }
 

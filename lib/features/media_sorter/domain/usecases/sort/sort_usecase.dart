@@ -1,5 +1,6 @@
 import 'dart:isolate';
 
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 
@@ -151,17 +152,18 @@ class SortUsecase {
   }
 
   /// Main solver function using backtracking.
-  static void solveSorting((SendPort, Map<int, Map<int, List<SortingRule>>>, List<List<int>>, List<int>, int) args) {
+  static void solveSorting((SendPort, Map<int, Map<int, List<SortingRule>>>, SortProgressData) args) {
     // Destructure the record back into individual variables for easy use
-    final (sendPort, rules, validAreas, bestDistFound, n) = args;
+    final (sendPort, rules, sortProgressData) = args;
     
+    int n = sortProgressData.cursors.length;
     List<int> sortedList = List.filled(n, -1);
-    List<List<int>> possibleIntsById = List.generate(n, (_) => []);
+    List<List<int>> possibleIntsById = sortProgressData.possibleIntsById;
     List<int> cursors = List.filled(n, 0);
     
     // validAreasById[id] stores the state of validAreas at that depth
-    List<List<List<int>>> validAreasById = List.generate(n + 1, (_) => []);
-    validAreasById[0] = validAreas;
+    List<List<List<int>>> validAreasById = sortProgressData.validAreasById;
+
 
     int id = 0;
     while (id >= 0) {

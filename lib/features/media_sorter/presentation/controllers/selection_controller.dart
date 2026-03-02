@@ -15,8 +15,8 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/analysis_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
 import 'package:uuid/uuid.dart';
 
@@ -26,11 +26,10 @@ class SelectionController extends ChangeNotifier {
 
   final HistoryService historyService;
 
-  final LoadedSheetsDataStore loadedSheetsDataStore;
-  final AnalysisDataStore analysisStore;
+  final LoadedSheetsCache loadedSheetsDataStore;
+  final AnalysisCache analysisStore;
   final SelectionDataStore selectionDataStore;
   final SortStatus sortStatus;
-
 
   final ManageWaitingTasks<void> _saveLastSelectionExecutor =
       ManageWaitingTasks<void>(Duration(milliseconds: 1000));
@@ -41,8 +40,9 @@ class SelectionController extends ChangeNotifier {
   SheetData get currentSheet => loadedSheetsDataStore.currentSheet;
   SheetContent get currentSheetContent => currentSheet.sheetContent;
   int get rowCount => currentSheetContent.table.length;
-  int get colCount =>
-      currentSheetContent.table.isNotEmpty ? currentSheetContent.table[0].length : 0;
+  int get colCount => currentSheetContent.table.isNotEmpty
+      ? currentSheetContent.table[0].length
+      : 0;
   SelectionData get selection => selectionDataStore.selection;
 
   SelectionController(
@@ -62,8 +62,7 @@ class SelectionController extends ChangeNotifier {
   }
 
   Future<void> getAllLastSelected() async {
-    final result = await _getDataUseCase
-        .getAllLastSelected();
+    final result = await _getDataUseCase.getAllLastSelected();
     result.fold(
       (failure) {
         debugPrint("Error getting all last selected: $failure");
@@ -87,8 +86,7 @@ class SelectionController extends ChangeNotifier {
   }
 
   Future<void> loadLastSelection() async {
-    final result = await _getDataUseCase
-          .getLastSelection();
+    final result = await _getDataUseCase.getLastSelection();
     result.fold(
       (failure) {
         debugPrint("Error getting last selection for current sheet: $failure");
@@ -100,7 +98,7 @@ class SelectionController extends ChangeNotifier {
         selectionDataStore.lastSelectionBySheet[loadedSheetsDataStore
                 .currentSheetId] =
             selection;
-      }
+      },
     );
   }
 
@@ -217,8 +215,13 @@ class SelectionController extends ChangeNotifier {
     bool keepSelection, {
     bool scrollTo = true,
   }) {
-    selectionController.setPrimarySelection(row, col, keepSelection, scrollTo: scrollTo);
-    
+    selectionController.setPrimarySelection(
+      row,
+      col,
+      keepSelection,
+      scrollTo: scrollTo,
+    );
+
     treeController.updateMentionsContext(row, col);
   }
 }

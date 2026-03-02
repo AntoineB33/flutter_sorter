@@ -20,21 +20,21 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/gr
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/sort_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/analysis_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
 import 'package:uuid/uuid.dart';
 
 class SheetDataController extends ChangeNotifier {
   // --- states ---
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
-  
+
   final SheetDataController sheetDataController;
   final HistoryController historyController;
   final GridController gridController;
 
-  final LoadedSheetsDataStore loadedSheetsData;
-  final AnalysisDataStore analysisStore;
+  final LoadedSheetsCache loadedSheetsData;
+  final AnalysisCache analysisStore;
   final SelectionDataStore selectionDataStore;
 
   final SortService sortService;
@@ -57,15 +57,18 @@ class SheetDataController extends ChangeNotifier {
   // --- usecases ---
   final SaveSheetDataUseCase _saveSheetDataUseCase;
 
-  SheetDataController(this.sheetDataController, this.historyController, this.gridController,
+  SheetDataController(
+    this.sheetDataController,
+    this.historyController,
+    this.gridController,
     SaveSheetDataUseCase saveSheetDataUseCase,
     this.loadedSheetsData,
     this.analysisStore,
     this.selectionDataStore,
-     this.sortService,
+    this.sortService,
     this.historyService,
-     this.sheetDataUsecase,
-      this._parsePasteDataUseCase,
+    this.sheetDataUsecase,
+    this._parsePasteDataUseCase,
   ) : _saveSheetDataUseCase = saveSheetDataUseCase;
 
   void scheduleSheetSave(String sheetName) {
@@ -83,14 +86,10 @@ class SheetDataController extends ChangeNotifier {
     );
   }
 
-  void onChanged(
-    String newValue,
-  ) {
+  void onChanged(String newValue) {
     update(
-      UpdateData(
-        Uuid().v4(),
-        DateTime.now(),
-        [CellUpdate(
+      UpdateData(Uuid().v4(), DateTime.now(), [
+        CellUpdate(
           selectionDataStore.primarySelectedCell.x,
           selectionDataStore.primarySelectedCell.y,
           newValue,
@@ -98,8 +97,10 @@ class SheetDataController extends ChangeNotifier {
             selectionDataStore.primarySelectedCell.x,
             selectionDataStore.primarySelectedCell.y,
           ),
-        )],
-      ), false);
+        ),
+      ]),
+      false,
+    );
     notifyListeners();
     scheduleSheetSave(currentSheetName);
     sortService.calculate(currentSheetName);
@@ -135,18 +136,16 @@ class SheetDataController extends ChangeNotifier {
   ) {
     List<UpdateUnit> updates = [];
     for (Point<int> cell in selection.selectedCells) {
-      updates.add(CellUpdate(
-        cell.x,
-        cell.y,
-        '',
-        loadedSheetsData.getCellContent(cell.x, cell.y),
-      ));
+      updates.add(
+        CellUpdate(
+          cell.x,
+          cell.y,
+          '',
+          loadedSheetsData.getCellContent(cell.x, cell.y),
+        ),
+      );
     }
-    UpdateData updateData = UpdateData(
-      Uuid().v4(),
-      DateTime.now(),
-      updates,
-    );
+    UpdateData updateData = UpdateData(Uuid().v4(), DateTime.now(), updates);
     update(updateData, true);
     notifyListeners();
     scheduleSheetSave(currentSheetName);
@@ -154,32 +153,32 @@ class SheetDataController extends ChangeNotifier {
   }
 
   void applyDefaultColumnSequence() {
-    update(UpdateData(Uuid().v4(), DateTime.now(), [
-      ColumnTypeUpdate(
-        1,
-        ColumnType.dependencies,
-        loadedSheetsData.getColumnType(1),
-      ),
-      ColumnTypeUpdate(
-        2,
-        ColumnType.dependencies,
-        loadedSheetsData.getColumnType(2),
-      ),
-      ColumnTypeUpdate(
-        3,
-        ColumnType.dependencies,
-        loadedSheetsData.getColumnType(3),
-      ),
-      ColumnTypeUpdate(
-        7,
-        ColumnType.urls,
-        loadedSheetsData.getColumnType(7),
-      ),
-      ColumnTypeUpdate(
-        8,
-        ColumnType.dependencies,
-        loadedSheetsData.getColumnType(8),
-      )]), true);
+    update(
+      UpdateData(Uuid().v4(), DateTime.now(), [
+        ColumnTypeUpdate(
+          1,
+          ColumnType.dependencies,
+          loadedSheetsData.getColumnType(1),
+        ),
+        ColumnTypeUpdate(
+          2,
+          ColumnType.dependencies,
+          loadedSheetsData.getColumnType(2),
+        ),
+        ColumnTypeUpdate(
+          3,
+          ColumnType.dependencies,
+          loadedSheetsData.getColumnType(3),
+        ),
+        ColumnTypeUpdate(7, ColumnType.urls, loadedSheetsData.getColumnType(7)),
+        ColumnTypeUpdate(
+          8,
+          ColumnType.dependencies,
+          loadedSheetsData.getColumnType(8),
+        ),
+      ]),
+      true,
+    );
   }
 
   Future<void> copySelectionToClipboard(

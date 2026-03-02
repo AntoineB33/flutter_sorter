@@ -6,7 +6,7 @@ class SortProgressCache {
   final Map<String, SortProgressData> _dataBySheet = {};
 
   SortProgressData getSortProgressData(String sheetId) {
-    return _dataBySheet[sheetId] ??= SortProgressData.empty();
+    return _dataBySheet[sheetId]!;
   }
 
   void updateSortProgressData(String sheetId, SortProgressData data) {

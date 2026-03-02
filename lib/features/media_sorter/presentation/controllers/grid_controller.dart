@@ -12,7 +12,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 import 'package:trying_flutter/features/media_sorter/domain/usecases/layout_calculator.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/models/scroll_request.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 
@@ -23,7 +23,7 @@ class GridController extends ChangeNotifier {
   int tableViewRows = 0;
   int tableViewCols = 0;
 
-  LoadedSheetsDataStore loadedSheetsDataStore;
+  LoadedSheetsCache loadedSheetsDataStore;
   SelectionDataStore selectionDataStore;
 
   final SpreadsheetLayoutCalculator _layoutCalculator =
@@ -34,13 +34,13 @@ class GridController extends ChangeNotifier {
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) =>
       content.table.isNotEmpty ? content.table[0].length : 0;
-  
+
   SheetData get currentSheet => loadedSheetsDataStore.currentSheet;
 
   GridController(this.loadedSheetsDataStore, this.selectionDataStore);
 
   void updateRowColCount(
-    bool notify,{
+    bool notify, {
     double? visibleHeight,
     double? visibleWidth,
   }) {
@@ -60,8 +60,7 @@ class GridController extends ChangeNotifier {
         colBToScreenRightWidth,
       );
     }
-    if (targetRows != tableViewRows ||
-        targetCols != tableViewCols) {
+    if (targetRows != tableViewRows || targetCols != tableViewCols) {
       tableViewRows = targetRows;
       tableViewCols = targetCols;
       if (notify) {
@@ -70,10 +69,7 @@ class GridController extends ChangeNotifier {
     }
   }
 
-  int minRows(
-    int rowCount,
-    double height,
-  ) {
+  int minRows(int rowCount, double height) {
     double tableHeight = getTargetTop(rowCount - 1);
     if (height >= tableHeight) {
       return currentSheet.rowsBottomPos.length +
@@ -89,7 +85,8 @@ class GridController extends ChangeNotifier {
       if (row == 0) {
         return currentSheet.rowsBottomPos[0];
       } else {
-        return currentSheet.rowsBottomPos[row] - currentSheet.rowsBottomPos[row - 1];
+        return currentSheet.rowsBottomPos[row] -
+            currentSheet.rowsBottomPos[row - 1];
       }
     }
     return GetDefaultSizes.getDefaultRowHeight();
@@ -123,10 +120,7 @@ class GridController extends ChangeNotifier {
     return targetRight;
   }
 
-  int minCols(
-    int colCount,
-    double width,
-  ) {
+  int minCols(int colCount, double width) {
     double tableWidth = getTargetLeft(colCount - 1);
     if (width >= tableWidth) {
       return currentSheet.colRightPos.length +
@@ -188,7 +182,11 @@ class GridController extends ChangeNotifier {
               if (heightItNeeded == currentHeight) {
                 double newHeight = heightItNeeds;
                 if (row < currentSheet.sheetContent.table.length) {
-                  for (int j = 0; j < colCount(currentSheet.sheetContent); j++) {
+                  for (
+                    int j = 0;
+                    j < colCount(currentSheet.sheetContent);
+                    j++
+                  ) {
                     if (j == col) continue;
                     newHeight = max(
                       calculateRequiredRowHeight(
@@ -202,12 +200,20 @@ class GridController extends ChangeNotifier {
                 }
                 if (newHeight < heightItNeeded) {
                   double heightDiff = currentHeight - newHeight;
-                  for (int r = row; r < currentSheet.rowsBottomPos.length; r++) {
+                  for (
+                    int r = row;
+                    r < currentSheet.rowsBottomPos.length;
+                    r++
+                  ) {
                     currentSheet.rowsBottomPos[r] -= heightDiff;
                   }
                   if (newHeight == GetDefaultSizes.getDefaultRowHeight()) {
                     int removeFrom = currentSheet.rowsBottomPos.length;
-                    for (int r = currentSheet.rowsBottomPos.length - 1; r >= 0; r--) {
+                    for (
+                      int r = currentSheet.rowsBottomPos.length - 1;
+                      r >= 0;
+                      r--
+                    ) {
                       if (r < currentSheet.rowsManuallyAdjustedHeight.length &&
                               currentSheet.rowsManuallyAdjustedHeight[r] ||
                           currentSheet.rowsBottomPos[r] >
@@ -217,24 +223,24 @@ class GridController extends ChangeNotifier {
                       }
                       removeFrom--;
                     }
-                    currentSheet.rowsBottomPos = currentSheet.rowsBottomPos.sublist(
-                      0,
-                      removeFrom,
-                    );
+                    currentSheet.rowsBottomPos = currentSheet.rowsBottomPos
+                        .sublist(0, removeFrom);
                   }
                 }
               }
             } else if (heightItNeeds > currentHeight) {
               double heightDiff = heightItNeeds - currentHeight;
               for (int r = row; r < currentSheet.rowsBottomPos.length; r++) {
-                currentSheet.rowsBottomPos[r] = currentSheet.rowsBottomPos[r] + heightDiff;
+                currentSheet.rowsBottomPos[r] =
+                    currentSheet.rowsBottomPos[r] + heightDiff;
               }
             }
           }
         } else if (heightItNeeds == GetDefaultSizes.getDefaultRowHeight() &&
             row == currentSheet.rowsBottomPos.length - 1) {
           int i = row;
-          while (currentSheet.rowsBottomPos[i] == GetDefaultSizes.getDefaultRowHeight() &&
+          while (currentSheet.rowsBottomPos[i] ==
+                  GetDefaultSizes.getDefaultRowHeight() &&
               row > 0) {
             currentSheet.rowsBottomPos.removeLast();
             i--;
@@ -267,10 +273,7 @@ class GridController extends ChangeNotifier {
       srcColId++
     ) {
       if (GetNames.isSourceColumn(sheet.sheetContent.columnTypes[srcColId]) &&
-          loadedSheetsDataStore.getCellContent(
-            rowId,
-            srcColId,
-          ).isNotEmpty) {
+          loadedSheetsDataStore.getCellContent(rowId, srcColId).isNotEmpty) {
         return true;
       }
     }
@@ -278,17 +281,13 @@ class GridController extends ChangeNotifier {
   }
 
   /// Calculates offsets and scrolls to ensure the target cell is visible.
-  void scrollToCell(
-    int rowId,
-    int colId,
-  ) {
+  void scrollToCell(int rowId, int colId) {
     bool saveSelection = false;
     bool scrollX = true;
     bool scrollY = true;
     if (rowId > 0) {
       // Vertical Logic
-      final double targetTop =
-          getTargetTop(rowId) - getTargetTop(1);
+      final double targetTop = getTargetTop(rowId) - getTargetTop(1);
       final double targetBottom = getTargetTop(rowId + 1);
       final double verticalViewport =
           verticalController.position.viewportDimension -
@@ -299,8 +298,7 @@ class GridController extends ChangeNotifier {
         selectionDataStore.scrollOffsetX = targetTop;
       } else if (targetBottom > verticalController.offset + verticalViewport) {
         saveSelection = true;
-        selectionDataStore.scrollOffsetX =
-            targetBottom - verticalViewport;
+        selectionDataStore.scrollOffsetX = targetBottom - verticalViewport;
         updateRowColCount(true, visibleHeight: targetBottom);
       } else {
         scrollY = false;
@@ -309,9 +307,7 @@ class GridController extends ChangeNotifier {
 
     if (cell.y > 0) {
       // Horizontal Logic
-      final double targetLeft =
-          getTargetLeft(cell.y) -
-          getTargetLeft(1);
+      final double targetLeft = getTargetLeft(cell.y) - getTargetLeft(1);
       final double targetRight = getTargetLeft(cell.y + 1);
       final double horizontalViewport =
           horizontalController.position.viewportDimension -
@@ -323,8 +319,7 @@ class GridController extends ChangeNotifier {
       } else if (targetRight >
           selectionDataStore.scrollOffsetY + horizontalViewport) {
         saveSelection = true;
-        selectionDataStore.scrollOffsetY =
-            targetRight - horizontalViewport;
+        selectionDataStore.scrollOffsetY = targetRight - horizontalViewport;
         updateRowColCount(true, visibleWidth: targetRight);
       } else {
         scrollX = false;
@@ -342,7 +337,6 @@ class GridController extends ChangeNotifier {
       selectionDataStore.saveSelection();
     }
   }
-  
 
   @override
   void dispose() {

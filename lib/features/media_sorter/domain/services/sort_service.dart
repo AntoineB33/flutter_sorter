@@ -1,36 +1,19 @@
-import 'dart:collection';
-import 'dart:isolate';
-import 'dart:math';
-
-import 'package:flutter/material.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
+import 'package:meta/meta.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
-import 'package:trying_flutter/features/media_sorter/data/datasources/sorting_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/get_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/parse_paste_data_usecase.dart';
 import 'dart:async';
-
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sort/sort_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/isolate_service.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/sort_status_data_store.dart';
-import 'package:trying_flutter/utils/logger.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/analysis_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 
 class SortService {
-  final AnalysisDataStore analysisDataStore;
-  final LoadedSheetsDataStore loadedSheetsDataStore;
-  final SortStatusDataStore sortStatusDataStore;
+  final AnalysisCache analysisDataStore;
+  final LoadedSheetsCache loadedSheetsDataStore;
+  final SortStatusCache sortStatusDataStore;
   final Map<String, IsolateService> _isolateServices = {};
 
   SortService(
@@ -39,57 +22,54 @@ class SortService {
     this.analysisDataStore,
   );
 
-  bool lightCalculations(AnalysisResult result) {
+  bool sameResLightCheck(String sheetId) {
     return false;
   }
 
-  Future<void> calculate(String name) async {
-    SortStatus sortStatus = sortStatusDataStore.getSortStatus(name);
-    AnalysisResult result = analysisDataStore.getAnalysisResult(name);
-    if (sortStatus.resultCalculated && lightCalculations(result)) {
+  void lightCalculate(String sheetId) {
+    analysisDataStore.setOkToCalculateResult(sheetId, true);
+  }
+
+  Future<void> onCellChange(String sheetId) async {
+    lightCalculate(sheetId);
+    if (!analysisDataStore.okToCalculateResult(sheetId) ||
+        sortStatusDataStore.isCalculatingResult(sheetId) &&
+            sameResLightCheck(sheetId)) {
       return;
     }
-    _isolateServices[name] ??= IsolateService();
-    _isolateServices[name]!.cancelB();
-    AnalysisReturn resultB = await _isolateServices[name]!.runHeavyCalculationB(
-      loadedSheetsDataStore.getSheet(name).sheetContent,
-      result,
-    );
-    sortStatusDataStore.updateSortStatus(name, (status) {
-      status.resultCalculated = true;
-      status.validSortFound = !resultB.noSortToFind && status.validSortFound;
-      if (resultB.result.validRowIndexes.isEmpty) {
-        status.validSortFound = true;
-      }
-    });
-    if (resultB.changed) {
-      analysisDataStore.updateResults(name, resultB.result);
-    }
-    sortStatus = sortStatusDataStore.getSortStatus(name);
-    if (!sortStatus.validSortFound) {
-      try {
-        SortingResponse? response = await _isolateServices[name]!.findBestSort(
-          result,
-          false,
+    _isolateServices[sheetId] ??= IsolateService();
+    _isolateServices[sheetId]!.cancelB();
+    AnalysisReturn resultB = await _isolateServices[sheetId]!
+        .runHeavyCalculationB(
+          loadedSheetsDataStore.getSheet(sheetId).sheetContent,
+          analysisDataStore.getAnalysisResult(sheetId),
         );
+    sortStatusDataStore.update(sheetId, resultB.toFindValidSort);
+    if (resultB.changed) {
+      analysisDataStore.updateResults(sheetId, resultB.result);
+    }
+    if (resultB.toFindValidSort) {
+      try {
+        SortingResponse? response = await _isolateServices[sheetId]!
+            .findBestSort(resultB.result, false);
         if (response != null) {
-          analysisDataStore.getAnalysisResult(name).sorted =
+          analysisDataStore.getAnalysisResult(sheetId).sorted =
               response.isNaturalOrderValid;
           result.currentBestSort = response.sortedIds;
         }
         if (sortStatus.toSort) {
-          sortMedia(name);
-          sortStatusDataStore.updateSortStatus(name, (status) {
+          sortMedia(sheetId);
+          sortStatusDataStore.updateSortStatus(sheetId, (status) {
             status.validSortFound = true;
             status.toSort = false;
           });
         } else if (sortStatus.isFindingBestSort) {
-          sortStatusDataStore.updateSortStatus(name, (status) {
+          sortStatusDataStore.updateSortStatus(sheetId, (status) {
             status.validSortFound = true;
           });
-          findBestSortToggleFunc(name);
+          findBestSortToggleFunc(sheetId);
         } else {
-          sortStatusDataStore.removeSortStatus(name);
+          sortStatusDataStore.removeSortStatus(sheetId);
         }
       } catch (e) {
         result.errorRoot.newChildren!.add(
@@ -116,5 +96,4 @@ class SortService {
       yield solution;
     }
   }
-
 }

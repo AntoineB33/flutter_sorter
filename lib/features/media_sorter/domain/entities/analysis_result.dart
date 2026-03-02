@@ -1,4 +1,3 @@
-import 'dart:collection';
 import 'package:json_annotation/json_annotation.dart';
 
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
@@ -126,10 +125,6 @@ class AnalysisResult {
   bool sortedWithCurrentBestSort;
   bool bestSortPossibleFound;
 
-  bool okToCalculateResult;
-  bool resultCalculated;
-  bool okToFindValidSort;
-
   AnalysisResult({
     required this.errorChildren,
     required this.warningChildren,
@@ -152,9 +147,6 @@ class AnalysisResult {
     required this.sorted,
     required this.sortedWithCurrentBestSort,
     required this.bestSortPossibleFound,
-    required this.okToCalculateResult,
-    required this.resultCalculated,
-    required this.okToFindValidSort,
   }) {
     errorRoot.newChildren = errorChildren;
     warningRoot.newChildren = warningChildren;
@@ -185,9 +177,6 @@ class AnalysisResult {
       sorted: false,
       sortedWithCurrentBestSort: false,
       bestSortPossibleFound: false,
-      okToCalculateResult: true,
-      resultCalculated: true,
-      okToFindValidSort: true,
     );
   }
 
@@ -195,4 +184,10 @@ class AnalysisResult {
       _$AnalysisResultFromJson(json);
 
   Map<String, dynamic> toJson() => _$AnalysisResultToJson(this);
+
+  AnalysisResult clone() {
+    final String jsonString = jsonEncode(toJson());
+    final Map<String, dynamic> jsonMap = jsonDecode(jsonString);
+    return AnalysisResult.fromJson(jsonMap);
+  }
 }

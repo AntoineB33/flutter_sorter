@@ -17,12 +17,12 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_wait
 import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/sort_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/analysis_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
 
 class SheetDataUsecase {
-  final LoadedSheetsDataStore loadedSheetsData;
+  final LoadedSheetsCache loadedSheetsData;
   final HistoryService historyService;
 
   SheetData get currentSheet => loadedSheetsData.currentSheet;

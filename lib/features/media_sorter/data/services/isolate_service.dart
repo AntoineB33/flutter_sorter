@@ -3,6 +3,7 @@ import 'dart:isolate';
 
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_response.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
@@ -63,9 +64,7 @@ class IsolateService {
 
   Stream<SortingResponse> findBestSort(
     Map<int, Map<int, List<SortingRule>>> rules,
-    List<List<int>> validAreas,
-    int n,
-    bool isFindingBestSort,
+    SortProgressData sortProgressData,
   ) async* {
     // 1. Create a ReceivePort to listen for messages from the isolate
     _portC = ReceivePort();
@@ -76,7 +75,7 @@ class IsolateService {
     // 3. Spawn the isolate, passing the SendPort so it knows where to send data
     try {
       final arguments = (_portC!.sendPort, rules, validAreas, n);
-    _isolateC = await Isolate.spawn(SortUsecase.solveSorting, arguments);
+      _isolateC = await Isolate.spawn(SortUsecase.solveSorting, arguments);
     } catch (e) {
       cancelC();
     }

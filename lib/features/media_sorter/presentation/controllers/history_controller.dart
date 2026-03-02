@@ -8,11 +8,11 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/column_type
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 
 // --- Manager Class ---
 class HistoryController extends ChangeNotifier {
-  final LoadedSheetsDataStore loadedSheetsDataStore;
+  final LoadedSheetsCache loadedSheetsDataStore;
 
   SheetData get currentSheet => loadedSheetsDataStore.currentSheet;
   List<UpdateData> get currentHistory => currentSheet.updateHistories;
@@ -23,7 +23,9 @@ class HistoryController extends ChangeNotifier {
   HistoryController(this.loadedSheetsDataStore);
 
   UpdateData? moveInUpdateHistory(int direction) {
-    if (currentSheet.historyIndex + direction < 0 || currentSheet.historyIndex + direction >= currentSheet.updateHistories.length) {
+    if (currentSheet.historyIndex + direction < 0 ||
+        currentSheet.historyIndex + direction >=
+            currentSheet.updateHistories.length) {
       return null;
     }
     currentSheet.historyIndex += direction;

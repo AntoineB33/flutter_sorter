@@ -14,9 +14,9 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/tr
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/managers/spreadsheet_keyboard_delegate.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/sort_status_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/analysis_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 
 final sl = GetIt.instance; // sl = Service Locator
 
@@ -27,8 +27,16 @@ Future<void> init() async {
   final SaveSheetDataUseCase saveSheetDataUseCase = SaveSheetDataUseCase(
     SheetRepositoryImpl(FileSheetLocalDataSource()),
   );
-  LoadedSheetsDataStore loadedSheetsDataStore = LoadedSheetsDataStore();
-  SortStatusDataStore sortStatusDataStore = SortStatusDataStore(loadedSheetsDataStore);
-  AnalysisDataStore analysisDataStore = AnalysisDataStore(loadedSheetsDataStore);
-  sl.registerFactory<SortController>(() => SortController(getDataUseCase, saveSheetDataUseCase, sortStatusDataStore, loadedSheetsDataStore, analysisDataStore));
+  LoadedSheetsCache loadedSheetsDataStore = LoadedSheetsCache();
+  SortStatusCache sortStatusDataStore = SortStatusCache(loadedSheetsDataStore);
+  AnalysisCache analysisDataStore = AnalysisCache(loadedSheetsDataStore);
+  sl.registerFactory<SortController>(
+    () => SortController(
+      getDataUseCase,
+      saveSheetDataUseCase,
+      sortStatusDataStore,
+      loadedSheetsDataStore,
+      analysisDataStore,
+    ),
+  );
 }

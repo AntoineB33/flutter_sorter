@@ -3,12 +3,12 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 
 class SelectionDataStore extends ChangeNotifier {
   Map<String, SelectionData> lastSelectionBySheet = {};
 
-  LoadedSheetsDataStore loadedSheetsDataStore;
+  LoadedSheetsCache loadedSheetsDataStore;
 
   SelectionData get selection =>
       lastSelectionBySheet[loadedSheetsDataStore.currentSheetId] ??=
@@ -20,21 +20,15 @@ class SelectionDataStore extends ChangeNotifier {
 
   set scrollOffsetX(double value) {
     selection.scrollOffsetX = value;
+    notifyListeners();
   }
 
   set scrollOffsetY(double value) {
     selection.scrollOffsetY = value;
+    notifyListeners();
   }
 
   SelectionDataStore(this.loadedSheetsDataStore);
-
-  SelectionData getSelection(String sheetName) {
-    return lastSelectionBySheet[sheetName] ??= SelectionData.empty();
-  }
-
-  void saveSelection() {
-    notifyListeners();
-  }
 
   void setEditingMode(bool isEditing) {
     String currentSheetName = loadedSheetsDataStore.currentSheetId;

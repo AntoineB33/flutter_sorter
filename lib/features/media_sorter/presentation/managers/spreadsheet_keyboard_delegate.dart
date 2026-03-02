@@ -14,7 +14,7 @@ import 'package:trying_flutter/features/media_sorter/application/coordinators/se
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/sort_service.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
 
 class SpreadsheetKeyboardDelegate {
@@ -25,7 +25,7 @@ class SpreadsheetKeyboardDelegate {
 
   final SortService sortService;
 
-  final LoadedSheetsDataStore loadedSheetsDataStore;
+  final LoadedSheetsCache loadedSheetsDataStore;
   final SelectionDataStore selectionDataStore;
 
   SpreadsheetKeyboardDelegate(

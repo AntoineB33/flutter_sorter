@@ -1,9 +1,7 @@
-import 'dart:async';
-
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 
-class LoadedSheetsDataStore {
+class LoadedSheetsCache {
   final Map<String, SheetData> _loadedSheetsData = {};
   final List<String> _recentSheetIds = [];
 

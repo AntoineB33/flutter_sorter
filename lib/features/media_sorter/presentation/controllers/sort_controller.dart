@@ -26,16 +26,18 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sort/sort_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/isolate_service.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/sort_status_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/analysis_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 import 'package:trying_flutter/utils/logger.dart';
 import 'package:uuid/uuid.dart';
 
 class SortController extends ChangeNotifier {
   final ManageWaitingTasks<void> _saveSortStatusExecutor =
-      ManageWaitingTasks<void>(Duration(milliseconds: SpreadsheetConstants.saveAllSortStatusDelayMs));
-  
+      ManageWaitingTasks<void>(
+        Duration(milliseconds: SpreadsheetConstants.saveAllSortStatusDelayMs),
+      );
+
   final SheetDataController sheetDataController;
 
   final SaveSheetDataUseCase _saveSheetDataUseCase;
@@ -43,9 +45,9 @@ class SortController extends ChangeNotifier {
 
   final SortService sortingService;
 
-  final SortStatusDataStore sortStatusDataStore;
-  final AnalysisDataStore analysisDataStore;
-  final LoadedSheetsDataStore loadedSheetsDataStore;
+  final SortStatusCache sortStatusDataStore;
+  final AnalysisCache analysisDataStore;
+  final LoadedSheetsCache loadedSheetsDataStore;
 
   final CalculationService calculationService = CalculationService();
 
@@ -94,9 +96,7 @@ class SortController extends ChangeNotifier {
     await _saveSheetDataUseCase.saveSortProgression(sheetName, data);
   }
 
-  void sortResult(
-    List<int> sortOrder,
-  ) {
+  void sortResult(List<int> sortOrder) {
     AnalysisResult result = analysisDataStore.currentSheetAnalysisResult;
     int rowCount = result.tableToAtt.length;
     if (rowCount == 0) {
@@ -231,8 +231,16 @@ class SortController extends ChangeNotifier {
       }
     }
     List<List<String>> sortedTable = sortOrder.map((i) => table[i]).toList();
-    for (int rowId = 1; rowId < rowCount(loadedSheetsDataStore.currentSheet.sheetContent); rowId++) {
-      for (int colId = 0; colId < colCount(loadedSheetsDataStore.currentSheet.sheetContent); colId++) {
+    for (
+      int rowId = 1;
+      rowId < rowCount(loadedSheetsDataStore.currentSheet.sheetContent);
+      rowId++
+    ) {
+      for (
+        int colId = 0;
+        colId < colCount(loadedSheetsDataStore.currentSheet.sheetContent);
+        colId++
+      ) {
         if (result.formatedTable[rowId][colId].integers.isEmpty) {
           continue;
         }
@@ -257,12 +265,20 @@ class SortController extends ChangeNotifier {
     for (int rowId = 1; rowId < sortedTable.length; rowId++) {
       for (int colId = 0; colId < sortedTable[rowId].length; colId++) {
         updates.add(
-          CellUpdate(rowId, colId, sortedTable[rowId][colId], loadedSheetsDataStore.getCellContent(rowId, colId)),
+          CellUpdate(
+            rowId,
+            colId,
+            sortedTable[rowId][colId],
+            loadedSheetsDataStore.getCellContent(rowId, colId),
+          ),
         );
       }
     }
     sortResult(sortOrder);
-    sheetDataController.update(UpdateData(Uuid().v4(), DateTime.now(), updates), false);
+    sheetDataController.update(
+      UpdateData(Uuid().v4(), DateTime.now(), updates),
+      false,
+    );
   }
 
   bool sortToggleAvailable() {
@@ -331,10 +347,9 @@ class SortController extends ChangeNotifier {
 
   Future<void> findBestSortToggleFunc(String sheetId) async {
     await for (final yieldedResult in sortingService.findBestSort()) {
-      
       // 2. This block runs every time the service yields a new result
       print('Received yielded result: $yieldedResult');
-      
+
       // TODO: Update your state (e.g., notifyListeners(), emit(state), etc.)
       // so the UI reflects the newly yielded result.
     }

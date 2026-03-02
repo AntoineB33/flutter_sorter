@@ -10,10 +10,10 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/analysis_data_store.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/analysis_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/sort_status_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/check_valid_strings.dart';
 import 'package:trying_flutter/utils/logger.dart';
 import 'dart:math';
@@ -34,10 +34,10 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/sp
 class WorkbookController extends ChangeNotifier {
   final HistoryService historyService;
 
-  final LoadedSheetsDataStore loadedSheetsDataStore;
-  final AnalysisDataStore analysisDataStore;
+  final LoadedSheetsCache loadedSheetsDataStore;
+  final AnalysisCache analysisDataStore;
   final SelectionDataStore selectionDataStore;
-  final SortStatusDataStore sortStatusDataStore;
+  final SortStatusCache sortStatusDataStore;
 
   // --- usecases ---
   final SaveSheetDataUseCase saveSheetDataUseCase;
@@ -260,6 +260,8 @@ class WorkbookController extends ChangeNotifier {
   }
 
   List<String> getRecentSheetNames() {
-    return loadedSheetsDataStore.recentSheetIds.map((id) => loadedSheetsDataStore.getSheet(id).sheetName).toList();
+    return loadedSheetsDataStore.recentSheetIds
+        .map((id) => loadedSheetsDataStore.getSheet(id).sheetName)
+        .toList();
   }
 }

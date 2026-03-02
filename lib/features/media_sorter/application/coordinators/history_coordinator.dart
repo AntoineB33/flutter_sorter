@@ -4,14 +4,14 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/sort_service.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/loaded_sheets_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 
 class HistoryCoordinator extends ChangeNotifier {
   final HistoryController historyController;
   final SheetDataController sheetDataController;
 
   final SortService sortService;
-  final LoadedSheetsDataStore loadedSheetsDataStore;
+  final LoadedSheetsCache loadedSheetsDataStore;
 
   HistoryCoordinator(
     this.historyController,

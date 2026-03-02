@@ -1,8 +1,10 @@
 ctrl + Z in edit mode
 
+readonly interfaces for data models
 
-
-
+lightCalculate
+sameResLightCheck
+did result change?
 
 Adding a 5-minute screen-free break each hour (optional)
 
