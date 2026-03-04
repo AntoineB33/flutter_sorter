@@ -11,18 +11,4 @@ class HistoryService {
   HistoryService(this.loadedSheetsDataStore);
 
   /// Commits the `currentUpdateHistory` to the Sheet's permanent history stack.
-  void commitHistory(UpdateData updateData) {
-    if (currentSheet.historyIndex < currentSheet.updateHistories.length - 1) {
-      currentSheet.updateHistories = currentSheet.updateHistories.sublist(
-        0,
-        currentSheet.historyIndex + 1,
-      );
-    }
-    currentSheet.updateHistories.add(updateData);
-    currentSheet.historyIndex++;
-    if (currentSheet.historyIndex == SpreadsheetConstants.historyMaxLength) {
-      currentSheet.updateHistories.removeAt(0);
-      currentSheet.historyIndex--;
-    }
-  }
 }

@@ -1,4 +1,5 @@
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 
 class LoadedSheetsCache {
@@ -16,6 +17,20 @@ class LoadedSheetsCache {
 
   SheetData getSheet(String sheetId) {
     return _loadedSheetsData[sheetId]!;
+  }
+
+  SheetContent getSheetContent(String sheetId) {
+    return _loadedSheetsData[sheetId]!.sheetContent;
+  }
+
+  int rowCount(String sheetId) {
+    return getSheetContent(sheetId).table.length;
+  }
+
+  int colCount(String sheetId) {
+    return getSheetContent(sheetId).table.isEmpty
+        ? 0
+        : getSheetContent(sheetId).table[0].length;
   }
 
   String getCellContent(int row, int col) {

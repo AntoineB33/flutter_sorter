@@ -5,7 +5,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sort/calculate_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/calculate_service.dart';
 import 'dart:convert';
 
 // IMPORTANT: Replace 'analysis_result' with the actual name of this dart file.
@@ -17,8 +17,8 @@ class StrInt {
   List<int> integers;
 
   StrInt({List<String>? strings, List<int>? integers})
-      : strings = strings ?? [""],
-        integers = integers ?? [];
+    : strings = strings ?? [""],
+      integers = integers ?? [];
 
   factory StrInt.fromJson(Map<String, dynamic> json) => _$StrIntFromJson(json);
   Map<String, dynamic> toJson() => _$StrIntToJson(this);
@@ -28,10 +28,11 @@ Map<Attribute, Map<int, Cols>> _attColMapFromJson(Map<String, dynamic> json) {
   return json.map((key, value) {
     // Decode the stringified JSON key back into an Attribute
     final attr = Attribute.fromJson(jsonDecode(key) as Map<String, dynamic>);
-    
+
     // Parse the inner map (Assuming Cols has a .fromJson method)
     final innerMap = (value as Map<String, dynamic>).map(
-      (k, v) => MapEntry(int.parse(k), Cols.fromJson(v as Map<String, dynamic>)),
+      (k, v) =>
+          MapEntry(int.parse(k), Cols.fromJson(v as Map<String, dynamic>)),
     );
     return MapEntry(attr, innerMap);
   });
@@ -41,14 +42,16 @@ Map<String, dynamic> _attColMapToJson(Map<Attribute, Map<int, Cols>> map) {
   return map.map((key, value) {
     // Encode the Attribute into a stringified JSON key
     final stringKey = jsonEncode(key.toJson());
-    
+
     // Encode the inner map
     final innerMap = value.map((k, v) => MapEntry(k.toString(), v.toJson()));
     return MapEntry(stringKey, innerMap);
   });
 }
 
-Map<Attribute, Map<int, List<int>>> _depColMapFromJson(Map<String, dynamic> json) {
+Map<Attribute, Map<int, List<int>>> _depColMapFromJson(
+  Map<String, dynamic> json,
+) {
   return json.map((key, value) {
     final attr = Attribute.fromJson(jsonDecode(key) as Map<String, dynamic>);
     final innerMap = (value as Map<String, dynamic>).map(
@@ -74,18 +77,18 @@ class AnalysisResult {
     instruction: SpreadsheetConstants.errorMsg,
     hideIfEmpty: true,
   );
-  
+
   @JsonKey(includeFromJson: false, includeToJson: false)
   final NodeStruct warningRoot = NodeStruct(
     instruction: SpreadsheetConstants.warningMsg,
     hideIfEmpty: true,
   );
-  
+
   @JsonKey(includeFromJson: false, includeToJson: false)
   final NodeStruct categoriesRoot = NodeStruct(
     instruction: SpreadsheetConstants.categoryMsg,
   );
-  
+
   @JsonKey(includeFromJson: false, includeToJson: false)
   final NodeStruct distPairsRoot = NodeStruct(
     instruction: SpreadsheetConstants.distPairsMsg,
@@ -121,7 +124,9 @@ class AnalysisResult {
   Map<int, Map<int, List<SortingRule>>> myRules;
   List<List<int>> groupsToMaximize;
 
-  bool sorted;
+  bool resultCalculated;
+  bool toSort;
+  bool sortedWithValidSort;
   bool sortedWithCurrentBestSort;
   bool bestSortPossibleFound;
 
@@ -144,7 +149,9 @@ class AnalysisResult {
     required this.isMedium,
     required this.validRowIndexes,
     required this.currentBestSort,
-    required this.sorted,
+    required this.resultCalculated,
+    required this.toSort,
+    required this.sortedWithValidSort,
     required this.sortedWithCurrentBestSort,
     required this.bestSortPossibleFound,
   }) {
@@ -174,7 +181,9 @@ class AnalysisResult {
       validRowIndexes: [],
       formatedTable: [],
       currentBestSort: null,
-      sorted: false,
+      resultCalculated: false,
+      toSort: false,
+      sortedWithValidSort: false,
       sortedWithCurrentBestSort: false,
       bestSortPossibleFound: false,
     );
@@ -184,10 +193,4 @@ class AnalysisResult {
       _$AnalysisResultFromJson(json);
 
   Map<String, dynamic> toJson() => _$AnalysisResultToJson(this);
-
-  AnalysisResult clone() {
-    final String jsonString = jsonEncode(toJson());
-    final Map<String, dynamic> jsonMap = jsonDecode(jsonString);
-    return AnalysisResult.fromJson(jsonMap);
-  }
 }

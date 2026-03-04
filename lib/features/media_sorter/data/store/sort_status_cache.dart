@@ -1,60 +1,84 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
+import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
+
+enum SortStatus {
+  calculatingResult,
+  findingValidSort,
+  findingBestSort,
+  sortWhileFindingBestSort,
+  none,
+}
 
 class SortStatusCache extends ChangeNotifier {
-  final Map<String, String> _sortStatusBySheet = {};
-
-  static String calculatingResultKey = "calculatingResult";
-  static String findingValidSortKey = "findingValidSort";
-  static String findingBestSortKey = "findingBestSort";
-  static String sortWhileFindingBestSortKey = "sortWhileFindingBestSort";
+  final ManageWaitingTasks<void> _saveSortStatusExecutor =
+      ManageWaitingTasks<void>(
+        Duration(milliseconds: 1000),
+      );
+  final Map<String, SortStatus> _sortStatusBySheet = {};
+  bool _isNotifyScheduled = false;
 
   final LoadedSheetsCache loadedSheetsDataStore;
-
-  Map<String, String> get sortStatusBySheet =>
-      Map.unmodifiable(_sortStatusBySheet);
-  String get currentSortStatus =>
-      getSortStatus(loadedSheetsDataStore.currentSheetId);
+  
+  void scheduleNotifyListeners() {
+    if (!_isNotifyScheduled) {
+      _isNotifyScheduled = true;
+      scheduleMicrotask(() {
+        notifyListeners();
+        _isNotifyScheduled = false;
+      });
+    }
+  }
 
   SortStatusCache(this.loadedSheetsDataStore);
+
+  ManageWaitingTasks<void> get saveSortStatusExecutor => _saveSortStatusExecutor;
+  Map<String, SortStatus> get sortStatusBySheet => _sortStatusBySheet;
 
   bool containsSheet(String sheetName) {
     return _sortStatusBySheet.containsKey(sheetName);
   }
 
-  String getSortStatus(String sheetName) {
-    return _sortStatusBySheet[sheetName] ??= "";
+  SortStatus getSortStatus(String sheetName) {
+    return _sortStatusBySheet[sheetName] ?? SortStatus.none;
   }
 
   bool isCalculatingResult(String sheetName) {
-    return getSortStatus(sheetName) == calculatingResultKey;
+    return getSortStatus(sheetName) == SortStatus.calculatingResult;
   }
 
-  void update(String sheetName, bool toFindValidSort) {
+  bool isFindingBestSort(String sheetName) {
+    return getSortStatus(sheetName) == SortStatus.findingBestSort;
+  }
+
+  void calculatingResult(String sheetName) {
+    _sortStatusBySheet[sheetName] = SortStatus.calculatingResult;
+    scheduleNotifyListeners();
+  }
+
+  void updateToFindValidSort(String sheetName, bool toFindValidSort) {
     if (toFindValidSort) {
-      setSortStatus(sheetName, findingValidSortKey);
+      _sortStatusBySheet[sheetName] = SortStatus.findingValidSort;
     } else {
-      _removeSortStatus(sheetName);
+      removeSortStatus(sheetName);
     }
-    notifyListeners();
+    scheduleNotifyListeners();
   }
 
-  void loadAllSortStatus(Map<String, String> statuses) {
+  void loadAllSortStatus(Map<String, SortStatus> statuses) {
     _sortStatusBySheet
       ..clear()
       ..addAll(statuses);
   }
 
-  void setSortStatus(String sheetName, String sortStatus) {
-    _sortStatusBySheet[sheetName] = sortStatus;
-    notifyListeners();
-  }
-
-  void _removeSortStatus(String sheetName) {
-    if (_sortStatusBySheet.containsKey(sheetName)) {
-      _sortStatusBySheet.remove(sheetName);
-      notifyListeners();
+  void removeSortStatus(String sheetId) {
+    if (_sortStatusBySheet.containsKey(sheetId)) {
+      _sortStatusBySheet.remove(sheetId);
+      scheduleNotifyListeners();
     }
   }
 }

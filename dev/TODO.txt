@@ -2,9 +2,13 @@ ctrl + Z in edit mode
 
 readonly interfaces for data models
 
-lightCalculate
+lightCalculate1
 sameResLightCheck
+changeResult
+lightCalculate2
 did result change?
+
+save all history updates
 
 Adding a 5-minute screen-free break each hour (optional)
 

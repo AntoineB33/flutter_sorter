@@ -10,10 +10,6 @@ class SpreadsheetConstants {
   static const appearLast = "-appear_lst";
   static const first = "-fst";
   static const last = "-lst";
-  static const saveSheetDelayMs = 1000;
-  static const saveAnalysisResultDelayMs = 1000;
-  static const saveAllSortStatusDelayMs = 1000;
-  static const historyMaxLength = 100;
 
   static const all = -1;
   static const notUsedCst = -2;

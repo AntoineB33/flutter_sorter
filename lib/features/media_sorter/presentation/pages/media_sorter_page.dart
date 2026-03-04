@@ -4,7 +4,7 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/tr
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/managers/spreadsheet_keyboard_delegate.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/selection_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 import 'package:trying_flutter/injection_container.dart';
 import 'package:trying_flutter/shared/widgets/navigation_dropdown.dart';

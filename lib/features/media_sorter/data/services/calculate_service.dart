@@ -36,7 +36,7 @@ class Cols {
   }
 }
 
-class CalculateUsecase {
+class CalculateService {
   final Either<TransferableTypedData, List<List<String>>> dataPackage;
   final AnalysisResult result = AnalysisResult.empty();
 
@@ -79,7 +79,7 @@ class CalculateUsecase {
 
   final List<ColumnType> columnTypes0;
 
-  CalculateUsecase(IsolateMessage message)
+  CalculateService(IsolateMessage message)
     : dataPackage = message.table,
       columnTypes0 = message.columnTypes;
 

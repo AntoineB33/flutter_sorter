@@ -5,7 +5,6 @@ import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_repository.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
@@ -110,34 +109,6 @@ class SheetRepositoryImpl implements SheetRepository {
   Future<Either<Failure, void>> saveAllLastSelected(Map<String, SelectionData> cells) async {
     try {
       await dataSource.saveAllLastSelected(cells);
-      return Right(null);
-    } on CacheParsingException catch (e) {
-      return Left(CacheParsingFailure(e.e));
-    } on CacheException catch (e) {
-      return Left(CacheFailure(e.e));
-    }
-  }
-
-  @override
-  Future<Either<Failure, Map<String, SortStatus>>> getAllSortStatus() async {
-    try {
-      final sortStatus = await dataSource.getAllSortStatus();
-      return Right(sortStatus);
-    } on FileNotFoundException catch (e) {
-      return Left(FileNotFoundFailure(e.e));
-    } on CacheParsingException catch (e) {
-      return Left(CacheParsingFailure(e.e));
-    } on CacheException catch (e) {
-      return Left(CacheFailure(e.e));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> saveAllSortStatus(
-    Map<String, SortStatus> sortStatusBySheet,
-  ) async {
-    try {
-      await dataSource.saveAllSortStatus(sortStatusBySheet);
       return Right(null);
     } on CacheParsingException catch (e) {
       return Left(CacheParsingFailure(e.e));

@@ -4,7 +4,7 @@ import 'dart:isolate';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sort/calculate_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/calculate_service.dart';
 import 'dart:io';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:fpdart/fpdart.dart';
@@ -24,12 +24,18 @@ class CalculationService {
     SheetContent sheetContent = args[1];
     // AnalysisResult prevResult = args[2];
     AnalysisResult result = _isolateHandler(getMessage(sheetContent));
-    Isolate.exit(sendPort, AnalysisReturn(result, true, result.errorChildren.isEmpty));
+    Isolate.exit(
+      sendPort,
+      AnalysisReturn(result, true, result.errorChildren.isEmpty),
+    );
   }
-  
+
   static IsolateMessage getMessage(SheetContent sheetContent) {
     if (sheetContent.table.length < 5000) {
-      return IsolateMessage(Right(sheetContent.table), sheetContent.columnTypes);
+      return IsolateMessage(
+        Right(sheetContent.table),
+        sheetContent.columnTypes,
+      );
     } else {
       final String combined = jsonEncode(sheetContent.table);
       final Uint8List bytes = utf8.encode(combined);
@@ -39,7 +45,7 @@ class CalculationService {
   }
 
   static AnalysisResult _isolateHandler(IsolateMessage message) {
-    final worker = CalculateUsecase(message);
+    final worker = CalculateService(message);
     return worker.run();
   }
 }

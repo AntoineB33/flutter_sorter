@@ -4,10 +4,10 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/analysis_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 
 class TreeCoordinator extends ChangeNotifier {
-  final AnalysisCache analysisDataStore;
+  final AnalysisResultCache analysisDataStore;
   final TreeController treeController;
   final SelectionController selectionController;
 
@@ -16,9 +16,7 @@ class TreeCoordinator extends ChangeNotifier {
     this.treeController,
     this.selectionController,
   ) {
-    treeController.addListener(() {
-      notifyListeners();
-    });
+    treeController.addListener(notifyListeners);
   }
 
   void onNodeTapped(NodeStruct node) {
@@ -69,5 +67,11 @@ class TreeCoordinator extends ChangeNotifier {
       }
     }
     treeController.handleSelectionCycling(node, cells);
+  }
+
+  @override
+  void dispose() {
+    treeController.removeListener(notifyListeners);
+    super.dispose();
   }
 }

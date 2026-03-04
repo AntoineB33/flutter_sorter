@@ -13,9 +13,9 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_conte
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/analysis_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/selection_data_store.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 
 class TreeController extends ChangeNotifier {
@@ -30,7 +30,7 @@ class TreeController extends ChangeNotifier {
 
   final SaveSheetDataUseCase saveSheetDataUseCase;
 
-  final AnalysisCache analysisDataStore;
+  final AnalysisResultCache analysisDataStore;
   final LoadedSheetsCache loadedSheetsDataStore;
   final SelectionDataStore selectionDataStore;
   final SortStatusCache sortStatusDataStore;

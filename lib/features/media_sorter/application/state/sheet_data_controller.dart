@@ -17,28 +17,18 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_wait
 import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/history_controller.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/sort_service.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/sort_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/analysis_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/selection_data_store.dart';
 import 'package:uuid/uuid.dart';
 
 class SheetDataController extends ChangeNotifier {
   // --- states ---
   final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
 
-  final SheetDataController sheetDataController;
-  final HistoryController historyController;
-  final GridController gridController;
-
-  final LoadedSheetsCache loadedSheetsData;
-  final AnalysisCache analysisStore;
-  final SelectionDataStore selectionDataStore;
-
-  final SortService sortService;
-  final HistoryService historyService;
 
   final SheetDataUsecase sheetDataUsecase;
 
@@ -236,18 +226,26 @@ class SheetDataController extends ChangeNotifier {
     super.dispose();
   }
 
-  void update(UpdateData updateData, bool updateHistory) {
-    sheetDataUsecase.update(updateData, updateHistory);
-    gridController.adjustRowHeightAfterUpdate(updateData);
-    notifyListeners();
-    scheduleSheetSave(currentSheetName);
-  }
 
   void moveInUpdateHistory(int direction) {
     final lastUpdate = historyController.moveInUpdateHistory(direction);
     if (lastUpdate != null) {
       sheetDataController.update(lastUpdate, false);
       sortService.calculate(loadedSheetsData.currentSheetId);
+    }
+  }
+
+  
+
+  void update(UpdateData updateData) {
+    for (var update in updateData.updates) {
+      if (update is CellUpdate) {
+        updateCell(update);
+      } else if (update is ColumnTypeUpdate) {
+        setColumnType(update);
+      } else {
+        throw Exception('Unsupported update type: ${update.runtimeType}');
+      }
     }
   }
 }

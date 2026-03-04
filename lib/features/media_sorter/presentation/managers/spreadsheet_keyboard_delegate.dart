@@ -7,15 +7,15 @@ import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/history_controller.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/coordinators/history_coordinator.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/coordinators/selection_coordinator.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/sort_service.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/sort_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/selection_data_store.dart';
 
 class SpreadsheetKeyboardDelegate {
   final SelectionController selectionController;

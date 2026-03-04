@@ -15,11 +15,11 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/sort_service.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/sort_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/analysis_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/selection_data_store.dart';
 
 class SheetDataUsecase {
   final LoadedSheetsCache loadedSheetsData;
@@ -35,21 +35,6 @@ class SheetDataUsecase {
     required this.loadedSheetsData,
     required this.historyService,
   });
-
-  void update(UpdateData updateData, bool updateHistory) {
-    for (var update in updateData.updates) {
-      if (update is CellUpdate) {
-        updateCell(update);
-      } else if (update is ColumnTypeUpdate) {
-        setColumnType(update);
-      } else {
-        throw Exception('Unsupported update type: ${update.runtimeType}');
-      }
-    }
-    if (updateHistory) {
-      historyService.commitHistory(updateData);
-    }
-  }
 
   void increaseColumnCount(int col, SheetContent sheetContent) {
     if (col >= colCount(sheetContent)) {

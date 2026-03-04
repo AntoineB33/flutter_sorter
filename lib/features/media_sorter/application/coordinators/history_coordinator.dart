@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/history_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/sort_service.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/sort_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 
 class HistoryCoordinator extends ChangeNotifier {
@@ -22,5 +22,11 @@ class HistoryCoordinator extends ChangeNotifier {
     historyController.addListener(() {
       notifyListeners();
     });
+  }
+
+  @override
+  void dispose() {
+    historyController.dispose();
+    super.dispose();
   }
 }

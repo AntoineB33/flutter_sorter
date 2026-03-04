@@ -105,3 +105,10 @@ class UpdateUnitConverter implements JsonConverter<UpdateUnit, Map<String, dynam
     throw ArgumentError('Unknown UpdateUnit instance');
   }
 }
+
+class UpdateListRemoved {
+  int startInd;
+  List<UpdateData> removedUpdates;
+
+  UpdateListRemoved(this.startInd, this.removedUpdates);
+}

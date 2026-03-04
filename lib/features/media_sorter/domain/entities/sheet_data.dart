@@ -12,6 +12,7 @@ part 'sheet_data.g.dart';
 class SheetData {
   SheetContent sheetContent;
   List<UpdateData> updateHistories;
+  List<UpdateListRemoved> updateListRemoved;
   int historyIndex;
   List<double> rowsBottomPos;
   List<double> colRightPos;
@@ -24,6 +25,7 @@ class SheetData {
   SheetData({
     required this.sheetContent,
     required this.updateHistories,
+    required this.updateListRemoved,
     required this.historyIndex,
     required this.rowsBottomPos,
     required this.colRightPos,
@@ -38,6 +40,7 @@ class SheetData {
     return SheetData(
       sheetContent: SheetContent(table: [], columnTypes: [ColumnType.names]),
       updateHistories: [],
+      updateListRemoved: [],
       historyIndex: -1,
       rowsBottomPos: [],
       colRightPos: [],

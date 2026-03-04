@@ -5,16 +5,16 @@ import 'package:trying_flutter/features/media_sorter/data/repositories/sheet_rep
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/history_controller.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sort_controller.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/spreadsheet_stream_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/sheet_data_controller.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/managers/spreadsheet_keyboard_delegate.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/analysis_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 
@@ -29,7 +29,9 @@ Future<void> init() async {
   );
   LoadedSheetsCache loadedSheetsDataStore = LoadedSheetsCache();
   SortStatusCache sortStatusDataStore = SortStatusCache(loadedSheetsDataStore);
-  AnalysisCache analysisDataStore = AnalysisCache(loadedSheetsDataStore);
+  AnalysisResultCache analysisDataStore = AnalysisResultCache(
+    loadedSheetsDataStore,
+  );
   sl.registerFactory<SortController>(
     () => SortController(
       getDataUseCase,

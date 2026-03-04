@@ -4,13 +4,12 @@ import 'package:path_provider/path_provider.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_sheet_local_datasource.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:path/path.dart' as p;
 
 class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
@@ -236,7 +235,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
       final Map<String, dynamic> decoded = jsonDecode(jsonString);
       final Map<String, SortStatus> result = {};
       decoded.forEach((key, value) {
-        result[key] = SortStatus.fromJson(value);
+        result[key] = SortStatus.values.asNameMap()[value] ?? SortStatus.none;
       });
       return result;
     } on FileSystemException catch (e) {

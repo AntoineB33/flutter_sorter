@@ -13,8 +13,6 @@ abstract class SheetRepository {
   Future<Either<Failure, void>> saveRecentSheetIds(List<String> sheetIds);
   Future<Either<Failure, Map<String, SelectionData>>> getAllLastSelected();
   Future<Either<Failure, void>> saveAllLastSelected(Map<String, SelectionData> cells);
-  Future<Either<Failure, Map<String, SortStatus>>> getAllSortStatus();
-  Future<Either<Failure, void>> saveAllSortStatus(Map<String, SortStatus> sortStatusBySheet);
   Future<Either<Failure, AnalysisResult>> getAnalysisResult(String sheetName);
   Future<Either<Failure, void>> saveAnalysisResult(String sheetId, AnalysisResult result);
   Future<Either<Failure, SheetData>> loadSheet(String sheetId);

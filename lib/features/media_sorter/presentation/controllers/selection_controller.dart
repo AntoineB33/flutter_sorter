@@ -13,11 +13,11 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/history_controller.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/analysis_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/store/selection_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/selection_data_store.dart';
 import 'package:uuid/uuid.dart';
 
 class SelectionController extends ChangeNotifier {
@@ -27,7 +27,7 @@ class SelectionController extends ChangeNotifier {
   final HistoryService historyService;
 
   final LoadedSheetsCache loadedSheetsDataStore;
-  final AnalysisCache analysisStore;
+  final AnalysisResultCache analysisStore;
   final SelectionDataStore selectionDataStore;
   final SortStatus sortStatus;
 
@@ -56,9 +56,7 @@ class SelectionController extends ChangeNotifier {
     this.gridController,
     this.sortStatus,
   ) {
-    selectionDataStore.addListener(() {
-      saveLastSelection();
-    });
+    selectionDataStore.addListener(saveLastSelection);
   }
 
   Future<void> getAllLastSelected() async {
@@ -206,6 +204,7 @@ class SelectionController extends ChangeNotifier {
   @override
   void dispose() {
     _saveLastSelectionExecutor.dispose();
+    selectionDataStore.removeListener(saveLastSelection);
     super.dispose();
   }
 

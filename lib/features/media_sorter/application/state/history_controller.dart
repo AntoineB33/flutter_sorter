@@ -31,4 +31,19 @@ class HistoryController extends ChangeNotifier {
     currentSheet.historyIndex += direction;
     return currentSheet.updateHistories[currentSheet.historyIndex];
   }
+  
+  void commitHistory(UpdateData updateData) {
+    if (currentSheet.historyIndex < currentSheet.updateHistories.length - 1) {
+      currentSheet.updateHistories = currentSheet.updateHistories.sublist(
+        0,
+        currentSheet.historyIndex + 1,
+      );
+    }
+    currentSheet.updateHistories.add(updateData);
+    currentSheet.historyIndex++;
+    if (currentSheet.historyIndex == SpreadsheetConstants.historyMaxLength) {
+      currentSheet.updateHistories.removeAt(0);
+      currentSheet.historyIndex--;
+    }
+  }
 }
