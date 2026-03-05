@@ -15,7 +15,7 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_wait
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/selection_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 
 class TreeController extends ChangeNotifier {
@@ -29,18 +29,6 @@ class TreeController extends ChangeNotifier {
   final Map<String, ManageWaitingTasks<void>> _saveResultExecutors = {};
 
   final SaveSheetDataUseCase saveSheetDataUseCase;
-
-  final AnalysisResultCache analysisDataStore;
-  final LoadedSheetsCache loadedSheetsDataStore;
-  final SelectionDataStore selectionDataStore;
-  final SortStatusCache sortStatusDataStore;
-
-  static const String onTapKey = 'onTapCellSelect';
-  static const String setPrimarySelectionKey = 'setPrimarySelection';
-
-  AnalysisResult get result => analysisDataStore.currentSheetAnalysisResult;
-  SheetData get sheet => loadedSheetsDataStore.currentSheet;
-  SheetContent get sheetContent => sheet.sheetContent;
 
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) =>
@@ -254,60 +242,6 @@ class TreeController extends ChangeNotifier {
     }
   }
 
-  void onTap(NodeStruct node) {
-    switch (node.idOnTap) {
-      case onTapKey:
-        if (node.rowId != null) {
-          selectionController.setPrimarySelection(
-            currentSheetName,
-            node.rowId!,
-            node.colId ?? 0,
-            false,
-          );
-          return;
-        }
-
-        List<Cell> cells = [];
-        List<MapEntry> entries = [];
-
-        if (node.colId != SpreadsheetConstants.notUsedCst) {
-          entries = result.attToRefFromAttColToCol[node.att]!.entries.toList();
-        }
-
-        if (node.instruction !=
-            SpreadsheetConstants.moveToUniqueMentionSprawlCol) {
-          entries.addAll(
-            result.attToRefFromDepColToCol[node.att]!.entries.toList(),
-          );
-        }
-
-        for (final MapEntry(key: rowId, value: colIds) in entries) {
-          for (final colId in colIds) {
-            cells.add(Cell(rowId: rowId, colId: colId));
-          }
-        }
-        _handleSelectionCycling(
-          selection,
-          lastSelectionBySheet,
-          currentSheetName,
-          node,
-          cells,
-        );
-      case setPrimarySelectionKey:
-        if (node.rowId != null && node.colId != null) {
-          selectionController.setPrimarySelection(
-            currentSheetName,
-            node.rowId!,
-            node.colId!,
-            false,
-          );
-        }
-        break;
-      default:
-        debugPrint("No onTap handler for node: ${node.message}");
-    }
-  }
-
   void _populateCellNode(NodeStruct node, bool populateChildren) {
     int rowId = node.rowId!;
     int colId = node.colId!;
@@ -407,26 +341,6 @@ class TreeController extends ChangeNotifier {
   }
 
   // --- Tap Logic Helpers ---
-
-  void handleSelectionCycling(NodeStruct node, List<Cell> cells) {
-    int found = -1;
-    for (int i = 0; i < cells.length; i++) {
-      final child = cells[i];
-      if (selectionDataStore.selection.primarySelectedCell.x == child.rowId &&
-          selectionDataStore.selection.primarySelectedCell.y == child.colId) {
-        found = i;
-        break;
-      }
-    }
-
-    int index = (found == -1) ? 0 : (found + 1) % cells.length;
-    selectionController.setPrimarySelection(
-      currentSheetName,
-      cells[index].rowId,
-      cells[index].colId,
-      false,
-    );
-  }
 
   void _handleCycleDetectedTap(NodeStruct node) {
     SelectionData selection = lastSelectionBySheet[currentSheetName]!;

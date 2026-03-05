@@ -32,7 +32,6 @@ class SpreadsheetConstants {
       "moved to unique mention in sprawl column for this attribute";
   static const refFromDepColMsg = "rows that have constraints based on it";
 
-  static const noSPNameFound = 'No Spreadsheet Name Found';
   static const defaultSheetName = 'Sheet1';
 
   static const folderName = 'media_sorter';

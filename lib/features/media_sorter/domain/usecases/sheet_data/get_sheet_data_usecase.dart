@@ -1,12 +1,12 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data/sheet_save_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 
 class GetSheetDataUseCase {
-  final SheetRepository repository;
+  final SheetSaveRepository repository;
 
   GetSheetDataUseCase(this.repository);
 
@@ -18,7 +18,8 @@ class GetSheetDataUseCase {
     return repository.recentSheetIds();
   }
 
-  Future<Either<Failure, Map<String, SelectionData>>> getAllLastSelected() async {
+  Future<Either<Failure, Map<String, SelectionData>>>
+  getAllLastSelected() async {
     return await repository.getAllLastSelected();
   }
 
@@ -26,7 +27,9 @@ class GetSheetDataUseCase {
     return await repository.getAllSortStatus();
   }
 
-  Future<Either<Failure, AnalysisResult>> getAnalysisResult(String sheetName) async {
+  Future<Either<Failure, AnalysisResult>> getAnalysisResult(
+    String sheetName,
+  ) async {
     return await repository.getAnalysisResult(sheetName);
   }
 

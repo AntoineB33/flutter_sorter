@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
@@ -6,44 +7,31 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/history_usecase.dart';
 
 // --- Manager Class ---
 class HistoryController extends ChangeNotifier {
-  final LoadedSheetsCache loadedSheetsDataStore;
+  final HistoryUsecase historyUsecase;
 
-  SheetData get currentSheet => loadedSheetsDataStore.currentSheet;
-  List<UpdateData> get currentHistory => currentSheet.updateHistories;
-  int rowCount(SheetContent content) => content.table.length;
-  int colCount(SheetContent content) =>
-      content.table.isNotEmpty ? content.table[0].length : 0;
+  Stream<UpdateRequest> get updateDataStream => historyUsecase.updateDataStream;
 
-  HistoryController(this.loadedSheetsDataStore);
+  HistoryController(this.historyUsecase);
 
-  UpdateData? moveInUpdateHistory(int direction) {
-    if (currentSheet.historyIndex + direction < 0 ||
-        currentSheet.historyIndex + direction >=
-            currentSheet.updateHistories.length) {
-      return null;
-    }
-    currentSheet.historyIndex += direction;
-    return currentSheet.updateHistories[currentSheet.historyIndex];
+  void moveInUpdateHistory(int direction) {
+    historyUsecase.moveInUpdateHistory(direction);
   }
   
   void commitHistory(UpdateData updateData) {
-    if (currentSheet.historyIndex < currentSheet.updateHistories.length - 1) {
-      currentSheet.updateHistories = currentSheet.updateHistories.sublist(
-        0,
-        currentSheet.historyIndex + 1,
-      );
-    }
-    currentSheet.updateHistories.add(updateData);
-    currentSheet.historyIndex++;
-    if (currentSheet.historyIndex == SpreadsheetConstants.historyMaxLength) {
-      currentSheet.updateHistories.removeAt(0);
-      currentSheet.historyIndex--;
-    }
+    historyUsecase.commitHistory(updateData);
+  }
+
+  void undo() {
+    moveInUpdateHistory(-1);
+  }
+
+  void redo() {
+    moveInUpdateHistory(1);
   }
 }

@@ -8,7 +8,6 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/parse_paste_data_usecase.dart';
@@ -18,11 +17,10 @@ import 'package:trying_flutter/features/media_sorter/domain/services/history_ser
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/sort_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/selection_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:uuid/uuid.dart';
 
 class SheetDataController extends ChangeNotifier {
@@ -36,8 +34,7 @@ class SheetDataController extends ChangeNotifier {
       SpreadsheetClipboardService();
   final ParsePasteDataUseCase _parsePasteDataUseCase;
 
-  SheetData get currentSheet => loadedSheetsData.currentSheet;
-  String get currentSheetName => loadedSheetsData.currentSheetId;
+  Stream<UpdateRequest> get updateDataStream => sheetDataUsecase.updateDataStream;
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) =>
       content.table.isNotEmpty ? content.table[0].length : 0;
@@ -48,15 +45,7 @@ class SheetDataController extends ChangeNotifier {
   final SaveSheetDataUseCase _saveSheetDataUseCase;
 
   SheetDataController(
-    this.sheetDataController,
-    this.historyController,
-    this.gridController,
     SaveSheetDataUseCase saveSheetDataUseCase,
-    this.loadedSheetsData,
-    this.analysisStore,
-    this.selectionDataStore,
-    this.sortService,
-    this.historyService,
     this.sheetDataUsecase,
     this._parsePasteDataUseCase,
   ) : _saveSheetDataUseCase = saveSheetDataUseCase;
@@ -114,16 +103,7 @@ class SheetDataController extends ChangeNotifier {
     return true;
   }
 
-  void delete(
-    SheetData sheet,
-    Map<String, AnalysisResult> analysisResults,
-    SelectionData selection,
-    String currentSheetName,
-    Map<String, SelectionData> lastSelectionBySheet,
-    SortStatus sortStatus,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
-  ) {
+  void delete() {
     List<UpdateUnit> updates = [];
     for (Point<int> cell in selection.selectedCells) {
       updates.add(
@@ -224,28 +204,10 @@ class SheetDataController extends ChangeNotifier {
       executor.dispose();
     }
     super.dispose();
-  }
-
-
-  void moveInUpdateHistory(int direction) {
-    final lastUpdate = historyController.moveInUpdateHistory(direction);
-    if (lastUpdate != null) {
-      sheetDataController.update(lastUpdate, false);
-      sortService.calculate(loadedSheetsData.currentSheetId);
-    }
-  }
-
-  
+  }  
 
   void update(UpdateData updateData) {
-    for (var update in updateData.updates) {
-      if (update is CellUpdate) {
-        updateCell(update);
-      } else if (update is ColumnTypeUpdate) {
-        setColumnType(update);
-      } else {
-        throw Exception('Unsupported update type: ${update.runtimeType}');
-      }
-    }
+    sheetDataUsecase.update(updateData);
+    scheduleSheetSave(sheetDataController.currentSheetName);
   }
 }

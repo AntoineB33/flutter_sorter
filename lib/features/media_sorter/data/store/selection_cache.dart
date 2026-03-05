@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -5,11 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 
-class SelectionDataStore extends ChangeNotifier {
+class SelectionCache extends ChangeNotifier {
   Map<String, SelectionData> lastSelectionBySheet = {};
+  final _updateDataController = StreamController<String>.broadcast();
 
   LoadedSheetsCache loadedSheetsDataStore;
 
+  Stream<String> get updateData => _updateDataController.stream;
   SelectionData get selection =>
       lastSelectionBySheet[loadedSheetsDataStore.currentSheetId] ??=
           SelectionData.empty();
@@ -28,7 +31,7 @@ class SelectionDataStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  SelectionDataStore(this.loadedSheetsDataStore);
+  SelectionCache(this.loadedSheetsDataStore);
 
   void setEditingMode(bool isEditing) {
     String currentSheetName = loadedSheetsDataStore.currentSheetId;
@@ -36,5 +39,10 @@ class SelectionDataStore extends ChangeNotifier {
         SelectionData.empty();
     selection.editingMode = isEditing;
     notifyListeners();
+  }
+
+  void setNewSelectionData(String sheetId) {
+    lastSelectionBySheet[sheetId] = SelectionData.empty();
+    _updateDataController.add(sheetId);
   }
 }

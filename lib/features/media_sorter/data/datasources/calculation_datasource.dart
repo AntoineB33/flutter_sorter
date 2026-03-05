@@ -1,10 +1,9 @@
 import 'dart:isolate';
 
-import 'package:trying_flutter/features/media_sorter/data/datasources/i_calculation_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 
-class CalculationDatasource implements ICalculationDataSource {
+class CalculationDatasource {
   
   /// Sorts integers based on constraints using a bipartite matching approach (DFS).
   static List<int>? sortConstrainedIntegers(
@@ -165,7 +164,6 @@ class CalculationDatasource implements ICalculationDataSource {
   }
 
   /// Main solver function using backtracking.
-  @override
   static void solveSorting(
     (SendPort, Map<int, Map<int, List<SortingRule>>>, SortProgressData) args,
   ) {
@@ -174,12 +172,12 @@ class CalculationDatasource implements ICalculationDataSource {
 
     int n = sortProgressData.cursors.length;
     List<int> bestSortFound = sortProgressData.bestSortFound;
-    List<List<int>> possibleIntsById = sortProgressData.possibleIntsById;
     List<int> cursors = sortProgressData.cursors;
+    List<List<int>> possibleIntsById = sortProgressData.possibleIntsById;
+    List<List<List<int>>> validAreasById = sortProgressData.validAreasById;
     List<int> bestDistFound = sortProgressData.bestDistFound;
 
     // validAreasById[id] stores the state of validAreas at that depth
-    List<List<List<int>>> validAreasById = sortProgressData.validAreasById;
 
     int id = 0;
     while (id >= 0) {
@@ -230,7 +228,7 @@ class CalculationDatasource implements ICalculationDataSource {
         } else if (id == n) {
           if (comparison == 1) {
             bestDistFound.setAll(0, newDist);
-            sendPort.send(List.from(bestSortFound));
+            sendPort.send(sortProgressData);
           } else {
             found = false;
           }
@@ -244,9 +242,7 @@ class CalculationDatasource implements ICalculationDataSource {
       }
     }
     if (bestDistFound.isEmpty) {
-      sendPort.send(
-        SortingResponse(sortedIds: null, isNaturalOrderValid: false),
-      );
+      sendPort.send(sortProgressData);
     }
   }
 

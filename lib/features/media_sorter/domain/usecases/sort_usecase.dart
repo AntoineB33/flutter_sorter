@@ -1,18 +1,32 @@
-import 'package:flutter/foundation.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
 
-class SortUsecase extends ChangeNotifier {
-  final SortRepository repository;
+class SortUsecase {
+  final SortRepository sortRepository;
+  final SheetDataRepository sheetDataRepository;
 
-  Stream<void> call() => repository.progressStream;
+  String get currentSheetId => sheetDataRepository.currentSheetId;
+  Stream<void> get progressStream => sortRepository.progressStream;
+  Stream<void> get sortStatusStream => sortRepository.sortStatusStream;
 
-  SortUsecase(this.repository);
+  SortUsecase(this.sortRepository, this.sheetDataRepository);
 
   void sortMedia(String sheetId) {
-    repository.sortMedia(sheetId);
+    sortRepository.sortMedia(sheetId);
+  }
+
+  void onDataProgressUpdate() {
+    if (sortRepository.toSort(currentSheetId) && sortRepository.sortedWithValidSort(currentSheetId)) {
+      sortRepository.sortMedia(currentSheetId);
+    }
+  }
+
+  void saveSortStatus() {
+    sortRepository.saveAllSortStatus();
   }
 
   void calculateOnChange() {
-    repository.calculateOnChange();
+    sortRepository.calculateOnChange();
   }
 }

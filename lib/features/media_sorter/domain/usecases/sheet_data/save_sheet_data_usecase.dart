@@ -2,44 +2,44 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/selection_d
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data/sheet_save_repository.dart';
 
 class SaveSheetDataUseCase {
-  final SheetRepository repository;
+  final SheetSaveRepository sheetSaveRepository;
+  final SelectionRepository selectionRepository;
+  final SheetDataRepository sheetDataRepository;
 
-  SaveSheetDataUseCase(this.repository);
+  SaveSheetDataUseCase(this.sheetSaveRepository, this.selectionRepository, this.sheetDataRepository);
 
-  Future<void> saveLastSelection(SelectionData selection) {
-    return repository.saveLastSelection(selection);
-  }
 
   Future<void> saveSheet(String sheetName, SheetData sheet) {
-    return repository.updateSheet(sheetName, sheet);
+    return sheetSaveRepository.updateSheet(sheetName, sheet);
   }
 
-  Future<void> saveRecentSheetIds(List<String> sheetIds) {
+  Future<void> saveRecentSheetIds() {
     // Assuming the repository has a method to save the last opened sheet name
-    return repository.saveRecentSheetIds(sheetIds);
+    return sheetSaveRepository.saveRecentSheetIds();
   }
 
   Future<void> saveAllLastSelected(Map<String, SelectionData> cells) {
-    return repository.saveAllLastSelected(cells);
+    return sheetSaveRepository.saveAllLastSelected(cells);
   }
 
   Future<void> saveAllSortStatus(Map<String, SortStatus> sortStatusBySheet) {
-    return repository.saveAllSortStatus(sortStatusBySheet);
+    return sheetSaveRepository.saveAllSortStatus(sortStatusBySheet);
   }
 
   Future<void> saveAnalysisResult(String sheetName, AnalysisResult result) {
-    return repository.saveAnalysisResult(sheetName, result);
+    return sheetSaveRepository.saveAnalysisResult(sheetName, result);
   }
 
   Future<void> saveSortProgression(String sheetName, SortProgressData data) {
-    return repository.saveSortProgression(sheetName, data);
+    return sheetSaveRepository.saveSortProgression(sheetName, data);
   }
 
   Future<void> clearAllData() {
-    return repository.clearAllData();
+    return sheetSaveRepository.clearAllData();
   }
 }

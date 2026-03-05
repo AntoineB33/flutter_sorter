@@ -8,33 +8,46 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/sort_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/selection_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 
 class SheetDataUsecase {
-  final LoadedSheetsCache loadedSheetsData;
-  final HistoryService historyService;
+  final SheetDataRepository sheetDataRepository;
+  final SortRepository sortRepository;
 
-  SheetData get currentSheet => loadedSheetsData.currentSheet;
-  String get currentSheetName => loadedSheetsData.currentSheetId;
-  int rowCount(SheetContent content) => content.table.length;
-  int colCount(SheetContent content) =>
-      content.table.isNotEmpty ? content.table[0].length : 0;
+  Stream<UpdateRequest> get updateDataStream => sortRepository.updateDataStream;
+  Stream<void> get sortStatusStream => sortRepository.sortStatusStream;
+  String get currentSheetId => sheetDataRepository.currentSheetId;
+  int rowCount() => sheetDataRepository.rowCount(currentSheetId);
+  int colCount() => sheetDataRepository.colCount(currentSheetId);
 
   SheetDataUsecase({
-    required this.loadedSheetsData,
-    required this.historyService,
+    required this.sheetDataRepository,
+    required this.sortRepository,
   });
+
+  
+  void update(UpdateData updateData) {
+    for (var update in updateData.updates) {
+      if (update is CellUpdate) {
+        updateCell(update);
+      } else if (update is ColumnTypeUpdate) {
+        setColumnType(update);
+      } else {
+        throw Exception('Unsupported update type: ${update.runtimeType}');
+      }
+    }
+  }
 
   void increaseColumnCount(int col, SheetContent sheetContent) {
     if (col >= colCount(sheetContent)) {
@@ -138,5 +151,25 @@ class SheetDataUsecase {
         }
       }
     }
+  }
+
+  
+  void delete() {
+    List<UpdateUnit> updates = [];
+    for (Point<int> cell in selection.selectedCells) {
+      updates.add(
+        CellUpdate(
+          cell.x,
+          cell.y,
+          '',
+          loadedSheetsData.getCellContent(cell.x, cell.y),
+        ),
+      );
+    }
+    UpdateData updateData = UpdateData(Uuid().v4(), DateTime.now(), updates);
+    update(updateData, true);
+    notifyListeners();
+    scheduleSheetSave(currentSheetName);
+    sortService.calculate(currentSheetName);
   }
 }

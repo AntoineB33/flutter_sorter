@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 
 class AnalysisResultCache extends ChangeNotifier {
   final Map<String, AnalysisResult> _analysisResults = {};
@@ -10,6 +11,10 @@ class AnalysisResultCache extends ChangeNotifier {
 
   AnalysisResult _getAnalysisResult(String sheetId) {
     return _analysisResults[sheetId]!;
+  }
+
+  Map<int, Map<int, List<SortingRule>>> getMyRules(String sheetId) {
+    return _getAnalysisResult(sheetId).myRules;
   }
 
   AnalysisResult getAnalysisResult(String sheetId) {
@@ -28,8 +33,12 @@ class AnalysisResultCache extends ChangeNotifier {
     return _getAnalysisResult(sheetId).groupsToMaximize.isEmpty;
   }
 
-  bool getToSort(String sheetId) {
+  bool toSort(String sheetId) {
     return _getAnalysisResult(sheetId).toSort;
+  }
+
+  bool sortedWithValidSort(String sheetId) {
+    return _getAnalysisResult(sheetId).sortedWithValidSort;
   }
 
   void updateResults(String sheetId, AnalysisResult newResult) {

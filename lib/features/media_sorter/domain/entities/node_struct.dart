@@ -21,7 +21,7 @@ class NodeStruct {
   final bool hideIfEmpty;
   final bool startOpen;
   bool isExpanded = false;
-  String? idOnTap;
+  OnTapAction? idOnTap;
   bool defaultOnTap = true;
   List<Cell>? cellsToSelect;
 
@@ -88,4 +88,9 @@ class NodeStruct {
   factory NodeStruct.fromJson(Map<String, dynamic> json) => _$NodeStructFromJson(json);
 
   Map<String, dynamic> toJson() => _$NodeStructToJson(this);
+}
+
+enum OnTapAction {
+  selectCell,
+  selectAttribute,
 }

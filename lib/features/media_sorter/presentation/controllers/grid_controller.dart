@@ -13,7 +13,7 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/layout_calc
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/models/scroll_request.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/selection_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 
 class GridController extends ChangeNotifier {
@@ -24,7 +24,7 @@ class GridController extends ChangeNotifier {
   int tableViewCols = 0;
 
   LoadedSheetsCache loadedSheetsDataStore;
-  SelectionDataStore selectionDataStore;
+  SelectionCache selectionDataStore;
 
   final SpreadsheetLayoutCalculator _layoutCalculator =
       SpreadsheetLayoutCalculator();

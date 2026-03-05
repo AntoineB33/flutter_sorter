@@ -112,3 +112,10 @@ class UpdateListRemoved {
 
   UpdateListRemoved(this.startInd, this.removedUpdates);
 }
+
+class UpdateRequest {
+  UpdateData updateData;
+  bool updateHistory;
+
+  UpdateRequest(this.updateData, this.updateHistory);
+}

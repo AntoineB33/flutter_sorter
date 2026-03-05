@@ -10,6 +10,8 @@ did result change?
 
 save all history updates
 
+save sheet names separately
+
 Adding a 5-minute screen-free break each hour (optional)
 
 

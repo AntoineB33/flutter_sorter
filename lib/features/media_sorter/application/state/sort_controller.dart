@@ -3,7 +3,7 @@ import 'dart:isolate';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:trying_flutter/features/media_sorter/data/repositories/sort/sort_save_repository.dart';
+import 'package:trying_flutter/features/media_sorter/data/repositories/sort/sort_save_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
@@ -13,7 +13,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data/sheet_save_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/sorting_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/get_sheet_data_usecase.dart';
@@ -26,52 +26,53 @@ import 'package:trying_flutter/features/media_sorter/application/state/sheet_dat
 import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sort_usecase.dart';
 import 'package:trying_flutter/utils/logger.dart';
 import 'package:uuid/uuid.dart';
 
 class SortController extends ChangeNotifier {
   StreamSubscription? _progressSubscription;
+  StreamSubscription? _sortStatusSubscription;
 
   final SaveSheetDataUseCase _saveSheetDataUseCase;
   final GetSheetDataUseCase _getSheetDataUseCase;
+  final SheetDataUsecase sheetDataUsecase;
   final SortUsecase sortUseCase;
-  final SortSaveRepository sortSaveRepository;
 
   final CalculationService calculationService = CalculationService();
   late StreamSubscription _subscription;
 
-  String get currentSheetId => loadedSheetsDataStore.currentSheetId;
-  int rowCount(SheetContent content) => content.table.length;
-  int colCount(SheetContent content) =>
-      content.table.isNotEmpty ? content.table[0].length : 0;
+  String get currentSheetId => sheetDataUsecase.currentSheetId;
+  int get rowCount => sheetDataUsecase.rowCount();
 
   SortController(
     this._getSheetDataUseCase,
     this._saveSheetDataUseCase,
+    this.sheetDataUsecase,
     this.sortUseCase,
-    this.sortSaveRepository,
   ) {
     sortSaveRepository.addListener(_onRepositoryUpdated);
     _subscription = sortingService.dataStream.listen((payload) {
       _onDataChanged(payload.bestSort, payload.sheetId);
     });
-    _progressSubscription = sortUseCase().listen(onDataProgressUpdate);
+    _progressSubscription = sortUseCase.progressStream.listen(onDataProgressUpdate);
+    _sortStatusSubscription = sortUseCase.sortStatusStream.listen(onSortStatusUpdate);
+  }
+
+  @override
+  void dispose() {
+    _progressSubscription?.cancel();
+    _sortStatusSubscription?.cancel();
+    super.dispose();
   }
 
   void onDataProgressUpdate(_) {
-    if (sortUseCase.toSort())
-    notifyListeners();
+    sortUseCase.onDataProgressUpdate();
   }
-  
-  void scheduleNotifyListeners() {
-    if (!_isNotifyScheduled) {
-      _isNotifyScheduled = true;
-      scheduleMicrotask(() {
-        notifyListeners();
-        _isNotifyScheduled = false;
-      });
-    }
+
+  void onSortStatusUpdate(_) {
+    sortUseCase.saveSortStatus();
   }
 
   void calculateOnChange() {
@@ -88,15 +89,8 @@ class SortController extends ChangeNotifier {
     }
   }
 
-  @override
-  void dispose() {
-    sortSaveRepository.removeListener(_onRepositoryUpdated);
-    _subscription.cancel();
-    super.dispose();
-  }
-
   Future<void> loadAllSortStatus() async {
-    final result = await _saveSheetDataUseCase.repository.getAllSortStatus();
+    final result = await _saveSheetDataUseCase.sheetSaveRepository.getAllSortStatus();
     result.fold(
       (failure) => logger.e("Failed to load sort status: $failure"),
       (sortStatusMap) => sortStatusDataStore.loadAllSortStatus(sortStatusMap),

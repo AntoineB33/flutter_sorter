@@ -1,72 +1,44 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 
-enum SortStatus {
-  calculatingResult,
-  findingValidSort,
-  findingBestSort,
-  sortWhileFindingBestSort,
-  none,
-}
-
-class SortStatusCache extends ChangeNotifier {
+class SortStatusCache {
   final ManageWaitingTasks<void> _saveSortStatusExecutor =
-      ManageWaitingTasks<void>(
-        Duration(milliseconds: 1000),
-      );
+      ManageWaitingTasks<void>(Duration(milliseconds: 1000));
   final Map<String, SortStatus> _sortStatusBySheet = {};
-  bool _isNotifyScheduled = false;
+  final _updateDataController = StreamController<void>.broadcast();
 
   final LoadedSheetsCache loadedSheetsDataStore;
-  
-  void scheduleNotifyListeners() {
-    if (!_isNotifyScheduled) {
-      _isNotifyScheduled = true;
-      scheduleMicrotask(() {
-        notifyListeners();
-        _isNotifyScheduled = false;
-      });
-    }
-  }
+
+  Stream<void> get updateData => _updateDataController.stream;
 
   SortStatusCache(this.loadedSheetsDataStore);
 
-  ManageWaitingTasks<void> get saveSortStatusExecutor => _saveSortStatusExecutor;
+  ManageWaitingTasks<void> get saveSortStatusExecutor =>
+      _saveSortStatusExecutor;
   Map<String, SortStatus> get sortStatusBySheet => _sortStatusBySheet;
 
-  bool containsSheet(String sheetName) {
-    return _sortStatusBySheet.containsKey(sheetName);
+  bool isAnalysisDone(String sheetId) {
+    return _sortStatusBySheet[sheetId]?.analysisDone ?? false;
   }
 
-  SortStatus getSortStatus(String sheetName) {
-    return _sortStatusBySheet[sheetName] ?? SortStatus.none;
+  bool isFindingBestSort(String sheetId) {
+    return _sortStatusBySheet[sheetId]?.isFindingBestSort ?? false;
   }
 
-  bool isCalculatingResult(String sheetName) {
-    return getSortStatus(sheetName) == SortStatus.calculatingResult;
+  void isAnalysing(String sheetId, bool isFindingBestSort, bool toSort) {
+    _sortStatusBySheet[sheetId] = SortStatus(isFindingBestSort: isFindingBestSort, toSort: toSort);
   }
 
-  bool isFindingBestSort(String sheetName) {
-    return getSortStatus(sheetName) == SortStatus.findingBestSort;
-  }
-
-  void calculatingResult(String sheetName) {
-    _sortStatusBySheet[sheetName] = SortStatus.calculatingResult;
-    scheduleNotifyListeners();
-  }
-
-  void updateToFindValidSort(String sheetName, bool toFindValidSort) {
+  void updateToFindValidSort(String sheetId, bool toFindValidSort) {
     if (toFindValidSort) {
-      _sortStatusBySheet[sheetName] = SortStatus.findingValidSort;
+      _sortStatusBySheet[sheetId]!.analysisDone = true;
     } else {
-      removeSortStatus(sheetName);
+      removeSortStatus(sheetId);
     }
-    scheduleNotifyListeners();
+    _updateDataController.add(null);
   }
 
   void loadAllSortStatus(Map<String, SortStatus> statuses) {
@@ -78,7 +50,15 @@ class SortStatusCache extends ChangeNotifier {
   void removeSortStatus(String sheetId) {
     if (_sortStatusBySheet.containsKey(sheetId)) {
       _sortStatusBySheet.remove(sheetId);
-      scheduleNotifyListeners();
+      _updateDataController.add(null);
+    }
+  }
+
+  void receivedResponse(String sheetId, bool validSortFound) {
+    if (!validSortFound ||
+        !_sortStatusBySheet[sheetId]!.isFindingBestSort) {
+      _sortStatusBySheet.remove(sheetId);
+      _updateDataController.add(null);
     }
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:isar/isar.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
@@ -7,8 +8,8 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/selection_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
@@ -17,46 +18,34 @@ import 'package:trying_flutter/features/media_sorter/application/state/history_c
 import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/selection_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:uuid/uuid.dart';
 
 class SelectionController extends ChangeNotifier {
-  final HistoryController historyController;
-  final GridController gridController;
-
-  final HistoryService historyService;
-
-  final LoadedSheetsCache loadedSheetsDataStore;
-  final AnalysisResultCache analysisStore;
-  final SelectionDataStore selectionDataStore;
-  final SortStatus sortStatus;
-
   final ManageWaitingTasks<void> _saveLastSelectionExecutor =
       ManageWaitingTasks<void>(Duration(milliseconds: 1000));
+  final SelectionUsecase selectionUsecase;
+  StreamSubscription? _updateData;
 
   final GetSheetDataUseCase _getDataUseCase;
   final SaveSheetDataUseCase _saveSheetDataUseCase;
 
-  SheetData get currentSheet => loadedSheetsDataStore.currentSheet;
-  SheetContent get currentSheetContent => currentSheet.sheetContent;
-  int get rowCount => currentSheetContent.table.length;
-  int get colCount => currentSheetContent.table.isNotEmpty
-      ? currentSheetContent.table[0].length
-      : 0;
-  SelectionData get selection => selectionDataStore.selection;
-
   SelectionController(
     this._getDataUseCase,
     this._saveSheetDataUseCase,
-    this.selectionDataStore,
-    this.loadedSheetsDataStore,
-    this.analysisStore,
-    this.historyController,
-    this.historyService,
-    this.gridController,
-    this.sortStatus,
+    this.selectionUsecase,
   ) {
-    selectionDataStore.addListener(saveLastSelection);
+    _updateData = selectionUsecase.updateData.listen((sheetId) {
+      _saveSheetDataUseCase.saveSelection(sheetId);
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _updateData?.cancel();
+    _saveLastSelectionExecutor.dispose();
+    super.dispose();
   }
 
   Future<void> getAllLastSelected() async {
@@ -66,21 +55,9 @@ class SelectionController extends ChangeNotifier {
         debugPrint("Error getting all last selected: $failure");
       },
       (lastSelected) {
-        selectionDataStore.lastSelectionBySheet = lastSelected;
+        selectionUsecase.lastSelectionBySheet = lastSelected;
       },
     );
-  }
-
-  bool completeMissing(List<String> sheetNames) {
-    bool saveLastSelectionBySheet = false;
-    for (var name in sheetNames) {
-      if (!selectionDataStore.lastSelectionBySheet.containsKey(name)) {
-        selectionDataStore.lastSelectionBySheet[name] = SelectionData.empty();
-        saveLastSelectionBySheet = true;
-        debugPrint("No last selection saved for sheet $name");
-      }
-    }
-    return saveLastSelectionBySheet;
   }
 
   Future<void> loadLastSelection() async {
@@ -88,12 +65,12 @@ class SelectionController extends ChangeNotifier {
     result.fold(
       (failure) {
         debugPrint("Error getting last selection for current sheet: $failure");
-        selectionDataStore.lastSelectionBySheet[loadedSheetsDataStore
+        selectionUsecase.lastSelectionBySheet[loadedSheetsDataStore
                 .currentSheetId] =
             SelectionData.empty();
       },
       (selection) {
-        selectionDataStore.lastSelectionBySheet[loadedSheetsDataStore
+        selectionUsecase.lastSelectionBySheet[loadedSheetsDataStore
                 .currentSheetId] =
             selection;
       },
@@ -101,19 +78,19 @@ class SelectionController extends ChangeNotifier {
   }
 
   void clearLastSelection(String sheetName) {
-    selectionDataStore.lastSelectionBySheet[sheetName] = SelectionData.empty();
+    selectionUsecase.lastSelectionBySheet[sheetName] = SelectionData.empty();
   }
 
   Future<void> saveAllLastSelected() async {
     await _saveSheetDataUseCase.saveAllLastSelected(
-      selectionDataStore.lastSelectionBySheet,
+      selectionUsecase.lastSelectionBySheet,
     );
   }
 
   Future<void> saveLastSelection() async {
     _saveLastSelectionExecutor.execute(() async {
       await _saveSheetDataUseCase.saveLastSelection(
-        selectionDataStore.selection,
+        selectionUsecase.selection,
       );
     });
   }
@@ -140,7 +117,7 @@ class SelectionController extends ChangeNotifier {
     bool keepSelection, {
     bool scrollTo = true,
   }) {
-    SelectionData selection = selectionDataStore.selection;
+    SelectionData selection = selectionUsecase.selection;
     if (!keepSelection) {
       selection.selectedCells.clear();
     }
@@ -155,7 +132,7 @@ class SelectionController extends ChangeNotifier {
   }
 
   void stopEditing(String prevValue, {bool updateHistory = true}) {
-    if (!selectionDataStore.editingMode) {
+    if (!selectionUsecase.editingMode) {
       return;
     }
     saveLastSelection();
@@ -163,18 +140,18 @@ class SelectionController extends ChangeNotifier {
       historyService.commitHistory(
         UpdateData(Uuid().v4(), DateTime.now(), [
           CellUpdate(
-            selectionDataStore.primarySelectedCell.x,
-            selectionDataStore.primarySelectedCell.y,
+            selectionUsecase.primarySelectedCell.x,
+            selectionUsecase.primarySelectedCell.y,
             loadedSheetsDataStore.getCellContent(
-              selectionDataStore.primarySelectedCell.x,
-              selectionDataStore.primarySelectedCell.y,
+              selectionUsecase.primarySelectedCell.x,
+              selectionUsecase.primarySelectedCell.y,
             ),
             prevValue,
           ),
         ]),
       );
     }
-    selectionDataStore.setEditingMode(false);
+    selectionUsecase.setEditingMode(false);
   }
 
   bool startEditing() {
@@ -204,7 +181,7 @@ class SelectionController extends ChangeNotifier {
   @override
   void dispose() {
     _saveLastSelectionExecutor.dispose();
-    selectionDataStore.removeListener(saveLastSelection);
+    selectionUsecase.removeListener(saveLastSelection);
     super.dispose();
   }
 

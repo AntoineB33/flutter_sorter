@@ -12,10 +12,8 @@ class SortProgressCache {
     return _dataBySheet[sheetId]!;
   }
 
-  void setBestSortFound(String sheetId, List<int> bestSortFound) {
-    _dataBySheet[sheetId]!.bestSortFound
-      ..clear()
-      ..addAll(bestSortFound);
+  void update(String sheetId, SortProgressData newProgressData) {
+    _dataBySheet[sheetId] = newProgressData;
     _progressController.add(null);
   }
   

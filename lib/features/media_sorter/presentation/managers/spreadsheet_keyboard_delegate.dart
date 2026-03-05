@@ -1,21 +1,20 @@
 import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:isar/isar.dart';
+import 'package:trying_flutter/features/media_sorter/application/coordinators/spreadsheet_coordinator.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/coordinators/history_coordinator.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/selection_controller.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/coordinators/selection_coordinator.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/sort_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/selection_data_store.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 
 class SpreadsheetKeyboardDelegate {
   final SelectionController selectionController;
@@ -23,21 +22,22 @@ class SpreadsheetKeyboardDelegate {
 
   final HistoryCoordinator historyManager;
 
-  final SortService sortService;
-
   final LoadedSheetsCache loadedSheetsDataStore;
-  final SelectionDataStore selectionDataStore;
+  final SelectionCache selectionDataStore;
 
   SpreadsheetKeyboardDelegate(
     this.historyManager,
     this.selectionController,
     this.selectionCoordinator,
-    this.sortService,
     this.loadedSheetsDataStore,
     this.selectionDataStore,
   );
 
-  KeyEventResult handle(BuildContext context, KeyEvent event) {
+  KeyEventResult handle(
+    BuildContext context,
+    KeyEvent event,
+    HistoryController historyController,
+  ) {
     if (selectionDataStore.editingMode) {
       return KeyEventResult.ignored;
     }
@@ -106,31 +106,13 @@ class SpreadsheetKeyboardDelegate {
         }
       });
     } else if (keyLabel == 'delete' || keyLabel == 'backspace') {
-      delete(
-        sheet,
-        analysisResults,
-        selection,
-        currentSheetName,
-        lastSelectionBySheet,
-        sortStatus,
-        row1ToScreenBottomHeight,
-        colBToScreenRightWidth,
-      );
+      delete();
       return KeyEventResult.handled;
     } else if (isControl && keyLabel == 'z') {
-      historyManager.undo();
+      historyController.undo();
       return KeyEventResult.handled;
     } else if (isControl && keyLabel == 'y') {
-      redo(
-        sheet,
-        analysisResults,
-        selection,
-        lastSelectionBySheet,
-        sortStatus,
-        currentSheetName,
-        row1ToScreenBottomHeight,
-        colBToScreenRightWidth,
-      );
+      historyController.redo();
       return KeyEventResult.handled;
     }
 
