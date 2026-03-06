@@ -12,7 +12,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
@@ -24,10 +24,6 @@ import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.
 import 'package:uuid/uuid.dart';
 
 class SheetDataController extends ChangeNotifier {
-  // --- states ---
-  final Map<String, ManageWaitingTasks<void>> _saveExecutors = {};
-
-
   final SheetDataUsecase sheetDataUsecase;
 
   late final SpreadsheetClipboardService _clipboardService =

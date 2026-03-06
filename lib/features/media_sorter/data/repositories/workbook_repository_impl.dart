@@ -1,58 +1,54 @@
+import 'package:fpdart/fpdart.dart';
+import 'package:trying_flutter/core/error/exceptions.dart';
+import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/workbook_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/data_load_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
 import 'package:trying_flutter/utils/logger.dart';
 
 class WorkbookRepositoryImpl implements WorkbookRepository {
   final FileSheetLocalDataSource fileSheetLocalDataSource;
 
-  final LoadedSheetsCache loadedSheetsDataStore;
-  final SelectionCache selectionDataStore;
+  final LoadedSheetsCache loadedSheetsCache;
+  final SelectionCache selectionCache;
+  final SortStatusCache sortStatusCache;
 
   WorkbookRepositoryImpl(
     this.fileSheetLocalDataSource,
-    this.loadedSheetsDataStore,
-    this.selectionDataStore,
+    this.loadedSheetsCache,
+    this.selectionCache,
+    this.sortStatusCache
   );
 
   @override
-  Future<void> init() async {
+  Future<Either<Failure, DataLoadResult>> init() async {
     await fileSheetLocalDataSource.clearAllData();
-
-    bool saveRecentSheetIds = false;
-    loadedSheetsDataStore.recentSheetIds = await fileSheetLocalDataSource
-        .recentSheetIds();
-    for (int i = 0; i < loadedSheetsDataStore.recentSheetIds.length; i++) {
-      String sheetId = loadedSheetsDataStore.recentSheetIds[i];
+    try {
+      loadedSheetsCache.recentSheetIds = await fileSheetLocalDataSource
+          .recentSheetIds();
+    } on CacheParsingException catch (e) {
+      return Left(CacheParsingFailure(e.e));
+    } on CacheException catch (e) {
+      return Left(CacheFailure(e.e));
+    }
+    bool corruptedButRecovered = false;
+    for (int i = 0; i < loadedSheetsCache.recentSheetIds.length; i++) {
+      String sheetId = loadedSheetsCache.recentSheetIds[i];
       if (!WorkbookService.isValidSheetName(sheetId)) {
-        logger.e(
-          "Invalid sheet name '$sheetId' found in sheet names list, removing it.",
-        );
-        loadedSheetsDataStore.removeSheet(i);
-        saveRecentSheetIds = true;
+        loadedSheetsCache.removeSheet(i);
+        corruptedButRecovered = true;
       }
+    }
+    if (corruptedButRecovered) {
+      return Right(DataLoadResult.corruptedButRecovered);
+    } else {
+      return Right(DataLoadResult.success);
     }
 
-    // --- get sort status by sheet ---
-    await sortController.loadAllSortStatus();
-    bool saveCalculationStatusBySheet = false;
-    for (var name in sortController.sortStatusBySheet.keys.toList()) {
-      if (!WorkbookService.isValidSheetName(name)) {
-        logger.e(
-          "Sort status found for sheet '$name' which is not in sheet names list, removing it.",
-        );
-        sortController.sortStatusBySheet.remove(name);
-        saveCalculationStatusBySheet = true;
-      } else if (!loadedSheetsDataStore.sheetNames.contains(name)) {
-        loadedSheetsDataStore.sheetNames.add(name);
-        saveRecentSheetIds = true;
-        selectionDataStore.lastSelectionBySheet[name] = SelectionData.empty();
-        saveLastSelectionBySheet = true;
-        debugPrint("No sheet data saved for sort status of sheet $name");
-      }
-    }
 
     // --- get last selection for current sheet ---
     selectionController.loadLastSelection();
@@ -60,21 +56,21 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
     // --- save any correction if needed ---
     if (saveRecentSheetIds) {
       await saveSheetDataUseCase.saveRecentSheetIds(
-        loadedSheetsDataStore.currentSheetId,
+        loadedSheetsCache.currentSheetId,
       );
     }
     if (saveRecentSheetIds) {
       await saveSheetDataUseCase.saveRecentSheetIds(
-        loadedSheetsDataStore.sheetNames,
+        loadedSheetsCache.sheetNames,
       );
     }
     if (saveLastSelectionBySheet) {
       await selectionController.saveAllLastSelected();
     }
     if (saveCalculationStatusBySheet) {
-      sortController.saveAllSortStatus(loadedSheetsDataStore.currentSheetId);
+      sortController.saveAllSortStatus(loadedSheetsCache.currentSheetId);
     }
-    await loadSheetByName(loadedSheetsDataStore.currentSheetId, init: true);
+    await loadSheetByName(loadedSheetsCache.currentSheetId, init: true);
     for (var name in sortStatusDataStore.sortStatusBySheet.keys.toList()) {
       if (!sortStatusDataStore.getSortStatus(name).resultCalculated ||
           !sortStatusDataStore.getSortStatus(name).validSortFound) {
@@ -96,6 +92,25 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
           _gridController.row1ToScreenBottomHeight,
           _gridController.colBToScreenRightWidth,
         );
+      }
+    }
+  }
+
+  @override
+  Future<void> checkSortStatusSheetIds() async {
+    for (var sheetId in sortStatusCache.getSheetIds()) {
+      if (!WorkbookService.isValidSheetName(sheetId)) {
+        logger.e(
+          "Sort status found for sheet '$sheetId' which is not in sheet names list, removing it.",
+        );
+        sortStatusCache.removeSortStatus(sheetId);
+        saveCalculationStatusBySheet = true;
+      } else if (!loadedSheetsCache.containsSheetId(sheetId)) {
+        loadedSheetsCache.addSheetId(sheetId, true);
+        saveRecentSheetIds = true;
+        selectionCache.setNewSelectionData(sheetId);
+        saveLastSelectionBySheet = true;
+        debugPrint("No sheet data saved for sort status of sheet $sheetId");
       }
     }
   }

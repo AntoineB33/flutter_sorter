@@ -33,21 +33,12 @@ class AnalysisResultCache extends ChangeNotifier {
     return _getAnalysisResult(sheetId).groupsToMaximize.isEmpty;
   }
 
-  bool toSort(String sheetId) {
-    return _getAnalysisResult(sheetId).toSort;
-  }
-
   bool sortedWithValidSort(String sheetId) {
     return _getAnalysisResult(sheetId).sortedWithValidSort;
   }
 
   void updateResults(String sheetId, AnalysisResult newResult) {
     _analysisResults[sheetId] = newResult;
-    notifyListeners();
-  }
-
-  void setResultCalculated(String sheetId, bool resultCalculated) {
-    _analysisResults[sheetId]!.resultCalculated = resultCalculated;
     notifyListeners();
   }
 

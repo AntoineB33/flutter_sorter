@@ -12,7 +12,7 @@ class SortProgressData {
 
   SortProgressData({required this.bestSortFound, required this.possibleIntsById, required this.cursors, required this.bestDistFound, required this.validAreasById});
 
-  factory SortProgressData.empty(int n) {
+  factory SortProgressData.empty([int n = 0]) {
     return SortProgressData(bestSortFound: [], possibleIntsById: List.generate(n, (_) => []), cursors: List.filled(n, 0), bestDistFound: [], validAreasById: List.generate(n + 1, (_) => []));
   }
 
@@ -24,8 +24,8 @@ class SortProgressData {
     return cursors[0] < possibleIntsById[0].length;
   }
 
-     SortProgressData.fromJson(Map<String, dynamic> json) =>
-      _$SortProgressDataFromJson(json);
+  factory SortProgressData.fromJson(Map<String, dynamic> json) =>
+  _$SortProgressDataFromJson(json);
 
   Map<String, dynamic> toJson() => _$SortProgressDataToJson(this);
 }

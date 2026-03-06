@@ -6,15 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 
-class SelectionCache extends ChangeNotifier {
+class SelectionCache  {
   Map<String, SelectionData> lastSelectionBySheet = {};
   final _updateDataController = StreamController<String>.broadcast();
 
   LoadedSheetsCache loadedSheetsDataStore;
 
+  String get currentSheetId => loadedSheetsDataStore.currentSheetId;
   Stream<String> get updateData => _updateDataController.stream;
   SelectionData get selection =>
-      lastSelectionBySheet[loadedSheetsDataStore.currentSheetId] ??=
+      lastSelectionBySheet[currentSheetId] ??=
           SelectionData.empty();
   Point<int> get primarySelectedCell => selection.primarySelectedCell;
   double get scrollOffsetX => selection.scrollOffsetX;
@@ -23,26 +24,39 @@ class SelectionCache extends ChangeNotifier {
 
   set scrollOffsetX(double value) {
     selection.scrollOffsetX = value;
-    notifyListeners();
+    _updateDataController.add(currentSheetId);
   }
 
   set scrollOffsetY(double value) {
     selection.scrollOffsetY = value;
-    notifyListeners();
+    _updateDataController.add(currentSheetId);
   }
 
   SelectionCache(this.loadedSheetsDataStore);
 
   void setEditingMode(bool isEditing) {
-    String currentSheetName = loadedSheetsDataStore.currentSheetId;
-    SelectionData selection = lastSelectionBySheet[currentSheetName] ??=
+    SelectionData selection = lastSelectionBySheet[currentSheetId] ??=
         SelectionData.empty();
     selection.editingMode = isEditing;
-    notifyListeners();
+    _updateDataController.add(currentSheetId);
   }
 
   void setNewSelectionData(String sheetId) {
     lastSelectionBySheet[sheetId] = SelectionData.empty();
     _updateDataController.add(sheetId);
+  }
+
+  void setSelectionData(String sheetId, SelectionData selectionData, bool save) {
+    lastSelectionBySheet[sheetId] = selectionData;
+    if (save) {
+      _updateDataController.add(sheetId);
+    }
+  }
+
+  void setLastSelectionBySheet(Map<String, SelectionData> lastSelectionBySheet, bool save) {
+    this.lastSelectionBySheet = lastSelectionBySheet;
+    if (save) {
+      _updateDataController.add(currentSheetId);
+    }
   }
 }

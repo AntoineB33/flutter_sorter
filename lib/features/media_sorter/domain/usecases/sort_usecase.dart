@@ -17,6 +17,7 @@ class SortUsecase {
   }
 
   void onDataProgressUpdate() {
+    sortRepository.saveDataProgress();
     if (sortRepository.toSort(currentSheetId) && sortRepository.sortedWithValidSort(currentSheetId)) {
       sortRepository.sortMedia(currentSheetId);
     }
@@ -28,5 +29,12 @@ class SortUsecase {
 
   void calculateOnChange() {
     sortRepository.calculateOnChange();
+  }
+
+  
+  Future<Either<Failure, AnalysisResult>> getAnalysisResult(
+    String sheetName,
+  ) async {
+    return await repository.getAnalysisResult(sheetName);
   }
 }

@@ -19,6 +19,10 @@ class LoadedSheetsCache {
     _recentSheetIds.addAll(names);
   }
 
+  bool containsSheetId(String sheetId) {
+    return _loadedSheetsData.containsKey(sheetId);
+  }
+
   SheetData getSheet(String sheetId) {
     return _loadedSheetsData[sheetId]!;
   }

@@ -14,6 +14,7 @@ import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_ca
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/check_valid_strings.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/workbook_usecase.dart';
 import 'package:trying_flutter/utils/logger.dart';
 import 'dart:math';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
@@ -31,15 +32,17 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_re
 class WorkbookController extends ChangeNotifier {
 
   // --- usecases ---
+  final WorkbookUseCase workbookUseCase;
   final SaveSheetDataUseCase saveSheetDataUseCase;
   final GetSheetDataUseCase getDataUseCase;
   final CalculationService calculationService = CalculationService();
 
   WorkbookController({
+    required this.workbookUseCase,
     required this.saveSheetDataUseCase,
     required this.getDataUseCase,
   }) {
-    init();
+    workbookUseCase.init();
   }
 
   Future<void> loadSheetByName(

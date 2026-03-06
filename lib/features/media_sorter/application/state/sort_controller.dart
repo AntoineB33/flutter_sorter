@@ -17,7 +17,7 @@ import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_d
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/sorting_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/get_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/parse_paste_data_usecase.dart';
 import 'dart:async';
 
@@ -81,20 +81,13 @@ class SortController extends ChangeNotifier {
 
   void _onDataChanged(List<int> newData, String sheetId) {
     if (loadedSheetsDataStore.isLoaded(sheetId)) {
+    }
   }
 
   void _onRepositoryUpdated() {
     if (sortSaveRepository.syncFailure != null) {
       logger.e('Background save failed: ${sortSaveRepository.syncFailure}');
     }
-  }
-
-  Future<void> loadAllSortStatus() async {
-    final result = await _saveSheetDataUseCase.sheetSaveRepository.getAllSortStatus();
-    result.fold(
-      (failure) => logger.e("Failed to load sort status: $failure"),
-      (sortStatusMap) => sortStatusDataStore.loadAllSortStatus(sortStatusMap),
-    );
   }
 
   Future<void> saveSortProgression(

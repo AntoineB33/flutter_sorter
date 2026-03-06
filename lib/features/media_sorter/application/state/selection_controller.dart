@@ -10,8 +10,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_re
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/selection_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/get_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/manage_waiting_tasks.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
@@ -22,21 +21,14 @@ import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.
 import 'package:uuid/uuid.dart';
 
 class SelectionController extends ChangeNotifier {
-  final ManageWaitingTasks<void> _saveLastSelectionExecutor =
-      ManageWaitingTasks<void>(Duration(milliseconds: 1000));
   final SelectionUsecase selectionUsecase;
   StreamSubscription? _updateData;
 
-  final GetSheetDataUseCase _getDataUseCase;
-  final SaveSheetDataUseCase _saveSheetDataUseCase;
-
   SelectionController(
-    this._getDataUseCase,
-    this._saveSheetDataUseCase,
     this.selectionUsecase,
   ) {
     _updateData = selectionUsecase.updateData.listen((sheetId) {
-      _saveSheetDataUseCase.saveSelection(sheetId);
+      selectionUsecase.saveSelection();
       notifyListeners();
     });
   }
@@ -44,7 +36,6 @@ class SelectionController extends ChangeNotifier {
   @override
   void dispose() {
     _updateData?.cancel();
-    _saveLastSelectionExecutor.dispose();
     super.dispose();
   }
 
@@ -56,23 +47,6 @@ class SelectionController extends ChangeNotifier {
       },
       (lastSelected) {
         selectionUsecase.lastSelectionBySheet = lastSelected;
-      },
-    );
-  }
-
-  Future<void> loadLastSelection() async {
-    final result = await _getDataUseCase.getLastSelection();
-    result.fold(
-      (failure) {
-        debugPrint("Error getting last selection for current sheet: $failure");
-        selectionUsecase.lastSelectionBySheet[loadedSheetsDataStore
-                .currentSheetId] =
-            SelectionData.empty();
-      },
-      (selection) {
-        selectionUsecase.lastSelectionBySheet[loadedSheetsDataStore
-                .currentSheetId] =
-            selection;
       },
     );
   }

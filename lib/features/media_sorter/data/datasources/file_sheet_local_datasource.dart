@@ -11,6 +11,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/selection_d
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:path/path.dart' as p;
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 
 class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   final SharedPreferences prefs;
@@ -59,7 +60,6 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
     try {
       final directory = await getApplicationDocumentsDirectory();
 
-      // 1. Safely construct the path
       final filePath = p.join(
         directory.path,
         SpreadsheetConstants.folderName,
@@ -68,7 +68,6 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
 
       final file = File(filePath);
 
-      // 2. Handle the "first run" gracefully without throwing
       if (!await file.exists()) {
         return [];
       }
@@ -76,13 +75,10 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
       final jsonString = await file.readAsString();
       final List<dynamic> jsonList = jsonDecode(jsonString);
 
-      // 3. Safe casting
       return List<String>.from(jsonList);
     } on FormatException catch (e) {
-      // 4. Map to domain exception and preserve the stack/error
       throw CacheParsingException(e);
     } catch (e) {
-      // 5. Catch-all that doesn't swallow the root cause
       throw CacheException(e);
     }
   }
