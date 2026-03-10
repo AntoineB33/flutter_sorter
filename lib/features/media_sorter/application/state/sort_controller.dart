@@ -18,7 +18,7 @@ import 'package:trying_flutter/features/media_sorter/domain/services/calculation
 import 'package:trying_flutter/features/media_sorter/data/datasources/sorting_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/get_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/parse_paste_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/parse_paste_data_usecase.dart';
 import 'dart:async';
 
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';

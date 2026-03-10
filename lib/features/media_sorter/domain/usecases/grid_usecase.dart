@@ -1,102 +1,10 @@
-import 'dart:async';
-import 'dart:math';
-
-import 'package:flutter/material.dart';
-import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
-import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/layout_calculator.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/models/scroll_request.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 
-class GridController extends ChangeNotifier {
-  // --- states ---
-  double row1ToScreenBottomHeight = 0.0;
-  double colBToScreenRightWidth = 0.0;
-  int tableViewRows = 0;
-  int tableViewCols = 0;
-  final _scrollEventController = StreamController<ScrollRequest>.broadcast();
-  Stream<ScrollRequest> get onScrollEvent => _scrollEventController.stream;
+class GridUsecase {
+  final GridRepository repository;
 
-  int rowCount(SheetContent content) => content.table.length;
-  int colCount(SheetContent content) =>
-      content.table.isNotEmpty ? content.table[0].length : 0;
-
-  SheetData get currentSheet => loadedSheetsDataStore.currentSheet;
-
-  GridController(this.loadedSheetsDataStore, this.selectionDataStore);
-
-  void updateRowColCount(
-    bool notify, {
-    double? visibleHeight,
-    double? visibleWidth,
-  }) {
-    int targetRows = tableViewRows;
-    int targetCols = tableViewCols;
-    if (visibleHeight != null) {
-      row1ToScreenBottomHeight = visibleHeight;
-      targetRows = minRows(
-        rowCount(currentSheet.sheetContent),
-        row1ToScreenBottomHeight,
-      );
-    }
-    if (visibleWidth != null) {
-      colBToScreenRightWidth = visibleWidth;
-      targetCols = minCols(
-        colCount(currentSheet.sheetContent),
-        colBToScreenRightWidth,
-      );
-    }
-    if (targetRows != tableViewRows || targetCols != tableViewCols) {
-      tableViewRows = targetRows;
-      tableViewCols = targetCols;
-      if (notify) {
-        notifyListeners();
-      }
-    }
-  }
-
-  int minRows(int rowCount, double height) {
-    double tableHeight = getTargetTop(rowCount - 1);
-    if (height >= tableHeight) {
-      return currentSheet.rowsBottomPos.length +
-          ((height - getTargetTop(currentSheet.rowsBottomPos.length - 1) + 1) /
-                  GetDefaultSizes.getDefaultRowHeight())
-              .ceil();
-    }
-    return rowCount;
-  }
-
-  double getRowHeight(int row) {
-    if (row < currentSheet.rowsBottomPos.length) {
-      if (row == 0) {
-        return currentSheet.rowsBottomPos[0];
-      } else {
-        return currentSheet.rowsBottomPos[row] -
-            currentSheet.rowsBottomPos[row - 1];
-      }
-    }
-    return GetDefaultSizes.getDefaultRowHeight();
-  }
-
-
-  int minCols(int colCount, double width) {
-    double tableWidth = getTargetLeft(colCount - 1);
-    if (width >= tableWidth) {
-      return currentSheet.colRightPos.length +
-          ((width - getTargetLeft(currentSheet.colRightPos.length - 1) + 1) /
-                  GetDefaultSizes.getDefaultCellWidth())
-              .ceil();
-    }
-    return colCount;
-  }
+  GridUsecase(this.repository);
 
   void adjustRowHeightAfterUpdate(UpdateData updateData) {
     for (var update in updateData.updates) {
@@ -210,36 +118,5 @@ class GridController extends ChangeNotifier {
       visibleHeight: row1ToScreenBottomHeight,
       visibleWidth: colBToScreenRightWidth,
     );
-  }
-
-  bool isRowValid(
-    SheetData sheet,
-    int rowId,
-    AnalysisResult result,
-    SortStatus sortStatus,
-  ) {
-    if (sortStatus.resultCalculated) {
-      return rowId < result.isMedium.length && result.isMedium[rowId];
-    }
-    if (rowId == 0) {
-      return false;
-    }
-    for (
-      int srcColId = 0;
-      srcColId < colCount(sheet.sheetContent);
-      srcColId++
-    ) {
-      if (GetNames.isSourceColumn(sheet.sheetContent.columnTypes[srcColId]) &&
-          loadedSheetsDataStore.getCellContent(rowId, srcColId).isNotEmpty) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  @override
-  void dispose() {
-    _scrollEventController.close();
-    super.dispose();
   }
 }

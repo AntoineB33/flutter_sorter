@@ -55,3 +55,8 @@ analyzer:
     unused_result: error
   plugins:
     - custom_lint
+  exclude:
+    - "build/**"
+    - ".dart_tool/**"
+    - "**/*.g.dart"      # If you use code generation
+    - "**/*.freezed.dart" # If you use Freezed

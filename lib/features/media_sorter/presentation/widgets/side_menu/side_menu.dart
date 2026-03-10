@@ -119,7 +119,6 @@ class _SideMenuState extends State<SideMenu> {
           ),
 
           const SizedBox(height: 8), // Reduced spacing to match smaller buttons
-
           // 2. Find Best Sort Button (Orange)
           ElevatedButton(
             onPressed: () {
@@ -138,14 +137,17 @@ class _SideMenuState extends State<SideMenu> {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: Text(
-              widget.sortStatusDataStore.currentSortStatus.isFindingBestSort && 
-                  !widget.sortStatusDataStore.currentSortStatus.sortWhileFindingBestSort
+              widget.sortStatusDataStore.currentSortStatus.isFindingBestSort &&
+                      !widget
+                          .sortStatusDataStore
+                          .currentSortStatus
+                          .sortWhileFindingBestSort
                   ? "Stop Find the best order"
                   : "Find the best order",
             ),
           ),
 
-          const SizedBox(height: 8), 
+          const SizedBox(height: 8),
 
           // 3. Find Best Sort & Apply Button (Purple)
           ElevatedButton(
@@ -165,8 +167,11 @@ class _SideMenuState extends State<SideMenu> {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: Text(
-              widget.sortStatusDataStore.currentSortStatus.isFindingBestSort && 
-                  widget.sortStatusDataStore.currentSortStatus.sortWhileFindingBestSort
+              widget.sortStatusDataStore.currentSortStatus.isFindingBestSort &&
+                      widget
+                          .sortStatusDataStore
+                          .currentSortStatus
+                          .sortWhileFindingBestSort
                   ? "Stop Find the best order & Apply"
                   : "Find & apply order",
             ),
@@ -251,7 +256,7 @@ class _SideMenuState extends State<SideMenu> {
         return Autocomplete<String>(
           optionsBuilder: (TextEditingValue textEditingValue) {
             final query = textEditingValue.text.toLowerCase();
-            final allSheets = workbookController.getRecentSheetNames();
+            final allSheets = workbookController.getRecentSheetIds();
             if (query.isEmpty) {
               final sorted = List<String>.from(allSheets);
               sorted.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
@@ -327,7 +332,7 @@ class _SideMenuState extends State<SideMenu> {
             );
           },
           onSelected: (String selection) {
-            workbookController.loadSheetByName(selection);
+            workbookController.loadSheet(selection);
           },
           fieldViewBuilder:
               (context, textController, focusNode, onFieldSubmitted) {
@@ -343,7 +348,7 @@ class _SideMenuState extends State<SideMenu> {
                     suffixIcon: Icon(Icons.table_chart),
                   ),
                   onSubmitted: (String value) {
-                    workbookController.loadSheetByName(value.trim());
+                    workbookController.loadSheet(value.trim());
                   },
                 );
               },

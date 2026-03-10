@@ -4,7 +4,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_sheet_local_datasource.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
@@ -147,7 +146,6 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   @override
   Future<void> saveSheet(String sheetId, SheetData sheet) async {
     try {
-        
       final directory = await getApplicationDocumentsDirectory();
 
       // 1. Safely construct the path
@@ -218,7 +216,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   }
 
   @override
-  Future<Map<String, SortStatus>> getAllSortStatus() async {
+  Future<Map<String, SortStatus>> getSortStatus() async {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final filePath = p.join(
@@ -231,7 +229,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
       final Map<String, dynamic> decoded = jsonDecode(jsonString);
       final Map<String, SortStatus> result = {};
       decoded.forEach((key, value) {
-        result[key] = SortStatus.values.asNameMap()[value] ?? SortStatus.none;
+        result[key] = SortStatus.fromJson(value);
       });
       return result;
     } on FileSystemException catch (e) {
@@ -285,10 +283,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
   }
 
   @override
-  Future<void> saveAnalysisResult(
-    String sheetId,
-    AnalysisResult result,
-  ) async {
+  Future<void> saveAnalysisResult(String sheetId, AnalysisResult result) async {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final filePath = p.join(
@@ -361,7 +356,7 @@ class FileSheetLocalDataSource implements IFileSheetLocalDataSource {
 
     // 3. Delete the 'media_sorter' folder (contains sheets_index.json)
     final mediaSorterDir = Directory(
-      p.join(directory.path, SpreadsheetConstants.folderName)
+      p.join(directory.path, SpreadsheetConstants.folderName),
     );
     if (await mediaSorterDir.exists()) {
       await mediaSorterDir.delete(recursive: true);

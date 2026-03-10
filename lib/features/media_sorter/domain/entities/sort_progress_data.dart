@@ -2,6 +2,13 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'sort_progress_data.g.dart';
 
+class SortProgressDataMsg {
+  final SortProgressData sortProgressData;
+  final bool newBestSortFound;
+
+  SortProgressDataMsg(this.sortProgressData, this.newBestSortFound);
+}
+
 @JsonSerializable()
 class SortProgressData {
   final List<int> bestSortFound;
@@ -10,10 +17,22 @@ class SortProgressData {
   final List<List<List<int>>> validAreasById;
   final List<int> bestDistFound;
 
-  SortProgressData({required this.bestSortFound, required this.possibleIntsById, required this.cursors, required this.bestDistFound, required this.validAreasById});
+  SortProgressData({
+    required this.bestSortFound,
+    required this.possibleIntsById,
+    required this.cursors,
+    required this.bestDistFound,
+    required this.validAreasById,
+  });
 
   factory SortProgressData.empty([int n = 0]) {
-    return SortProgressData(bestSortFound: [], possibleIntsById: List.generate(n, (_) => []), cursors: List.filled(n, 0), bestDistFound: [], validAreasById: List.generate(n + 1, (_) => []));
+    return SortProgressData(
+      bestSortFound: [],
+      possibleIntsById: List.generate(n, (_) => []),
+      cursors: List.filled(n, 0),
+      bestDistFound: [],
+      validAreasById: List.generate(n + 1, (_) => []),
+    );
   }
 
   bool hasValidSort() {
@@ -25,7 +44,7 @@ class SortProgressData {
   }
 
   factory SortProgressData.fromJson(Map<String, dynamic> json) =>
-  _$SortProgressDataFromJson(json);
+      _$SortProgressDataFromJson(json);
 
   Map<String, dynamic> toJson() => _$SortProgressDataToJson(this);
 }

@@ -1,13 +1,11 @@
 import 'dart:io';
 
 /// Thrown when the local cache is empty or missing.
-class CacheNotFoundException implements Exception {}
+class CacheNotFoundException extends CacheException {}
 
 /// Thrown when the local cache data is corrupted or malformed.
-class CacheParsingException implements Exception {
-  final FormatException e;
-
-  CacheParsingException(this.e);
+class CacheParsingException extends CacheException {
+  CacheParsingException(FormatException super.e);
 }
 
 /// A generic cache exception.
@@ -17,12 +15,12 @@ class CacheException implements Exception {
   CacheException([this.e]);
 }
 
-class FileNotFoundException implements Exception {
-  final FileSystemException e;
+class FileNotFoundException extends CacheException {
+  FileNotFoundException(FileSystemException super.e);
 
-  FileNotFoundException(this.e);
+  FileSystemException get typedE => e as FileSystemException;
 
   @override
-  String toString() => 'File not found: ${e.path}';
+  String toString() => 'File not found: ${typedE.path}';
 
 }

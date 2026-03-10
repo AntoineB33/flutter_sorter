@@ -39,34 +39,8 @@ class SelectionController extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> getAllLastSelected() async {
-    final result = await _getDataUseCase.getAllLastSelected();
-    result.fold(
-      (failure) {
-        debugPrint("Error getting all last selected: $failure");
-      },
-      (lastSelected) {
-        selectionUsecase.lastSelectionBySheet = lastSelected;
-      },
-    );
-  }
-
-  void clearLastSelection(String sheetName) {
-    selectionUsecase.lastSelectionBySheet[sheetName] = SelectionData.empty();
-  }
-
-  Future<void> saveAllLastSelected() async {
-    await _saveSheetDataUseCase.saveAllLastSelected(
-      selectionUsecase.lastSelectionBySheet,
-    );
-  }
-
   Future<void> saveLastSelection() async {
-    _saveLastSelectionExecutor.execute(() async {
-      await _saveSheetDataUseCase.saveLastSelection(
-        selectionUsecase.selection,
-      );
-    });
+    selectionUsecase.saveLastSelection();
   }
 
   bool isCellSelected(SelectionData selection, int row, int col) {
@@ -91,17 +65,7 @@ class SelectionController extends ChangeNotifier {
     bool keepSelection, {
     bool scrollTo = true,
   }) {
-    SelectionData selection = selectionUsecase.selection;
-    if (!keepSelection) {
-      selection.selectedCells.clear();
-    }
-    selection.primarySelectedCell = Point(row, col);
-    saveLastSelection();
-
-    // Request scroll to visible
-    if (scrollTo) {
-      gridController.scrollToCell(row, col);
-    }
+    selectionUsecase.setPrimarySelection(row, col, keepSelection);
     notifyListeners();
   }
 
@@ -173,5 +137,9 @@ class SelectionController extends ChangeNotifier {
     );
 
     treeController.updateMentionsContext(row, col);
+  }
+
+  void clearLastSelection() {
+    selectionUsecase.clearLastSelection();
   }
 }

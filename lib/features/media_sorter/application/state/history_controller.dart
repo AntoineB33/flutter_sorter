@@ -15,8 +15,6 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/history_use
 class HistoryController extends ChangeNotifier {
   final HistoryUsecase historyUsecase;
 
-  Stream<UpdateRequest> get updateDataStream => historyUsecase.updateDataStream;
-
   HistoryController(this.historyUsecase);
 
   void moveInUpdateHistory(int direction) {

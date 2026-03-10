@@ -16,7 +16,6 @@ class SelectionData {
   
   double scrollOffsetX;
   double scrollOffsetY;
-  bool editingMode;
   String previousContent;
 
   SelectionData({
@@ -24,7 +23,6 @@ class SelectionData {
     required this.primarySelectedCell,
     required this.scrollOffsetX,
     required this.scrollOffsetY,
-    required this.editingMode,
     required this.previousContent,
   });
 
@@ -33,7 +31,6 @@ class SelectionData {
         primarySelectedCell = const Point<int>(0, 0),
         scrollOffsetX = 0.0,
         scrollOffsetY = 0.0,
-        editingMode = false,
         previousContent = '';
 
   // Keep your try-catch safety net, but use the generated parser

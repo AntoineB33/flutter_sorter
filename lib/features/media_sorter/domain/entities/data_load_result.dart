@@ -1,4 +1,0 @@
-enum DataLoadResult {
-  success,
-  corruptedButRecovered,
-}

@@ -10,7 +10,7 @@ class ManageWaitingTasks<T> {
 
   ManageWaitingTasks(this.lastCalculationDuration);
   
-  Future<void> execute(Future<T> Function() task, {void Function(T)? onComplete}) async {
+  Future<dynamic> execute(Future<T> Function() task, {void Function(T)? onComplete}) async {
     _waitingNewCalculation = true;
     if (_isCalculating) {
       return;

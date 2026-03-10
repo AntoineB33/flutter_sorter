@@ -1,8 +1,10 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/data_load_result.dart';
 
 abstract class WorkbookRepository {
-  Future<Either<Failure, DataLoadResult>> init();
-  void checkSortStatusSheetIds();
+  List<String> getRecentSheetIds();
+  void saveRecentSheetIds();
+  bool containsSheetId(String sheetId);
+  Future<Either<Failure, void>> clearAllData();
+  Future<Either<Failure, void>> loadRecentSheetIds();
 }

@@ -41,4 +41,9 @@ class HistoryRepositoryImpl implements HistoryRepository {
       currentSheet.historyIndex--;
     }
   }
+
+  @override
+  void setCellContent(int rowId, int colId, String prevVal, String newVal) {
+    commitHistory(UpdateData())
+  }
 }

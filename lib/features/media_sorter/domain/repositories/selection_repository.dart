@@ -2,10 +2,10 @@ import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 
 abstract class SelectionRepository {
-  Stream<String> get updateData;
-  void init();
-  Future<void> getAllLastSelected();
-  Future<void> loadLastSelection();
-  Future<Either<CacheFailure, void>> saveLastSelection();
-  Future<Either<Failure, void>> saveAllLastSelected();
+  Future<Either<Failure, void>> loadLastSelections(bool lastSelectionLoaded);
+  Future<Either<Failure, void>> loadLastSelection();
+  void saveLastSelection();
+  Future<Either<Failure, void>> sheetSwitch();
+  void setPrimarySelection(int row, int col, bool keepSelection);
+  void stopEditing();
 }

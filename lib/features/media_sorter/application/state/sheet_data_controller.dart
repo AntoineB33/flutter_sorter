@@ -10,7 +10,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/column_type
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/parse_paste_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
@@ -26,33 +26,10 @@ import 'package:uuid/uuid.dart';
 class SheetDataController extends ChangeNotifier {
   final SheetDataUsecase sheetDataUsecase;
 
-  late final SpreadsheetClipboardService _clipboardService =
-      SpreadsheetClipboardService();
-  final ParsePasteDataUseCase _parsePasteDataUseCase;
+  SheetDataController(this.sheetDataUsecase);
 
-  Stream<UpdateRequest> get updateDataStream => sheetDataUsecase.updateDataStream;
-  int rowCount(SheetContent content) => content.table.length;
-  int colCount(SheetContent content) =>
-      content.table.isNotEmpty ? content.table[0].length : 0;
-
-  final CalculationService calculationService = CalculationService();
-
-  // --- usecases ---
-  final SaveSheetDataUseCase _saveSheetDataUseCase;
-
-  SheetDataController(
-    SaveSheetDataUseCase saveSheetDataUseCase,
-    this.sheetDataUsecase,
-    this._parsePasteDataUseCase,
-  ) : _saveSheetDataUseCase = saveSheetDataUseCase;
-
-  void scheduleSheetSave(String sheetName) {
-    _saveExecutors[sheetName]!.execute(() async {
-      await _saveSheetDataUseCase.saveSheet(
-        sheetName,
-        loadedSheetsData.getSheet(sheetName),
-      );
-    });
+  void saveRecentSheetIds() {
+    sheetDataUsecase.saveRecentSheetIds();
   }
 
   void createSaveExecutor(String name) {
@@ -81,26 +58,8 @@ class SheetDataController extends ChangeNotifier {
     sortService.calculate(currentSheetName);
   }
 
-  Future<bool> pasteSelection() async {
-    final text = await _clipboardService.getText();
-    if (text == null) return false;
-    // if contains "
-    if (text.contains('"')) {
-      debugPrint('Paste data contains unsupported characters.');
-      return false;
-    }
-
-    final UpdateData updateData = _parsePasteDataUseCase.pasteText(
-      text,
-      selectionDataStore.primarySelectedCell.x,
-      selectionDataStore.primarySelectedCell.y,
-    );
-    update(updateData, true);
-    return true;
-  }
-
   void delete() {
-    List<UpdateUnit> updates = [];
+    List<BaseUpdate> updates = [];
     for (Point<int> cell in selection.selectedCells) {
       updates.add(
         CellUpdate(
@@ -147,63 +106,16 @@ class SheetDataController extends ChangeNotifier {
     );
   }
 
-  Future<void> copySelectionToClipboard(
-    SheetData sheet,
-    SelectionData selection,
-    String currentSheetName,
-  ) async {
-    int startRow = selection.primarySelectedCell.x;
-    int endRow = selection.primarySelectedCell.x;
-    int startCol = selection.primarySelectedCell.y;
-    int endCol = selection.primarySelectedCell.y;
-    for (Point<int> cell in selection.selectedCells) {
-      if (cell.x < startRow) startRow = cell.x;
-      if (cell.y < startCol) startCol = cell.y;
-      if (cell.x > endRow) endRow = cell.x;
-      if (cell.y > endCol) endCol = cell.y;
-    }
-    List<List<bool>> selectedCellsTable = List.generate(
-      endRow - startRow + 1,
-      (_) => List.generate(endCol - startCol + 1, (_) => false),
-    );
-    for (Point<int> cell in selection.selectedCells) {
-      selectedCellsTable[cell.x - startRow][cell.y - startCol] = true;
-    }
-    if (!selectedCellsTable.every((row) => row.every((cell) => !cell))) {
-      await _clipboardService.copy(
-        loadedSheetsData.getCellContent(
-          selection.primarySelectedCell.x,
-          selection.primarySelectedCell.y,
-        ),
-      );
-      return;
-    }
-
-    StringBuffer buffer = StringBuffer();
-
-    for (int r = startRow; r <= endRow; r++) {
-      List<String> rowData = [];
-      for (int c = startCol; c <= endCol; c++) {
-        rowData.add(loadedSheetsData.getCellContent(r, c));
-      }
-      buffer.write(rowData.join('\t')); // Tab separated for Excel compat
-      if (r < endRow) buffer.write('\n');
-    }
-
-    final text = buffer.toString();
-    await _clipboardService.copy(text);
-  }
-
   @override
   void dispose() {
     for (var executor in _saveExecutors.values) {
       executor.dispose();
     }
     super.dispose();
-  }  
+  }
 
-  void update(UpdateData updateData) {
-    sheetDataUsecase.update(updateData);
-    scheduleSheetSave(sheetDataController.currentSheetName);
+  void setCellContent(Point<int> cell, String newVal) {
+    sheetDataUsecase.setCellContent(cell, newVal);
+    notifyListeners();
   }
 }

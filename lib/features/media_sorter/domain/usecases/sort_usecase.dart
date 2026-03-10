@@ -1,4 +1,6 @@
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
 
@@ -6,9 +8,9 @@ class SortUsecase {
   final SortRepository sortRepository;
   final SheetDataRepository sheetDataRepository;
 
-  String get currentSheetId => sheetDataRepository.currentSheetId;
   Stream<void> get progressStream => sortRepository.progressStream;
   Stream<void> get sortStatusStream => sortRepository.sortStatusStream;
+  Stream<void> get saveStream => sortRepository.saveStream;
 
   SortUsecase(this.sortRepository, this.sheetDataRepository);
 
@@ -27,8 +29,20 @@ class SortUsecase {
     sortRepository.saveAllSortStatus();
   }
 
-  void calculateOnChange() {
-    sortRepository.calculateOnChange();
+  Future<void> calculateOnChange(String sheetId) async {
+    await for (final SortProgressDataMsg sortProgressDataMsg in sortRepository.calculateOnChange()) {
+      _handleSortProgressDataMsg(sortProgressDataMsg, sheetId);
+    }
+  }
+
+  void _handleSortProgressDataMsg(SortProgressDataMsg sortProgressDataMsg, String sheetId) {
+    sortRepository.handleSortProgressDataMsg(sortProgressDataMsg, sheetId);
+    if (sortProgressDataMsg.newBestSortFound) {
+      final List<UpdateUnit> updates = sortRepository.sortMedia(sheetId);
+      sheetDataRepository.update(updates, sheetId);
+      gridRepository.adjustRowHeightAfterUpdate(updates, sheetId);
+      historyRepository.commitHistory(updates, sheetId);
+    }
   }
 
   

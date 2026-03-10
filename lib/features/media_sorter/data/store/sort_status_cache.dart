@@ -48,7 +48,7 @@ class SortStatusCache {
     _updateDataController.add(null);
   }
 
-  void loadAllSortStatus(Map<String, SortStatus> statuses) {
+  void setSortStatus(Map<String, SortStatus> statuses) {
     _sortStatusBySheet
       ..clear()
       ..addAll(statuses);

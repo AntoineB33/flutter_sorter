@@ -1,19 +1,43 @@
 import 'dart:math';
 
+import 'package:flutter/material.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:path/path.dart';
+import 'package:trying_flutter/core/error/failures.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_sheet_local_datasource.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
+import 'package:uuid/uuid.dart';
 
 class SheetDataRepositoryImpl implements SheetDataRepository {
   final LoadedSheetsCache loadedSheetsCache;
   final SelectionCache selectionCache;
-  final LoadedSheetsCache loadedSheetsData;
+  final WorkbookCache workbookCache;
 
-  SheetDataRepositoryImpl(this.loadedSheetsCache, this.selectionCache, this.loadedSheetsData);
+  late final SpreadsheetClipboardService _clipboardService =
+      SpreadsheetClipboardService();
+
+  final IFileSheetLocalDataSource dataSource;
+
+  final Map<String, ManageWaitingTasks<void>> _saveSheetDataExecutor = {};
+  int chronoIdCounter = 0;
+
+  SheetDataRepositoryImpl(this.loadedSheetsCache, this.selectionCache, this.workbookCache, this.dataSource);
+
+  String get currentSheetId => workbookCache.currentSheetId;
+  SelectionData get selection => selectionCache.getSelectionData(currentSheetId);
 
   @override
-  String get currentSheetId => loadedSheetsCache.currentSheetId;
+  bool containsSheetId(String sheetId) {
+    return loadedSheetsCache.containsSheetId(sheetId);
+  }
 
   @override
   int rowCount(String sheetId) {
@@ -26,22 +50,114 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  void delete() {
-    List<UpdateUnit> updates = [];
-    for (Point<int> cell in selectionCache.selection.selectedCells) {
-      updates.add(
-        CellUpdate(
-          cell.x,
-          cell.y,
-          '',
-          loadedSheetsData.getCellContent(cell.x, cell.y),
+  Future<void> copySelectionToClipboard() async {
+    int startRow = selection.primarySelectedCell.x;
+    int endRow = selection.primarySelectedCell.x;
+    int startCol = selection.primarySelectedCell.y;
+    int endCol = selection.primarySelectedCell.y;
+    for (Point<int> cell in selection.selectedCells) {
+      if (cell.x < startRow) startRow = cell.x;
+      if (cell.y < startCol) startCol = cell.y;
+      if (cell.x > endRow) endRow = cell.x;
+      if (cell.y > endCol) endCol = cell.y;
+    }
+    List<List<bool>> selectedCellsTable = List.generate(
+      endRow - startRow + 1,
+      (_) => List.generate(endCol - startCol + 1, (_) => false),
+    );
+    for (Point<int> cell in selection.selectedCells) {
+      selectedCellsTable[cell.x - startRow][cell.y - startCol] = true;
+    }
+    if (!selectedCellsTable.every((row) => row.every((cell) => !cell))) {
+      await _clipboardService.copy(
+        loadedSheetsCache.getCellContent(
+          currentSheetId,
+          selectionCache.getSelectionData(currentSheetId).primarySelectedCell.x,
+          selectionCache.getSelectionData(currentSheetId).primarySelectedCell.y,
         ),
       );
+      return;
     }
-    UpdateData updateData = UpdateData(Uuid().v4(), DateTime.now(), updates);
-    update(updateData, true);
-    notifyListeners();
-    scheduleSheetSave(currentSheetName);
-    sortService.calculate(currentSheetName);
+
+    StringBuffer buffer = StringBuffer();
+
+    for (int r = startRow; r <= endRow; r++) {
+      List<String> rowData = [];
+      for (int c = startCol; c <= endCol; c++) {
+        rowData.add(loadedSheetsCache.getCellContent(currentSheetId, r, c));
+      }
+      buffer.write(rowData.join('\t')); // Tab separated for Excel compat
+      if (r < endRow) buffer.write('\n');
+    }
+
+    final text = buffer.toString();
+    await _clipboardService.copy(text);
+  }
+
+  @override
+  Future<Either<Failure, List<CellUpdate>>> pasteSelection() async {
+    final text = await _clipboardService.getText();
+    if (text == null) return Left(ClipboardEmptyFailure());
+    // if contains "
+    if (text.contains('"')) {
+      debugPrint('Paste data contains unsupported characters.');
+      return Left(ClipboardUnsupportedCharactersFailure());
+    }
+
+    
+    final List<CellUpdate> updates = [];
+    final rows = text.split('\n');
+    int startRow = selectionCache.getSelectionData(currentSheetId).primarySelectedCell.x;
+    int startCol = selectionCache.getSelectionData(currentSheetId).primarySelectedCell.y;
+    for (int r = 0; r < rows.length; r++) {
+      final columns = rows[r].split('\t');
+      for (int c = 0; c < columns.length; c++) {
+        String val = columns[c].replaceAll('\r', '');
+        updates.add(
+          CellUpdate(
+            startRow + r,
+            startCol + c,
+            val,
+            loadedSheetsCache.getCellContent(currentSheetId, startRow + r, startCol + c),
+          ),
+        );
+      }
+    }
+    update(updates, currentSheetId);
+    return Right(updates);
+  }
+
+  void scheduleSheetSave(String sheetId) {
+    if (!_saveSheetDataExecutor.containsKey(sheetId)) {
+      _saveSheetDataExecutor[sheetId] = ManageWaitingTasks<void>(Duration(seconds: 2));
+    }
+    _saveSheetDataExecutor[sheetId]!.execute( () async {
+      await dataSource.saveSheet(sheetId, loadedSheetsCache.getSheet(sheetId));
+    });
+  }
+
+  @override
+  List<CellUpdate> setCellContent(Point<int> cell, String newVal) {
+    CellUpdate cellUpdate = CellUpdate(cell.x, cell.y, newVal, loadedSheetsCache.getCellContent(currentSheetId, cell.x, cell.y));
+    update([cellUpdate], currentSheetId);
+    return [cellUpdate];
+  }
+  
+  @override
+  List<CellUpdate> delete(List<Point<int>> cells) {
+    List<CellUpdate> updates = [];
+    for (Point<int> cell in cells) {
+      updates.add(
+        CellUpdate(cell.x, cell.y, '', loadedSheetsCache.getCellContent(currentSheetId, cell.x, cell.y)),
+      );
+    }
+    update(updates, currentSheetId);
+    return updates;
+  }
+
+  @override
+  void update(List<UpdateUnit> updates, String sheetId) {
+    loadedSheetsCache.update(updates, sheetId);
+    scheduleSheetSave(currentSheetId);
   }
 }

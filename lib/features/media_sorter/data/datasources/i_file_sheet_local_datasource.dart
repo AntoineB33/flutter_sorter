@@ -12,13 +12,16 @@ abstract class IFileSheetLocalDataSource {
   Future<void> saveRecentSheetIds(List<String> sheetIds);
   Future<Map<String, SelectionData>> getAllLastSelected();
   Future<void> saveAllLastSelected(Map<String, SelectionData> cells);
-  Future<Map<String, SortStatus>> getAllSortStatus();
+  Future<Map<String, SortStatus>> getSortStatus();
   Future<void> saveAllSortStatus(Map<String, SortStatus> sortStatusBySheet);
   Future<AnalysisResult> getAnalysisResult(String sheetId);
   Future<void> saveAnalysisResult(String sheetId, AnalysisResult result);
   Future<SheetData> getSheet(String sheetId);
   Future<void> saveSheet(String sheetId, SheetData sheet);
   Future<SortProgressData> getSortProgression(String sheetId);
-  Future<void> saveSortProgression(String sheetId, SortProgressData progressData);
+  Future<void> saveSortProgression(
+    String sheetId,
+    SortProgressData progressData,
+  );
   Future<void> clearAllData();
 }

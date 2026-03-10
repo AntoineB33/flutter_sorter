@@ -6,57 +6,71 @@ import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 
-class SelectionCache  {
-  Map<String, SelectionData> lastSelectionBySheet = {};
+class SelectionCache {
+  final Map<String, SelectionData> _lastSelections = {};
   final _updateDataController = StreamController<String>.broadcast();
 
-  LoadedSheetsCache loadedSheetsDataStore;
-
-  String get currentSheetId => loadedSheetsDataStore.currentSheetId;
   Stream<String> get updateData => _updateDataController.stream;
-  SelectionData get selection =>
-      lastSelectionBySheet[currentSheetId] ??=
-          SelectionData.empty();
-  Point<int> get primarySelectedCell => selection.primarySelectedCell;
-  double get scrollOffsetX => selection.scrollOffsetX;
-  double get scrollOffsetY => selection.scrollOffsetY;
-  bool get editingMode => selection.editingMode;
+  Map<String, SelectionData> get lastSelections => Map.unmodifiable(_lastSelections);
 
-  set scrollOffsetX(double value) {
-    selection.scrollOffsetX = value;
-    _updateDataController.add(currentSheetId);
+  bool containsSheetId(String sheetId) {
+    return _lastSelections.containsKey(sheetId);
   }
 
-  set scrollOffsetY(double value) {
-    selection.scrollOffsetY = value;
-    _updateDataController.add(currentSheetId);
+  List<String> getSheetIds() {
+    return _lastSelections.keys.toList();
   }
 
-  SelectionCache(this.loadedSheetsDataStore);
+  List<Point<int>> getSelectedCells(String sheetId) {
+    return _lastSelections[sheetId]?.selectedCells ?? [];
+  }
 
-  void setEditingMode(bool isEditing) {
-    SelectionData selection = lastSelectionBySheet[currentSheetId] ??=
+  SelectionData getSelectionData(String sheetId) {
+    return _lastSelections[sheetId] ??= SelectionData.empty();
+  }
+
+  void setLastSelections(Map<String, SelectionData> lastSelections, String currentSheetId, bool lastSelectionLoaded) {
+    SelectionData currentSheetSelection = _lastSelections[currentSheetId]!;
+    _lastSelections
+      ..clear()
+      ..addAll(lastSelections);
+    if (lastSelectionLoaded) {
+      _lastSelections[currentSheetId] = currentSheetSelection;
+    }
+  }
+
+  void setEditingMode(String currentSheetId, bool isEditing) {
+    SelectionData selection = _lastSelections[currentSheetId] ??=
         SelectionData.empty();
     selection.editingMode = isEditing;
     _updateDataController.add(currentSheetId);
   }
 
-  void setNewSelectionData(String sheetId) {
-    lastSelectionBySheet[sheetId] = SelectionData.empty();
-    _updateDataController.add(sheetId);
-  }
-
-  void setSelectionData(String sheetId, SelectionData selectionData, bool save) {
-    lastSelectionBySheet[sheetId] = selectionData;
+  void setSelectionData(
+    String sheetId,
+    SelectionData selectionData,
+    bool save,
+  ) {
+    _lastSelections[sheetId] = selectionData;
     if (save) {
       _updateDataController.add(sheetId);
     }
   }
 
-  void setLastSelectionBySheet(Map<String, SelectionData> lastSelectionBySheet, bool save) {
-    this.lastSelectionBySheet = lastSelectionBySheet;
-    if (save) {
-      _updateDataController.add(currentSheetId);
+  void setScrollOffsetX(String sheetId, double value) {
+    _lastSelections[sheetId]!.scrollOffsetX = value;
+    _updateDataController.add(sheetId);
+  }
+
+  void setScrollOffsetY(String sheetId, double value) {
+    _lastSelections[sheetId]!.scrollOffsetY = value;
+    _updateDataController.add(sheetId);
+  }
+
+  void removeSelectionData(String sheetId) {
+    if (_lastSelections.containsKey(sheetId)) {
+      _lastSelections.remove(sheetId);
+      _updateDataController.add(sheetId);
     }
   }
 }
