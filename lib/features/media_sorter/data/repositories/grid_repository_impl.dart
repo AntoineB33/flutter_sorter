@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
@@ -7,6 +10,10 @@ import 'package:trying_flutter/features/media_sorter/presentation/utils/get_defa
 
 class GridRepositoryImpl implements GridRepository {
   final LoadedSheetsCache loadedSheetsCache;
+  double row1ToScreenBottomHeight = 0.0;
+  double colBToScreenRightWidth = 0.0;
+  int tableViewRows = 0;
+  int tableViewCols = 0;
 
   GridRepositoryImpl(this.loadedSheetsCache);
 
@@ -70,10 +77,25 @@ class GridRepositoryImpl implements GridRepository {
     return textPainter.height + verticalPaddingTotal + verticalBorderTotal;
   }
 
-  @override
-  void adjustRowHeightAfterUpdate(String sheetId, UpdateData updateData) {
+  
+
+  double getRowHeight(String sheetId, int row) {
     SheetData sheet = loadedSheetsCache.getSheet(sheetId);
-    for (var update in updateData.updates) {
+    if (row < sheet.rowsBottomPos.length) {
+      if (row == 0) {
+        return sheet.rowsBottomPos[0];
+      } else {
+        return sheet.rowsBottomPos[row] -
+            sheet.rowsBottomPos[row - 1];
+      }
+    }
+    return GetDefaultSizes.getDefaultRowHeight();
+  }
+
+  @override
+  void adjustRowHeightAfterUpdate(String sheetId, List<UpdateUnit> updateData) {
+    SheetData sheet = loadedSheetsCache.getSheet(sheetId);
+    for (var update in updateData) {
       if (update is CellUpdate) {
         final int row = update.rowId;
         final int col = update.colId;
@@ -88,40 +110,42 @@ class GridRepositoryImpl implements GridRepository {
         double heightItNeeds = calculateRequiredRowHeight(newValue, col);
 
         if (heightItNeeds > GetDefaultSizes.getDefaultRowHeight() &&
-            currentSheet.rowsBottomPos.length <= row) {
-          int prevRowsBottomPosLength = currentSheet.rowsBottomPos.length;
-          currentSheet.rowsBottomPos.addAll(
-            List.filled(row + 1 - currentSheet.rowsBottomPos.length, 0),
+            sheet.rowsBottomPos.length <= row) {
+          int prevRowsBottomPosLength = sheet.rowsBottomPos.length;
+          sheet.rowsBottomPos.addAll(
+            List.filled(row + 1 - sheet.rowsBottomPos.length, 0),
           );
           for (int i = prevRowsBottomPosLength; i <= row; i++) {
-            currentSheet.rowsBottomPos[i] = i == 0
+            sheet.rowsBottomPos[i] = i == 0
                 ? GetDefaultSizes.getDefaultRowHeight()
-                : currentSheet.rowsBottomPos[i - 1] +
+                : sheet.rowsBottomPos[i - 1] +
                       GetDefaultSizes.getDefaultRowHeight();
           }
         }
 
-        if (row < currentSheet.rowsBottomPos.length) {
-          if (currentSheet.rowsManuallyAdjustedHeight.length <= row ||
-              !currentSheet.rowsManuallyAdjustedHeight[row]) {
-            double currentHeight = getRowHeight(row);
+        if (row < sheet.rowsBottomPos.length) {
+          if (sheet.rowsManuallyAdjustedHeight.length <= row ||
+              !sheet.rowsManuallyAdjustedHeight[row]) {
+            double currentHeight = getRowHeight(sheetId, row);
             if (heightItNeeds < currentHeight) {
               double heightItNeeded = calculateRequiredRowHeight(
+                sheetId,
                 prevValue,
                 col,
               );
               if (heightItNeeded == currentHeight) {
                 double newHeight = heightItNeeds;
-                if (row < currentSheet.sheetContent.table.length) {
+                if (row < sheet.sheetContent.table.length) {
                   for (
                     int j = 0;
-                    j < colCount(currentSheet.sheetContent);
+                    j < colCount(sheetId);
                     j++
                   ) {
                     if (j == col) continue;
                     newHeight = max(
                       calculateRequiredRowHeight(
-                        currentSheet.sheetContent.table[row][j],
+                        sheetId,
+                        sheet.sheetContent.table[row][j],
                         j,
                       ),
                       newHeight,
@@ -133,47 +157,47 @@ class GridRepositoryImpl implements GridRepository {
                   double heightDiff = currentHeight - newHeight;
                   for (
                     int r = row;
-                    r < currentSheet.rowsBottomPos.length;
+                    r < sheet.rowsBottomPos.length;
                     r++
                   ) {
-                    currentSheet.rowsBottomPos[r] -= heightDiff;
+                    sheet.rowsBottomPos[r] -= heightDiff;
                   }
                   if (newHeight == GetDefaultSizes.getDefaultRowHeight()) {
-                    int removeFrom = currentSheet.rowsBottomPos.length;
+                    int removeFrom = sheet.rowsBottomPos.length;
                     for (
-                      int r = currentSheet.rowsBottomPos.length - 1;
+                      int r = sheet.rowsBottomPos.length - 1;
                       r >= 0;
                       r--
                     ) {
-                      if (r < currentSheet.rowsManuallyAdjustedHeight.length &&
-                              currentSheet.rowsManuallyAdjustedHeight[r] ||
-                          currentSheet.rowsBottomPos[r] >
-                              (r == 0 ? 0 : currentSheet.rowsBottomPos[r - 1]) +
+                      if (r < sheet.rowsManuallyAdjustedHeight.length &&
+                              sheet.rowsManuallyAdjustedHeight[r] ||
+                          sheet.rowsBottomPos[r] >
+                              (r == 0 ? 0 : sheet.rowsBottomPos[r - 1]) +
                                   GetDefaultSizes.getDefaultRowHeight()) {
                         break;
                       }
                       removeFrom--;
                     }
-                    currentSheet.rowsBottomPos = currentSheet.rowsBottomPos
+                    sheet.rowsBottomPos = sheet.rowsBottomPos
                         .sublist(0, removeFrom);
                   }
                 }
               }
             } else if (heightItNeeds > currentHeight) {
               double heightDiff = heightItNeeds - currentHeight;
-              for (int r = row; r < currentSheet.rowsBottomPos.length; r++) {
-                currentSheet.rowsBottomPos[r] =
-                    currentSheet.rowsBottomPos[r] + heightDiff;
+              for (int r = row; r < sheet.rowsBottomPos.length; r++) {
+                sheet.rowsBottomPos[r] =
+                    sheet.rowsBottomPos[r] + heightDiff;
               }
             }
           }
         } else if (heightItNeeds == GetDefaultSizes.getDefaultRowHeight() &&
-            row == currentSheet.rowsBottomPos.length - 1) {
+            row == sheet.rowsBottomPos.length - 1) {
           int i = row;
-          while (currentSheet.rowsBottomPos[i] ==
+          while (sheet.rowsBottomPos[i] ==
                   GetDefaultSizes.getDefaultRowHeight() &&
               row > 0) {
-            currentSheet.rowsBottomPos.removeLast();
+            sheet.rowsBottomPos.removeLast();
             i--;
           }
         }
@@ -184,6 +208,37 @@ class GridRepositoryImpl implements GridRepository {
       visibleHeight: row1ToScreenBottomHeight,
       visibleWidth: colBToScreenRightWidth,
     );
+  }
+
+  
+  void updateRowColCount(
+    bool notify, {
+    double? visibleHeight,
+    double? visibleWidth,
+  }) {
+    int targetRows = tableViewRows;
+    int targetCols = tableViewCols;
+    if (visibleHeight != null) {
+      row1ToScreenBottomHeight = visibleHeight;
+      targetRows = minRows(
+        rowCount(currentSheet.sheetContent),
+        row1ToScreenBottomHeight,
+      );
+    }
+    if (visibleWidth != null) {
+      colBToScreenRightWidth = visibleWidth;
+      targetCols = minCols(
+        colCount(currentSheet.sheetContent),
+        colBToScreenRightWidth,
+      );
+    }
+    if (targetRows != tableViewRows || targetCols != tableViewCols) {
+      tableViewRows = targetRows;
+      tableViewCols = targetCols;
+      if (notify) {
+        notifyListeners();
+      }
+    }
   }
 
   double getTargetTop(String sheetId, int row) {

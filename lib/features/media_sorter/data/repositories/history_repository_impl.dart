@@ -6,6 +6,7 @@ import 'package:trying_flutter/features/media_sorter/domain/repositories/history
 
 class HistoryRepositoryImpl implements HistoryRepository {
   final LoadedSheetsCache loadedSheetsDataStore;
+  int chronoIdCounter = 0;
   
   final _updateDataController = StreamController<UpdateRequest>.broadcast();
   @override
@@ -26,19 +27,20 @@ class HistoryRepositoryImpl implements HistoryRepository {
   }
   
   @override
-  void commitHistory(UpdateData updateData) {
-    final currentSheet = loadedSheetsDataStore.currentSheet;
-    if (currentSheet.historyIndex < currentSheet.updateHistories.length - 1) {
-      currentSheet.updateHistories = currentSheet.updateHistories.sublist(
+  void commitHistory(List<UpdateUnit> updates, String sheetId) {
+    final updateData = UpdateData(chronoIdCounter++, sheetId, updates);
+    final sheet = loadedSheetsDataStore.getSheet(sheetId);
+    if (sheet.historyIndex < sheet.updateHistories.length - 1) {
+      sheet.updateHistories = sheet.updateHistories.sublist(
         0,
-        currentSheet.historyIndex + 1,
+        sheet.historyIndex + 1,
       );
     }
-    currentSheet.updateHistories.add(updateData);
-    currentSheet.historyIndex++;
-    if (currentSheet.historyIndex == 100) {
-      currentSheet.updateHistories.removeAt(0);
-      currentSheet.historyIndex--;
+    sheet.updateHistories.add(updateData);
+    sheet.historyIndex++;
+    if (sheet.historyIndex == 100) {
+      sheet.updateHistories.removeAt(0);
+      sheet.historyIndex--;
     }
   }
 

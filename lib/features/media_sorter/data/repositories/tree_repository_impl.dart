@@ -8,18 +8,13 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/selection_request.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/tree_repository.dart';
 import 'package:trying_flutter/utils/logger.dart';
 
 class TreeRepositoryImpl implements TreeRepository {
-  final _selectionController = StreamController<SelectionRequest>.broadcast();
   final AnalysisResultCache analysisDataStore;
   final LoadedSheetsCache loadedSheetsDataStore;
   final SelectionCache selectionDataStore;
-
-  @override
-  Stream<SelectionRequest> get nodeTapStream => _selectionController.stream;
 
   TreeRepositoryImpl(
     this.analysisDataStore,

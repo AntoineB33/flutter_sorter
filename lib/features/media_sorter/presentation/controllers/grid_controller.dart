@@ -18,10 +18,6 @@ import 'package:trying_flutter/features/media_sorter/presentation/utils/get_defa
 
 class GridController extends ChangeNotifier {
   // --- states ---
-  double row1ToScreenBottomHeight = 0.0;
-  double colBToScreenRightWidth = 0.0;
-  int tableViewRows = 0;
-  int tableViewCols = 0;
   final _scrollEventController = StreamController<ScrollRequest>.broadcast();
   Stream<ScrollRequest> get onScrollEvent => _scrollEventController.stream;
 
@@ -33,35 +29,6 @@ class GridController extends ChangeNotifier {
 
   GridController(this.loadedSheetsDataStore, this.selectionDataStore);
 
-  void updateRowColCount(
-    bool notify, {
-    double? visibleHeight,
-    double? visibleWidth,
-  }) {
-    int targetRows = tableViewRows;
-    int targetCols = tableViewCols;
-    if (visibleHeight != null) {
-      row1ToScreenBottomHeight = visibleHeight;
-      targetRows = minRows(
-        rowCount(currentSheet.sheetContent),
-        row1ToScreenBottomHeight,
-      );
-    }
-    if (visibleWidth != null) {
-      colBToScreenRightWidth = visibleWidth;
-      targetCols = minCols(
-        colCount(currentSheet.sheetContent),
-        colBToScreenRightWidth,
-      );
-    }
-    if (targetRows != tableViewRows || targetCols != tableViewCols) {
-      tableViewRows = targetRows;
-      tableViewCols = targetCols;
-      if (notify) {
-        notifyListeners();
-      }
-    }
-  }
 
   int minRows(int rowCount, double height) {
     double tableHeight = getTargetTop(rowCount - 1);
@@ -72,18 +39,6 @@ class GridController extends ChangeNotifier {
               .ceil();
     }
     return rowCount;
-  }
-
-  double getRowHeight(int row) {
-    if (row < currentSheet.rowsBottomPos.length) {
-      if (row == 0) {
-        return currentSheet.rowsBottomPos[0];
-      } else {
-        return currentSheet.rowsBottomPos[row] -
-            currentSheet.rowsBottomPos[row - 1];
-      }
-    }
-    return GetDefaultSizes.getDefaultRowHeight();
   }
 
 

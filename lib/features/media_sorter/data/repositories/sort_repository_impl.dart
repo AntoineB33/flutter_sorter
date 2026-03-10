@@ -52,13 +52,9 @@ class SortRepositoryImpl implements SortRepository {
       ManageWaitingTasks<void>(Duration(milliseconds: 2000));
   final ManageWaitingTasks<void> _saveSortProgressExecutor =
       ManageWaitingTasks<void>(Duration(milliseconds: 2000));
+  final StreamController<Failure?> _failureController = StreamController<Failure?>.broadcast();
 
-  @override
-  Stream<void> get progressStream => loadedSheetsCache.progressStream;
-  @override
-  Stream<void> get sortStatusStream => loadedSheetsCache.sortStatusStream;
-  @override
-  Stream<void> get saveStream => loadedSheetsCache.saveStream;
+  Stream<Failure?> get failureStream => _failureController.stream;
 
   @override
   bool toSort(String sheetId) => sortStatusCache.toSort(sheetId);
@@ -199,7 +195,8 @@ class SortRepositoryImpl implements SortRepository {
     yield* isolateReceivePortsCache.getIsolatePort(sheetId).cast<SortProgressDataMsg>();
   }
 
-  void handleSortProgressDataMsg(SortProgressDataMsg sortProgressDataMsg, String sheetId) {
+  @override
+  bool handleSortProgressDataMsg(SortProgressDataMsg sortProgressDataMsg, String sheetId) {
     SortProgressData sort = sortProgressDataMsg.sortProgressData;
     if (sortProgressDataMsg.newBestSortFound &&
         sortProgressCache
@@ -220,15 +217,17 @@ class SortRepositoryImpl implements SortRepository {
         isNaturalOrderValid,
       );
     }
-    yield sortMsg;
+    sortProgressCache.update(sheetId, sort);
+    saveDataProgress(sheetId);
     if (sort.bestDistFound.isNotEmpty ||
         sort.cursors[0] == sort.possibleIntsById[0].length) {
       sortStatusCache.bestSortFound(sheetId, sort.bestDistFound.isNotEmpty);
-      sortProgressCache.update(sheetId, sort);
+      saveAllSortStatus();
       if (sortStatusCache.isFindingBestSort(sheetId)) {
-        break;
+        return true;
       }
     }
+    return false;
   }
 
   void cancelFindingBestSort(String sheetId) {
@@ -436,33 +435,28 @@ class SortRepositoryImpl implements SortRepository {
     return updates;
   }
 
-  @override
-  Future<void> saveAllSortStatus() async {
+  void saveAllSortStatus() async {
     _saveSortStatusExecutor.execute(() async {
       try {
         await saveDataSource.saveAllSortStatus(
           sortStatusCache.sortStatusBySheet,
         );
-        if (_syncFailure != null) {
-          _syncFailure = null;
-          _failureController.add(null);
-        }
-      } catch (e) {
-        _setFailure(CacheFailure(e));
+      } on CacheException catch (e) {
+        _failureController.add(CacheFailure(e));
       }
     });
   }
 
   @override
-  Future<void> saveDataProgress(String sheetId) async {
+  void saveDataProgress(String sheetId) {
     _saveSortProgressExecutor.execute(() async {
       try {
         await saveDataSource.saveSortProgression(
           sheetId,
           sortProgressCache.getSortProgressData(sheetId),
         );
-      } catch (e) {
-        _setFailure(CacheFailure(e));
+      } on CacheException catch (e) {
+        _failureController.add(CacheFailure(e));
       }
     });
   }

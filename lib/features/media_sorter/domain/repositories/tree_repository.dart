@@ -2,6 +2,5 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_request.dart';
 
 abstract class TreeRepository {
-  Stream<SelectionRequest> get nodeTapStream;
   void onTap(NodeStruct node);
 }

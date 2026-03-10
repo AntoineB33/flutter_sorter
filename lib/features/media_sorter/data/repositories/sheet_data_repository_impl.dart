@@ -27,10 +27,10 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   final IFileSheetLocalDataSource dataSource;
 
   final Map<String, ManageWaitingTasks<void>> _saveSheetDataExecutor = {};
-  int chronoIdCounter = 0;
 
   SheetDataRepositoryImpl(this.loadedSheetsCache, this.selectionCache, this.workbookCache, this.dataSource);
 
+  @override
   String get currentSheetId => workbookCache.currentSheetId;
   SelectionData get selection => selectionCache.getSelectionData(currentSheetId);
 

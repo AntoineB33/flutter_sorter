@@ -26,6 +26,7 @@ class SheetDataUsecase {
   final SheetDataRepository sheetDataRepository;
   final SortRepository sortRepository;
   final GridRepository gridRepository;
+  final SheetUpdateCoordinator sheetUpdateCoordinator;
 
   Stream<void> get sortStatusStream => sortRepository.sortStatusStream;
 
@@ -33,11 +34,12 @@ class SheetDataUsecase {
     required this.sheetDataRepository,
     required this.sortRepository,
     required this.gridRepository,
+    required this.sheetUpdateCoordinator,
   });
 
   void setCellContent(Point<int> cell, String newVal) {
-    sheetDataRepository.setCellContent(cell, newVal);
-    gridRepository.adjustRowHeightAfterUpdate(sheetDataRepository.currentSheetId, updateData)
+    final updates = sheetDataRepository.setCellContent(cell, newVal);
+    sheetUpdateCoordinator.applyUpdates(updates, sheetDataRepository.currentSheetId)
   }
 
   void delete() {

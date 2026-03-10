@@ -3,16 +3,18 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progre
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_update_coordinator.dart';
 
 class SortUsecase {
   final SortRepository sortRepository;
   final SheetDataRepository sheetDataRepository;
+  final SheetUpdateCoordinator sheetUpdateCoordinator;
 
   Stream<void> get progressStream => sortRepository.progressStream;
   Stream<void> get sortStatusStream => sortRepository.sortStatusStream;
   Stream<void> get saveStream => sortRepository.saveStream;
 
-  SortUsecase(this.sortRepository, this.sheetDataRepository);
+  SortUsecase(this.sortRepository, this.sheetDataRepository, this.sheetUpdateCoordinator);
 
   void sortMedia(String sheetId) {
     sortRepository.sortMedia(sheetId);
@@ -31,18 +33,19 @@ class SortUsecase {
 
   Future<void> calculateOnChange(String sheetId) async {
     await for (final SortProgressDataMsg sortProgressDataMsg in sortRepository.calculateOnChange()) {
-      _handleSortProgressDataMsg(sortProgressDataMsg, sheetId);
+      if (_handleSortProgressDataMsg(sortProgressDataMsg, sheetId)) {
+        break;
+      }
     }
   }
 
-  void _handleSortProgressDataMsg(SortProgressDataMsg sortProgressDataMsg, String sheetId) {
-    sortRepository.handleSortProgressDataMsg(sortProgressDataMsg, sheetId);
+  bool _handleSortProgressDataMsg(SortProgressDataMsg sortProgressDataMsg, String sheetId) {
+    bool stopLoop = sortRepository.handleSortProgressDataMsg(sortProgressDataMsg, sheetId);
     if (sortProgressDataMsg.newBestSortFound) {
       final List<UpdateUnit> updates = sortRepository.sortMedia(sheetId);
-      sheetDataRepository.update(updates, sheetId);
-      gridRepository.adjustRowHeightAfterUpdate(updates, sheetId);
-      historyRepository.commitHistory(updates, sheetId);
+      sheetUpdateCoordinator.applyUpdates(updates, sheetId, true, false);
     }
+    return stopLoop;
   }
 
   

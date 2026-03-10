@@ -25,12 +25,4 @@ class SpreadsheetCoordinator {
   final WorkbookController workbookController;
 
   SpreadsheetCoordinator(this.historyController, this.sheetDataController, this.gridController, this.sortController, this.selectionController, this.workbookController);
-
-  void update(UpdateData updateData, bool updateHistory) {
-    if (updateHistory) {
-      historyController.commitHistory(updateData);
-    }
-    gridController.adjustRowHeightAfterUpdate(updateData);
-    sortController.calculateOnChange();
-  }
 }

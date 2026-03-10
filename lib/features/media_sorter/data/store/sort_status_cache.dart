@@ -6,11 +6,8 @@ import 'package:trying_flutter/features/media_sorter/data/services/manage_waitin
 
 class SortStatusCache {
   final Map<String, SortStatus> _sortStatusBySheet = {};
-  final _updateDataController = StreamController<void>.broadcast();
 
   final LoadedSheetsCache loadedSheetsDataStore;
-
-  Stream<void> get updateData => _updateDataController.stream;
 
   SortStatusCache(this.loadedSheetsDataStore);
 
@@ -45,7 +42,6 @@ class SortStatusCache {
     } else {
       removeSortStatus(sheetId);
     }
-    _updateDataController.add(null);
   }
 
   void setSortStatus(Map<String, SortStatus> statuses) {
@@ -57,14 +53,12 @@ class SortStatusCache {
   void removeSortStatus(String sheetId) {
     if (_sortStatusBySheet.containsKey(sheetId)) {
       _sortStatusBySheet.remove(sheetId);
-      _updateDataController.add(null);
     }
   }
 
   void bestSortFound(String sheetId, bool validSortFound) {
     if (!validSortFound || !_sortStatusBySheet[sheetId]!.isFindingBestSort) {
       _sortStatusBySheet.remove(sheetId);
-      _updateDataController.add(null);
     }
   }
 }
