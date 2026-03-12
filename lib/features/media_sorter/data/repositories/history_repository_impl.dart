@@ -3,20 +3,22 @@ import 'dart:async';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
 
 class HistoryRepositoryImpl implements HistoryRepository {
   final LoadedSheetsCache loadedSheetsDataStore;
+  final SelectionRepository selectionRepository;
+  final SheetDataRepository sheetDataRepository;
+  final WorkbookRepository workbookRepository;
   int chronoIdCounter = 0;
-  
-  final _updateDataController = StreamController<UpdateRequest>.broadcast();
-  @override
-  Stream<UpdateRequest> get updateDataStream => _updateDataController.stream;
 
-  HistoryRepositoryImpl(this.loadedSheetsDataStore);
+  HistoryRepositoryImpl(this.loadedSheetsDataStore, this.selectionRepository, this.sheetDataRepository, this.workbookRepository);
 
   @override
   void moveInUpdateHistory(int direction) {
-    final currentSheet = loadedSheetsDataStore.currentSheet;
+    final currentSheet = workbookRepository.currentSheet;
     if (currentSheet.historyIndex + direction < 0 ||
         currentSheet.historyIndex + direction >= currentSheet.updateHistories.length) {
       return;
@@ -42,6 +44,23 @@ class HistoryRepositoryImpl implements HistoryRepository {
       sheet.updateHistories.removeAt(0);
       sheet.historyIndex--;
     }
+  }
+
+  @override
+  void stopEditing(String prevValue) {
+    commitHistory(
+        [
+          CellUpdate(
+            selectionRepository.primarySelectedCell.x,
+            selectionRepository.primarySelectedCell.y,
+            sheetDataRepository.getCellContent(
+              selectionRepository.primarySelectedCell,
+              workbookRepository.currentSheetId,
+            ),
+            prevValue,
+          ),
+        ], workbookRepository.currentSheetId
+      );
   }
 
   @override

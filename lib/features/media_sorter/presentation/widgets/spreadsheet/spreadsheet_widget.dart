@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
@@ -63,8 +62,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     _scrollSubscription = widget.gridController.onScrollEvent.listen((
       request,
     ) async {
-      if (!_verticalController.hasClients || !_horizontalController.hasClients)
+      if (!_verticalController.hasClients || !_horizontalController.hasClients) {
         return;
+      }
       _isProgrammaticScroll = true;
       List<Future<void>> animations = [];
 
@@ -333,7 +333,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
             controller.primarySelectedCell.y != dataCol) {
           controller.stopEditing();
         }
-        controller.setPrimarySelection(dataRow, dataCol, false, true);
+        controller.setPrimarySelection(_verticalController, dataRow, dataCol, false, true);
         _focusNode.requestFocus();
       },
       onDoubleTap: () {
@@ -376,7 +376,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           controller.primarySelectedCell.y,
           previousContent,
         );
-        controller.stopEditing(updateHistory: false);
+        controller.stopEditing(previousContent, false);
         _focusNode.requestFocus();
       },
     );

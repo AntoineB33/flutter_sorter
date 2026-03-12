@@ -1,8 +1,13 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
@@ -10,12 +15,10 @@ import 'package:trying_flutter/features/media_sorter/presentation/utils/get_defa
 
 class GridRepositoryImpl implements GridRepository {
   final LoadedSheetsCache loadedSheetsCache;
-  double row1ToScreenBottomHeight = 0.0;
-  double colBToScreenRightWidth = 0.0;
-  int tableViewRows = 0;
-  int tableViewCols = 0;
+  final WorkbookCache workbookCache;
+  final SelectionCache selectionCache;
 
-  GridRepositoryImpl(this.loadedSheetsCache);
+  GridRepositoryImpl(this.loadedSheetsCache, this.workbookCache, this.selectionCache);
 
   int rowCount(String sheetId) {
     return loadedSheetsCache.rowCount(sheetId);
@@ -25,6 +28,7 @@ class GridRepositoryImpl implements GridRepository {
     return loadedSheetsCache.colCount(sheetId);
   }
 
+  @override
   double getTargetLeft(String sheetId, int col) {
     if (col <= 0) return 0.0;
     SheetData sheet = loadedSheetsCache.getSheet(sheetId);
@@ -93,9 +97,51 @@ class GridRepositoryImpl implements GridRepository {
   }
 
   @override
-  void adjustRowHeightAfterUpdate(String sheetId, List<UpdateUnit> updateData) {
+  int minRows(String sheetId, int rowCount, double height) {
     SheetData sheet = loadedSheetsCache.getSheet(sheetId);
-    for (var update in updateData) {
+    double tableHeight = getTargetTop(sheetId, rowCount - 1);
+    if (height >= tableHeight) {
+      return sheet.rowsBottomPos.length +
+          ((height - getTargetTop(sheetId, sheet.rowsBottomPos.length - 1) + 1) /
+                  GetDefaultSizes.getDefaultRowHeight())
+              .ceil();
+    }
+    return rowCount;
+  }
+  
+  @override
+  int minCols(String sheetId, int colCount, double width) {
+    SheetData sheet = loadedSheetsCache.getSheet(sheetId);
+    double tableWidth = getTargetLeft(sheetId, colCount - 1);
+    if (width >= tableWidth) {
+      return sheet.colRightPos.length +
+          ((width - getTargetLeft(sheetId, sheet.colRightPos.length - 1) + 1) /
+                  GetDefaultSizes.getDefaultCellWidth())
+              .ceil();
+    }
+    return colCount;
+  }
+  
+  @override
+  double getTargetTop(String sheetId, int row) {
+    if (row <= 0) return 0.0;
+    SheetData sheet = loadedSheetsCache.getSheet(sheetId);
+    final int nbKnownBottomPos = sheet.rowsBottomPos.length;
+    var rowsBottomPos = sheet.rowsBottomPos;
+    final int tableHeight = nbKnownBottomPos == 0
+        ? 0
+        : rowsBottomPos.last.toInt();
+    final double targetTop = row - 1 < nbKnownBottomPos
+        ? rowsBottomPos[row - 1].toDouble()
+        : tableHeight +
+              (row - nbKnownBottomPos) * GetDefaultSizes.getDefaultRowHeight();
+    return targetTop;
+  }
+
+  @override
+  bool adjustRowHeightAfterUpdate(String sheetId, List<UpdateUnit> updates) {
+    SheetData sheet = loadedSheetsCache.getSheet(sheetId);
+    for (var update in updates) {
       if (update is CellUpdate) {
         final int row = update.rowId;
         final int col = update.colId;
@@ -103,7 +149,7 @@ class GridRepositoryImpl implements GridRepository {
         final String prevValue = update.prevValue;
 
         if (row >= sheet.rowsBottomPos.length &&
-            row >= rowCount(sheetId)) {
+            row >= rowCount(sheet.sheetContent)) {
           break;
         }
 
@@ -138,14 +184,13 @@ class GridRepositoryImpl implements GridRepository {
                 if (row < sheet.sheetContent.table.length) {
                   for (
                     int j = 0;
-                    j < colCount(sheetId);
+                    j < colCount(currentSheet.sheetContent);
                     j++
                   ) {
                     if (j == col) continue;
                     newHeight = max(
                       calculateRequiredRowHeight(
-                        sheetId,
-                        sheet.sheetContent.table[row][j],
+                        currentSheet.sheetContent.table[row][j],
                         j,
                       ),
                       newHeight,
@@ -157,47 +202,47 @@ class GridRepositoryImpl implements GridRepository {
                   double heightDiff = currentHeight - newHeight;
                   for (
                     int r = row;
-                    r < sheet.rowsBottomPos.length;
+                    r < currentSheet.rowsBottomPos.length;
                     r++
                   ) {
-                    sheet.rowsBottomPos[r] -= heightDiff;
+                    currentSheet.rowsBottomPos[r] -= heightDiff;
                   }
                   if (newHeight == GetDefaultSizes.getDefaultRowHeight()) {
-                    int removeFrom = sheet.rowsBottomPos.length;
+                    int removeFrom = currentSheet.rowsBottomPos.length;
                     for (
-                      int r = sheet.rowsBottomPos.length - 1;
+                      int r = currentSheet.rowsBottomPos.length - 1;
                       r >= 0;
                       r--
                     ) {
-                      if (r < sheet.rowsManuallyAdjustedHeight.length &&
-                              sheet.rowsManuallyAdjustedHeight[r] ||
-                          sheet.rowsBottomPos[r] >
-                              (r == 0 ? 0 : sheet.rowsBottomPos[r - 1]) +
+                      if (r < currentSheet.rowsManuallyAdjustedHeight.length &&
+                              currentSheet.rowsManuallyAdjustedHeight[r] ||
+                          currentSheet.rowsBottomPos[r] >
+                              (r == 0 ? 0 : currentSheet.rowsBottomPos[r - 1]) +
                                   GetDefaultSizes.getDefaultRowHeight()) {
                         break;
                       }
                       removeFrom--;
                     }
-                    sheet.rowsBottomPos = sheet.rowsBottomPos
+                    currentSheet.rowsBottomPos = currentSheet.rowsBottomPos
                         .sublist(0, removeFrom);
                   }
                 }
               }
             } else if (heightItNeeds > currentHeight) {
               double heightDiff = heightItNeeds - currentHeight;
-              for (int r = row; r < sheet.rowsBottomPos.length; r++) {
-                sheet.rowsBottomPos[r] =
-                    sheet.rowsBottomPos[r] + heightDiff;
+              for (int r = row; r < currentSheet.rowsBottomPos.length; r++) {
+                currentSheet.rowsBottomPos[r] =
+                    currentSheet.rowsBottomPos[r] + heightDiff;
               }
             }
           }
         } else if (heightItNeeds == GetDefaultSizes.getDefaultRowHeight() &&
-            row == sheet.rowsBottomPos.length - 1) {
+            row == currentSheet.rowsBottomPos.length - 1) {
           int i = row;
-          while (sheet.rowsBottomPos[i] ==
+          while (currentSheet.rowsBottomPos[i] ==
                   GetDefaultSizes.getDefaultRowHeight() &&
               row > 0) {
-            sheet.rowsBottomPos.removeLast();
+            currentSheet.rowsBottomPos.removeLast();
             i--;
           }
         }
@@ -208,109 +253,5 @@ class GridRepositoryImpl implements GridRepository {
       visibleHeight: row1ToScreenBottomHeight,
       visibleWidth: colBToScreenRightWidth,
     );
-  }
-
-  
-  void updateRowColCount(
-    bool notify, {
-    double? visibleHeight,
-    double? visibleWidth,
-  }) {
-    int targetRows = tableViewRows;
-    int targetCols = tableViewCols;
-    if (visibleHeight != null) {
-      row1ToScreenBottomHeight = visibleHeight;
-      targetRows = minRows(
-        rowCount(currentSheet.sheetContent),
-        row1ToScreenBottomHeight,
-      );
-    }
-    if (visibleWidth != null) {
-      colBToScreenRightWidth = visibleWidth;
-      targetCols = minCols(
-        colCount(currentSheet.sheetContent),
-        colBToScreenRightWidth,
-      );
-    }
-    if (targetRows != tableViewRows || targetCols != tableViewCols) {
-      tableViewRows = targetRows;
-      tableViewCols = targetCols;
-      if (notify) {
-        notifyListeners();
-      }
-    }
-  }
-
-  double getTargetTop(String sheetId, int row) {
-    if (row <= 0) return 0.0;
-    SheetData sheet = loadedSheetsCache.getSheet(sheetId);
-    final int nbKnownBottomPos = sheet.rowsBottomPos.length;
-    var rowsBottomPos = sheet.rowsBottomPos;
-    final int tableHeight = nbKnownBottomPos == 0
-        ? 0
-        : rowsBottomPos.last.toInt();
-    final double targetTop = row - 1 < nbKnownBottomPos
-        ? rowsBottomPos[row - 1].toDouble()
-        : tableHeight +
-              (row - nbKnownBottomPos) * GetDefaultSizes.getDefaultRowHeight();
-    return targetTop;
-  }
-  /// Calculates offsets and scrolls to ensure the target cell is visible.
-  @override
-  void scrollToCell(int rowId, int colId) {
-    bool saveSelection = false;
-    bool scrollX = true;
-    bool scrollY = true;
-    if (rowId > 0) {
-      // Vertical Logic
-      final double targetTop = getTargetTop(rowId) - getTargetTop(1);
-      final double targetBottom = getTargetTop(rowId + 1);
-      final double verticalViewport =
-          verticalController.position.viewportDimension -
-          currentSheet.rowHeaderWidth;
-
-      if (targetTop < verticalController.offset) {
-        saveSelection = true;
-        selectionDataStore.scrollOffsetX = targetTop;
-      } else if (targetBottom > verticalController.offset + verticalViewport) {
-        saveSelection = true;
-        selectionDataStore.scrollOffsetX = targetBottom - verticalViewport;
-        updateRowColCount(true, visibleHeight: targetBottom);
-      } else {
-        scrollY = false;
-      }
-    }
-
-    if (cell.y > 0) {
-      // Horizontal Logic
-      final double targetLeft = getTargetLeft(cell.y) - getTargetLeft(1);
-      final double targetRight = getTargetLeft(cell.y + 1);
-      final double horizontalViewport =
-          horizontalController.position.viewportDimension -
-          currentSheet.rowHeaderWidth;
-
-      if (targetLeft < horizontalController.offset) {
-        saveSelection = true;
-        selectionDataStore.scrollOffsetY = targetLeft;
-      } else if (targetRight >
-          selectionDataStore.scrollOffsetY + horizontalViewport) {
-        saveSelection = true;
-        selectionDataStore.scrollOffsetY = targetRight - horizontalViewport;
-        updateRowColCount(true, visibleWidth: targetRight);
-      } else {
-        scrollX = false;
-      }
-    }
-    if (scrollX || scrollY) {
-      _scrollEventController.add(
-        ScrollRequest(
-          xOffset: scrollX ? selectionDataStore.scrollOffsetY : null,
-          yOffset: scrollY ? selectionDataStore.scrollOffsetX : null,
-        ),
-      );
-    }
-    if (saveSelection) {
-      selectionDataStore.saveSelection();
-    }
   }
 }

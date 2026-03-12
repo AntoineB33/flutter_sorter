@@ -1,38 +1,37 @@
+import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/utils_services.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
 
 class SelectionUsecase {
   final SelectionRepository selectionRepository;
   final SheetDataRepository sheetDataRepository;
   final GridRepository gridRepository;
   final HistoryRepository historyRepository;
+  final WorkbookRepository workbookRepository;
 
   SelectionUsecase(
     this.selectionRepository,
     this.sheetDataRepository,
     this.gridRepository,
     this.historyRepository,
+    this.workbookRepository,
   );
 
-  void stopEditing(String prevValue, {bool updateHistory = true}) {
+  bool isSorting() {
+    return selectionRepository.isSorting(workbookRepository.currentSheetId);
+  }
+
+  SelectionData getSelectionData(String sheetId) {
+    return selectionRepository.getSelectionData(sheetId);
+  }
+
+  void stopEditing(String prevValue, bool updateHistory) {
     selectionRepository.stopEditing();
     if (updateHistory) {
-      historyRepository.commitHistory(
-        UpdateData(DateTime.now(), [
-          CellUpdate(
-            selectionUsecase.primarySelectedCell.x,
-            selectionUsecase.primarySelectedCell.y,
-            loadedSheetsDataStore.getCellContent(
-              selectionUsecase.primarySelectedCell.x,
-              selectionUsecase.primarySelectedCell.y,
-            ),
-            prevValue,
-          ),
-        ]),
-      );
+      historyRepository.stopEditing(prevValue);
     }
   }
 
@@ -41,26 +40,15 @@ class SelectionUsecase {
   }
 
   Future<void> saveSelection({String? sheetId}) async {
-    if (sheetId != null && sheetDataRepository.currentSheetId == sheetId) {
+    if (sheetId != null && workbookRepository.currentSheetId == sheetId) {
       selectionRepository.saveLastSelection();
     } else {
       selectionRepository.sheetSwitch();
     }
   }
 
-  Future<void> getLastSelection() {
-    return repository.getLastSelection();
+  Future<SelectionData> getLastSelection() async {
+    return selectionRepository.getSelectionData(workbookRepository.currentSheetId);
   }
 
-  void setPrimarySelection(
-    int row,
-    int col,
-    bool keepSelection,
-    bool scrollTo,
-  ) {
-    selectionRepository.setPrimarySelection(row, col, keepSelection);
-    if (scrollTo) {
-      gridRepository.scrollToCell(row, col);
-    }
-  }
 }

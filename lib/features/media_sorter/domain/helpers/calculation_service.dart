@@ -5,8 +5,6 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_re
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/calculate_service.dart';
-import 'dart:io';
-import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_message.dart';
 

@@ -1,7 +1,6 @@
 
 import 'dart:isolate';
 
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 
 class IsolateReceivePorts {
   Isolate? _isolateB;

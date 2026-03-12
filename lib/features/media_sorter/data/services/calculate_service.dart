@@ -586,12 +586,12 @@ class CalculateService {
     final Map<int, Map<Attribute, Cell>> isLstToAppear = {};
     final Map<int, Map<Attribute, Cell>> beforeAllOthers = {};
     final Map<int, Map<Attribute, Cell>> afterAllOthers = {};
-    colToAtt[all] = Set<Attribute>();
-    colToAtt[notUsedCst] = Set<Attribute>();
+    colToAtt[all] = <Attribute>{};
+    colToAtt[notUsedCst] = <Attribute>{};
     for (int colId = 0; colId < colCount; colId++) {
       if (columnTypes[colId] == ColumnType.attributes ||
           columnTypes[colId] == ColumnType.sprawl) {
-        colToAtt[colId] = Set<Attribute>();
+        colToAtt[colId] = <Attribute>{};
       }
     }
     List<NodeStruct> children = [];
@@ -1430,7 +1430,7 @@ class CalculateService {
       ..addAll(
         List.generate(
           rowCount,
-          (_) => List.generate(colCount, (_) => Set<Attribute>()),
+          (_) => List.generate(colCount, (_) => <Attribute>{}),
         ),
       );
     for (int i = 1; i < rowCount; i++) {

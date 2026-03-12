@@ -1,11 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
-import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/utils_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
@@ -13,8 +11,6 @@ import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
-import 'package:trying_flutter/core/error/exceptions.dart';
-import 'package:trying_flutter/utils/logger.dart';
 
 class SelectionRepositoryImpl implements SelectionRepository {
   final ManageWaitingTasks<void> _saveSelectionStatusExecutor =
@@ -64,7 +60,7 @@ class SelectionRepositoryImpl implements SelectionRepository {
       () => saveDataSource.getLastSelection(),
     );
     return result.fold((failure) => Left(failure), (lastSelection) {
-      selectionCache.setSelectionData(currentSheetId, lastSelection, false);
+      selectionCache.setSelectionData(currentSheetId, lastSelection);
       return Right(null);
     });
   }
@@ -118,5 +114,30 @@ class SelectionRepositoryImpl implements SelectionRepository {
       return;
     }
     _editingMode = false;
+  }
+
+  @override
+  void clearLastSelection(String sheetId) {
+    selectionCache.setSelectionData(sheetId, SelectionData.empty(), true);
+  }
+
+  void _setSelectionData(
+    String sheetId,
+    SelectionData selectionData,
+    bool save,
+  ) {
+    selectionCache.setSelectionData(sheetId, selectionData);
+    if (save) {
+      _saveAllLastSelected();
+    }
+  }
+
+  void _saveAllLastSelected() {
+    _saveSelectionStatusExecutor.execute(() async {
+      final result = await UrilsService.handleDataSourceCall(
+        () => saveDataSource.saveAllLastSelected(selectionCache.lastSelections),
+      );
+      result.fold((failure) => _errorController.add(failure), (_) => null);
+    });
   }
 }

@@ -1,195 +1,174 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
-import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/layout_calculator.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/grid_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/selection_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/workbook_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/models/scroll_request.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 
 class GridController extends ChangeNotifier {
   // --- states ---
   final _scrollEventController = StreamController<ScrollRequest>.broadcast();
   Stream<ScrollRequest> get onScrollEvent => _scrollEventController.stream;
 
-  int rowCount(SheetContent content) => content.table.length;
-  int colCount(SheetContent content) =>
-      content.table.isNotEmpty ? content.table[0].length : 0;
+  // Size of the window: useful to determine how many rows and columns to show.
+  // Informed by the UI at startup and each time the user resizes it.
+  double row1ToScreenBottomHeight = 0.0;
+  double colBToScreenRightWidth = 0.0;
 
-  SheetData get currentSheet => loadedSheetsDataStore.currentSheet;
+  // Number of cells in the tableView widget.
+  int tableViewRows = 0;
+  int tableViewCols = 0;
 
-  GridController(this.loadedSheetsDataStore, this.selectionDataStore);
+  final SheetDataUsecase sheetDataUsecase;
+  final GridUsecase gridUsecase;
+  final WorkbookUseCase workbookUsecase;
+  final SelectionUsecase selectionUsecase;
+
+  GridController(this.sheetDataUsecase, this.gridUsecase, this.workbookUsecase, this.selectionUsecase);
 
 
-  int minRows(int rowCount, double height) {
-    double tableHeight = getTargetTop(rowCount - 1);
-    if (height >= tableHeight) {
-      return currentSheet.rowsBottomPos.length +
-          ((height - getTargetTop(currentSheet.rowsBottomPos.length - 1) + 1) /
-                  GetDefaultSizes.getDefaultRowHeight())
-              .ceil();
-    }
-    return rowCount;
+  int rowCount(String sheetId) {
+    return sheetDataUsecase.rowCount(sheetId);
   }
 
-
-  int minCols(int colCount, double width) {
-    double tableWidth = getTargetLeft(colCount - 1);
-    if (width >= tableWidth) {
-      return currentSheet.colRightPos.length +
-          ((width - getTargetLeft(currentSheet.colRightPos.length - 1) + 1) /
-                  GetDefaultSizes.getDefaultCellWidth())
-              .ceil();
-    }
-    return colCount;
+  int colCount(String sheetId) {
+    return sheetDataUsecase.colCount(sheetId);
   }
+  
+  int minRows(String sheetId, int rowCount, double height) {
+    return gridUsecase.minRows(sheetId, rowCount, height);
+  }
+  
+  int minCols(String sheetId, int colCount, double width) {
+    return gridUsecase.minCols(sheetId, colCount, width);
+  }
+  
+  
+  void adjustRowHeightAfterUpdate(String sheetId, List<UpdateUnit> updateData) {
+    gridUsecase.adjustRowHeightAfterUpdate(sheetId, updateData);
+    updateRowColCount(
+      sheetId,
+      false,
+      visibleHeight: row1ToScreenBottomHeight,
+      visibleWidth: colBToScreenRightWidth,
+    );
+  }
+  
+  bool scrollToCell(ScrollController verticalController, ScrollController horizontalController, int rowId, int colId) {
+    String currentSheetId = workbookUsecase.currentSheetId;
+    SelectionData lastSelection = selectionUsecase.getSelectionData(currentSheetId);
+    bool saveSelection = false;
+    bool scrollX = true;
+    bool scrollY = true;
+    SheetData currentSheet = sheetDataUsecase.getSheet(currentSheetId);
+    if (rowId > 0) {
+      // Vertical Logic
+      final double targetTop = gridUsecase.getTargetTop(currentSheetId, rowId) - gridUsecase.getTargetTop(currentSheetId, 1);
+      final double targetBottom = gridUsecase.getTargetTop(currentSheetId, rowId + 1);
+      final double verticalViewport =
+          verticalController.position.viewportDimension -
+          currentSheet.rowHeaderWidth;
 
-  void adjustRowHeightAfterUpdate(UpdateData updateData) {
-    for (var update in updateData.updates) {
-      if (update is CellUpdate) {
-        final int row = update.rowId;
-        final int col = update.colId;
-        final String newValue = update.newValue;
-        final String prevValue = update.prevValue;
-
-        if (row >= currentSheet.rowsBottomPos.length &&
-            row >= rowCount(currentSheet.sheetContent)) {
-          break;
-        }
-
-        double heightItNeeds = calculateRequiredRowHeight(newValue, col);
-
-        if (heightItNeeds > GetDefaultSizes.getDefaultRowHeight() &&
-            currentSheet.rowsBottomPos.length <= row) {
-          int prevRowsBottomPosLength = currentSheet.rowsBottomPos.length;
-          currentSheet.rowsBottomPos.addAll(
-            List.filled(row + 1 - currentSheet.rowsBottomPos.length, 0),
-          );
-          for (int i = prevRowsBottomPosLength; i <= row; i++) {
-            currentSheet.rowsBottomPos[i] = i == 0
-                ? GetDefaultSizes.getDefaultRowHeight()
-                : currentSheet.rowsBottomPos[i - 1] +
-                      GetDefaultSizes.getDefaultRowHeight();
-          }
-        }
-
-        if (row < currentSheet.rowsBottomPos.length) {
-          if (currentSheet.rowsManuallyAdjustedHeight.length <= row ||
-              !currentSheet.rowsManuallyAdjustedHeight[row]) {
-            double currentHeight = getRowHeight(row);
-            if (heightItNeeds < currentHeight) {
-              double heightItNeeded = calculateRequiredRowHeight(
-                prevValue,
-                col,
-              );
-              if (heightItNeeded == currentHeight) {
-                double newHeight = heightItNeeds;
-                if (row < currentSheet.sheetContent.table.length) {
-                  for (
-                    int j = 0;
-                    j < colCount(currentSheet.sheetContent);
-                    j++
-                  ) {
-                    if (j == col) continue;
-                    newHeight = max(
-                      calculateRequiredRowHeight(
-                        currentSheet.sheetContent.table[row][j],
-                        j,
-                      ),
-                      newHeight,
-                    );
-                    if (newHeight == heightItNeeded) break;
-                  }
-                }
-                if (newHeight < heightItNeeded) {
-                  double heightDiff = currentHeight - newHeight;
-                  for (
-                    int r = row;
-                    r < currentSheet.rowsBottomPos.length;
-                    r++
-                  ) {
-                    currentSheet.rowsBottomPos[r] -= heightDiff;
-                  }
-                  if (newHeight == GetDefaultSizes.getDefaultRowHeight()) {
-                    int removeFrom = currentSheet.rowsBottomPos.length;
-                    for (
-                      int r = currentSheet.rowsBottomPos.length - 1;
-                      r >= 0;
-                      r--
-                    ) {
-                      if (r < currentSheet.rowsManuallyAdjustedHeight.length &&
-                              currentSheet.rowsManuallyAdjustedHeight[r] ||
-                          currentSheet.rowsBottomPos[r] >
-                              (r == 0 ? 0 : currentSheet.rowsBottomPos[r - 1]) +
-                                  GetDefaultSizes.getDefaultRowHeight()) {
-                        break;
-                      }
-                      removeFrom--;
-                    }
-                    currentSheet.rowsBottomPos = currentSheet.rowsBottomPos
-                        .sublist(0, removeFrom);
-                  }
-                }
-              }
-            } else if (heightItNeeds > currentHeight) {
-              double heightDiff = heightItNeeds - currentHeight;
-              for (int r = row; r < currentSheet.rowsBottomPos.length; r++) {
-                currentSheet.rowsBottomPos[r] =
-                    currentSheet.rowsBottomPos[r] + heightDiff;
-              }
-            }
-          }
-        } else if (heightItNeeds == GetDefaultSizes.getDefaultRowHeight() &&
-            row == currentSheet.rowsBottomPos.length - 1) {
-          int i = row;
-          while (currentSheet.rowsBottomPos[i] ==
-                  GetDefaultSizes.getDefaultRowHeight() &&
-              row > 0) {
-            currentSheet.rowsBottomPos.removeLast();
-            i--;
-          }
-        }
+      if (targetTop < verticalController.offset) {
+        saveSelection = true;
+        lastSelection.scrollOffsetX = targetTop;
+      } else if (targetBottom > verticalController.offset + verticalViewport) {
+        saveSelection = true;
+        lastSelection.scrollOffsetX = targetBottom - verticalViewport;
+        updateRowColCount(currentSheetId, true, visibleHeight: targetBottom);
+      } else {
+        scrollY = false;
       }
     }
+
+    if (colId > 0) {
+      // Horizontal Logic
+      final double targetLeft = gridUsecase.getTargetLeft(currentSheetId, colId) - gridUsecase.getTargetLeft(currentSheetId, 1);
+      final double targetRight = gridUsecase.getTargetLeft(currentSheetId, colId + 1);
+      final double horizontalViewport =
+          horizontalController.position.viewportDimension -
+          currentSheet.rowHeaderWidth;
+
+      if (targetLeft < horizontalController.offset) {
+        saveSelection = true;
+        lastSelection.scrollOffsetY = targetLeft;
+      } else if (targetRight >
+          lastSelection.scrollOffsetY + horizontalViewport) {
+        saveSelection = true;
+        lastSelection.scrollOffsetY = targetRight - horizontalViewport;
+        updateRowColCountCurrentSheet(true, visibleWidth: targetRight);
+      } else {
+        scrollX = false;
+      }
+    }
+    if (scrollX || scrollY) {
+      _scrollEventController.add(
+        ScrollRequest(
+          xOffset: scrollX ? lastSelection.scrollOffsetY : null,
+          yOffset: scrollY ? lastSelection.scrollOffsetX : null,
+        ),
+      );
+    }
+    return saveSelection;
+  }
+
+  void updateRowColCountCurrentSheet(
+    bool notify,{
+    double? visibleHeight,
+    double? visibleWidth,
+  }) {
+    String sheetId = workbookUsecase.currentSheetId;
     updateRowColCount(
+      sheetId,
       false,
       visibleHeight: row1ToScreenBottomHeight,
       visibleWidth: colBToScreenRightWidth,
     );
   }
 
-  bool isRowValid(
-    SheetData sheet,
-    int rowId,
-    AnalysisResult result,
-    SortStatus sortStatus,
-  ) {
-    if (sortStatus.resultCalculated) {
-      return rowId < result.isMedium.length && result.isMedium[rowId];
+  void updateRowColCount(
+    String sheetId,
+    bool notify,{
+    double? visibleHeight,
+    double? visibleWidth,
+  }) {
+    int targetRows = tableViewRows;
+    int targetCols = tableViewCols;
+    if (visibleHeight != null) {
+      row1ToScreenBottomHeight = visibleHeight;
+      targetRows = minRows(
+        sheetId,
+        rowCount(sheetId),
+        row1ToScreenBottomHeight,
+      );
     }
-    if (rowId == 0) {
-      return false;
+    if (visibleWidth != null) {
+      colBToScreenRightWidth = visibleWidth;
+      targetCols = minCols(
+        sheetId,
+        colCount(sheetId),
+        colBToScreenRightWidth,
+      );
     }
-    for (
-      int srcColId = 0;
-      srcColId < colCount(sheet.sheetContent);
-      srcColId++
-    ) {
-      if (GetNames.isSourceColumn(sheet.sheetContent.columnTypes[srcColId]) &&
-          loadedSheetsDataStore.getCellContent(rowId, srcColId).isNotEmpty) {
-        return true;
+    if (targetRows != tableViewRows || targetCols != tableViewCols) {
+      tableViewRows = targetRows;
+      tableViewCols = targetCols;
+      if (notify) {
+        notifyListeners();
       }
     }
-    return false;
+  }
+
+  bool isRowValid(
+    String sheetId,
+    int rowId,
+  ) {
+    return gridUsecase.isRowValid(sheetId, rowId);
   }
 
   @override

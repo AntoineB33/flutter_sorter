@@ -8,9 +8,7 @@ import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_ca
 
 class SelectionCache {
   final Map<String, SelectionData> _lastSelections = {};
-  final _updateDataController = StreamController<String>.broadcast();
 
-  Stream<String> get updateData => _updateDataController.stream;
   Map<String, SelectionData> get lastSelections => Map.unmodifiable(_lastSelections);
 
   bool containsSheetId(String sheetId) {
@@ -39,22 +37,11 @@ class SelectionCache {
     }
   }
 
-  void setEditingMode(String currentSheetId, bool isEditing) {
-    SelectionData selection = _lastSelections[currentSheetId] ??=
-        SelectionData.empty();
-    selection.editingMode = isEditing;
-    _updateDataController.add(currentSheetId);
-  }
-
   void setSelectionData(
     String sheetId,
     SelectionData selectionData,
-    bool save,
   ) {
     _lastSelections[sheetId] = selectionData;
-    if (save) {
-      _updateDataController.add(sheetId);
-    }
   }
 
   void setScrollOffsetX(String sheetId, double value) {

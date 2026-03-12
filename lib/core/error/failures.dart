@@ -31,7 +31,9 @@ class FileNotFoundFailure implements Failure {
 
 }
 
-class CacheRepairedFailure implements Failure {}
+class CacheRepairedFailure implements Failure {
+  bool 
+}
 
 class ClipboardEmptyFailure implements Failure {}
 

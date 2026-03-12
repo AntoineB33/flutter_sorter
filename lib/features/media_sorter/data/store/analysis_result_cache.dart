@@ -1,13 +1,28 @@
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 
 class AnalysisResultCache extends ChangeNotifier {
   final Map<String, AnalysisResult> _analysisResults = {};
 
   final LoadedSheetsCache loadedSheetsDataStore;
+
+  bool getFindingBestSort(String sheetId) {
+    return _getAnalysisResult(sheetId).isFindingBestSort;
+  }
+
+  bool bestSortPossibleFound(String sheetId) {
+    return _getAnalysisResult(sheetId).bestSortPossibleFound;
+  }
+
+  bool sortedWithCurrentBestSort(String sheetId) {
+    return _getAnalysisResult(sheetId).sortedWithValidSort;
+  }
+
+  List<bool> isMedium(String sheetId) {
+    return _getAnalysisResult(sheetId).isMedium;
+  }
 
   AnalysisResult _getAnalysisResult(String sheetId) {
     return _analysisResults[sheetId]!;

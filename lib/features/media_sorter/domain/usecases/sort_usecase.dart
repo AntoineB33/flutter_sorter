@@ -1,57 +1,96 @@
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/helpers/utils_services.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_update_coordinator.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
 
 class SortUsecase {
   final SortRepository sortRepository;
   final SheetDataRepository sheetDataRepository;
-  final SheetUpdateCoordinator sheetUpdateCoordinator;
+  final WorkbookRepository workbookRepository;
 
-  Stream<void> get progressStream => sortRepository.progressStream;
-  Stream<void> get sortStatusStream => sortRepository.sortStatusStream;
-  Stream<void> get saveStream => sortRepository.saveStream;
+  Stream<Failure> get failureStream => sortRepository.failureStream;
+  String get currentSheetId => workbookRepository.currentSheetId;
 
-  SortUsecase(this.sortRepository, this.sheetDataRepository, this.sheetUpdateCoordinator);
+  SortUsecase(
+    this.sortRepository,
+    this.sheetDataRepository,
+    this.workbookRepository,
+  );
 
-  void sortMedia(String sheetId) {
-    sortRepository.sortMedia(sheetId);
+  List<String> getSheetIds() {
+    return sortRepository.getSheetIds();
   }
 
-  void onDataProgressUpdate() {
-    sortRepository.saveDataProgress();
-    if (sortRepository.toSort(currentSheetId) && sortRepository.sortedWithValidSort(currentSheetId)) {
-      sortRepository.sortMedia(currentSheetId);
-    }
+  bool isApplyBetterSortButtonLocked() {
+    return sortRepository.isApplyBetterSortButtonLocked();
   }
 
-  void saveSortStatus() {
-    sortRepository.saveAllSortStatus();
+  bool isBetterSortFound() {
+    return sortRepository.isBetterSortFound();
   }
 
-  Future<void> calculateOnChange(String sheetId) async {
-    await for (final SortProgressDataMsg sortProgressDataMsg in sortRepository.calculateOnChange()) {
-      if (_handleSortProgressDataMsg(sortProgressDataMsg, sheetId)) {
-        break;
-      }
-    }
+  bool isApplyBetterSortButtonInAction() {
+    return sortRepository.isApplyBetterSortButtonInAction();
   }
 
-  bool _handleSortProgressDataMsg(SortProgressDataMsg sortProgressDataMsg, String sheetId) {
-    bool stopLoop = sortRepository.handleSortProgressDataMsg(sortProgressDataMsg, sheetId);
-    if (sortProgressDataMsg.newBestSortFound) {
-      final List<UpdateUnit> updates = sortRepository.sortMedia(sheetId);
-      sheetUpdateCoordinator.applyUpdates(updates, sheetId, true, false);
-    }
-    return stopLoop;
+  void applyBetterSortButton() {
+    sortRepository.applyBetterSortButton();
+  }
+
+  void findBestSortToggle() {
+    sortRepository.findBestSortToggle();
+  }
+
+  bool showApplySortToggle() {
+    return sortRepository.showApplySortToggle();
+  }
+
+  void applySortToggle() {
+    sortRepository.applySortToggle();
+  }
+
+  Stream<SortProgressDataMsg> calculateOnChange(String sheetId) {
+    return sortRepository.calculateOnChange(sheetId);
+  }
+
+  Stream<SortProgressDataMsg> launchCalculation(String sheetId) {
+    return sortRepository.launchCalculation(sheetId);
+  }
+
+  bool handleSortProgressDataMsg(
+    SortProgressDataMsg sortProgressDataMsg,
+    String sheetId,
+  ) {
+    return sortRepository.handleSortProgressDataMsg(
+      sortProgressDataMsg,
+      sheetId,
+    );
+  }
+
+  bool getToApplyNextSort(String sheetId) {
+    return sortRepository.getToApplyNextSort(sheetId);
+  }
+
+  bool getToApplyOnce(String sheetId) {
+    return sortRepository.getToApplyNextSort(sheetId);
+  }
+
+  void setToApplyOnce(String sheetId, bool toApplyOnce) {
+    sortRepository.setToApplyOnce(sheetId, toApplyOnce);
+  }
+
+  List<UpdateUnit> sortTable(String sheetId) {
+    return sortRepository.sortMedia(sheetId);
   }
 
   
-  Future<Either<Failure, AnalysisResult>> getAnalysisResult(
-    String sheetName,
-  ) async {
-    return await repository.getAnalysisResult(sheetName);
+  Future<void> init() async {
+    Either<Failure, void> result;
+    result = await sortRepository.loadSortStatus();
+    UtilsServices.handleDataCorruption(result);
   }
 }

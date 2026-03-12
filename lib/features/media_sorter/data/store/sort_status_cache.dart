@@ -1,8 +1,6 @@
-import 'dart:async';
 
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 
 class SortStatusCache {
   final Map<String, SortStatus> _sortStatusBySheet = {};
@@ -13,26 +11,42 @@ class SortStatusCache {
 
   Map<String, SortStatus> get sortStatusBySheet => _sortStatusBySheet;
 
+  bool containsSheet(String sheetId) {
+    return _sortStatusBySheet.containsKey(sheetId);
+  }
+
+  bool getToApplyOnce(String sheetId) {
+    return _sortStatusBySheet[sheetId]?.toApplyOnce ?? false;
+  }
+
   List<String> getSheetIds() {
     return _sortStatusBySheet.keys.toList();
   }
 
-  bool isAnalysisDone(String sheetId) {
+  bool getAnalysisDone(String sheetId) {
     return _sortStatusBySheet[sheetId]?.analysisDone ?? false;
   }
 
-  bool isFindingBestSort(String sheetId) {
-    return _sortStatusBySheet[sheetId]?.isFindingBestSort ?? false;
+  bool getToAlwaysApply(String sheetId) {
+    return _sortStatusBySheet[sheetId]?.toAlwaysApply ?? false;
   }
 
-  bool toSort(String sheetId) {
-    return _sortStatusBySheet[sheetId]?.toSort ?? false;
+  void setToApplyOnce(String sheetId, bool toSortOnce) {
+    if (_sortStatusBySheet.containsKey(sheetId)) {
+      _sortStatusBySheet[sheetId]!.toApplyOnce = toSortOnce;
+    }
+  }
+
+  void setToAlwaysApply(String sheetId, bool toAlwaysApply) {
+    if (_sortStatusBySheet.containsKey(sheetId)) {
+      _sortStatusBySheet[sheetId]!.toAlwaysApply = toAlwaysApply;
+    }
   }
 
   void isAnalysing(String sheetId, bool isFindingBestSort, bool toSort) {
     _sortStatusBySheet[sheetId] = SortStatus(
       isFindingBestSort: isFindingBestSort,
-      toSort: toSort,
+      toAlwaysApply: toSort,
     );
   }
 
@@ -56,9 +70,11 @@ class SortStatusCache {
     }
   }
 
-  void bestSortFound(String sheetId, bool validSortFound) {
+  bool bestSortFound(String sheetId, bool validSortFound) {
     if (!validSortFound || !_sortStatusBySheet[sheetId]!.isFindingBestSort) {
       _sortStatusBySheet.remove(sheetId);
+      return true;
     }
+    return false;
   }
 }

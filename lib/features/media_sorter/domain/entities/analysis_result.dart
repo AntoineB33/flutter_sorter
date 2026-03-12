@@ -124,6 +124,7 @@ class AnalysisResult {
   Map<int, Map<int, List<SortingRule>>> myRules;
   List<List<int>> groupsToMaximize;
 
+  bool isFindingBestSort;
   bool sortedWithValidSort;
   bool sortedWithCurrentBestSort;
   bool bestSortPossibleFound;
@@ -147,6 +148,7 @@ class AnalysisResult {
     required this.isMedium,
     required this.validRowIndexes,
     required this.currentBestSort,
+    required this.isFindingBestSort,
     required this.sortedWithValidSort,
     required this.sortedWithCurrentBestSort,
     required this.bestSortPossibleFound,
@@ -177,6 +179,7 @@ class AnalysisResult {
       validRowIndexes: [],
       formatedTable: [],
       currentBestSort: null,
+      isFindingBestSort: false,
       sortedWithValidSort: false,
       sortedWithCurrentBestSort: false,
       bestSortPossibleFound: false,

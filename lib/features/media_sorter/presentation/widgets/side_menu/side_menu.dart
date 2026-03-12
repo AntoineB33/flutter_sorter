@@ -1,15 +1,11 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:isar/isar.dart';
 import 'package:provider/provider.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 import 'analysis_tree_node.dart';
 
 class SideMenu extends StatefulWidget {
@@ -95,13 +91,7 @@ class _SideMenuState extends State<SideMenu> {
 
           // 1. Sort Media Button (Blue)
           ElevatedButton(
-            onPressed: () {
-              if (!sortController.sortToggleAvailable()) {
-                return;
-              }
-              sortController.sortToggle();
-              selectionController.stopEditing();
-            },
+            onPressed: sortController.sortToggle,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
@@ -113,9 +103,13 @@ class _SideMenuState extends State<SideMenu> {
               // Disabled state:
               disabledBackgroundColor: sortController.sortToggleAvailable()
                   ? Colors.grey
-                  : Colors.blue.withValues(alpha: 0.5),
+                  : (sortController.sortTogglePressed()
+                        ? Colors.amber.withValues(alpha: 0.5)
+                        : Colors.blue.withValues(alpha: 0.5)),
             ),
-            child: const Text("Sort media"),
+            child: Text(
+              sortController.sortTogglePressed() ? "Stop sorting" : "Sort",
+            ),
           ),
 
           const SizedBox(height: 8), // Reduced spacing to match smaller buttons
@@ -125,7 +119,7 @@ class _SideMenuState extends State<SideMenu> {
               if (!sortController.sortToggleAvailable()) {
                 return;
               }
-              sortController.findBestSortCurrentSheet(false);
+              sortController.findBestSort(false);
               selectionController.stopEditing();
             },
             style: ElevatedButton.styleFrom(
@@ -155,7 +149,7 @@ class _SideMenuState extends State<SideMenu> {
               if (!sortController.sortToggleAvailable()) {
                 return;
               }
-              sortController.findBestSortCurrentSheet(true);
+              sortController.findBestSort(true);
               selectionController.stopEditing();
             },
             style: ElevatedButton.styleFrom(

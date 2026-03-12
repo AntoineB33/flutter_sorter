@@ -60,3 +60,6 @@ analyzer:
     - ".dart_tool/**"
     - "**/*.g.dart"      # If you use code generation
     - "**/*.freezed.dart" # If you use Freezed
+    - "ios/**"
+    - "android/**"
+    - "web/**"

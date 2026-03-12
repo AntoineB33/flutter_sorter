@@ -1,4 +1,3 @@
-import 'dart:collection';
 
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';

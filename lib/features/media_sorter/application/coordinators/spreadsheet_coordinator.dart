@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
@@ -24,5 +25,42 @@ class SpreadsheetCoordinator {
   final SelectionController selectionController;
   final WorkbookController workbookController;
 
-  SpreadsheetCoordinator(this.historyController, this.sheetDataController, this.gridController, this.sortController, this.selectionController, this.workbookController);
+  SpreadsheetCoordinator(this.historyController, this.sheetDataController, this.gridController, this.sortController, this.selectionController, this.workbookController) {
+    init();
+  }
+
+  
+  Future<void> init() async {
+    await workbookController.clearAllData();
+    await workbookController.loadRecentSheetIds();
+    final loadSheetWait = workbookController.loadSheet(workbookController.currentSheetId, true);
+    bool success = await workbookController.loadLastSelection();
+    loadSheetWait.then((_) {
+      
+    });
+    notifyListeners();
+    workbookUseCase.loadLastSelections(success);
+    notifyListeners();
+    await sortUseCase.init();
+    await workbookController.init();
+    for (var sheetId in sortController.getSheetIds()) {
+      sortController.launchCalculation(sheetId);
+    }
+  }
+
+  
+  void setPrimarySelection(
+    int row,
+    int col,
+    bool keepSelection,
+    bool scrollTo,
+  ) {
+    selectionController.setPrimarySelection(row, col, keepSelection);
+    if (scrollTo) {
+      bool saveSelection = gridController.scrollToCell(row, col);
+      if (saveSelection) {
+        selectionController.saveLastSelection();
+      }
+    }
+  }
 }

@@ -69,31 +69,16 @@ class SelectionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void stopEditing(String prevValue, {bool updateHistory = true}) {
-    if (!selectionUsecase.editingMode) {
-      return;
-    }
-    saveLastSelection();
-    if (updateHistory) {
-      historyService.commitHistory(
-        UpdateData(Uuid().v4(), DateTime.now(), [
-          CellUpdate(
-            selectionUsecase.primarySelectedCell.x,
-            selectionUsecase.primarySelectedCell.y,
-            loadedSheetsDataStore.getCellContent(
-              selectionUsecase.primarySelectedCell.x,
-              selectionUsecase.primarySelectedCell.y,
-            ),
-            prevValue,
-          ),
-        ]),
-      );
-    }
-    selectionUsecase.setEditingMode(false);
+  void stopEditing(String prevValue, bool updateHistory) {
+    selectionUsecase.stopEditing(prevValue, updateHistory);
+  }
+
+  bool isSorting() {
+    return selectionUsecase.isSorting();
   }
 
   bool startEditing() {
-    if (sortStatus.sortWhileFindingBestSort) {
+    if (isSorting()) {
       return false;
     }
     selection.previousContent = loadedSheetsDataStore.getCellContent(

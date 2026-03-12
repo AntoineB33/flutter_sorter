@@ -3,8 +3,6 @@ import 'package:trying_flutter/features/media_sorter/domain/repositories/history
 
 class HistoryUsecase {
   final HistoryRepository historyRepository;
-  
-  Stream<UpdateRequest> get updateDataStream => historyRepository.updateDataStream;
 
   HistoryUsecase(this.historyRepository);
 
@@ -12,7 +10,7 @@ class HistoryUsecase {
     historyRepository.moveInUpdateHistory(direction);
   }
 
-  void commitHistory(UpdateData updateData) {
-    historyRepository.commitHistory(updateData);
+  void commitHistory(List<UpdateUnit> updates, String sheetId) {
+    historyRepository.commitHistory(updates, sheetId);
   }
 }

@@ -2,6 +2,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 
 abstract class WorkbookRepository {
+  String get currentSheetId;
   List<String> getRecentSheetIds();
   void saveRecentSheetIds();
   bool containsSheetId(String sheetId);

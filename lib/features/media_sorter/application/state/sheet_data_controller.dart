@@ -9,7 +9,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_re
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
+import 'package:trying_flutter/features/media_sorter/domain/helpers/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/parse_paste_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
@@ -30,12 +30,6 @@ class SheetDataController extends ChangeNotifier {
 
   void saveRecentSheetIds() {
     sheetDataUsecase.saveRecentSheetIds();
-  }
-
-  void createSaveExecutor(String name) {
-    _saveExecutors[name] = ManageWaitingTasks<void>(
-      Duration(milliseconds: SpreadsheetConstants.saveSheetDelayMs),
-    );
   }
 
   void onChanged(String newValue) {

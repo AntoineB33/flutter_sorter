@@ -3,5 +3,6 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 abstract class HistoryRepository {
   void moveInUpdateHistory(int direction);
   void commitHistory(List<UpdateUnit> updates, String sheetId);
+  void stopEditing(String prevValue);
   void setCellContent(int rowId, int colId, String prevVal, String newVal);
 }

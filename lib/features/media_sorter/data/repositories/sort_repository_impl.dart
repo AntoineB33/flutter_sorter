@@ -1,8 +1,5 @@
-import 'dart:collection';
 import 'dart:isolate';
-import 'dart:math';
 
-import 'package:flutter/material.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
@@ -14,28 +11,17 @@ import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.
 import 'package:trying_flutter/features/media_sorter/data/store/sorting_progress_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
-import 'package:trying_flutter/features/media_sorter/data/datasources/sorting_service.dart';
+import 'package:trying_flutter/features/media_sorter/domain/helpers/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'dart:async';
-
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
-import 'package:trying_flutter/utils/logger.dart';
-import 'package:uuid/uuid.dart';
 
 class SortRepositoryImpl implements SortRepository {
   final AnalysisResultCache analysisResultCache;
@@ -52,12 +38,68 @@ class SortRepositoryImpl implements SortRepository {
       ManageWaitingTasks<void>(Duration(milliseconds: 2000));
   final ManageWaitingTasks<void> _saveSortProgressExecutor =
       ManageWaitingTasks<void>(Duration(milliseconds: 2000));
-  final StreamController<Failure?> _failureController = StreamController<Failure?>.broadcast();
-
-  Stream<Failure?> get failureStream => _failureController.stream;
+  final StreamController<Failure> _failureController =
+      StreamController<Failure>.broadcast();
 
   @override
-  bool toSort(String sheetId) => sortStatusCache.toSort(sheetId);
+  Stream<Failure> get failureStream => _failureController.stream;
+  String get currentSheetId => workbookCache.currentSheetId;
+
+  @override
+  List<String> getSheetIds() {
+    return sortStatusCache.getSheetIds();
+  }
+
+  @override
+  bool isApplyBetterSortButtonLocked() {
+    return sortProgressCache.isValidSortImpossible(currentSheetId) ||
+        analysisResultCache.bestSortPossibleFound(currentSheetId) &&
+            analysisResultCache.sortedWithCurrentBestSort(currentSheetId);
+  }
+
+  @override
+  bool isBetterSortFound() {
+    return !analysisResultCache.sortedWithCurrentBestSort(currentSheetId);
+  }
+
+  @override
+  bool isApplyBetterSortButtonInAction() {
+    return sortStatusCache.containsSheet(currentSheetId) &&
+        (sortStatusCache.getToApplyOnce(currentSheetId) ||
+            sortStatusCache.getToAlwaysApply(currentSheetId));
+  }
+
+  @override
+  void applyBetterSortButton() {
+    if (isBetterSortFound()) {
+      sortMedia(currentSheetId);
+    } else {
+      sortStatusCache.setToApplyOnce(currentSheetId, true);
+      saveAllSortStatus();
+    }
+  }
+
+  @override
+  void findBestSortToggle() {
+    sortStatusCache.setToAlwaysApply(currentSheetId, !sortStatusCache.getToAlwaysApply(currentSheetId));
+    saveAllSortStatus();
+  }
+
+  @override
+  bool showApplySortToggle() {
+    return sortStatusCache.containsSheet(currentSheetId);
+  }
+
+  @override
+  void applySortToggle() {
+    sortStatusCache.setToAlwaysApply(currentSheetId, !sortStatusCache.getToAlwaysApply(currentSheetId));
+    saveAllSortStatus();
+  }
+
+  @override
+  bool getToApplyNextSort(String sheetId) =>
+      sortStatusCache.getToAlwaysApply(sheetId) ||
+      sortStatusCache.getToApplyOnce(sheetId);
   @override
   bool sortedWithValidSort(String sheetId) =>
       analysisResultCache.sortedWithValidSort(sheetId);
@@ -74,24 +116,33 @@ class SortRepositoryImpl implements SortRepository {
   );
 
   @override
+  void setToApplyOnce(String sheetId, bool toApplyOnce) {
+    sortStatusCache.setToApplyOnce(sheetId, toApplyOnce);
+    saveAllSortStatus();
+  }
+
+  @override
   Future<Either<Failure, void>> loadSortStatus() async {
     final result = await UrilsService.handleDataSourceCall(
       () => saveDataSource.getSortStatus(),
     );
     return result.fold((failure) => Left(failure), (ids) {
       sortStatusCache.setSortStatus(ids);
-      bool changed = false;
+      bool sortStatusChanged = false;
+      bool workbookCacheChanged = false;
       for (var sheetId in sortStatusCache.getSheetIds()) {
         if (!UrilsService.isValidSheetName(sheetId)) {
           sortStatusCache.removeSortStatus(sheetId);
-          changed = true;
+          sortStatusChanged = true;
         } else if (!loadedSheetsCache.containsSheetId(sheetId)) {
           workbookCache.addSheetId(sheetId, 1);
-          selectionCache.setSelectionData(sheetId, SelectionData.empty(), true);
-          changed = true;
+          selectionCache.setSelectionData(sheetId, SelectionData.empty());
+          workbookCacheChanged = true;
         }
       }
-      return changed ? Left(CacheRepairedFailure()) : Right(null);
+      return sortStatusChanged || workbookCacheChanged
+          ? Left(CacheRepairedFailure())
+          : Right(null);
     });
   }
 
@@ -136,8 +187,7 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  Stream<SortProgressDataMsg> calculateOnChange() async* {
-    String sheetId = workbookCache.currentSheetId;
+  Stream<SortProgressDataMsg> calculateOnChange(String sheetId) async* {
     isolateReceivePortsCache.addIsolatePortIfNecessary(sheetId);
     if (!lightCalculate1()) {
       isolateReceivePortsCache.cancelB(sheetId);
@@ -145,7 +195,7 @@ class SortRepositoryImpl implements SortRepository {
       return;
     }
     if (sameResLightCheck()) {
-      if (sortStatusCache.isAnalysisDone(sheetId)) {
+      if (sortStatusCache.getAnalysisDone(sheetId)) {
         return;
       }
       changeResult();
@@ -157,14 +207,13 @@ class SortRepositoryImpl implements SortRepository {
       return;
     }
     sortStatusCache.isAnalysing(sheetId, false, false);
-    yield* launchCalculation(
-      sheetId,
-    );
+    yield* launchCalculation(sheetId);
   }
 
+  @override
   Stream<SortProgressDataMsg> launchCalculation(String sheetId) async* {
     analysisResultCache.setSortedWithValidSort(sheetId, false);
-    if (!sortStatusCache.isAnalysisDone(sheetId)) {
+    if (!sortStatusCache.getAnalysisDone(sheetId)) {
       isolateReceivePortsCache.cancelB(sheetId);
       AnalysisReturn resultB = await runHeavyCalculationB(
         sheetId,
@@ -192,17 +241,19 @@ class SortRepositoryImpl implements SortRepository {
       sheetId,
       await Isolate.spawn(CalculationDatasource.solveSorting, args),
     );
-    yield* isolateReceivePortsCache.getIsolatePort(sheetId).cast<SortProgressDataMsg>();
+    yield* isolateReceivePortsCache
+        .getIsolatePort(sheetId)
+        .cast<SortProgressDataMsg>();
   }
 
   @override
-  bool handleSortProgressDataMsg(SortProgressDataMsg sortProgressDataMsg, String sheetId) {
+  bool handleSortProgressDataMsg(
+    SortProgressDataMsg sortProgressDataMsg,
+    String sheetId,
+  ) {
     SortProgressData sort = sortProgressDataMsg.sortProgressData;
     if (sortProgressDataMsg.newBestSortFound &&
-        sortProgressCache
-            .getSortProgressData(sheetId)
-            .bestDistFound
-            .isEmpty) {
+        sortProgressCache.getSortProgressData(sheetId).bestDistFound.isEmpty) {
       bool isNaturalOrderValid = true;
       if (sort.bestDistFound.isNotEmpty) {
         for (int k = 0; k < sort.bestSortFound.length; k++) {
@@ -212,22 +263,21 @@ class SortRepositoryImpl implements SortRepository {
           }
         }
       }
-      analysisResultCache.setSortedWithValidSort(
-        sheetId,
-        isNaturalOrderValid,
-      );
+      analysisResultCache.setSortedWithValidSort(sheetId, isNaturalOrderValid);
     }
     sortProgressCache.update(sheetId, sort);
     saveDataProgress(sheetId);
-    if (sort.bestDistFound.isNotEmpty ||
-        sort.cursors[0] == sort.possibleIntsById[0].length) {
-      sortStatusCache.bestSortFound(sheetId, sort.bestDistFound.isNotEmpty);
-      saveAllSortStatus();
-      if (sortStatusCache.isFindingBestSort(sheetId)) {
-        return true;
+    if (sort.cursors[0] == sort.possibleIntsById[0].length) {
+      bool update = sortStatusCache.bestSortFound(
+        sheetId,
+        sort.bestDistFound.isNotEmpty,
+      );
+      if (update) {
+        saveAllSortStatus();
       }
     }
-    return false;
+    return sortProgressDataMsg.newBestSortFound &&
+        !sortStatusCache.getFindingBestSort(sheetId);
   }
 
   void cancelFindingBestSort(String sheetId) {
@@ -447,7 +497,6 @@ class SortRepositoryImpl implements SortRepository {
     });
   }
 
-  @override
   void saveDataProgress(String sheetId) {
     _saveSortProgressExecutor.execute(() async {
       try {

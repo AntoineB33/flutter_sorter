@@ -12,21 +12,20 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/calculation_service.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/parse_paste_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/helpers/calculation_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/coordinator_usecase.dart';
 
 class SheetDataUsecase {
   final SheetDataRepository sheetDataRepository;
   final SortRepository sortRepository;
   final GridRepository gridRepository;
-  final SheetUpdateCoordinator sheetUpdateCoordinator;
+  final CoordinatorUsecase sheetUpdateCoordinator;
 
   Stream<void> get sortStatusStream => sortRepository.sortStatusStream;
 
@@ -36,6 +35,18 @@ class SheetDataUsecase {
     required this.gridRepository,
     required this.sheetUpdateCoordinator,
   });
+
+  int rowCount(String sheetId) {
+    return sheetDataRepository.rowCount(sheetId);
+  }
+
+  int colCount(String sheetId) {
+    return sheetDataRepository.colCount(sheetId);
+  }
+
+  SheetData getSheet(String sheetId) {
+    return sheetDataRepository.getSheet(sheetId);
+  }
 
   void setCellContent(Point<int> cell, String newVal) {
     final updates = sheetDataRepository.setCellContent(cell, newVal);

@@ -1,7 +1,5 @@
-import 'dart:io';
 
 import 'package:fpdart/fpdart.dart';
-import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
@@ -9,8 +7,8 @@ import 'package:trying_flutter/features/media_sorter/data/services/utils_service
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
-import 'package:trying_flutter/utils/logger.dart';
 
 class WorkbookRepositoryImpl implements WorkbookRepository {
   final FileSheetLocalDataSource fileSheetLocalDataSource;
@@ -18,9 +16,12 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   final LoadedSheetsCache loadedSheetsCache;
   final SelectionCache selectionCache;
   final SortStatusCache sortStatusCache;
+  final WorkbookCache workbookCache;
   
   final ManageWaitingTasks<void> _saveRecentSheetIdsExecutor =
       ManageWaitingTasks<void>(Duration(seconds: 2000));
+  @override
+  String get currentSheetId => workbookCache.currentSheetId;
 
   WorkbookRepositoryImpl(
     this.fileSheetLocalDataSource,
@@ -31,12 +32,12 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
 
   @override
   bool containsSheetId(String sheetId) {
-    return loadedSheetsCache.containsSheetId(sheetId);
+    return workbookCache.containsSheetId(sheetId);
   }
 
   @override
   List<String> getRecentSheetIds() {
-    return loadedSheetsCache.getRecentSheetIds();
+    return workbookCache.getRecentSheetIds();
   }
 
   @override
@@ -54,14 +55,14 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
     );
 
     return result.fold((failure) => Left(failure), (ids) {
-      loadedSheetsCache.setRecentIds(ids);
+      workbookCache.setRecentIds(ids);
       bool changed = false;
       int offset = 0;
-      for (int i = 0; i < loadedSheetsCache.getRecentSheetIds().length; i++) {
+      for (int i = 0; i < workbookCache.getRecentSheetIds().length; i++) {
         if (!UrilsService.isValidSheetName(
-          loadedSheetsCache.getRecentSheetIds()[i - offset],
+          workbookCache.getRecentSheetIds()[i - offset],
         )) {
-          loadedSheetsCache.removeSheet(i - offset);
+          workbookCache.removeSheet(i - offset);
           offset++;
           changed = true;
         }
@@ -73,7 +74,7 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   @override
   void saveRecentSheetIds() {
     _saveRecentSheetIdsExecutor.execute(() async {
-      await fileSheetLocalDataSource.saveRecentSheetIds(loadedSheetsCache.getRecentSheetIds());
+      await fileSheetLocalDataSource.saveRecentSheetIds(workbookCache.getRecentSheetIds());
     });
   }
 }

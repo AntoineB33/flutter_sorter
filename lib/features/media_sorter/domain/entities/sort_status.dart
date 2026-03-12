@@ -4,14 +4,14 @@ part 'sort_status.g.dart';
 
 @JsonSerializable()
 class SortStatus {
-  bool toSort;
-  bool isFindingBestSort;
+  bool toApplyOnce;
+  bool toAlwaysApply;
   bool analysisDone;
 
   SortStatus({
-    this.toSort = false,
-    this.isFindingBestSort = false,
-    this.analysisDone = false,
+    this.toApplyOnce = false,
+    this.toAlwaysApply = false,
+    this.analysisDone = true,
   });
 
   factory SortStatus.fromJson(Map<String, dynamic> json) =>

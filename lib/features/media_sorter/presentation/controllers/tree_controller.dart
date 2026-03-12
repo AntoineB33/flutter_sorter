@@ -12,13 +12,15 @@ import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/tree_usecase.dart';
 
 class TreeController extends ChangeNotifier {
+  final TreeUsecase treeUsecase;
+
   // --- states ---
   final NodeStruct mentionsRoot = NodeStruct(
     instruction: SpreadsheetConstants.selectionMsg,
@@ -28,18 +30,12 @@ class TreeController extends ChangeNotifier {
   );
   final Map<String, ManageWaitingTasks<void>> _saveResultExecutors = {};
 
-  final SaveSheetDataUseCase saveSheetDataUseCase;
-
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) =>
       content.table.isNotEmpty ? content.table[0].length : 0;
 
   TreeController({
-    required this.analysisDataStore,
-    required this.loadedSheetsDataStore,
-    required this.selectionDataStore,
-    required this.sortStatusDataStore,
-    required this.saveSheetDataUseCase,
+    required this.treeUsecase,
   });
 
   void populateAllTrees(

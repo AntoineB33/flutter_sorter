@@ -1,11 +1,9 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
-import 'package:uuid/uuid.dart';
 
 class LoadedSheetsCache {
   final Map<String, SheetData> _loadedSheetsData = {};
@@ -50,6 +48,10 @@ class LoadedSheetsCache {
       return sheetContent.columnTypes[col];
     }
     return ColumnType.attributes;
+  }
+
+  void setSheet(String sheetId, SheetData sheetData) {
+    _loadedSheetsData[sheetId] = sheetData;
   }
 
   void _increaseColumnCount(
