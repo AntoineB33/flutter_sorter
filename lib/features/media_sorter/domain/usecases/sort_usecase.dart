@@ -21,6 +21,22 @@ class SortUsecase {
     this.workbookRepository,
   );
 
+  bool isSorting() {
+    return sortRepository.isSorting(currentSheetId);
+  }
+
+  bool getAnalysisDone(String sheetId) {
+    return sortRepository.getAnalysisDone(sheetId);
+  }
+
+  Future<void> analyze(String sheetId) {
+    return sortRepository.analyze(sheetId);
+  }
+
+  void lightCalculations(String sheetId) {
+    sortRepository.lightCalculations(sheetId);
+  }
+
   List<String> getSheetIds() {
     return sortRepository.getSheetIds();
   }
@@ -54,10 +70,10 @@ class SortUsecase {
   }
 
   Stream<SortProgressDataMsg> calculateOnChange(String sheetId) {
-    return sortRepository.calculateOnChange(sheetId);
+    return sortRepository.lightCalculations(sheetId);
   }
 
-  Stream<SortProgressDataMsg> launchCalculation(String sheetId) {
+  Future<Stream<SortProgressDataMsg>> launchCalculation(String sheetId) {
     return sortRepository.launchCalculation(sheetId);
   }
 
@@ -87,7 +103,6 @@ class SortUsecase {
     return sortRepository.sortMedia(sheetId);
   }
 
-  
   Future<void> init() async {
     Either<Failure, void> result;
     result = await sortRepository.loadSortStatus();

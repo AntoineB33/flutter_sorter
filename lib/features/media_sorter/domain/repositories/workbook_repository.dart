@@ -8,4 +8,5 @@ abstract class WorkbookRepository {
   bool containsSheetId(String sheetId);
   Future<Either<Failure, void>> clearAllData();
   Future<Either<Failure, void>> loadRecentSheetIds();
+  Future<void> addNewSheetId(String sheetId);
 }

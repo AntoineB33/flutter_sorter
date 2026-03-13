@@ -32,7 +32,15 @@ class FileNotFoundFailure implements Failure {
 }
 
 class CacheRepairedFailure implements Failure {
-  bool 
+  bool sortStatusChanged = false;
+  bool workbookCacheChanged = false;
+  bool selectionCacheChanged = false;
+
+  CacheRepairedFailure({
+    this.sortStatusChanged = false,
+    this.workbookCacheChanged = false,
+    this.selectionCacheChanged = false,
+  });
 }
 
 class ClipboardEmptyFailure implements Failure {}

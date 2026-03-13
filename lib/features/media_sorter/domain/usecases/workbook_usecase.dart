@@ -52,9 +52,7 @@ class WorkbookUseCase {
     UtilsServices.handleDataCorruption(result);
   }
 
-  Future<void> loadSheet(
-    String sheetId,
-    bool init) async {
+  Future<void> loadSheet(String sheetId, bool init) async {
     if (!init) {
       selectionRepository.sheetSwitch();
       workbookRepository.saveRecentSheetIds();
@@ -62,20 +60,21 @@ class WorkbookUseCase {
 
     if (workbookRepository.containsSheetId(sheetId)) {
       if (!sheetDataRepository.containsSheetId(sheetId)) {
-        final result = await sheetDataRepository.loadSheet(sheetId);
+        Either<Failure, void> result = await sheetDataRepository.loadSheet(
+          sheetId,
+        );
         final success = UtilsServices.handleDataCorruption(result);
         if (!success) {
           selectionRepository.clearLastSelection(sheetId);
         }
-        await sortController.loadAnalysisResult(sheetId);
+        result = await sortRepository.getAnalysisResult(sheetId);
+        UtilsServices.handleDataCorruption(result);
       }
     } else {
-      _dataController.loadedSheetsData[sheetId] = SheetData.empty();
-      sortController.analysisResults[sheetId] = AnalysisResult.empty();
-      selectionController.clearLastSelection(sheetId);
-      sheetNames.add(sheetId);
-      saveSheetDataUseCase.saveRecentSheetIds(sheetNames);
-      _dataController.createSaveExecutor(sheetId);
+      workbookRepository.addNewSheetId(sheetId);
+      sheetDataRepository.addNewSheet(sheetId);
+      sortRepository.addNewAnalysisResult(sheetId);
+      selectionRepository.clearLastSelection(sheetId);
     }
     currentSheetName = sheetId;
     if (!init) {
@@ -94,12 +93,5 @@ class WorkbookUseCase {
           _gridController.colBToScreenRightWidth,
       notify: false,
     );
-
-    _streamController.scrollToOffset(
-      x: selectionController.scrollOffsetX,
-      y: selectionController.scrollOffsetY,
-      animate: true,
-    );
-    notifyListeners();
   }
 }

@@ -44,20 +44,7 @@ class SelectionCache {
     _lastSelections[sheetId] = selectionData;
   }
 
-  void setScrollOffsetX(String sheetId, double value) {
-    _lastSelections[sheetId]!.scrollOffsetX = value;
-    _updateDataController.add(sheetId);
-  }
-
-  void setScrollOffsetY(String sheetId, double value) {
-    _lastSelections[sheetId]!.scrollOffsetY = value;
-    _updateDataController.add(sheetId);
-  }
-
   void removeSelectionData(String sheetId) {
-    if (_lastSelections.containsKey(sheetId)) {
-      _lastSelections.remove(sheetId);
-      _updateDataController.add(sheetId);
-    }
+    _lastSelections.remove(sheetId);
   }
 }

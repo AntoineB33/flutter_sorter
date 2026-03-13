@@ -49,6 +49,12 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   }
 
   @override
+  Future<void> addNewSheetId(String sheetId) async {
+    workbookCache.addSheetId(sheetId, 0);
+    await fileSheetLocalDataSource.addNewSheetId(sheetId);
+  }
+
+  @override
   Future<Either<Failure, void>> loadRecentSheetIds() async {
     final result = await UrilsService.handleDataSourceCall(
       () => fileSheetLocalDataSource.recentSheetIds(),
@@ -67,7 +73,7 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
           changed = true;
         }
       }
-      return changed ? Left(CacheRepairedFailure()) : Right(null);
+      return changed ? Left(CacheRepairedFailure(workbookCacheChanged: changed)) : Right(null);
     });
   }
 

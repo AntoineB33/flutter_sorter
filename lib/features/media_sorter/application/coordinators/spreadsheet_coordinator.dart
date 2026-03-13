@@ -13,6 +13,7 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/gr
 import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/models/scroll_request.dart';
 import 'package:uuid/uuid.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -24,8 +25,9 @@ class SpreadsheetCoordinator {
   final SortController sortController;
   final SelectionController selectionController;
   final WorkbookController workbookController;
+  final TreeController treeController;
 
-  SpreadsheetCoordinator(this.historyController, this.sheetDataController, this.gridController, this.sortController, this.selectionController, this.workbookController) {
+  SpreadsheetCoordinator(this.historyController, this.sheetDataController, this.gridController, this.sortController, this.selectionController, this.workbookController, this.treeController) {
     init();
   }
 
@@ -33,19 +35,24 @@ class SpreadsheetCoordinator {
   Future<void> init() async {
     await workbookController.clearAllData();
     await workbookController.loadRecentSheetIds();
-    final loadSheetWait = workbookController.loadSheet(workbookController.currentSheetId, true);
-    bool success = await workbookController.loadLastSelection();
-    loadSheetWait.then((_) {
-      
-    });
-    notifyListeners();
-    workbookUseCase.loadLastSelections(success);
-    notifyListeners();
-    await sortUseCase.init();
-    await workbookController.init();
+    bool success = await loadSheet(workbookController.currentSheetId, true);
+    workbookController.loadLastSelections(success);
+    sortController.init();
     for (var sheetId in sortController.getSheetIds()) {
-      sortController.launchCalculation(sheetId);
+      launchCalculation(sheetId);
     }
+  }
+
+  Future<bool> loadSheet(String sheetId, bool init) async {
+    if (sheetDataController.isLoaded(sheetId)) {
+      sortController.loadAnalysisResult(sheetId).then((_) {
+        treeController.onAnalysisAvailable(sheetId);
+      });
+    }
+    await workbookController.loadSheet(sheetId, init);
+    bool success = await workbookController.loadLastSelection();
+    gridController.scrollToLastSelection();
+    return success;
   }
 
   
@@ -62,5 +69,22 @@ class SpreadsheetCoordinator {
         selectionController.saveLastSelection();
       }
     }
+  }
+
+  void applyUpdates(
+    List<UpdateUnit> updates,
+    String sheetId,
+    bool isFromHistory,
+  ) {
+    sortController.applyUpdatesNoSort(updates, sheetId, isFromHistory);
+    sortController.lightCalculations(sheetId);
+    launchCalculation(sheetId);
+  }
+
+  Future<void> launchCalculation(String sheetId) async {
+    if (!sortController.getAnalysisDone(sheetId)) {
+      await sortController.analyze(sheetId);
+    }
+    return sortController.launchCalculation(sheetId);
   }
 }

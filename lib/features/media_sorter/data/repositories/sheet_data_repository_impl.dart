@@ -27,8 +27,14 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
 
   final Map<String, ManageWaitingTasks<void>> _saveSheetDataExecutor = {};
 
-  SheetDataRepositoryImpl(this.loadedSheetsCache, this.selectionCache, this.workbookCache, this.dataSource);
-  SelectionData get selection => selectionCache.getSelectionData(workbookCache.currentSheetId);
+  SheetDataRepositoryImpl(
+    this.loadedSheetsCache,
+    this.selectionCache,
+    this.workbookCache,
+    this.dataSource,
+  );
+  SelectionData get selection =>
+      selectionCache.getSelectionData(workbookCache.currentSheetId);
 
   @override
   bool containsSheetId(String sheetId) {
@@ -73,8 +79,14 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       await _clipboardService.copy(
         loadedSheetsCache.getCellContent(
           workbookCache.currentSheetId,
-          selectionCache.getSelectionData(workbookCache.currentSheetId).primarySelectedCell.x,
-          selectionCache.getSelectionData(workbookCache.currentSheetId).primarySelectedCell.y,
+          selectionCache
+              .getSelectionData(workbookCache.currentSheetId)
+              .primarySelectedCell
+              .x,
+          selectionCache
+              .getSelectionData(workbookCache.currentSheetId)
+              .primarySelectedCell
+              .y,
         ),
       );
       return;
@@ -85,7 +97,9 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     for (int r = startRow; r <= endRow; r++) {
       List<String> rowData = [];
       for (int c = startCol; c <= endCol; c++) {
-        rowData.add(loadedSheetsCache.getCellContent(workbookCache.currentSheetId, r, c));
+        rowData.add(
+          loadedSheetsCache.getCellContent(workbookCache.currentSheetId, r, c),
+        );
       }
       buffer.write(rowData.join('\t')); // Tab separated for Excel compat
       if (r < endRow) buffer.write('\n');
@@ -105,11 +119,16 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       return Left(ClipboardUnsupportedCharactersFailure());
     }
 
-    
     final List<CellUpdate> updates = [];
     final rows = text.split('\n');
-    int startRow = selectionCache.getSelectionData(workbookCache.currentSheetId).primarySelectedCell.x;
-    int startCol = selectionCache.getSelectionData(workbookCache.currentSheetId).primarySelectedCell.y;
+    int startRow = selectionCache
+        .getSelectionData(workbookCache.currentSheetId)
+        .primarySelectedCell
+        .x;
+    int startCol = selectionCache
+        .getSelectionData(workbookCache.currentSheetId)
+        .primarySelectedCell
+        .y;
     for (int r = 0; r < rows.length; r++) {
       final columns = rows[r].split('\t');
       for (int c = 0; c < columns.length; c++) {
@@ -119,7 +138,11 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
             startRow + r,
             startCol + c,
             val,
-            loadedSheetsCache.getCellContent(workbookCache.currentSheetId, startRow + r, startCol + c),
+            loadedSheetsCache.getCellContent(
+              workbookCache.currentSheetId,
+              startRow + r,
+              startCol + c,
+            ),
           ),
         );
       }
@@ -130,9 +153,11 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
 
   void scheduleSheetSave(String sheetId) {
     if (!_saveSheetDataExecutor.containsKey(sheetId)) {
-      _saveSheetDataExecutor[sheetId] = ManageWaitingTasks<void>(Duration(seconds: 2));
+      _saveSheetDataExecutor[sheetId] = ManageWaitingTasks<void>(
+        Duration(seconds: 2),
+      );
     }
-    _saveSheetDataExecutor[sheetId]!.execute( () async {
+    _saveSheetDataExecutor[sheetId]!.execute(() async {
       await dataSource.saveSheet(sheetId, loadedSheetsCache.getSheet(sheetId));
     });
   }
@@ -144,7 +169,16 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
 
   @override
   List<CellUpdate> setCellContent(Point<int> cell, String newVal) {
-    CellUpdate cellUpdate = CellUpdate(cell.x, cell.y, newVal, loadedSheetsCache.getCellContent(workbookCache.currentSheetId, cell.x, cell.y));
+    CellUpdate cellUpdate = CellUpdate(
+      cell.x,
+      cell.y,
+      newVal,
+      loadedSheetsCache.getCellContent(
+        workbookCache.currentSheetId,
+        cell.x,
+        cell.y,
+      ),
+    );
     update([cellUpdate], workbookCache.currentSheetId);
     return [cellUpdate];
   }
@@ -162,13 +196,28 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     }
     return Right(null);
   }
-  
+
+  @override
+  Future<void> addNewSheet(String sheetId) async {
+    loadedSheetsCache.setSheet(sheetId, SheetData.empty());
+    scheduleSheetSave(sheetId);
+  }
+
   @override
   List<CellUpdate> delete(List<Point<int>> cells) {
     List<CellUpdate> updates = [];
     for (Point<int> cell in cells) {
       updates.add(
-        CellUpdate(cell.x, cell.y, '', loadedSheetsCache.getCellContent(workbookCache.currentSheetId, cell.x, cell.y)),
+        CellUpdate(
+          cell.x,
+          cell.y,
+          '',
+          loadedSheetsCache.getCellContent(
+            workbookCache.currentSheetId,
+            cell.x,
+            cell.y,
+          ),
+        ),
       );
     }
     update(updates, workbookCache.currentSheetId);

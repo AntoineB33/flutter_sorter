@@ -20,10 +20,6 @@ class SelectionUsecase {
     this.workbookRepository,
   );
 
-  bool isSorting() {
-    return selectionRepository.isSorting(workbookRepository.currentSheetId);
-  }
-
   SelectionData getSelectionData(String sheetId) {
     return selectionRepository.getSelectionData(sheetId);
   }

@@ -1,4 +1,5 @@
 import 'dart:isolate';
+import 'dart:math';
 
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
@@ -165,10 +166,10 @@ class CalculationDatasource {
 
   /// Main solver function using backtracking.
   static void solveSorting(
-    (SendPort, Map<int, Map<int, List<SortingRule>>>, SortProgressData) args,
+    (SendPort, Map<int, Map<int, List<SortingRule>>>, List<List<int>>, SortProgressData) args,
   ) {
     // Destructure the record back into individual variables for easy use
-    final (sendPort, rules, sortProgressData) = args;
+    final (sendPort, rules, groupAttribution, sortProgressData) = args;
 
     int n = sortProgressData.cursors.length;
     List<int> bestSortFound = sortProgressData.bestSortFound;
@@ -180,6 +181,14 @@ class CalculationDatasource {
     // validAreasById[id] stores the state of validAreas at that depth
 
     int id = 0;
+    List<int> currentDist = List.filled(n, 0);
+    List<int> lastOccurrenceIds = List.filled(n, -1);
+    List<List<int>> lastOccurrence = List.generate(n, (_) => List.filled(n, -1));
+    int distCheckId = 0;
+    for (id = 0; id <= sortProgressData.id; id++) {
+      final result = getDist(groupAttribution, lastOccurrence, lastOccurrenceIds, bestSortFound, currentDist, id, distCheckId);
+      distCheckId = result.newDistCheckId;
+    }
     while (id >= 0) {
       possibleIntsById[id] = getValidStarters(n, id, validAreasById[id]);
 
@@ -221,17 +230,13 @@ class CalculationDatasource {
         }
       }
       if (found) {
-        List<int> newDist = getDist();
-        int comparison = compareDist(bestDistFound, newDist, id);
-        if (comparison == -1) {
+        final result = getDist(groupAttribution, lastOccurrence, lastOccurrenceIds, bestSortFound, currentDist, id, distCheckId);
+        if (!result.success) {
           found = false;
         } else if (id == n) {
-          if (comparison == 1) {
-            bestDistFound.setAll(0, newDist);
-            sendPort.send(sortProgressData);
-          } else {
-            found = false;
-          }
+          bestDistFound.setAll(0, currentDist);
+          sortProgressData.id = id;
+          sendPort.send(sortProgressData);
         }
       }
       if (!found) {
@@ -246,12 +251,45 @@ class CalculationDatasource {
     }
   }
 
-  static List<int> getDist() {
-    return;
+  static ({bool success, int newDistCheckId}) getDist(List<List<int>> groupAttribution, List<List<int>> lastOccurrence, List<int> lastOccurrenceIds, List<int> bestSortFound, List<int> currentDist, int id, int distCheckId) {
+    bool success = true;
+    int newDistCheckId = distCheckId;
+    for (int group in groupAttribution[id]) {
+      lastOccurrenceIds[group]++;
+      lastOccurrence[group][lastOccurrenceIds[group]] = id;
+      if (lastOccurrenceIds[group] != -1) {
+        int dist = id - lastOccurrence[group][lastOccurrenceIds[group]];
+        currentDist[dist]++;
+        if (dist < newDistCheckId) {
+          success = false;
+          break;
+        } else {
+          while (currentDist[newDistCheckId] != bestSortFound[newDistCheckId]) {
+            if (currentDist[newDistCheckId] > bestSortFound[newDistCheckId]) {
+              success = false;
+              break;
+            }
+            newDistCheckId++;
+          }
+        }
+      }
+    }
+    return (success: success, newDistCheckId: newDistCheckId);
   }
 
-  // Returns 1 if distNew is better, -1 if distRef is better, 0 if equal.
-  static int compareDist(List<int> distRef, List<int> distNew, int id) {
-    return;
+  static int reverseGetDist(List<List<int>> groupAttribution, List<List<int>> lastOccurrence, List<int> lastOccurrenceIds, List<int> bestSortFound, List<int> currentDist, int id, int distCheckId) {
+    for (int group in groupAttribution[id]) {
+      if (lastOccurrenceIds[group] != -1 && lastOccurrence[group][lastOccurrenceIds[group]] == id) {
+        lastOccurrenceIds[group]--;
+        if (lastOccurrenceIds[group] != -1) {
+          int dist = id - lastOccurrence[group][lastOccurrenceIds[group]];
+          currentDist[dist]--;
+          distCheckId = min(distCheckId, dist);
+        }
+      } else {
+        break;
+      }
+    }
+    return distCheckId;
   }
 }

@@ -5,6 +5,9 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 
 abstract class SortRepository {
   Stream<Failure> get failureStream;
+  bool isSorting(String sheetId);
+  bool getAnalysisDone(String sheetId);
+  Future<void> analyze(String sheetId);
   List<String> getSheetIds();
   Future<Either<Failure, void>> loadSortStatus();
   bool getToApplyNextSort(String sheetId);
@@ -15,9 +18,8 @@ abstract class SortRepository {
     String sheetId,
   );
   List<UpdateUnit> sortMedia(String sheetId);
-  Stream<SortProgressDataMsg> calculateOnChange(String sheetId);
-  Stream<SortProgressDataMsg> launchCalculation(String sheetId);
-  void applyBetterSort();
+  void lightCalculations(String sheetId);
+  Future<Stream<SortProgressDataMsg>> launchCalculation(String sheetId);
   void findBestSortToggle();
   bool showApplySortToggle();
   bool isApplyBetterSortButtonLocked();
@@ -25,4 +27,5 @@ abstract class SortRepository {
   bool isApplyBetterSortButtonInAction();
   void applyBetterSortButton();
   void applySortToggle();
+  Future<Either<Failure, void>> getAnalysisResult(String sheetId);
 }

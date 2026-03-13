@@ -15,6 +15,7 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
@@ -27,6 +28,10 @@ class SheetDataController extends ChangeNotifier {
   final SheetDataUsecase sheetDataUsecase;
 
   SheetDataController(this.sheetDataUsecase);
+
+  bool isLoaded(String sheetId) {
+    return sheetDataUsecase.getSheet(sheetId) != null;
+  }
 
   void saveRecentSheetIds() {
     sheetDataUsecase.saveRecentSheetIds();

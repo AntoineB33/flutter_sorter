@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
@@ -7,9 +5,6 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 
 class LoadedSheetsCache {
   final Map<String, SheetData> _loadedSheetsData = {};
-  final Stream<void> saveController = StreamController<void>();
-
-  Stream<void> get saveStream => saveController.stream;
 
   bool containsSheetId(String sheetId) {
     return _loadedSheetsData.containsKey(sheetId);

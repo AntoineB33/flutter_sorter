@@ -1,4 +1,3 @@
-
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 
@@ -10,6 +9,10 @@ class SortStatusCache {
   SortStatusCache(this.loadedSheetsDataStore);
 
   Map<String, SortStatus> get sortStatusBySheet => _sortStatusBySheet;
+
+  bool isSorting(String sheetId) {
+    return containsSheet(sheetId) && (_sortStatusBySheet[sheetId]!.toApplyOnce || _sortStatusBySheet[sheetId]!.toAlwaysApply);
+  }
 
   bool containsSheet(String sheetId) {
     return _sortStatusBySheet.containsKey(sheetId);
@@ -43,14 +46,11 @@ class SortStatusCache {
     }
   }
 
-  void isAnalysing(String sheetId, bool isFindingBestSort, bool toSort) {
-    _sortStatusBySheet[sheetId] = SortStatus(
-      isFindingBestSort: isFindingBestSort,
-      toAlwaysApply: toSort,
-    );
+  void isAnalysing(String sheetId) {
+    _sortStatusBySheet[sheetId] = SortStatus(analysisDone: false);
   }
 
-  void updateToFindValidSort(String sheetId, bool toFindValidSort) {
+  void analysisIsDone(String sheetId, bool toFindValidSort) {
     if (toFindValidSort) {
       _sortStatusBySheet[sheetId]!.analysisDone = true;
     } else {
@@ -68,13 +68,5 @@ class SortStatusCache {
     if (_sortStatusBySheet.containsKey(sheetId)) {
       _sortStatusBySheet.remove(sheetId);
     }
-  }
-
-  bool bestSortFound(String sheetId, bool validSortFound) {
-    if (!validSortFound || !_sortStatusBySheet[sheetId]!.isFindingBestSort) {
-      _sortStatusBySheet.remove(sheetId);
-      return true;
-    }
-    return false;
   }
 }

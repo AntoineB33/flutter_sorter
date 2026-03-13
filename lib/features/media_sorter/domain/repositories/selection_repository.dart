@@ -14,5 +14,4 @@ abstract class SelectionRepository {
   void stopEditing();
   void clearLastSelection(String sheetId);
   SelectionData getSelectionData(String sheetId);
-  bool isSorting(String sheetId);
 }

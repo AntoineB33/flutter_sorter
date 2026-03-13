@@ -53,6 +53,21 @@ class SheetDataUsecase {
     sheetUpdateCoordinator.applyUpdates(updates, sheetDataRepository.currentSheetId)
   }
 
+  void applyUpdatesNoSort(
+    List<UpdateUnit> updates,
+    String sheetId,
+    bool isFromHistory,
+  ) {
+    sheetDataRepository.update(updates, sheetId);
+    if (gridRepository.adjustRowHeightAfterUpdate(sheetId, updates)) {}
+    if (!isFromHistory) {
+      historyRepository.commitHistory(updates, sheetId);
+    }
+    if (!isFromSort) {
+      sortRepository.lightCalculations(sheetId);
+    }
+  }
+
   void delete() {
     List<BaseUpdate> updates = [];
     for (Point<int> cell in selection.selectedCells) {

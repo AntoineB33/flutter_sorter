@@ -17,8 +17,8 @@ class SideMenu extends StatefulWidget {
 
 class _SideMenuState extends State<SideMenu> {
   late TextEditingController _textEditingController;
-  late ScrollController _verticalController;
-  late ScrollController _horizontalController;
+  ScrollController gridController.verticalController;
+  ScrollController gridController.horizontalController;
 
   @override
   void initState() {

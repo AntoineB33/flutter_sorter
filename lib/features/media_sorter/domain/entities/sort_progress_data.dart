@@ -16,6 +16,7 @@ class SortProgressData {
   final List<List<int>> possibleIntsById;
   final List<List<List<int>>> validAreasById;
   final List<int> bestDistFound;
+  int id;
 
   SortProgressData({
     required this.bestSortFound,
@@ -23,6 +24,7 @@ class SortProgressData {
     required this.cursors,
     required this.bestDistFound,
     required this.validAreasById,
+    required this.id,
   });
 
   factory SortProgressData.empty([int n = 0]) {
@@ -30,8 +32,9 @@ class SortProgressData {
       bestSortFound: [],
       possibleIntsById: List.generate(n, (_) => []),
       cursors: List.filled(n, 0),
-      bestDistFound: [],
+      bestDistFound: List.filled(n, 0),
       validAreasById: List.generate(n + 1, (_) => []),
+      id: 0,
     );
   }
 

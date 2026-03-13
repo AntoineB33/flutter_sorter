@@ -7,16 +7,12 @@ class SelectionCoordinator {
 
   SelectionCoordinator(this.selectionController, this.sheetDataController);
 
-  void startEditing({
-    String? initialInput,
-  }) {
+  void startEditing({String? initialInput}) {
     if (!selectionController.startEditing()) {
       return;
     }
     if (initialInput != null) {
-      sheetDataController.onChanged(
-        initialInput,
-      );
+      sheetDataController.onChanged(initialInput);
     }
   }
 }

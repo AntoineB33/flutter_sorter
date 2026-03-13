@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:trying_flutter/core/error/exceptions.dart';
+import 'package:trying_flutter/core/error/failures.dart';
+
 class ManageWaitingTasks<T> {
   bool _isCalculating = false;
   bool _waitingNewCalculation = false;
@@ -7,8 +10,9 @@ class ManageWaitingTasks<T> {
   Duration? lastCalculationDuration;
   Timer? _delayTimer;
   Completer<void>? _delayCompleter;
+  final StreamController<Failure> failureController;
 
-  ManageWaitingTasks(this.lastCalculationDuration);
+  ManageWaitingTasks(this.lastCalculationDuration, this.failureController);
   
   Future<dynamic> execute(Future<T> Function() task, {void Function(T)? onComplete}) async {
     _waitingNewCalculation = true;
@@ -20,7 +24,11 @@ class ManageWaitingTasks<T> {
 
     while (_waitingNewCalculation) {
       _waitingNewCalculation = false;
-      result = await task();
+      try {
+        result = await task();
+      } on CacheException catch (e) {
+        failureController.add(CacheFailure(e));
+      }
       
       // If disposed during the task execution, break out immediately
       if (_isDisposed) continue;

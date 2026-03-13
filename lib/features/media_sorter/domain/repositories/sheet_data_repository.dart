@@ -17,4 +17,5 @@ abstract class SheetDataRepository {
   String getCellContent(Point<int> cell, String sheetId);
   List<CellUpdate> setCellContent(Point<int> cell, String newVal);
   Future<Either<Failure, void>> loadSheet(String sheetId);
+  Future<void> addNewSheet(String sheetId);
 }

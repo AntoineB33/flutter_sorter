@@ -35,6 +35,11 @@ class SelectionRepositoryImpl implements SelectionRepository {
   );
 
   @override
+  SelectionData getSelectionData(String sheetId) {
+    return selectionCache.getSelectionData(sheetId);
+  }
+
+  @override
   void saveLastSelection() {
     _saveSelectionStatusExecutor.execute((() async {
       final result = await UrilsService.handleDataSourceCall(
@@ -78,23 +83,26 @@ class SelectionRepositoryImpl implements SelectionRepository {
         currentSheetId,
         lastSelectionLoaded,
       );
-      bool changed = false;
+      bool selectionCacheChanged = false;
+      bool workbookCacheChanged = false;
       for (var sheetId in workbookCache.getRecentSheetIds()) {
         if (!selectionCache.containsSheetId(sheetId)) {
           selectionCache.setSelectionData(sheetId, SelectionData.empty(), true);
-          changed = true;
+          selectionCacheChanged = true;
         }
       }
       for (var sheetId in selectionCache.getSheetIds()) {
         if (!UrilsService.isValidSheetName(sheetId)) {
           selectionCache.removeSelectionData(sheetId);
-          changed = true;
+          selectionCacheChanged = true;
         } else if (!loadedSheetsCache.containsSheetId(sheetId)) {
           workbookCache.addSheetId(sheetId, 1);
-          changed = true;
+          workbookCacheChanged = true;
         }
       }
-      return changed ? Left(CacheRepairedFailure()) : Right(null);
+      return selectionCacheChanged || workbookCacheChanged
+          ? Left(CacheRepairedFailure(workbookCacheChanged: workbookCacheChanged, selectionCacheChanged: selectionCacheChanged))
+          : Right(null);
     });
   }
 

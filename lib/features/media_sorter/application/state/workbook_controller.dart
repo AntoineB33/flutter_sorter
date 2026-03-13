@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sort_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/workbook_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/helpers/calculation_service.dart';
@@ -28,7 +26,9 @@ class WorkbookController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> init() async {
+  Future<void> loadLastSelections(bool success) async {
+    await workbookUseCase.loadLastSelections(success);
+    notifyListeners();
   }
 
   List<String> getRecentSheetIds() {

@@ -2,9 +2,6 @@ import 'dart:async';
 
 class WorkbookCache {
   final List<String> _recentSheetIds = [];
-  final _saveController = StreamController<void>.broadcast();
-
-  Stream<void> get saveStream => _saveController.stream;
   String get currentSheetId => _recentSheetIds.first;
   
   List<String> getRecentSheetIds() {

@@ -34,16 +34,48 @@ class SortRepositoryImpl implements SortRepository {
 
   final IFileSheetLocalDataSource saveDataSource;
 
-  final ManageWaitingTasks<void> _saveSortStatusExecutor =
-      ManageWaitingTasks<void>(Duration(milliseconds: 2000));
-  final ManageWaitingTasks<void> _saveSortProgressExecutor =
-      ManageWaitingTasks<void>(Duration(milliseconds: 2000));
   final StreamController<Failure> _failureController =
       StreamController<Failure>.broadcast();
+
+  late ManageWaitingTasks<void> _saveAnalysisResultExecutor;
+  late ManageWaitingTasks<void> _saveSortStatusExecutor;
+  late ManageWaitingTasks<void> _saveSortProgressExecutor;
 
   @override
   Stream<Failure> get failureStream => _failureController.stream;
   String get currentSheetId => workbookCache.currentSheetId;
+
+  @override
+  bool isSorting(String sheetId) {
+    return sortStatusCache.isSorting(sheetId);
+  }
+
+  @override
+  bool getAnalysisDone(String sheetId) {
+    return sortStatusCache.getAnalysisDone(sheetId);
+  }
+
+  @override
+  Future<void> analyze(String sheetId) async {
+    isolateReceivePortsCache.cancelB(sheetId);
+    AnalysisReturn resultB = await runHeavyCalculationB(
+      sheetId,
+      analysisResultCache.getAnalysisResult(sheetId),
+    );
+    sortStatusCache.analysisIsDone(sheetId, resultB.toFindValidSort);
+    if (resultB.changed) {
+      analysisResultCache.updateResults(sheetId, resultB.result);
+      saveAnalysisResult(sheetId);
+    }
+    if (!resultB.toFindValidSort) {
+      return;
+    }
+    sortProgressCache.update(
+      sheetId,
+      SortProgressData.empty(resultB.result.validRowIndexes.length),
+    );
+  }
+
 
   @override
   List<String> getSheetIds() {
@@ -81,7 +113,10 @@ class SortRepositoryImpl implements SortRepository {
 
   @override
   void findBestSortToggle() {
-    sortStatusCache.setToAlwaysApply(currentSheetId, !sortStatusCache.getToAlwaysApply(currentSheetId));
+    sortStatusCache.setToAlwaysApply(
+      currentSheetId,
+      !sortStatusCache.getToAlwaysApply(currentSheetId),
+    );
     saveAllSortStatus();
   }
 
@@ -92,8 +127,22 @@ class SortRepositoryImpl implements SortRepository {
 
   @override
   void applySortToggle() {
-    sortStatusCache.setToAlwaysApply(currentSheetId, !sortStatusCache.getToAlwaysApply(currentSheetId));
+    sortStatusCache.setToAlwaysApply(
+      currentSheetId,
+      !sortStatusCache.getToAlwaysApply(currentSheetId),
+    );
     saveAllSortStatus();
+  }
+
+  @override
+  Future<Either<Failure, void>> getAnalysisResult(String sheetId) async {
+    final result = await UrilsService.handleDataSourceCall(
+      () => saveDataSource.getAnalysisResult(sheetId),
+    );
+    return result.fold((failure) => Left(failure), (analysisResult) {
+      analysisResultCache.updateResults(sheetId, analysisResult);
+      return Right(null);
+    });
   }
 
   @override
@@ -113,7 +162,20 @@ class SortRepositoryImpl implements SortRepository {
     this.saveDataSource,
     this.selectionCache,
     this.workbookCache,
-  );
+  ) {
+    _saveAnalysisResultExecutor = ManageWaitingTasks<void>(
+      Duration(milliseconds: 2000),
+      _failureController,
+    );
+    _saveSortStatusExecutor = ManageWaitingTasks<void>(
+      Duration(milliseconds: 2000),
+      _failureController,
+    );
+    _saveSortProgressExecutor = ManageWaitingTasks<void>(
+      Duration(milliseconds: 2000),
+      _failureController,
+    );
+  }
 
   @override
   void setToApplyOnce(String sheetId, bool toApplyOnce) {
@@ -129,7 +191,7 @@ class SortRepositoryImpl implements SortRepository {
     return result.fold((failure) => Left(failure), (ids) {
       sortStatusCache.setSortStatus(ids);
       bool sortStatusChanged = false;
-      bool workbookCacheChanged = false;
+      bool workbookSelectionCacheChanged = false;
       for (var sheetId in sortStatusCache.getSheetIds()) {
         if (!UrilsService.isValidSheetName(sheetId)) {
           sortStatusCache.removeSortStatus(sheetId);
@@ -137,11 +199,17 @@ class SortRepositoryImpl implements SortRepository {
         } else if (!loadedSheetsCache.containsSheetId(sheetId)) {
           workbookCache.addSheetId(sheetId, 1);
           selectionCache.setSelectionData(sheetId, SelectionData.empty());
-          workbookCacheChanged = true;
+          workbookSelectionCacheChanged = true;
         }
       }
-      return sortStatusChanged || workbookCacheChanged
-          ? Left(CacheRepairedFailure())
+      return sortStatusChanged || workbookSelectionCacheChanged
+          ? Left(
+              CacheRepairedFailure(
+                sortStatusChanged: sortStatusChanged,
+                workbookCacheChanged: workbookSelectionCacheChanged,
+                selectionCacheChanged: workbookSelectionCacheChanged,
+              ),
+            )
           : Right(null);
     });
   }
@@ -187,7 +255,24 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  Stream<SortProgressDataMsg> calculateOnChange(String sheetId) async* {
+  Future<Stream<SortProgressDataMsg>> launchCalculation(String sheetId) async {
+    isolateReceivePortsCache.initPortC(sheetId);
+    final args = (
+      isolateReceivePortsCache.getSendPortC(sheetId),
+      analysisResultCache.getMyRules(sheetId),
+      sortProgressCache.getSortProgressData(sheetId),
+    );
+    isolateReceivePortsCache.setIsolateC(
+      sheetId,
+      await Isolate.spawn(CalculationDatasource.solveSorting, args),
+    );
+    return isolateReceivePortsCache
+        .getIsolatePort(sheetId)
+        .cast<SortProgressDataMsg>();
+  }
+
+  @override
+  void lightCalculations(String sheetId) async* {
     isolateReceivePortsCache.addIsolatePortIfNecessary(sheetId);
     if (!lightCalculate1()) {
       isolateReceivePortsCache.cancelB(sheetId);
@@ -206,44 +291,13 @@ class SortRepositoryImpl implements SortRepository {
       sortStatusCache.removeSortStatus(sheetId);
       return;
     }
-    sortStatusCache.isAnalysing(sheetId, false, false);
-    yield* launchCalculation(sheetId);
+    sortStatusCache.isAnalysing(sheetId);
+    setSortedWithValidSort(sheetId, false);
   }
 
-  @override
-  Stream<SortProgressDataMsg> launchCalculation(String sheetId) async* {
-    analysisResultCache.setSortedWithValidSort(sheetId, false);
-    if (!sortStatusCache.getAnalysisDone(sheetId)) {
-      isolateReceivePortsCache.cancelB(sheetId);
-      AnalysisReturn resultB = await runHeavyCalculationB(
-        sheetId,
-        analysisResultCache.getAnalysisResult(sheetId),
-      );
-      sortStatusCache.updateToFindValidSort(sheetId, resultB.toFindValidSort);
-      if (resultB.changed) {
-        analysisResultCache.updateResults(sheetId, resultB.result);
-      }
-      if (!resultB.toFindValidSort) {
-        return;
-      }
-      sortProgressCache.update(
-        sheetId,
-        SortProgressData.empty(resultB.result.validRowIndexes.length),
-      );
-    }
-    isolateReceivePortsCache.initPortC(sheetId);
-    final args = (
-      isolateReceivePortsCache.getSendPortC(sheetId),
-      analysisResultCache.getMyRules(sheetId),
-      sortProgressCache.getSortProgressData(sheetId),
-    );
-    isolateReceivePortsCache.setIsolateC(
-      sheetId,
-      await Isolate.spawn(CalculationDatasource.solveSorting, args),
-    );
-    yield* isolateReceivePortsCache
-        .getIsolatePort(sheetId)
-        .cast<SortProgressDataMsg>();
+  void setSortedWithValidSort(String sheetId, bool sorted) {
+    analysisResultCache.setSortedWithValidSort(sheetId, sorted);
+    saveAnalysisResult(sheetId);
   }
 
   @override
@@ -263,21 +317,16 @@ class SortRepositoryImpl implements SortRepository {
           }
         }
       }
-      analysisResultCache.setSortedWithValidSort(sheetId, isNaturalOrderValid);
+      setSortedWithValidSort(sheetId, isNaturalOrderValid);
     }
     sortProgressCache.update(sheetId, sort);
     saveDataProgress(sheetId);
     if (sort.cursors[0] == sort.possibleIntsById[0].length) {
-      bool update = sortStatusCache.bestSortFound(
-        sheetId,
-        sort.bestDistFound.isNotEmpty,
-      );
-      if (update) {
-        saveAllSortStatus();
-      }
+      sortStatusCache.removeSortStatus(sheetId);
+      saveAllSortStatus();
     }
     return sortProgressDataMsg.newBestSortFound &&
-        !sortStatusCache.getFindingBestSort(sheetId);
+        !analysisResultCache.getFindingBestSort(sheetId);
   }
 
   void cancelFindingBestSort(String sheetId) {
@@ -483,6 +532,19 @@ class SortRepositoryImpl implements SortRepository {
     }
     _sortResult(sortOrder, sheetId);
     return updates;
+  }
+
+  void saveAnalysisResult(String sheetId) async {
+    _saveAnalysisResultExecutor.execute(() async {
+      try {
+        await saveDataSource.saveAnalysisResult(
+          sheetId,
+          analysisResultCache.getAnalysisResult(sheetId),
+        );
+      } on CacheException catch (e) {
+        _failureController.add(CacheFailure(e));
+      }
+    });
   }
 
   void saveAllSortStatus() async {
