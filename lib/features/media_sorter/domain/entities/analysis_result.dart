@@ -122,6 +122,7 @@ class AnalysisResult {
 
   List<List<int>> validAreas;
   Map<int, Map<int, List<SortingRule>>> myRules;
+  List<List<int>> groupAttribution;
   List<List<int>> groupsToMaximize;
 
   bool isFindingBestSort;
@@ -143,6 +144,7 @@ class AnalysisResult {
     required this.formatedTable,
     required this.colToAtt,
     required this.myRules,
+    required this.groupAttribution,
     required this.validAreas,
     required this.groupsToMaximize,
     required this.isMedium,
@@ -173,6 +175,7 @@ class AnalysisResult {
       attToRefFromDepColToCol: {},
       colToAtt: {},
       myRules: {},
+      groupAttribution: [],
       validAreas: [],
       groupsToMaximize: [],
       isMedium: [],

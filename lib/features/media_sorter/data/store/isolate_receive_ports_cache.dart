@@ -1,6 +1,4 @@
-
 import 'dart:isolate';
-
 
 class IsolateReceivePorts {
   Isolate? _isolateB;
@@ -40,7 +38,7 @@ class IsolateReceivePortsCache {
       _isolatePorts[sheetId]!._portC = null;
     }
   }
-  
+
   void addIsolatePortIfNecessary(String sheetId) {
     _isolatePorts[sheetId] ??= IsolateReceivePorts();
   }
@@ -61,7 +59,7 @@ class IsolateReceivePortsCache {
     return _isolatePorts[sheetId]!._portB!;
   }
 
-  ReceivePort getIsolatePort(String sheetId) {
+  ReceivePort getReceivePortC(String sheetId) {
     return _isolatePorts[sheetId]!._portC!;
   }
 

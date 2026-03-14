@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_sheet_local_datasource.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
@@ -9,8 +12,11 @@ import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cach
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/tree_repository.dart';
 import 'package:trying_flutter/utils/logger.dart';
@@ -22,7 +28,14 @@ class TreeRepositoryImpl implements TreeRepository {
   final SortStatusCache sortStatusCache;
   final WorkbookCache workbookCache;
 
+  final IFileSheetLocalDataSource saveDataSource;
+  
+  final Map<String, ManageWaitingTasks<void>> _saveResultExecutors = {};
+  final StreamController<Failure> _failureStreamController = StreamController.broadcast();
+
   String get currentSheetId => workbookCache.currentSheetId;
+  AnalysisResult get result => analysisCache.getAnalysisResult(currentSheetId);
+  SheetContent get sheetContent => loadedSheetsCache.getSheetContent(currentSheetId);
 
   TreeRepositoryImpl(
     this.analysisCache,
@@ -30,7 +43,15 @@ class TreeRepositoryImpl implements TreeRepository {
     this.selectionDataStore,
     this.sortStatusCache,
     this.workbookCache,
+    this.saveDataSource,
   );
+
+  void dispose() {
+    for (final executor in _saveResultExecutors.values) {
+      executor.dispose();
+    }
+    _failureStreamController.close();
+  }
   
   int rowCount(String sheetId) {
     return loadedSheetsCache.rowCount(sheetId);
@@ -115,8 +136,8 @@ class TreeRepositoryImpl implements TreeRepository {
     int found = -1;
     for (int i = 0; i < cells.length; i++) {
       final child = cells[i];
-      if (selectionDataStore.selection.primarySelectedCell.x == child.rowId &&
-          selectionDataStore.selection.primarySelectedCell.y == child.colId) {
+      if (selectionDataStore.getSelectionData(currentSheetId).primarySelectedCell.x == child.rowId &&
+          selectionDataStore.getSelectionData(currentSheetId).primarySelectedCell.y == child.colId) {
         found = i;
         break;
       }
@@ -140,16 +161,6 @@ class TreeRepositoryImpl implements TreeRepository {
         node.children = node.newChildren!;
       }
     }
-  }
-
-  // Method to allow Controller to toggle expansion
-  void nodeExpansion(NodeStruct node, bool isExpanded) {
-    node.isExpanded = isExpanded;
-    for (NodeStruct child in node.newChildren ?? []) {
-      child.isExpanded = false;
-    }
-    populateTree([node]);
-    notifyListeners();
   }
 
   void _handleExpansion(NodeStruct node, List<NodeStruct> stack) {
@@ -262,7 +273,7 @@ class TreeRepositoryImpl implements TreeRepository {
               populateAttToRefFromDepColNode(result, node, populateChildren);
             }
           } else {
-            debugPrint(
+            logger.e(
               "populateNode: Unhandled CellWithName with name only: ${node.name}",
             );
           }
@@ -303,7 +314,7 @@ class TreeRepositoryImpl implements TreeRepository {
     node.message ??= node.name;
 
     if (node.defaultOnTap) {
-      node.idOnTap = onTapKey;
+      node.idOnTap = OnTapAction.selectAttribute;
       node.defaultOnTap = false;
     }
   }
@@ -313,7 +324,7 @@ class TreeRepositoryImpl implements TreeRepository {
     int colId = node.colId!;
     node.cellsToSelect = node.cells;
 
-    if (rowId >= rowCount(sheetContent) || colId >= colCount(sheetContent)) {
+    if (rowId >= rowCount(currentSheetId) || colId >= colCount(currentSheetId)) {
       return;
     }
 
@@ -327,7 +338,7 @@ class TreeRepositoryImpl implements TreeRepository {
       }
     }
     if (node.defaultOnTap) {
-      node.idOnTap = setPrimarySelectionKey;
+      node.idOnTap = OnTapAction.selectCell;
       node.defaultOnTap = false;
     }
 
@@ -370,7 +381,7 @@ class TreeRepositoryImpl implements TreeRepository {
 
     List<NodeStruct> rowCells = [];
     for (int colId = 0; colId < sheetContent.columnTypes.length; colId++) {
-      if (getCellContent(sheetContent.table, rowId, colId).isNotEmpty) {
+      if (loadedSheetsCache.getCellContent(currentSheetId, rowId, colId).isNotEmpty) {
         rowCells.add(
           NodeStruct(
             cell: Cell(rowId: rowId, colId: colId),
@@ -385,9 +396,6 @@ class TreeRepositoryImpl implements TreeRepository {
       );
     }
     _populateAttributeNode(
-      lastSelectionBySheet,
-      currentSheetName,
-      result,
       node,
       true,
     );
@@ -410,32 +418,7 @@ class TreeRepositoryImpl implements TreeRepository {
 
   void _handleCycleDetectedTap(NodeStruct node) {
     SelectionData selection = lastSelectionBySheet[currentSheetName]!;
-    node.onTap = (n) {
-      int found = -1;
-      for (int i = 0; i < n.newChildren!.length; i++) {
-        final child = n.newChildren![i];
-        if (selection.primarySelectedCell.x == child.rowId) {
-          found = i;
-          break;
-        }
-      }
-      if (found == -1) {
-        selectionController.setPrimarySelection(
-          currentSheetName,
-          n.newChildren![0].rowId!,
-          n.newChildren![0].colId!,
-          false,
-        );
-      } else {
-        final nextChild = n.newChildren![(found + 1) % n.newChildren!.length];
-        selectionController.setPrimarySelection(
-          currentSheetName,
-          nextChild.rowId!,
-          nextChild.colId!,
-          false,
-        );
-      }
-    };
+    node.idOnTap = OnTapAction.cycle;
   }
 
   void _handleDefaultTapLogic(NodeStruct node) {
@@ -503,10 +486,11 @@ class TreeRepositoryImpl implements TreeRepository {
     AnalysisResult result,
   ) async {
     _saveResultExecutors[sheetName] ??= ManageWaitingTasks<void>(
-      Duration(milliseconds: SpreadsheetConstants.saveAnalysisResultDelayMs),
+      Duration(seconds: 2),
+      _failureStreamController,
     );
     _saveResultExecutors[sheetName]!.execute(() async {
-      await saveSheetDataUseCase.saveAnalysisResult(sheetName, result);
+      await saveDataSource.saveAnalysisResult(sheetName, result);
     });
   }
 }

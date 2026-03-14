@@ -3,6 +3,10 @@ import 'dart:async';
 class WorkbookCache {
   final List<String> _recentSheetIds = [];
   String get currentSheetId => _recentSheetIds.first;
+
+  bool containsSheetId(String sheetId) {
+    return _recentSheetIds.contains(sheetId);
+  }
   
   List<String> getRecentSheetIds() {
     return _recentSheetIds;
@@ -16,7 +20,6 @@ class WorkbookCache {
 
   void addSheetId(String sheetId, int index) {
     _recentSheetIds.insert(index, sheetId);
-    _saveController.add(null);
   }
 
   void removeSheet(int index) {

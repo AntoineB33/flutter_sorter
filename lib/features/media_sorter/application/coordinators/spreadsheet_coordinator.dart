@@ -28,6 +28,8 @@ class SpreadsheetCoordinator {
   final WorkbookController workbookController;
   final TreeController treeController;
 
+  String get currentSheetId => workbookController.currentSheetId;
+
   SpreadsheetCoordinator(
     this.historyController,
     this.sheetDataController,
@@ -47,7 +49,7 @@ class SpreadsheetCoordinator {
     workbookController.loadLastSelections(lastSelectionSuccess);
     sortController.loadSortStatus();
     for (var sheetId in sortController.getRecentSheetIds()) {
-      launchCalculation(sheetId);
+      sortController.launchCalculation(sheetId);
     }
   }
 
@@ -82,23 +84,31 @@ class SpreadsheetCoordinator {
   }
 
   void delete() {
-    setCellContent('');
+    final updates = sheetDataController.delete();
+    applyUpdatesAndSort(updates, currentSheetId, false, false);
+  }
+
+  void paste() async {
+    final result = await sheetDataController.paste();
+    result.fold(
+      (failure) => logger.e("The pasted text contains unsupported characters."),
+      (updates) => applyUpdatesAndSort(updates, currentSheetId, false, false),
+    );
   }
 
   void setCellContent(String newValue) {
-    String sheetId = workbookController.currentSheetId;
     final primarySelectedCell = selectionController
-        .getSelectionData(sheetId)
+        .getSelectionData(currentSheetId)
         .primarySelectedCell;
     int rowId = primarySelectedCell.x;
     int colId = primarySelectedCell.y;
     String prevValue = sheetDataController.getCellContent(
       rowId,
       colId,
-      sheetId,
+      currentSheetId,
     );
     final updates = [CellUpdate(rowId, colId, newValue, prevValue)];
-    applyUpdatesAndSort(updates, sheetId, false, false);
+    applyUpdatesAndSort(updates, currentSheetId, false, false);
   }
 
   void applyUpdatesAndSort(
@@ -110,8 +120,8 @@ class SpreadsheetCoordinator {
     applyUpdatesNoSort(updates, sheetId, isFromHistory);
     if (!isFromSort) {
       sortController.lightCalculations(sheetId);
+      sortController.launchCalculation(sheetId);
     }
-    launchCalculation(sheetId);
   }
 
   void applyUpdatesNoSort(
@@ -120,13 +130,6 @@ class SpreadsheetCoordinator {
     bool isFromHistory,
   ) {
     sortController.applyUpdatesNoSort(updates, sheetId, isFromHistory);
-  }
-
-  Future<void> launchCalculation(String sheetId) async {
-    if (!sortController.getAnalysisDone(sheetId)) {
-      await sortController.analyze(sheetId);
-    }
-    return sortController.launchCalculation(sheetId);
   }
   
   void onTap(NodeStruct node) {
@@ -142,6 +145,32 @@ class SpreadsheetCoordinator {
       case OnTapAction.selectCell:
         if (node.rowId != null && node.colId != null) {
           setPrimarySelection(node.rowId!, node.colId!, false, true);
+        }
+        break;
+      case OnTapAction.cycle:
+        int found = -1;
+        for (int i = 0; i < node.newChildren!.length; i++) {
+          final child = node.newChildren![i];
+          if (selectionController.getSelectionData(currentSheetId).primarySelectedCell.x == child.rowId) {
+            found = i;
+            break;
+          }
+        }
+        if (found == -1) {
+          setPrimarySelection(
+            node.newChildren![0].rowId!,
+            node.newChildren![0].colId!,
+            false,
+            true,
+          );
+        } else {
+          final nextChild = node.newChildren![(found + 1) % node.newChildren!.length];
+          setPrimarySelection(
+            nextChild.rowId!,
+            nextChild.colId!,
+            false,
+            true,
+          );
         }
         break;
       default:

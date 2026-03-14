@@ -76,22 +76,11 @@ class SheetDataUsecase {
     }
   }
 
-  void delete() {
-    List<BaseUpdate> updates = [];
-    for (Point<int> cell in selection.selectedCells) {
-      updates.add(
-        CellUpdate(
-          cell.x,
-          cell.y,
-          '',
-          loadedSheetsData.getCellContent(cell.x, cell.y),
-        ),
-      );
-    }
-    UpdateData updateData = UpdateData(Uuid().v4(), DateTime.now(), updates);
-    update(updateData, true);
-    notifyListeners();
-    scheduleSheetSave(currentSheetName);
-    sortService.calculate(currentSheetName);
+  List<CellUpdate> delete() {
+    return sheetDataRepository.delete();
+  }
+
+  Future<Either<Failure, List<CellUpdate>>> paste() {
+    return sheetDataRepository.pasteSelection();
   }
 }

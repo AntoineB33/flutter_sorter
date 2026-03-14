@@ -1,9 +1,10 @@
+import 'dart:async';
 
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/utils_service.dart';
+import 'package:trying_flutter/features/media_sorter/core/utility/utils_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
@@ -17,9 +18,9 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   final SelectionCache selectionCache;
   final SortStatusCache sortStatusCache;
   final WorkbookCache workbookCache;
-  
-  final ManageWaitingTasks<void> _saveRecentSheetIdsExecutor =
-      ManageWaitingTasks<void>(Duration(seconds: 2000));
+
+  late ManageWaitingTasks<void> _saveRecentSheetIdsExecutor;
+  late StreamController<Failure> _failureStreamController;
   @override
   String get currentSheetId => workbookCache.currentSheetId;
 
@@ -28,7 +29,19 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
     this.loadedSheetsCache,
     this.selectionCache,
     this.sortStatusCache,
-  );
+    this.workbookCache,
+  ) {
+    _failureStreamController = StreamController<Failure>.broadcast();
+    _saveRecentSheetIdsExecutor = ManageWaitingTasks<void>(
+      Duration(seconds: 2),
+      _failureStreamController,
+    );
+  }
+
+  void dispose() {
+    _saveRecentSheetIdsExecutor.dispose();
+    _failureStreamController.close();
+  }
 
   @override
   bool containsSheetId(String sheetId) {
@@ -42,21 +55,25 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
 
   @override
   Future<Either<Failure, void>> clearAllData() async {
-    final result = await UrilsService.handleDataSourceCall(
+    final result = await UtilsService.handleDataSourceCall(
       () => fileSheetLocalDataSource.clearAllData(),
     );
     return result.fold((failure) => Left(failure), (_) => Right(null));
   }
 
   @override
-  Future<void> addNewSheetId(String sheetId) async {
-    workbookCache.addSheetId(sheetId, 0);
-    await fileSheetLocalDataSource.addNewSheetId(sheetId);
+  void addNewSheetId(String sheetId, int index) {
+    workbookCache.addSheetId(sheetId, index);
+    _saveRecentSheetIdsExecutor.execute(() async {
+      await fileSheetLocalDataSource.saveRecentSheetIds(
+        workbookCache.getRecentSheetIds(),
+      );
+    });
   }
 
   @override
   Future<Either<Failure, void>> loadRecentSheetIds() async {
-    final result = await UrilsService.handleDataSourceCall(
+    final result = await UtilsService.handleDataSourceCall(
       () => fileSheetLocalDataSource.recentSheetIds(),
     );
 
@@ -65,7 +82,7 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
       bool changed = false;
       int offset = 0;
       for (int i = 0; i < workbookCache.getRecentSheetIds().length; i++) {
-        if (!UrilsService.isValidSheetName(
+        if (!UtilsService.isValidSheetName(
           workbookCache.getRecentSheetIds()[i - offset],
         )) {
           workbookCache.removeSheet(i - offset);
@@ -73,14 +90,18 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
           changed = true;
         }
       }
-      return changed ? Left(CacheRepairedFailure(workbookCacheChanged: changed)) : Right(null);
+      return changed
+          ? Left(CacheRepairedFailure(workbookCacheChanged: changed))
+          : Right(null);
     });
   }
 
   @override
   void saveRecentSheetIds() {
     _saveRecentSheetIdsExecutor.execute(() async {
-      await fileSheetLocalDataSource.saveRecentSheetIds(workbookCache.getRecentSheetIds());
+      await fileSheetLocalDataSource.saveRecentSheetIds(
+        workbookCache.getRecentSheetIds(),
+      );
     });
   }
 }

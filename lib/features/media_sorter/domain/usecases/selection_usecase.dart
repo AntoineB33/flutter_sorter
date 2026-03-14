@@ -43,11 +43,9 @@ class SelectionUsecase {
     selectionRepository.selectAll();
   }
 
-  Future<void> sheetSwitch() async {
-    Either<Failure, void> result;
-    result = await selectionRepository.saveAllLastSelected();
-    UtilsServices.handleDataCorruption(result);
-    result = await selectionRepository.saveLastSelection();
+  void sheetSwitch() {
+    selectionRepository.saveAllLastSelected();
+    selectionRepository.saveLastSelection();
   }
 
   void setPrimarySelection(int row, int col, bool keepSelection) {

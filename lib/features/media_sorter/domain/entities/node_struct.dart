@@ -93,4 +93,5 @@ class NodeStruct {
 enum OnTapAction {
   selectCell,
   selectAttribute,
+  cycle,
 }

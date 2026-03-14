@@ -1,8 +1,11 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
+import 'package:trying_flutter/features/media_sorter/core/utility/utils_service.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/helpers/utils_services.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
@@ -11,6 +14,7 @@ class SortUsecase {
   final SortRepository sortRepository;
   final SheetDataRepository sheetDataRepository;
   final WorkbookRepository workbookRepository;
+  final SelectionRepository selectionRepository;
 
   Stream<Failure> get failureStream => sortRepository.failureStream;
   String get currentSheetId => workbookRepository.currentSheetId;
@@ -19,6 +23,7 @@ class SortUsecase {
     this.sortRepository,
     this.sheetDataRepository,
     this.workbookRepository,
+    this.selectionRepository,
   );
 
   Future<void> loadAnalysisResult(String sheetId) async {
@@ -75,10 +80,6 @@ class SortUsecase {
     sortRepository.applySortToggle();
   }
 
-  Stream<SortProgressDataMsg> calculateOnChange(String sheetId) {
-    return sortRepository.lightCalculations(sheetId);
-  }
-
   Future<Stream<SortProgressDataMsg>> launchCalculation(String sheetId) {
     return sortRepository.launchCalculation(sheetId);
   }
@@ -112,6 +113,31 @@ class SortUsecase {
   Future<void> loadSortStatus() async {
     Either<Failure, void> result;
     result = await sortRepository.loadSortStatus();
-    UtilsServices.handleDataCorruption(result);
+    result.fold(
+      (failure) => UtilsServices.handleDataCorruption(Left(failure)),
+      (ids) {
+        bool sortStatusChanged = false;
+        bool workbookSelectionCacheChanged = false;
+        for (var sheetId in sortRepository.getSheetIds()) {
+          if (!UtilsService.isValidSheetName(sheetId)) {
+            sortRepository.removeSortStatus(sheetId);
+            sortStatusChanged = true;
+          } else if (!sheetDataRepository.containsSheetId(sheetId)) {
+            workbookRepository.addNewSheetId(sheetId, 1);
+            selectionRepository.setSelectionData(sheetId, SelectionData.empty());
+            workbookSelectionCacheChanged = true;
+          }
+        }
+        return sortStatusChanged || workbookSelectionCacheChanged
+            ? Left(
+                CacheRepairedFailure(
+                  sortStatusChanged: sortStatusChanged,
+                  workbookCacheChanged: workbookSelectionCacheChanged,
+                  selectionCacheChanged: workbookSelectionCacheChanged,
+                ),
+              )
+            : Right(null);
+      },
+    );
   }
 }

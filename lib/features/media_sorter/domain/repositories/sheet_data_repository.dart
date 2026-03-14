@@ -11,12 +11,10 @@ abstract class SheetDataRepository {
   int rowCount(String sheetId);
   int colCount(String sheetId);
   SheetData getSheet(String sheetId);
-  void update(List<UpdateUnit> updates, String sheetId);
-  List<CellUpdate> delete(List<Point<int>> cells);
+  List<CellUpdate> delete();
   Future<void> copySelectionToClipboard();
   Future<Either<Failure, List<CellUpdate>>> pasteSelection();
   String getCellContent(Point<int> cell, String sheetId);
-  List<CellUpdate> setCellContent(Point<int> cell, String newVal);
   Future<Either<Failure, void>> loadSheet(String sheetId);
   Future<void> addNewSheet(String sheetId);
 }

@@ -62,23 +62,19 @@ class SortController extends ChangeNotifier {
     sortUseCase.lightCalculations(sheetId);
   }
 
-  Future<void> launchCalculation(String sheetId) async {
-    await for (final SortProgressDataMsg sortProgressDataMsg
-        in await sortUseCase.launchCalculation(sheetId)) {
-      if (_handleSortProgressDataMsg(sortProgressDataMsg, sheetId)) {
-        break;
-      }
-    }
-  }
-
   bool _handleSortProgressDataMsg(
     SortProgressDataMsg sortProgressDataMsg,
     String sheetId,
   ) {
-    bool stopLoop = sortUseCase.handleSortProgressDataMsg(
-      sortProgressDataMsg,
-      sheetId,
-    );
+    bool stopLoop = true;
+    try {
+      stopLoop = sortUseCase.handleSortProgressDataMsg(
+        sortProgressDataMsg,
+        sheetId,
+      );
+    } on StateError catch (_) {
+      return true;
+    }
     if (sortProgressDataMsg.newBestSortFound &&
         sortUseCase.getToApplyNextSort(sheetId)) {
       final List<UpdateUnit> updates = sortUseCase.sortTable(sheetId);
@@ -88,6 +84,18 @@ class SortController extends ChangeNotifier {
       }
     }
     return stopLoop;
+  }
+
+  Future<void> launchCalculation(String sheetId) async {
+    if (!getAnalysisDone(sheetId)) {
+      await analyze(sheetId);
+    }
+    await for (final SortProgressDataMsg sortProgressDataMsg
+        in await sortUseCase.launchCalculation(sheetId)) {
+      if (_handleSortProgressDataMsg(sortProgressDataMsg, sheetId)) {
+        break;
+      }
+    }
   }
 
   void applyUpdatesNoSort(

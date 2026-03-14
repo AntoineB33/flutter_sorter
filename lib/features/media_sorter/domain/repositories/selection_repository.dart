@@ -15,4 +15,5 @@ abstract class SelectionRepository {
   void clearLastSelection();
   SelectionData getSelectionData(String sheetId);
   void selectAll();
+  void setSelectionData(String sheetId, SelectionData selectionData);
 }

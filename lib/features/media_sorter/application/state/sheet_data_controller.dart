@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
@@ -24,6 +26,10 @@ class SheetDataController extends ChangeNotifier {
   final SheetDataUsecase sheetDataUsecase;
 
   SheetDataController(this.sheetDataUsecase);
+
+  Future<Either<Failure, List<CellUpdate>>> paste() {
+    return sheetDataUsecase.paste();
+  }
 
   bool isLoaded(String sheetId) {
     return sheetDataUsecase.containsSheetId(sheetId);
@@ -57,23 +63,8 @@ class SheetDataController extends ChangeNotifier {
     sortService.calculate(currentSheetName);
   }
 
-  void delete() {
-    List<BaseUpdate> updates = [];
-    for (Point<int> cell in selection.selectedCells) {
-      updates.add(
-        CellUpdate(
-          cell.x,
-          cell.y,
-          '',
-          loadedSheetsData.getCellContent(cell.x, cell.y),
-        ),
-      );
-    }
-    UpdateData updateData = UpdateData(Uuid().v4(), DateTime.now(), updates);
-    update(updateData, true);
-    notifyListeners();
-    scheduleSheetSave(currentSheetName);
-    sortService.calculate(currentSheetName);
+  List<CellUpdate> delete() {
+    return sheetDataUsecase.delete();
   }
 
   void applyDefaultColumnSequence() {

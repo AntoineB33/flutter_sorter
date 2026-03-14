@@ -5,7 +5,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/utils_service.dart';
+import 'package:trying_flutter/features/media_sorter/core/utility/utils_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
@@ -51,6 +51,11 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
+  void setSelectionData(String sheetId, SelectionData selectionData) {
+    selectionCache.setSelectionData(sheetId, selectionData);
+  }
+
+  @override
   void selectAll() {
     SelectionData selection = selectionCache.getSelectionData(currentSheetId);
     selection.selectedCells.clear();
@@ -64,7 +69,9 @@ class SelectionRepositoryImpl implements SelectionRepository {
   @override
   void saveLastSelection() {
     _saveLastSelectionExecutor.execute(() async {
-      await saveDataSource.saveLastSelection(selectionCache.getSelectionData(currentSheetId));
+      await saveDataSource.saveLastSelection(
+        selectionCache.getSelectionData(currentSheetId),
+      );
     });
   }
 
@@ -83,7 +90,7 @@ class SelectionRepositoryImpl implements SelectionRepository {
 
   @override
   Future<Either<Failure, void>> loadLastSelection() async {
-    final result = await UrilsService.handleDataSourceCall(
+    final result = await UtilsService.handleDataSourceCall(
       () => saveDataSource.getLastSelection(),
     );
     return result.fold((failure) => Left(failure), (lastSelection) {
@@ -96,7 +103,7 @@ class SelectionRepositoryImpl implements SelectionRepository {
   Future<Either<Failure, void>> loadLastSelections(
     bool lastSelectionLoaded,
   ) async {
-    final result = await UrilsService.handleDataSourceCall(
+    final result = await UtilsService.handleDataSourceCall(
       () => saveDataSource.getAllLastSelected(),
     );
     return result.fold((failure) => Left(failure), (ids) {
@@ -114,7 +121,7 @@ class SelectionRepositoryImpl implements SelectionRepository {
         }
       }
       for (var sheetId in selectionCache.getSheetIds()) {
-        if (!UrilsService.isValidSheetName(sheetId)) {
+        if (!UtilsService.isValidSheetName(sheetId)) {
           selectionCache.removeSelectionData(sheetId);
           selectionCacheChanged = true;
         } else if (!loadedSheetsCache.containsSheetId(sheetId)) {

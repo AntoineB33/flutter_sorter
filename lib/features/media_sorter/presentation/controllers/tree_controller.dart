@@ -22,7 +22,6 @@ class TreeController extends ChangeNotifier {
   final NodeStruct searchRoot = NodeStruct(
     instruction: SpreadsheetConstants.searchMsg,
   );
-  final Map<String, ManageWaitingTasks<void>> _saveResultExecutors = {};
 
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) =>
@@ -34,6 +33,16 @@ class TreeController extends ChangeNotifier {
 
   Point<int> onTapCellSelect(NodeStruct node) {
     return treeUsecase.onTapCellSelect(node);
+  }
+
+  // Method to allow Controller to toggle expansion
+  void nodeExpansion(NodeStruct node, bool isExpanded) {
+    node.isExpanded = isExpanded;
+    for (NodeStruct child in node.newChildren ?? []) {
+      child.isExpanded = false;
+    }
+    treeUsecase.populateTree([node]);
+    notifyListeners();
   }
 
   void populateAllTrees() {

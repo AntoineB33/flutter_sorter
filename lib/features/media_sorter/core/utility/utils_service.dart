@@ -4,7 +4,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 
-class UrilsService {
+class UtilsService {
   static bool isValidSheetName(String name) {
     return name.isNotEmpty && !name.contains(RegExp(r'[\\/:*?"<>|]'));
   }

@@ -31,6 +31,10 @@ class AnalysisResultCache {
     return _getAnalysisResult(sheetId).myRules;
   }
 
+  List<List<int>> getGroupAttribution(String sheetId) {
+    return _getAnalysisResult(sheetId).groupAttribution;
+  }
+
   AnalysisResult getAnalysisResult(String sheetId) {
     return _getAnalysisResult(sheetId);
   }

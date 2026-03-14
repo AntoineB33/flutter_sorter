@@ -24,6 +24,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   final StreamController<Failure> _errorController =
       StreamController<Failure>.broadcast();
 
+  @override
   Stream<Failure> get failureStream => _errorController.stream;
 
   late final SpreadsheetClipboardService _clipboardService =
@@ -121,7 +122,6 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     if (text == null) return Left(ClipboardEmptyFailure());
     // if contains "
     if (text.contains('"')) {
-      debugPrint('Paste data contains unsupported characters.');
       return Left(ClipboardUnsupportedCharactersFailure());
     }
 
@@ -153,7 +153,6 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         );
       }
     }
-    update(updates, workbookCache.currentSheetId);
     return Right(updates);
   }
 
@@ -182,22 +181,6 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  List<CellUpdate> setCellContent(Point<int> cell, String newVal) {
-    CellUpdate cellUpdate = CellUpdate(
-      cell.x,
-      cell.y,
-      newVal,
-      loadedSheetsCache.getCellContent(
-        workbookCache.currentSheetId,
-        cell.x,
-        cell.y,
-      ),
-    );
-    update([cellUpdate], workbookCache.currentSheetId);
-    return [cellUpdate];
-  }
-
-  @override
   Future<Either<Failure, void>> loadSheet(String sheetId) async {
     if (!loadedSheetsCache.containsSheetId(sheetId)) {
       try {
@@ -218,9 +201,11 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  List<CellUpdate> delete(List<Point<int>> cells) {
+  List<CellUpdate> delete() {
     List<CellUpdate> updates = [];
-    for (Point<int> cell in cells) {
+    for (Point<int> cell in selectionCache
+        .getSelectionData(workbookCache.currentSheetId)
+        .selectedCells) {
       updates.add(
         CellUpdate(
           cell.x,
@@ -234,13 +219,6 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         ),
       );
     }
-    update(updates, workbookCache.currentSheetId);
     return updates;
-  }
-
-  @override
-  void update(List<UpdateUnit> updates, String sheetId) {
-    loadedSheetsCache.update(updates, sheetId);
-    scheduleSheetSave(workbookCache.currentSheetId);
   }
 }
