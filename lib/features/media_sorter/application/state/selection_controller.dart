@@ -102,13 +102,6 @@ class SelectionController extends ChangeNotifier {
     selectionUsecase.selectAll();
   }
 
-  @override
-  void dispose() {
-    _saveLastSelectionExecutor.dispose();
-    selectionUsecase.removeListener(saveLastSelection);
-    super.dispose();
-  }
-
   void clearLastSelection() {
     selectionUsecase.clearLastSelection();
   }

@@ -13,7 +13,8 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/selection_d
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 
 class SelectionRepositoryImpl implements SelectionRepository {
-  late ManageWaitingTasks<void> _saveSelectionStatusExecutor;
+  late ManageWaitingTasks<void> _saveLastSelectionExecutor;
+  late ManageWaitingTasks<void> _saveAllLastSelectedExecutor;
   final FileSheetLocalDataSource saveDataSource;
   final SelectionCache selectionCache;
   final LoadedSheetsCache loadedSheetsCache;
@@ -34,7 +35,11 @@ class SelectionRepositoryImpl implements SelectionRepository {
     this.loadedSheetsCache,
     this.workbookCache,
   ) {
-    _saveSelectionStatusExecutor = ManageWaitingTasks<void>(
+    _saveLastSelectionExecutor = ManageWaitingTasks<void>(
+      Duration(seconds: 2),
+      _errorController,
+    );
+    _saveAllLastSelectedExecutor = ManageWaitingTasks<void>(
       Duration(seconds: 2),
       _errorController,
     );
@@ -57,17 +62,23 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
-  Future<Either<Failure, void>> saveLastSelection() {
-    return UrilsService.handleDataSourceCall(
-      () => saveDataSource.saveLastSelection(selectionCache.getSelectionData(currentSheetId)),
-    );
+  void saveLastSelection() {
+    _saveLastSelectionExecutor.execute(() async {
+      await saveDataSource.saveLastSelection(selectionCache.getSelectionData(currentSheetId));
+    });
+  }
+
+  void dispose() {
+    _saveLastSelectionExecutor.dispose();
+    _saveAllLastSelectedExecutor.dispose();
+    _errorController.close();
   }
 
   @override
-  Future<Either<Failure, void>> saveAllLastSelected() {
-    return UrilsService.handleDataSourceCall(
-      () => saveDataSource.saveAllLastSelected(selectionCache.lastSelections),
-    );
+  void saveAllLastSelected() {
+    _saveAllLastSelectedExecutor.execute(() async {
+      await saveDataSource.saveAllLastSelected(selectionCache.lastSelections);
+    });
   }
 
   @override
@@ -133,7 +144,7 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
-  void clearLastSelection(String sheetId) {
-    selectionCache.setSelectionData(sheetId, SelectionData.empty());
+  void clearLastSelection() {
+    selectionCache.setSelectionData(currentSheetId, SelectionData.empty());
   }
 }

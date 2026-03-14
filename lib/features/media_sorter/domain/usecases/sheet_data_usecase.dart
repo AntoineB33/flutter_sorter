@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
@@ -9,6 +11,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_re
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/helpers/utils_services.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
@@ -26,12 +29,20 @@ class SheetDataUsecase {
   final GridRepository gridRepository;
   final HistoryRepository historyRepository;
 
+  final StreamSubscription<Failure> _failureSubscription;
+
   SheetDataUsecase({
     required this.sheetDataRepository,
     required this.sortRepository,
     required this.gridRepository,
     required this.historyRepository,
-  });
+  }) : _failureSubscription = sheetDataRepository.failureStream.listen((failure) {
+          UtilsServices.handleDataCorruption(Left(failure));
+        });
+  
+  void dispose() {
+    _failureSubscription.cancel();
+  }
 
   bool containsSheetId(String sheetId) {
     return sheetDataRepository.containsSheetId(sheetId);

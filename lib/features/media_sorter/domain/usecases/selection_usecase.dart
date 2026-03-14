@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
@@ -15,13 +17,27 @@ class SelectionUsecase {
   final HistoryRepository historyRepository;
   final WorkbookRepository workbookRepository;
 
+  late StreamSubscription<Failure> _failureSubscription;
+
   SelectionUsecase(
     this.selectionRepository,
     this.sheetDataRepository,
     this.gridRepository,
     this.historyRepository,
     this.workbookRepository,
-  );
+  ) {
+    _failureSubscription = selectionRepository.failureStream.listen((failure) {
+      UtilsServices.handleDataCorruption(Left(failure));
+    });
+  }
+
+  void dispose() {
+    _failureSubscription.cancel();
+  }
+
+  void clearLastSelection() {
+    selectionRepository.clearLastSelection();
+  }
 
   void selectAll() {
     selectionRepository.selectAll();

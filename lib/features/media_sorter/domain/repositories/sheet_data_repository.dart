@@ -6,6 +6,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 
 abstract class SheetDataRepository {
+  Stream<Failure> get failureStream;
   bool containsSheetId(String sheetId);
   int rowCount(String sheetId);
   int colCount(String sheetId);

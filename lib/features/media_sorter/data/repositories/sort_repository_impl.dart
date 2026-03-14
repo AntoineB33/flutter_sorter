@@ -176,6 +176,13 @@ class SortRepositoryImpl implements SortRepository {
     );
   }
 
+  void dispose() {
+    _saveAnalysisResultExecutor.dispose();
+    _saveSortStatusExecutor.dispose();
+    _saveSortProgressExecutor.dispose();
+    _failureController.close();
+  }
+
   @override
   void setToApplyOnce(String sheetId, bool toApplyOnce) {
     sortStatusCache.setToApplyOnce(sheetId, toApplyOnce);

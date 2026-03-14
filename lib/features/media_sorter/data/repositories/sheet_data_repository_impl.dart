@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -19,6 +20,11 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   final LoadedSheetsCache loadedSheetsCache;
   final SelectionCache selectionCache;
   final WorkbookCache workbookCache;
+
+  final StreamController<Failure> _errorController =
+      StreamController<Failure>.broadcast();
+
+  Stream<Failure> get failureStream => _errorController.stream;
 
   late final SpreadsheetClipboardService _clipboardService =
       SpreadsheetClipboardService();
@@ -155,11 +161,19 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     if (!_saveSheetDataExecutor.containsKey(sheetId)) {
       _saveSheetDataExecutor[sheetId] = ManageWaitingTasks<void>(
         Duration(seconds: 2),
+        _errorController,
       );
     }
     _saveSheetDataExecutor[sheetId]!.execute(() async {
       await dataSource.saveSheet(sheetId, loadedSheetsCache.getSheet(sheetId));
     });
+  }
+
+  void dispose() {
+    for (var executor in _saveSheetDataExecutor.values) {
+      executor.dispose();
+    }
+    _errorController.close();
   }
 
   @override

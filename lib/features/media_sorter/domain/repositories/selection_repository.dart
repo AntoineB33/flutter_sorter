@@ -9,10 +9,10 @@ abstract class SelectionRepository {
   Point<int> get primarySelectedCell;
   Future<Either<Failure, void>> loadLastSelections(bool lastSelectionLoaded);
   Future<Either<Failure, void>> loadLastSelection();
-  Future<Either<Failure, void>> saveLastSelection();
-  Future<Either<Failure, void>> saveAllLastSelected();
+  void saveLastSelection();
+  void saveAllLastSelected();
   void setPrimarySelection(int row, int col, bool keepSelection);
-  void clearLastSelection(String sheetId);
+  void clearLastSelection();
   SelectionData getSelectionData(String sheetId);
   void selectAll();
 }
