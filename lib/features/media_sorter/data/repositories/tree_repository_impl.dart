@@ -22,6 +22,8 @@ class TreeRepositoryImpl implements TreeRepository {
   final SortStatusCache sortStatusCache;
   final WorkbookCache workbookCache;
 
+  String get currentSheetId => workbookCache.currentSheetId;
+
   TreeRepositoryImpl(
     this.analysisCache,
     this.loadedSheetsCache,
@@ -43,7 +45,6 @@ class TreeRepositoryImpl implements TreeRepository {
     NodeStruct mentionsRoot,
     NodeStruct searchRoot,
   ) {
-    String currentSheetId = workbookCache.currentSheetId;
     AnalysisResult result = analysisCache.getAnalysisResult(currentSheetId);
     populateTree([
       result.errorRoot,
@@ -59,7 +60,6 @@ class TreeRepositoryImpl implements TreeRepository {
   bool isRowValid(
     int rowId,
   ) {
-    String currentSheetId = workbookCache.currentSheetId;
     if (sortStatusCache.getAnalysisDone(currentSheetId)) {
       return rowId < analysisCache.isMedium(currentSheetId).length && analysisCache.isMedium(currentSheetId)[rowId];
     }
@@ -80,40 +80,14 @@ class TreeRepositoryImpl implements TreeRepository {
   }
 
   @override
-  void onTap(NodeStruct node) {
-    switch (node.idOnTap) {
-      case OnTapAction.selectAttribute:
-        onTapCellSelect(node);
-        break;
-      case OnTapAction.selectCell:
-        if (node.rowId != null && node.colId != null) {
-          _selectionController.add(
-            SelectionRequest(
-              primarySelectedCell: Point(node.rowId!, node.colId!),
-            ),
-          );
-        }
-        break;
-      default:
-        logger.e("No onTap handler for node: ${node.message}");
-    }
-  }
-
-  @override
-  void onTapCellSelect(NodeStruct node) {
-    if (node.rowId != null) {
-      _selectionController.add(
-        SelectionRequest(primarySelectedCell: Point(node.rowId!, 0)),
-      );
-      return;
-    }
+  Point<int> onTapCellSelect(NodeStruct node) {
 
     List<Cell> cells = [];
     List<MapEntry> entries = [];
 
     if (node.colId != SpreadsheetConstants.notUsedCst) {
       entries = analysisCache
-          .getAnalysisResult(loadedSheetsCache.currentSheetId)
+          .getAnalysisResult(currentSheetId)
           .attToRefFromAttColToCol[node.att]!
           .entries
           .toList();
@@ -122,7 +96,7 @@ class TreeRepositoryImpl implements TreeRepository {
     if (node.instruction != SpreadsheetConstants.moveToUniqueMentionSprawlCol) {
       entries.addAll(
         analysisCache
-            .getAnalysisResult(loadedSheetsCache.currentSheetId)
+            .getAnalysisResult(currentSheetId)
             .attToRefFromDepColToCol[node.att]!
             .entries
             .toList(),
@@ -134,10 +108,10 @@ class TreeRepositoryImpl implements TreeRepository {
         cells.add(Cell(rowId: rowId, colId: colId));
       }
     }
-    _handleSelectionCycling(node, cells);
+    return _handleSelectionCycling(node, cells);
   }
 
-  void _handleSelectionCycling(NodeStruct node, List<Cell> cells) {
+  Point<int> _handleSelectionCycling(NodeStruct node, List<Cell> cells) {
     int found = -1;
     for (int i = 0; i < cells.length; i++) {
       final child = cells[i];
@@ -149,11 +123,7 @@ class TreeRepositoryImpl implements TreeRepository {
     }
 
     int index = (found == -1) ? 0 : (found + 1) % cells.length;
-    _selectionController.add(
-      SelectionRequest(
-        primarySelectedCell: Point(cells[index].rowId, cells[index].colId),
-      ),
-    );
+    return Point(cells[index].rowId, cells[index].colId);
   }
 
   

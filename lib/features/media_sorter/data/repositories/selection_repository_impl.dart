@@ -46,6 +46,17 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
+  void selectAll() {
+    SelectionData selection = selectionCache.getSelectionData(currentSheetId);
+    selection.selectedCells.clear();
+    for (int r = 0; r < loadedSheetsCache.rowCount(currentSheetId); r++) {
+      for (int c = 0; c < loadedSheetsCache.colCount(currentSheetId); c++) {
+        selection.selectedCells.add(Point(r, c));
+      }
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> saveLastSelection() {
     return UrilsService.handleDataSourceCall(
       () => saveDataSource.saveLastSelection(selectionCache.getSelectionData(currentSheetId)),

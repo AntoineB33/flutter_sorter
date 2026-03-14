@@ -10,7 +10,6 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/coordinators/history_coordinator.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/selection_controller.dart';
-import 'package:trying_flutter/features/media_sorter/application/coordinators/selection_coordinator.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
@@ -18,7 +17,6 @@ import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.
 
 class SpreadsheetKeyboardDelegate {
   final SelectionController selectionController;
-  final SelectionCoordinator selectionCoordinator;
 
   final HistoryCoordinator historyManager;
 
@@ -28,7 +26,6 @@ class SpreadsheetKeyboardDelegate {
   SpreadsheetKeyboardDelegate(
     this.historyManager,
     this.selectionController,
-    this.selectionCoordinator,
     this.loadedSheetsDataStore,
     this.selectionDataStore,
   );

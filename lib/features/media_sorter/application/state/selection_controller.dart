@@ -92,10 +92,6 @@ class SelectionController extends ChangeNotifier {
     if (isSorting()) {
       return false;
     }
-    selection.previousContent = loadedSheetsDataStore.getCellContent(
-      selection.primarySelectedCell.x,
-      selection.primarySelectedCell.y,
-    );
     editingMode = true;
     saveLastSelection();
     notifyListeners();
@@ -103,13 +99,7 @@ class SelectionController extends ChangeNotifier {
   }
 
   void selectAll() {
-    selection.selectedCells.clear();
-    for (int r = 0; r < rowCount; r++) {
-      for (int c = 0; c < colCount; c++) {
-        selection.selectedCells.add(Point(r, c));
-      }
-    }
-    setPrimarySelection(currentSheetName, 0, 0, true);
+    selectionUsecase.selectAll();
   }
 
   @override

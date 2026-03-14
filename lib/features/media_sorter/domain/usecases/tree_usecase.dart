@@ -1,5 +1,6 @@
+import 'dart:math';
+
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/selection_request.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/tree_repository.dart';
 
 class TreeUsecase {
@@ -7,8 +8,8 @@ class TreeUsecase {
 
   TreeUsecase(this.treeRepository);
 
-  void onTapCellSelect(NodeStruct node) {
-    treeRepository.onTapCellSelect(node);
+  Point<int> onTapCellSelect(NodeStruct node) {
+    return treeRepository.onTapCellSelect(node);
   }
 
   void populateTree(List<NodeStruct> roots) {

@@ -23,6 +23,10 @@ class SelectionUsecase {
     this.workbookRepository,
   );
 
+  void selectAll() {
+    selectionRepository.selectAll();
+  }
+
   Future<void> sheetSwitch() async {
     Either<Failure, void> result;
     result = await selectionRepository.saveAllLastSelected();

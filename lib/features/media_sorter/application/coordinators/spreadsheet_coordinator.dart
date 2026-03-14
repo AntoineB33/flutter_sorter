@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
@@ -131,7 +132,12 @@ class SpreadsheetCoordinator {
   void onTap(NodeStruct node) {
     switch (node.idOnTap) {
       case OnTapAction.selectAttribute:
-        treeController.onTapCellSelect(node);
+        if (node.rowId != null) {
+          setPrimarySelection(node.rowId!, 0, false, true);
+          break;
+        }
+        Point<int> selectedCell = treeController.onTapCellSelect(node);
+        setPrimarySelection(selectedCell.x, selectedCell.y, false, true);
         break;
       case OnTapAction.selectCell:
         if (node.rowId != null && node.colId != null) {
@@ -141,5 +147,19 @@ class SpreadsheetCoordinator {
       default:
         logger.e("No onTap handler for node: ${node.message}");
     }
+  }
+
+  void startEditing({String? initialInput}) {
+    if (!selectionController.startEditing()) {
+      return;
+    }
+    if (initialInput != null) {
+      setCellContent(initialInput);
+    }
+  }
+  
+  void selectAll() {
+    setPrimarySelection(0, 0, true, true);
+    selectionController.selectAll();
   }
 }

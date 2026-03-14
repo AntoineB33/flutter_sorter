@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
@@ -30,8 +32,8 @@ class TreeController extends ChangeNotifier {
     required this.treeUsecase,
   });
 
-  void onTapCellSelect(NodeStruct node) {
-    treeUsecase.onTapCellSelect(node);
+  Point<int> onTapCellSelect(NodeStruct node) {
+    return treeUsecase.onTapCellSelect(node);
   }
 
   void populateAllTrees() {
