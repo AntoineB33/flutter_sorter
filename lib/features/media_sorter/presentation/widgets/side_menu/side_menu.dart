@@ -326,7 +326,7 @@ class _SideMenuState extends State<SideMenu> {
             );
           },
           onSelected: (String selection) {
-            workbookController.loadSheet(selection);
+            coordinator.loadSheet(selection);
           },
           fieldViewBuilder:
               (context, textController, focusNode, onFieldSubmitted) {
@@ -342,7 +342,7 @@ class _SideMenuState extends State<SideMenu> {
                     suffixIcon: Icon(Icons.table_chart),
                   ),
                   onSubmitted: (String value) {
-                    workbookController.loadSheet(value.trim());
+                    coordinator.loadSheet(value.trim());
                   },
                 );
               },

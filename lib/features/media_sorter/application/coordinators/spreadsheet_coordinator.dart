@@ -14,9 +14,9 @@ import 'package:trying_flutter/features/media_sorter/application/state/sort_cont
 import 'package:trying_flutter/features/media_sorter/application/state/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/models/scroll_request.dart';
+import 'package:trying_flutter/utils/logger.dart';
 import 'package:uuid/uuid.dart';
 import 'package:rxdart/rxdart.dart';
-
 
 class SpreadsheetCoordinator {
   final HistoryController historyController;
@@ -27,35 +27,45 @@ class SpreadsheetCoordinator {
   final WorkbookController workbookController;
   final TreeController treeController;
 
-  SpreadsheetCoordinator(this.historyController, this.sheetDataController, this.gridController, this.sortController, this.selectionController, this.workbookController, this.treeController) {
+  SpreadsheetCoordinator(
+    this.historyController,
+    this.sheetDataController,
+    this.gridController,
+    this.sortController,
+    this.selectionController,
+    this.workbookController,
+    this.treeController,
+  ) {
     init();
   }
 
-  
   Future<void> init() async {
     await workbookController.clearAllData();
     await workbookController.loadRecentSheetIds();
-    bool success = await loadSheet(workbookController.currentSheetId, true);
-    workbookController.loadLastSelections(success);
-    sortController.init();
-    for (var sheetId in sortController.getSheetIds()) {
+    bool lastSelectionSuccess = await loadSheet(workbookController.currentSheetId, true);
+    workbookController.loadLastSelections(lastSelectionSuccess);
+    sortController.loadSortStatus();
+    for (var sheetId in sortController.getRecentSheetIds()) {
       launchCalculation(sheetId);
     }
   }
 
   Future<bool> loadSheet(String sheetId, bool init) async {
-    if (sheetDataController.isLoaded(sheetId)) {
+    if (!sheetDataController.isLoaded(sheetId)) {
       sortController.loadAnalysisResult(sheetId).then((_) {
-        treeController.onAnalysisAvailable(sheetId);
+        treeController.onAnalysisAvailable();
       });
     }
+    selectionController.stopEditing('', false);
     await workbookController.loadSheet(sheetId, init);
-    bool success = await workbookController.loadLastSelection();
+    if (!init) {
+      selectionController.sheetSwitched();
+    }
+    bool lastSelectionSuccess = await selectionController.loadLastSelection();
     gridController.scrollToLastSelection();
-    return success;
+    return lastSelectionSuccess;
   }
 
-  
   void setPrimarySelection(
     int row,
     int col,
@@ -64,21 +74,51 @@ class SpreadsheetCoordinator {
   ) {
     selectionController.setPrimarySelection(row, col, keepSelection);
     if (scrollTo) {
-      bool saveSelection = gridController.scrollToCell(row, col);
-      if (saveSelection) {
-        selectionController.saveLastSelection();
-      }
+      gridController.scrollToCell(row, col);
     }
+    selectionController.saveLastSelection();
+    treeController.updateMentionsContext(row, col);
   }
 
-  void applyUpdates(
+  void delete() {
+    setCellContent('');
+  }
+
+  void setCellContent(String newValue) {
+    String sheetId = workbookController.currentSheetId;
+    final primarySelectedCell = selectionController
+        .getSelectionData(sheetId)
+        .primarySelectedCell;
+    int rowId = primarySelectedCell.x;
+    int colId = primarySelectedCell.y;
+    String prevValue = sheetDataController.getCellContent(
+      rowId,
+      colId,
+      sheetId,
+    );
+    final updates = [CellUpdate(rowId, colId, newValue, prevValue)];
+    applyUpdatesAndSort(updates, sheetId, false, false);
+  }
+
+  void applyUpdatesAndSort(
+    List<UpdateUnit> updates,
+    String sheetId,
+    bool isFromHistory,
+    bool isFromSort,
+  ) {
+    applyUpdatesNoSort(updates, sheetId, isFromHistory);
+    if (!isFromSort) {
+      sortController.lightCalculations(sheetId);
+    }
+    launchCalculation(sheetId);
+  }
+
+  void applyUpdatesNoSort(
     List<UpdateUnit> updates,
     String sheetId,
     bool isFromHistory,
   ) {
     sortController.applyUpdatesNoSort(updates, sheetId, isFromHistory);
-    sortController.lightCalculations(sheetId);
-    launchCalculation(sheetId);
   }
 
   Future<void> launchCalculation(String sheetId) async {
@@ -86,5 +126,20 @@ class SpreadsheetCoordinator {
       await sortController.analyze(sheetId);
     }
     return sortController.launchCalculation(sheetId);
+  }
+  
+  void onTap(NodeStruct node) {
+    switch (node.idOnTap) {
+      case OnTapAction.selectAttribute:
+        treeController.onTapCellSelect(node);
+        break;
+      case OnTapAction.selectCell:
+        if (node.rowId != null && node.colId != null) {
+          setPrimarySelection(node.rowId!, node.colId!, false, true);
+        }
+        break;
+      default:
+        logger.e("No onTap handler for node: ${node.message}");
+    }
   }
 }

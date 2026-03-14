@@ -48,15 +48,18 @@ class HistoryRepositoryImpl implements HistoryRepository {
 
   @override
   void stopEditing(String prevValue) {
+    final primarySelectedCell = selectionRepository.primarySelectedCell;
+    String newVal = sheetDataRepository.getCellContent(
+      selectionRepository.primarySelectedCell,
+      workbookRepository.currentSheetId,
+    );
+    if (newVal == prevValue) return;
     commitHistory(
         [
           CellUpdate(
-            selectionRepository.primarySelectedCell.x,
-            selectionRepository.primarySelectedCell.y,
-            sheetDataRepository.getCellContent(
-              selectionRepository.primarySelectedCell,
-              workbookRepository.currentSheetId,
-            ),
+            primarySelectedCell.x,
+            primarySelectedCell.y,
+            newVal,
             prevValue,
           ),
         ], workbookRepository.currentSheetId

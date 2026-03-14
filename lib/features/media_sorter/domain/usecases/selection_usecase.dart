@@ -1,4 +1,7 @@
+import 'package:fpdart/fpdart.dart';
+import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/helpers/utils_services.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
@@ -20,31 +23,34 @@ class SelectionUsecase {
     this.workbookRepository,
   );
 
-  SelectionData getSelectionData(String sheetId) {
-    return selectionRepository.getSelectionData(sheetId);
+  Future<void> sheetSwitch() async {
+    Either<Failure, void> result;
+    result = await selectionRepository.saveAllLastSelected();
+    UtilsServices.handleDataCorruption(result);
+    result = await selectionRepository.saveLastSelection();
   }
 
-  void stopEditing(String prevValue, bool updateHistory) {
-    selectionRepository.stopEditing();
-    if (updateHistory) {
-      historyRepository.stopEditing(prevValue);
-    }
+  void setPrimarySelection(int row, int col, bool keepSelection) {
+    selectionRepository.setPrimarySelection(row, col, keepSelection);
+  }
+
+  SelectionData getSelectionData(String sheetId) {
+    return selectionRepository.getSelectionData(sheetId);
   }
 
   void saveLastSelection() {
     selectionRepository.saveLastSelection();
   }
 
-  Future<void> saveSelection({String? sheetId}) async {
-    if (sheetId != null && workbookRepository.currentSheetId == sheetId) {
-      selectionRepository.saveLastSelection();
-    } else {
-      selectionRepository.sheetSwitch();
-    }
+  Future<bool> loadLastSelection() async {
+    Either<Failure, void> result;
+    result = await selectionRepository.loadLastSelection();
+    return UtilsServices.handleDataCorruption(result);
   }
 
   Future<SelectionData> getLastSelection() async {
-    return selectionRepository.getSelectionData(workbookRepository.currentSheetId);
+    return selectionRepository.getSelectionData(
+      workbookRepository.currentSheetId,
+    );
   }
-
 }

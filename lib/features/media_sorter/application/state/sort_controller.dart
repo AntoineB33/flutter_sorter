@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
@@ -29,8 +28,16 @@ class SortController extends ChangeNotifier {
     });
   }
 
-  Future<void> init() async {
-    sortUseCase.init();
+  Future<void> loadAnalysisResult(String sheetId) {
+    return sortUseCase.loadAnalysisResult(sheetId);
+  }
+
+  Future<void> loadSortStatus() async {
+    sortUseCase.loadSortStatus();
+  }
+
+  List<String> getRecentSheetIds() {
+    return workbookUsecase.getRecentSheetIds();
   }
 
   void _onFailure(Failure failure) {
@@ -109,7 +116,6 @@ class SortController extends ChangeNotifier {
 
   void findBestSortToggle() {
     sortUseCase.findBestSortToggle();
-    
   }
 
   bool showApplySortToggle() {

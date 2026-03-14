@@ -5,4 +5,10 @@ abstract class TreeRepository {
   bool isRowValid(
     int rowId,
   );
+  void populateAllTrees(
+    NodeStruct mentionsRoot,
+    NodeStruct searchRoot,
+  );
+  void populateTree(List<NodeStruct> roots);
+  void onTapCellSelect(NodeStruct node);
 }

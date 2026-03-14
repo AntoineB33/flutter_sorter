@@ -21,6 +21,12 @@ class SortUsecase {
     this.workbookRepository,
   );
 
+  Future<void> loadAnalysisResult(String sheetId) async {
+    Either<Failure, void> result;
+    result = await sortRepository.loadAnalysisResult(sheetId);
+    UtilsServices.handleDataCorruption(result);
+  }
+
   bool isSorting() {
     return sortRepository.isSorting(currentSheetId);
   }
@@ -103,7 +109,7 @@ class SortUsecase {
     return sortRepository.sortMedia(sheetId);
   }
 
-  Future<void> init() async {
+  Future<void> loadSortStatus() async {
     Either<Failure, void> result;
     result = await sortRepository.loadSortStatus();
     UtilsServices.handleDataCorruption(result);

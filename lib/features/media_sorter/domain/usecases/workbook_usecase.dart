@@ -40,12 +40,6 @@ class WorkbookUseCase {
     UtilsServices.handleDataCorruption(result);
   }
 
-  Future<bool> loadLastSelection() async {
-    Either<Failure, void> result;
-    result = await selectionRepository.loadLastSelection();
-    return UtilsServices.handleDataCorruption(result);
-  }
-
   Future<void> loadLastSelections(bool success) async {
     Either<Failure, void> result;
     result = await selectionRepository.loadLastSelections(success);
@@ -54,7 +48,7 @@ class WorkbookUseCase {
 
   Future<void> loadSheet(String sheetId, bool init) async {
     if (!init) {
-      selectionRepository.sheetSwitch();
+      selectionRepository.saveAllLastSelected();
       workbookRepository.saveRecentSheetIds();
     }
 
@@ -67,8 +61,6 @@ class WorkbookUseCase {
         if (!success) {
           selectionRepository.clearLastSelection(sheetId);
         }
-        result = await sortRepository.getAnalysisResult(sheetId);
-        UtilsServices.handleDataCorruption(result);
       }
     } else {
       workbookRepository.addNewSheetId(sheetId);

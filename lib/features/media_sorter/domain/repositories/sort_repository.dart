@@ -27,5 +27,5 @@ abstract class SortRepository {
   bool isApplyBetterSortButtonInAction();
   void applyBetterSortButton();
   void applySortToggle();
-  Future<Either<Failure, void>> getAnalysisResult(String sheetId);
+  Future<Either<Failure, void>> loadAnalysisResult(String sheetId);
 }

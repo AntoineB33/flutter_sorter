@@ -5,11 +5,27 @@ import 'package:trying_flutter/features/media_sorter/domain/repositories/tree_re
 class TreeUsecase {
   final TreeRepository treeRepository;
 
-  Stream<SelectionRequest> get nodeTapStream => treeRepository.nodeTapStream;
-
   TreeUsecase(this.treeRepository);
+
+  void onTapCellSelect(NodeStruct node) {
+    treeRepository.onTapCellSelect(node);
+  }
+
+  void populateTree(List<NodeStruct> roots) {
+    treeRepository.populateTree(roots);
+  }
 
   void onTap(NodeStruct node) {
     treeRepository.onTap(node);
+  }
+
+  void populateAllTrees(
+    NodeStruct mentionsRoot,
+    NodeStruct searchRoot,
+  ) {
+    treeRepository.populateAllTrees(
+      mentionsRoot,
+      searchRoot,
+    );
   }
 }

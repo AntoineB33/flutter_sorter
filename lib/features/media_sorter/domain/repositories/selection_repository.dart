@@ -5,13 +5,13 @@ import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 
 abstract class SelectionRepository {
+  Stream<Failure> get failureStream;
   Point<int> get primarySelectedCell;
   Future<Either<Failure, void>> loadLastSelections(bool lastSelectionLoaded);
   Future<Either<Failure, void>> loadLastSelection();
-  void saveLastSelection();
-  Future<Either<Failure, void>> sheetSwitch();
+  Future<Either<Failure, void>> saveLastSelection();
+  Future<Either<Failure, void>> saveAllLastSelected();
   void setPrimarySelection(int row, int col, bool keepSelection);
-  void stopEditing();
   void clearLastSelection(String sheetId);
   SelectionData getSelectionData(String sheetId);
 }

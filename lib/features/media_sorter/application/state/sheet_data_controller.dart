@@ -10,11 +10,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/column_type
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/helpers/calculation_service.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/parse_paste_data_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/save_sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
-import 'package:trying_flutter/features/media_sorter/domain/services/history_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data/sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
@@ -30,7 +26,11 @@ class SheetDataController extends ChangeNotifier {
   SheetDataController(this.sheetDataUsecase);
 
   bool isLoaded(String sheetId) {
-    return sheetDataUsecase.getSheet(sheetId) != null;
+    return sheetDataUsecase.containsSheetId(sheetId);
+  }
+
+  String getCellContent(int row, int col, String sheetId) {
+    return sheetDataUsecase.getCellContent(row, col, sheetId);
   }
 
   void saveRecentSheetIds() {
@@ -103,14 +103,6 @@ class SheetDataController extends ChangeNotifier {
       ]),
       true,
     );
-  }
-
-  @override
-  void dispose() {
-    for (var executor in _saveExecutors.values) {
-      executor.dispose();
-    }
-    super.dispose();
   }
 
   void setCellContent(Point<int> cell, String newVal) {

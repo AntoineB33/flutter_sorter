@@ -30,27 +30,28 @@ class TreeController extends ChangeNotifier {
     required this.treeUsecase,
   });
 
-  void populateAllTrees(
-    SelectionData selection,
-    Map<String, SelectionData> lastSelectionBySheet,
-    SortStatus sortStatus,
-    String currentSheetName,
-    SheetData sheet,
-    AnalysisResult result,
-  ) {
-    populateTree([
-      result.errorRoot,
-      result.warningRoot,
+  void onTapCellSelect(NodeStruct node) {
+    treeUsecase.onTapCellSelect(node);
+  }
+
+  void populateAllTrees() {
+    treeUsecase.populateAllTrees(
       mentionsRoot,
       searchRoot,
-      result.categoriesRoot,
-      result.distPairsRoot,
-    ]);
+    );
+  }
+
+  /// Call this when the Controller finishes a calculation.
+  /// The Manager takes ownership of updating the tree state.
+  void onAnalysisAvailable() {
+    clearMentionsRoot();
+    clearSearchRoot();
+    populateAllTrees();
   }
 
   void updateMentionsContext(int row, int col) {
     updateMentionsRoot(row, col);
-    populateTree([mentionsRoot]);
+    treeUsecase.populateTree([mentionsRoot]);
   }
 
   void clearMentionsRoot() {

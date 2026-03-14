@@ -76,7 +76,6 @@ class SortRepositoryImpl implements SortRepository {
     );
   }
 
-
   @override
   List<String> getSheetIds() {
     return sortStatusCache.getSheetIds();
@@ -135,7 +134,7 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  Future<Either<Failure, void>> getAnalysisResult(String sheetId) async {
+  Future<Either<Failure, void>> loadAnalysisResult(String sheetId) async {
     final result = await UrilsService.handleDataSourceCall(
       () => saveDataSource.getAnalysisResult(sheetId),
     );
@@ -272,7 +271,7 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  void lightCalculations(String sheetId) async* {
+  void lightCalculations(String sheetId) {
     isolateReceivePortsCache.addIsolatePortIfNecessary(sheetId);
     if (!lightCalculate1()) {
       isolateReceivePortsCache.cancelB(sheetId);

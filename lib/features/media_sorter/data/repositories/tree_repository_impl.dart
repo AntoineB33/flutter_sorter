@@ -37,13 +37,30 @@ class TreeRepositoryImpl implements TreeRepository {
   int colCount(String sheetId) {
     return loadedSheetsCache.colCount(sheetId);
   }
+
+  @override
+  void populateAllTrees(
+    NodeStruct mentionsRoot,
+    NodeStruct searchRoot,
+  ) {
+    String currentSheetId = workbookCache.currentSheetId;
+    AnalysisResult result = analysisCache.getAnalysisResult(currentSheetId);
+    populateTree([
+      result.errorRoot,
+      result.warningRoot,
+      mentionsRoot,
+      searchRoot,
+      result.categoriesRoot,
+      result.distPairsRoot,
+    ]);
+  }
   
   @override
   bool isRowValid(
     int rowId,
   ) {
     String currentSheetId = workbookCache.currentSheetId;
-    if (sortStatusCache.analysisDone(currentSheetId)) {
+    if (sortStatusCache.getAnalysisDone(currentSheetId)) {
       return rowId < analysisCache.isMedium(currentSheetId).length && analysisCache.isMedium(currentSheetId)[rowId];
     }
     if (rowId == 0) {
@@ -82,6 +99,7 @@ class TreeRepositoryImpl implements TreeRepository {
     }
   }
 
+  @override
   void onTapCellSelect(NodeStruct node) {
     if (node.rowId != null) {
       _selectionController.add(
@@ -139,10 +157,8 @@ class TreeRepositoryImpl implements TreeRepository {
   }
 
   
-
+  @override
   void populateTree(List<NodeStruct> roots) {
-    if (!sortStatusDataStore.currentSortStatus.resultCalculated) return;
-
     for (final root in roots) {
       var stack = [root];
       while (stack.isNotEmpty) {
@@ -522,16 +538,5 @@ class TreeRepositoryImpl implements TreeRepository {
     _saveResultExecutors[sheetName]!.execute(() async {
       await saveSheetDataUseCase.saveAnalysisResult(sheetName, result);
     });
-  }
-
-  /// Call this when the Controller finishes a calculation.
-  /// The Manager takes ownership of updating the tree state.
-  void onAnalysisAvailable(
-    AnalysisResult result,
-    Point<int> primarySelectedCell,
-  ) {
-    _treeController.clearMentionsRoot();
-    _treeController.clearSearchRoot();
-    _treeController.populateAllTrees();
   }
 }

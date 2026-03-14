@@ -240,6 +240,7 @@ class CalculationDatasource {
         }
       }
       if (!found) {
+        reverseGetDist(groupAttribution, lastOccurrence, lastOccurrenceIds, bestSortFound, currentDist, id, distCheckId);
         id -= 1;
         if (id >= 0) {
           cursors[id]++;

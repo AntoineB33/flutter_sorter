@@ -41,10 +41,4 @@ class WorkbookController extends ChangeNotifier {
     workbookUseCase.loadSheet(name, init);
     notifyListeners();
   }
-
-  Future<bool> loadLastSelection() async {
-    bool success = await workbookUseCase.loadLastSelection();
-    notifyListeners();
-    return success;
-  }
 }

@@ -16,32 +16,21 @@ class SelectionData {
   
   double scrollOffsetX;
   double scrollOffsetY;
-  String previousContent;
 
   SelectionData({
     required this.selectedCells,
     required this.primarySelectedCell,
     required this.scrollOffsetX,
     required this.scrollOffsetY,
-    required this.previousContent,
   });
 
   SelectionData.empty()
       : selectedCells = [],
         primarySelectedCell = const Point<int>(0, 0),
         scrollOffsetX = 0.0,
-        scrollOffsetY = 0.0,
-        previousContent = '';
+        scrollOffsetY = 0.0;
 
-  // Keep your try-catch safety net, but use the generated parser
-  factory SelectionData.fromJson(Map<String, dynamic> json) {
-    try {
-      return _$SelectionDataFromJson(json);
-    } catch (e) {
-      debugPrint("Error parsing SelectionData from JSON: $e");
-      return SelectionData.empty();
-    }
-  }
+  factory SelectionData.fromJson(Map<String, dynamic> json) => _$SelectionDataFromJson(json);
 
   Map<String, dynamic> toJson() => _$SelectionDataToJson(this);
 }

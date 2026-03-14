@@ -29,13 +29,11 @@ class GridUsecase {
   }
   
   bool isRowValid(
-    String sheetId,
     int rowId,
   ) {
     return treeRepository.isRowValid(
-    sheetId,
-    rowId,
-  );
+      rowId,
+    );
   }
 
 }

@@ -64,10 +64,9 @@ class GridController extends ChangeNotifier {
     );
   }
   
-  bool scrollToCell(int rowId, int colId) {
+  void scrollToCell(int rowId, int colId) {
     String currentSheetId = workbookUsecase.currentSheetId;
     SelectionData lastSelection = selectionUsecase.getSelectionData(currentSheetId);
-    bool saveSelection = false;
     bool scrollX = true;
     bool scrollY = true;
     SheetData currentSheet = sheetDataUsecase.getSheet(currentSheetId);
@@ -80,10 +79,8 @@ class GridController extends ChangeNotifier {
           currentSheet.rowHeaderWidth;
 
       if (targetTop < _verticalController.offset) {
-        saveSelection = true;
         lastSelection.scrollOffsetX = targetTop;
       } else if (targetBottom > _verticalController.offset + verticalViewport) {
-        saveSelection = true;
         lastSelection.scrollOffsetX = targetBottom - verticalViewport;
         updateRowColCount(currentSheetId, true, visibleHeight: targetBottom);
       } else {
@@ -100,11 +97,9 @@ class GridController extends ChangeNotifier {
           currentSheet.rowHeaderWidth;
 
       if (targetLeft < _horizontalController.offset) {
-        saveSelection = true;
         lastSelection.scrollOffsetY = targetLeft;
       } else if (targetRight >
           lastSelection.scrollOffsetY + horizontalViewport) {
-        saveSelection = true;
         lastSelection.scrollOffsetY = targetRight - horizontalViewport;
         updateRowColCountCurrentSheet(true, visibleWidth: targetRight);
       } else {
@@ -119,7 +114,6 @@ class GridController extends ChangeNotifier {
         ),
       );
     }
-    return saveSelection;
   }
   
   void scrollToLastSelection() {
@@ -185,10 +179,9 @@ class GridController extends ChangeNotifier {
   }
 
   bool isRowValid(
-    String sheetId,
     int rowId,
   ) {
-    return gridUsecase.isRowValid(sheetId, rowId);
+    return gridUsecase.isRowValid(rowId);
   }
 
   @override

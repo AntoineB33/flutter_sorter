@@ -9,8 +9,8 @@ class HistoryUsecase {
   void moveInUpdateHistory(int direction) {
     historyRepository.moveInUpdateHistory(direction);
   }
-
-  void commitHistory(List<UpdateUnit> updates, String sheetId) {
-    historyRepository.commitHistory(updates, sheetId);
+  
+  void stopEditing(String prevValue) {
+    historyRepository.stopEditing(prevValue);
   }
 }

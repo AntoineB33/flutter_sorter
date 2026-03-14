@@ -11,10 +11,6 @@ class HistoryController extends ChangeNotifier {
   void moveInUpdateHistory(int direction) {
     historyUsecase.moveInUpdateHistory(direction);
   }
-  
-  void commitHistory(UpdateData updateData) {
-    historyUsecase.commitHistory(updateData);
-  }
 
   void undo() {
     moveInUpdateHistory(-1);
