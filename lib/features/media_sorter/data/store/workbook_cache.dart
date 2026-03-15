@@ -24,6 +24,5 @@ class WorkbookCache {
 
   void removeSheet(int index) {
     _recentSheetIds.removeAt(index);
-    _saveController.add(null);
   }
 }

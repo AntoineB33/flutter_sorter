@@ -213,7 +213,7 @@ class TreeRepositoryImpl implements TreeRepository {
         _populateAttributeNode(node, populateChildren);
         break;
       case SpreadsheetConstants.cycleDetected:
-        _handleCycleDetectedTap(node);
+        node.idOnTap = OnTapAction.cycle;
         break;
       case SpreadsheetConstants.attToRefFromDepCol:
         // Delegates back to specific logic inside TreeController if strictly necessary,
@@ -414,13 +414,6 @@ class TreeRepositoryImpl implements TreeRepository {
     }
   }
 
-  // --- Tap Logic Helpers ---
-
-  void _handleCycleDetectedTap(NodeStruct node) {
-    SelectionData selection = lastSelectionBySheet[currentSheetName]!;
-    node.idOnTap = OnTapAction.cycle;
-  }
-
   void _handleDefaultTapLogic(NodeStruct node) {
     if (node.defaultOnTap) {
       if (node.cellsToSelect == null) {
@@ -441,29 +434,7 @@ class TreeRepositoryImpl implements TreeRepository {
           node.cellsToSelect = cells;
         }
       }
-      node.onTap = (n) {
-        if (node.cellsToSelect == null || node.cellsToSelect!.isEmpty) {
-          return;
-        }
-        int found = -1;
-        for (int i = 0; i < node.cellsToSelect!.length; i++) {
-          final child = node.cellsToSelect![i];
-          if (selection.primarySelectedCell.x == child.rowId &&
-              selection.primarySelectedCell.y == child.colId) {
-            found = i;
-            break;
-          }
-        }
-        final nextIndex = (found == -1)
-            ? 0
-            : (found + 1) % node.cellsToSelect!.length;
-        selectionController.setPrimarySelection(
-          currentSheetName,
-          node.cellsToSelect![nextIndex].rowId,
-          node.cellsToSelect![nextIndex].colId,
-          false,
-        );
-      };
+      node.idOnTap = OnTapAction.defaultAction;
       node.defaultOnTap = false;
     }
   }

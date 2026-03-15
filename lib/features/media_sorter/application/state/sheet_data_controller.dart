@@ -31,16 +31,16 @@ class SheetDataController extends ChangeNotifier {
     return sheetDataUsecase.paste();
   }
 
+  Future<void> copyToClipboard() {
+    return sheetDataUsecase.copyToClipboard();
+  }
+
   bool isLoaded(String sheetId) {
     return sheetDataUsecase.containsSheetId(sheetId);
   }
 
   String getCellContent(int row, int col, String sheetId) {
     return sheetDataUsecase.getCellContent(row, col, sheetId);
-  }
-
-  void saveRecentSheetIds() {
-    sheetDataUsecase.saveRecentSheetIds();
   }
 
   void onChanged(String newValue) {

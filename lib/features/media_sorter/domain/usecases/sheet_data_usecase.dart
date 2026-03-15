@@ -83,4 +83,8 @@ class SheetDataUsecase {
   Future<Either<Failure, List<CellUpdate>>> paste() {
     return sheetDataRepository.pasteSelection();
   }
+
+  Future<void> copyToClipboard() {
+    return sheetDataRepository.copySelectionToClipboard();
+  }
 }

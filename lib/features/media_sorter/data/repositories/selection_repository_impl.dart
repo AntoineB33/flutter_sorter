@@ -15,25 +15,25 @@ import 'package:trying_flutter/features/media_sorter/domain/repositories/selecti
 class SelectionRepositoryImpl implements SelectionRepository {
   late ManageWaitingTasks<void> _saveLastSelectionExecutor;
   late ManageWaitingTasks<void> _saveAllLastSelectedExecutor;
-  final FileSheetLocalDataSource saveDataSource;
-  final SelectionCache selectionCache;
-  final LoadedSheetsCache loadedSheetsCache;
-  final WorkbookCache workbookCache;
+  final FileSheetLocalDataSource _saveDataSource;
+  final SelectionCache _selectionCache;
+  final LoadedSheetsCache _loadedSheetsCache;
+  final WorkbookCache _workbookCache;
   final StreamController<Failure> _errorController =
       StreamController<Failure>.broadcast();
 
   @override
   Stream<Failure> get failureStream => _errorController.stream;
-  String get currentSheetId => workbookCache.currentSheetId;
+  String get currentSheetId => _workbookCache.currentSheetId;
   @override
   Point<int> get primarySelectedCell =>
-      selectionCache.getSelectionData(currentSheetId).primarySelectedCell;
+      _selectionCache.getSelectionData(currentSheetId).primarySelectedCell;
 
   SelectionRepositoryImpl(
-    this.saveDataSource,
-    this.selectionCache,
-    this.loadedSheetsCache,
-    this.workbookCache,
+    this._saveDataSource,
+    this._selectionCache,
+    this._loadedSheetsCache,
+    this._workbookCache,
   ) {
     _saveLastSelectionExecutor = ManageWaitingTasks<void>(
       Duration(seconds: 2),
@@ -47,20 +47,20 @@ class SelectionRepositoryImpl implements SelectionRepository {
 
   @override
   SelectionData getSelectionData(String sheetId) {
-    return selectionCache.getSelectionData(sheetId);
+    return _selectionCache.getSelectionData(sheetId);
   }
 
   @override
   void setSelectionData(String sheetId, SelectionData selectionData) {
-    selectionCache.setSelectionData(sheetId, selectionData);
+    _selectionCache.setSelectionData(sheetId, selectionData);
   }
 
   @override
   void selectAll() {
-    SelectionData selection = selectionCache.getSelectionData(currentSheetId);
+    SelectionData selection = _selectionCache.getSelectionData(currentSheetId);
     selection.selectedCells.clear();
-    for (int r = 0; r < loadedSheetsCache.rowCount(currentSheetId); r++) {
-      for (int c = 0; c < loadedSheetsCache.colCount(currentSheetId); c++) {
+    for (int r = 0; r < _loadedSheetsCache.rowCount(currentSheetId); r++) {
+      for (int c = 0; c < _loadedSheetsCache.colCount(currentSheetId); c++) {
         selection.selectedCells.add(Point(r, c));
       }
     }
@@ -69,8 +69,8 @@ class SelectionRepositoryImpl implements SelectionRepository {
   @override
   void saveLastSelection() {
     _saveLastSelectionExecutor.execute(() async {
-      await saveDataSource.saveLastSelection(
-        selectionCache.getSelectionData(currentSheetId),
+      await _saveDataSource.saveLastSelection(
+        _selectionCache.getSelectionData(currentSheetId),
       );
     });
   }
@@ -84,19 +84,24 @@ class SelectionRepositoryImpl implements SelectionRepository {
   @override
   void saveAllLastSelected() {
     _saveAllLastSelectedExecutor.execute(() async {
-      await saveDataSource.saveAllLastSelected(selectionCache.lastSelections);
+      await _saveDataSource.saveAllLastSelected(_selectionCache.lastSelections);
     });
   }
 
   @override
   Future<Either<Failure, void>> loadLastSelection() async {
     final result = await UtilsService.handleDataSourceCall(
-      () => saveDataSource.getLastSelection(),
+      () => _saveDataSource.getLastSelection(),
     );
     return result.fold((failure) => Left(failure), (lastSelection) {
-      selectionCache.setSelectionData(currentSheetId, lastSelection);
+      _selectionCache.setSelectionData(currentSheetId, lastSelection);
       return Right(null);
     });
+  }
+
+  @override
+  bool containsSheetId(String sheetId) {
+    return _selectionCache.containsSheetId(sheetId);
   }
 
   @override
@@ -104,45 +109,20 @@ class SelectionRepositoryImpl implements SelectionRepository {
     bool lastSelectionLoaded,
   ) async {
     final result = await UtilsService.handleDataSourceCall(
-      () => saveDataSource.getAllLastSelected(),
+      () => _saveDataSource.getAllLastSelected(),
     );
     return result.fold((failure) => Left(failure), (ids) {
-      selectionCache.setLastSelections(
+      _selectionCache.setLastSelections(
         ids,
         currentSheetId,
         lastSelectionLoaded,
       );
-      bool selectionCacheChanged = false;
-      bool workbookCacheChanged = false;
-      for (var sheetId in workbookCache.getRecentSheetIds()) {
-        if (!selectionCache.containsSheetId(sheetId)) {
-          selectionCache.setSelectionData(sheetId, SelectionData.empty());
-          selectionCacheChanged = true;
-        }
-      }
-      for (var sheetId in selectionCache.getSheetIds()) {
-        if (!UtilsService.isValidSheetName(sheetId)) {
-          selectionCache.removeSelectionData(sheetId);
-          selectionCacheChanged = true;
-        } else if (!loadedSheetsCache.containsSheetId(sheetId)) {
-          workbookCache.addSheetId(sheetId, 1);
-          workbookCacheChanged = true;
-        }
-      }
-      return selectionCacheChanged || workbookCacheChanged
-          ? Left(
-              CacheRepairedFailure(
-                workbookCacheChanged: workbookCacheChanged,
-                selectionCacheChanged: selectionCacheChanged,
-              ),
-            )
-          : Right(null);
     });
   }
 
   @override
   void setPrimarySelection(int row, int col, bool keepSelection) {
-    SelectionData selection = selectionCache.getSelectionData(currentSheetId);
+    SelectionData selection = _selectionCache.getSelectionData(currentSheetId);
     if (!keepSelection) {
       selection.selectedCells.clear();
     }
@@ -152,6 +132,6 @@ class SelectionRepositoryImpl implements SelectionRepository {
 
   @override
   void clearLastSelection() {
-    selectionCache.setSelectionData(currentSheetId, SelectionData.empty());
+    _selectionCache.setSelectionData(currentSheetId, SelectionData.empty());
   }
 }

@@ -29,6 +29,8 @@ class SpreadsheetCoordinator {
   final TreeController treeController;
 
   String get currentSheetId => workbookController.currentSheetId;
+  Point<int> get primarySelectedCell =>
+      selectionController.getSelectionData(currentSheetId).primarySelectedCell;
 
   SpreadsheetCoordinator(
     this.historyController,
@@ -97,9 +99,6 @@ class SpreadsheetCoordinator {
   }
 
   void setCellContent(String newValue) {
-    final primarySelectedCell = selectionController
-        .getSelectionData(currentSheetId)
-        .primarySelectedCell;
     int rowId = primarySelectedCell.x;
     int colId = primarySelectedCell.y;
     String prevValue = sheetDataController.getCellContent(
@@ -151,7 +150,7 @@ class SpreadsheetCoordinator {
         int found = -1;
         for (int i = 0; i < node.newChildren!.length; i++) {
           final child = node.newChildren![i];
-          if (selectionController.getSelectionData(currentSheetId).primarySelectedCell.x == child.rowId) {
+          if (primarySelectedCell.x == child.rowId) {
             found = i;
             break;
           }
@@ -172,6 +171,29 @@ class SpreadsheetCoordinator {
             true,
           );
         }
+        break;
+      case OnTapAction.defaultAction:
+        if (node.cellsToSelect == null || node.cellsToSelect!.isEmpty) {
+          return;
+        }
+        int found = -1;
+        for (int i = 0; i < node.cellsToSelect!.length; i++) {
+          final child = node.cellsToSelect![i];
+          if (primarySelectedCell.x == child.rowId &&
+              primarySelectedCell.y == child.colId) {
+            found = i;
+            break;
+          }
+        }
+        final nextIndex = (found == -1)
+            ? 0
+            : (found + 1) % node.cellsToSelect!.length;
+        setPrimarySelection(
+          node.cellsToSelect![nextIndex].rowId,
+          node.cellsToSelect![nextIndex].colId,
+          false,
+          true,
+        );
         break;
       default:
         logger.e("No onTap handler for node: ${node.message}");

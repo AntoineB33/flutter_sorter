@@ -7,6 +7,8 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/selection_d
 abstract class SelectionRepository {
   Stream<Failure> get failureStream;
   Point<int> get primarySelectedCell;
+  bool containsSheetId(String sheetId);
+  List<String> getSheetIds();
   Future<Either<Failure, void>> loadLastSelections(bool lastSelectionLoaded);
   Future<Either<Failure, void>> loadLastSelection();
   void saveLastSelection();

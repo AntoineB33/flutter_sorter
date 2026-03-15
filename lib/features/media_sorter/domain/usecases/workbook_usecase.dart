@@ -1,5 +1,6 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
+import 'package:trying_flutter/features/media_sorter/core/utility/utils_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
@@ -43,7 +44,34 @@ class WorkbookUseCase {
   Future<void> loadLastSelections(bool success) async {
     Either<Failure, void> result;
     result = await selectionRepository.loadLastSelections(success);
-    UtilsServices.handleDataCorruption(result);
+    if (!UtilsServices.handleDataCorruption(result)) {
+      return;
+    }
+    bool selectionCacheChanged = false;
+    bool workbookCacheChanged = false;
+    for (var sheetId in workbookRepository.getRecentSheetIds()) {
+      if (!selectionRepository.containsSheetId(sheetId)) {
+        selectionRepository.setSelectionData(sheetId, SelectionData.empty());
+        selectionCacheChanged = true;
+      }
+    }
+    for (var sheetId in selectionRepository.getSheetIds()) {
+      if (!UtilsService.isValidSheetName(sheetId)) {
+        selectionRepository.removeSelectionData(sheetId);
+        selectionCacheChanged = true;
+      } else if (!workbookRepository.containsSheetId(sheetId)) {
+        workbookRepository.addNewSheetId(sheetId, 1);
+        workbookCacheChanged = true;
+      }
+    }
+    return selectionCacheChanged || workbookCacheChanged
+        ? Left(
+            CacheRepairedFailure(
+              workbookCacheChanged: workbookCacheChanged,
+              selectionCacheChanged: selectionCacheChanged,
+            ),
+          )
+        : Right(null);
   }
 
   Future<void> loadSheet(String sheetId, bool init) async {

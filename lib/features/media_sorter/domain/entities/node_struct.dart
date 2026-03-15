@@ -94,4 +94,5 @@ enum OnTapAction {
   selectCell,
   selectAttribute,
   cycle,
+  defaultAction,
 }

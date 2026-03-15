@@ -90,9 +90,11 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
           changed = true;
         }
       }
-      return changed
-          ? Left(CacheRepairedFailure(workbookCacheChanged: changed))
-          : Right(null);
+      if (changed) {
+        saveRecentSheetIds();
+        return Left(CacheRepairedFailure(workbookCacheChanged: true));
+      }
+      return Right(null);
     });
   }
 
