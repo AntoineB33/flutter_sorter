@@ -55,6 +55,10 @@ class AnalysisResultCache {
     return _getAnalysisResult(sheetId).sortedWithValidSort;
   }
 
+  void setFindingBestSort(String sheetId, bool findingBestSort) {
+    _analysisResults[sheetId]!.isFindingBestSort = findingBestSort;
+  }
+
   void updateResults(String sheetId, AnalysisResult newResult) {
     _analysisResults[sheetId] = newResult;
   }

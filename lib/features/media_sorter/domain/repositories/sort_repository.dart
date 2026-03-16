@@ -10,7 +10,9 @@ abstract class SortRepository {
   Future<void> analyze(String sheetId);
   List<String> getSheetIds();
   Future<Either<Failure, void>> loadSortStatus();
-  bool getToApplyNextSort(String sheetId);
+  bool getToApplyOnce(String sheetId);
+  bool getToAlwaysApplyToggle(String sheetId);
+  bool getFindBestSortToggle();
   void setToApplyOnce(String sheetId, bool toApplyOnce);
   bool sortedWithValidSort(String sheetId);
   bool handleSortProgressDataMsg(
@@ -20,14 +22,14 @@ abstract class SortRepository {
   List<UpdateUnit> sortMedia(String sheetId);
   void lightCalculations(String sheetId);
   Future<Stream<SortProgressDataMsg>> launchCalculation(String sheetId);
-  void findBestSortToggle();
   bool showApplySortToggle();
   bool isApplyBetterSortButtonLocked();
   bool isBetterSortFound();
   bool isApplyBetterSortButtonInAction();
-  void applyBetterSortButton();
-  void applySortToggle();
+  bool applyBetterSortButton();
+  void setToAlwaysApply(String sheetId, bool toAlwaysApply);
   Future<Either<Failure, void>> loadAnalysisResult(String sheetId);
   void removeSortStatus(String sheetId);
   void addNewAnalysisResult(String sheetId);
+  void setFindingBestSort(String sheetId, bool value);
 }

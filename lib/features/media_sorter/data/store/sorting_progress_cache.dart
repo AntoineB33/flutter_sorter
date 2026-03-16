@@ -5,7 +5,10 @@ class SortProgressCache {
   final Map<String, SortProgressData> _dataBySheet = {};
 
   bool isValidSortImpossible(String sheetId) {
-    return _dataBySheet.containsKey(sheetId) && _dataBySheet[sheetId]!.cursors.isEmpty;
+    if (!_dataBySheet.containsKey(sheetId)) {
+      return false;
+    }
+    return _dataBySheet[sheetId]!.cursors[0] == _dataBySheet[sheetId]!.possibleIntsById[0].length && _dataBySheet[sheetId]!.bestDistFound.isEmpty;
   }
 
   SortProgressData getSortProgressData(String sheetId) {

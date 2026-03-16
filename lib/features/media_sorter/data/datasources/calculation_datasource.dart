@@ -168,6 +168,7 @@ class CalculationDatasource {
   static void solveSorting(
     (SendPort, Map<int, Map<int, List<SortingRule>>>, List<List<int>>, SortProgressData) args,
   ) {
+    const ITER_BEFORE_SEND = 1000;
     // Destructure the record back into individual variables for easy use
     final (sendPort, rules, groupAttribution, sortProgressData) = args;
 
@@ -189,6 +190,7 @@ class CalculationDatasource {
       final result = getDist(groupAttribution, lastOccurrence, lastOccurrenceIds, bestSortFound, currentDist, id, distCheckId);
       distCheckId = result.newDistCheckId;
     }
+    int iterBeforeSend = ITER_BEFORE_SEND;
     while (id >= 0) {
       possibleIntsById[id] = getValidStarters(n, id, validAreasById[id]);
 
@@ -234,9 +236,13 @@ class CalculationDatasource {
         if (!result.success) {
           found = false;
         } else if (id == n) {
+          iterBeforeSend = ITER_BEFORE_SEND;
           bestDistFound.setAll(0, currentDist);
           sortProgressData.id = id;
           sendPort.send(sortProgressData);
+          if (bestDistFound.every((element) => element == 0)) {
+            return;
+          }
         }
       }
       if (!found) {
@@ -245,6 +251,12 @@ class CalculationDatasource {
         if (id >= 0) {
           cursors[id]++;
         }
+      }
+      iterBeforeSend--;
+      if (iterBeforeSend == 0) {
+        iterBeforeSend = ITER_BEFORE_SEND;
+        sortProgressData.id = id;
+        sendPort.send(sortProgressData);
       }
     }
     if (bestDistFound.isEmpty) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
@@ -17,6 +18,8 @@ class SortController extends ChangeNotifier {
 
   final CalculationService calculationService = CalculationService();
   late StreamSubscription _subscription;
+
+  String get currentSheetId => workbookUsecase.currentSheetId;
 
   SortController(
     this.sheetDataUsecase,
@@ -101,19 +104,27 @@ class SortController extends ChangeNotifier {
     return sortUseCase.isApplyBetterSortButtonInAction();
   }
 
-  void applyBetterSortButton() {
-    sortUseCase.applyBetterSortButton();
+  bool applyBetterSortButton() {
+    return sortUseCase.applyBetterSortButton();
   }
 
-  void findBestSortToggle() {
-    sortUseCase.findBestSortToggle();
+  bool getFindBestSortToggle() {
+    return sortUseCase.getFindBestSortToggle();
+  }
+
+  bool getToAlwaysApplyToggle() {
+    return sortUseCase.getToAlwaysApplyToggle();
+  }
+
+  void findBestSortToggle(bool value) {
+    sortUseCase.setFindingBestSort(currentSheetId, value);
   }
 
   bool showApplySortToggle() {
     return sortUseCase.showApplySortToggle();
   }
 
-  void applySortToggle() {
-    sortUseCase.applySortToggle();
+  void alwaysApplySortToggle(bool toAlwaysApply) {
+    sortUseCase.setToAlwaysApply(currentSheetId, toAlwaysApply);
   }
 }

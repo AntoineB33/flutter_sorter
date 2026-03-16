@@ -102,22 +102,14 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  void applyBetterSortButton() {
+  bool applyBetterSortButton() {
     if (isBetterSortFound()) {
       sortMedia(currentSheetId);
+    } else if (isSorting(currentSheetId)) {
+      setToApplyOnce(currentSheetId, true);
     } else {
-      sortStatusCache.setToApplyOnce(currentSheetId, true);
-      saveAllSortStatus();
+      return false;
     }
-  }
-
-  @override
-  void findBestSortToggle() {
-    sortStatusCache.setToAlwaysApply(
-      currentSheetId,
-      !sortStatusCache.getToAlwaysApply(currentSheetId),
-    );
-    saveAllSortStatus();
   }
 
   @override
@@ -126,10 +118,10 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  void applySortToggle() {
+  void setToAlwaysApply(String sheetId, bool toAlwaysApply) {
     sortStatusCache.setToAlwaysApply(
       currentSheetId,
-      !sortStatusCache.getToAlwaysApply(currentSheetId),
+      toAlwaysApply,
     );
     saveAllSortStatus();
   }
@@ -158,9 +150,12 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  bool getToApplyNextSort(String sheetId) =>
-      sortStatusCache.getToAlwaysApply(sheetId) ||
+  bool getToAlwaysApplyToggle(String sheetId) =>
+      sortStatusCache.getToAlwaysApply(sheetId);
+  @override
+  bool getToApplyOnce(String sheetId) =>
       sortStatusCache.getToApplyOnce(sheetId);
+  @override
   @override
   bool sortedWithValidSort(String sheetId) =>
       analysisResultCache.sortedWithValidSort(sheetId);
@@ -329,8 +324,27 @@ class SortRepositoryImpl implements SortRepository {
       sortStatusCache.removeSortStatus(sheetId);
       saveAllSortStatus();
     }
+    if (analysisResultCache.getFindingBestSort(sheetId) &&
+        sortProgressDataMsg.newBestSortFound &&
+        sortProgressDataMsg.sortProgressData.bestDistFound.every(
+          (element) => element == 0,
+        )) {
+      setFindingBestSort(sheetId, false);
+      return true;
+    }
     return sortProgressDataMsg.newBestSortFound &&
         !analysisResultCache.getFindingBestSort(sheetId);
+  }
+
+  @override
+  void setFindingBestSort(String sheetId, bool findingBestSort) {
+    analysisResultCache.setFindingBestSort(sheetId, findingBestSort);
+    saveAnalysisResult(sheetId);
+  }
+
+  @override
+  bool getFindBestSortToggle() {
+    return sortStatusCache.getToAlwaysApply(currentSheetId);
   }
 
   void cancelFindingBestSort(String sheetId) {
@@ -524,13 +538,7 @@ class SortRepositoryImpl implements SortRepository {
     final List<CellUpdate> updates = [];
     for (int rowId = 1; rowId < sortedTable.length; rowId++) {
       for (int colId = 0; colId < sortedTable[rowId].length; colId++) {
-        updates.add(
-          CellUpdate(
-            rowId,
-            colId,
-            sortedTable[rowId][colId]
-          ),
-        );
+        updates.add(CellUpdate(rowId, colId, sortedTable[rowId][colId]));
       }
     }
     _sortResult(sortOrder, sheetId);

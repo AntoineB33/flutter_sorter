@@ -64,20 +64,20 @@ class SortUsecase {
     return sortRepository.isApplyBetterSortButtonInAction();
   }
 
-  void applyBetterSortButton() {
-    sortRepository.applyBetterSortButton();
+  bool applyBetterSortButton() {
+    return sortRepository.applyBetterSortButton();
   }
 
-  void findBestSortToggle() {
-    sortRepository.findBestSortToggle();
+  void setFindingBestSort(String sheetId, bool value) {
+    sortRepository.setFindingBestSort(sheetId, value);
   }
 
   bool showApplySortToggle() {
     return sortRepository.showApplySortToggle();
   }
 
-  void applySortToggle() {
-    sortRepository.applySortToggle();
+  void setToAlwaysApply(String sheetId, bool toAlwaysApply) {
+    sortRepository.setToAlwaysApply(sheetId, toAlwaysApply);
   }
 
   Future<Stream<SortProgressDataMsg>> launchCalculation(String sheetId) {
@@ -95,11 +95,20 @@ class SortUsecase {
   }
 
   bool getToApplyNextSort(String sheetId) {
-    return sortRepository.getToApplyNextSort(sheetId);
+    return sortRepository.getToApplyOnce(sheetId) ||
+        sortRepository.getToAlwaysApplyToggle(sheetId);
   }
 
   bool getToApplyOnce(String sheetId) {
-    return sortRepository.getToApplyNextSort(sheetId);
+    return sortRepository.getToApplyOnce(sheetId);
+  }
+
+  bool getFindBestSortToggle() {
+    return sortRepository.getFindBestSortToggle();
+  }
+
+  bool getToAlwaysApplyToggle() {
+    return sortRepository.getToAlwaysApplyToggle(currentSheetId);
   }
 
   void setToApplyOnce(String sheetId, bool toApplyOnce) {
@@ -124,19 +133,24 @@ class SortUsecase {
             sortStatusChanged = true;
           } else if (!sheetDataRepository.containsSheetId(sheetId)) {
             workbookRepository.addNewSheetId(sheetId, 1);
-            selectionRepository.setSelectionData(sheetId, SelectionData.empty());
+            selectionRepository.setSelectionData(
+              sheetId,
+              SelectionData.empty(),
+            );
             workbookSelectionCacheChanged = true;
           }
         }
         if (sortStatusChanged || workbookSelectionCacheChanged) {
-            UtilsServices.handleDataCorruption(Left(
-                CacheRepairedFailure(
-                  sortStatusChanged: sortStatusChanged,
-                  workbookCacheChanged: workbookSelectionCacheChanged,
-                  selectionCacheChanged: workbookSelectionCacheChanged,
-                ),
-              ));
-          }
+          UtilsServices.handleDataCorruption(
+            Left(
+              CacheRepairedFailure(
+                sortStatusChanged: sortStatusChanged,
+                workbookCacheChanged: workbookSelectionCacheChanged,
+                selectionCacheChanged: workbookSelectionCacheChanged,
+              ),
+            ),
+          );
+        }
       },
     );
   }

@@ -154,7 +154,7 @@ class SpreadsheetCoordinator {
         sortController.getToApplyNextSort(sheetId)) {
       final List<UpdateUnit> updates = sortController.sortTable(sheetId);
       applyUpdatesNoSort(updates, sheetId, false, false);
-      if (sortController.getToApplyOnce(sheetId)) {
+      if (sortController.getToApplyNextSort(sheetId)) {
         sortController.setToApplyOnce(sheetId, false);
       }
     }
@@ -237,6 +237,12 @@ class SpreadsheetCoordinator {
         break;
       default:
         logger.e("No onTap handler for node: ${node.message}");
+    }
+  }
+
+  void applyBetterSortButton() {
+    if (!sortController.applyBetterSortButton()) {
+      launchCalculation(currentSheetId);
     }
   }
 

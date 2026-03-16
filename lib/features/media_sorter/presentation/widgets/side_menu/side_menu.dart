@@ -67,8 +67,8 @@ class _SideMenuState extends State<SideMenu> {
         Provider.of<WorkbookController>(context);
     final SelectionController selectionController =
         Provider.of<SelectionController>(context);
-    final SortController sortController = Provider.of<SortController>(context);
-    final TreeController treeController = Provider.of<TreeController>(context);
+    final SortController sortController = context.watch<SortController>();
+    final TreeController treeController = context.watch<TreeController>();
 
     _textEditingController.text = widget.loadDataStore.currentSheetName;
 
@@ -89,88 +89,62 @@ class _SideMenuState extends State<SideMenu> {
 
           const SizedBox(height: 10),
 
-          // 1. Sort Media Button (Blue)
           ElevatedButton(
-            onPressed: sortController.sortToggle,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-              // Size reduction properties:
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              textStyle: const TextStyle(fontSize: 12),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              // Disabled state:
-              disabledBackgroundColor: sortController.sortToggleAvailable()
-                  ? Colors.grey
-                  : (sortController.sortTogglePressed()
-                        ? Colors.amber.withValues(alpha: 0.5)
-                        : Colors.blue.withValues(alpha: 0.5)),
-            ),
-            child: Text(
-              sortController.sortTogglePressed() ? "Stop sorting" : "Sort",
-            ),
+            onPressed: sortController.isApplyBetterSortButtonLocked() ? null : coordinator.applyBetterSortButton,
+            child: const Text("Find better sort"),
           ),
 
-          const SizedBox(height: 8), // Reduced spacing to match smaller buttons
-          // 2. Find Best Sort Button (Orange)
-          ElevatedButton(
-            onPressed: () {
-              if (!sortController.sortToggleAvailable()) {
-                return;
-              }
-              sortController.findBestSort(false);
-              selectionController.stopEditing();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange, // New color
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              textStyle: const TextStyle(fontSize: 12),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              widget.sortStatusDataStore.currentSortStatus.isFindingBestSort &&
-                      !widget
-                          .sortStatusDataStore
-                          .currentSortStatus
-                          .sortWhileFindingBestSort
-                  ? "Stop Find the best order"
-                  : "Find the best order",
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // 3. Find Best Sort & Apply Button (Purple)
-          ElevatedButton(
-            onPressed: () {
-              if (!sortController.sortToggleAvailable()) {
-                return;
-              }
-              sortController.findBestSort(true);
-              selectionController.stopEditing();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purple, // New color
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              textStyle: const TextStyle(fontSize: 12),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              widget.sortStatusDataStore.currentSortStatus.isFindingBestSort &&
-                      widget
-                          .sortStatusDataStore
-                          .currentSortStatus
-                          .sortWhileFindingBestSort
-                  ? "Stop Find the best order & Apply"
-                  : "Find & apply order",
+          const SizedBox(height: 10),
+          // The horizontally scrollable area
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                // --- Toggle 1 ---
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Text('Find best sort'),
+                      const SizedBox(width: 8),
+                      Switch(
+                        value: sortController.getFindBestSortToggle(),
+                        onChanged: sortController.findBestSortToggle,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(width: 16), // Spacing between the toggles
+                
+                // --- Toggle 2 ---
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Text('Feature Two'),
+                      const SizedBox(width: 8),
+                      Switch(
+                        value: sortController.getToAlwaysApplyToggle(),
+                        onChanged: sortController.alwaysApplySortToggle,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // You can add more toggles here, and the Row will continue to scroll horizontally
+              ],
             ),
           ),
-
+        
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 10),
