@@ -13,7 +13,7 @@ import 'package:trying_flutter/utils/logger.dart';
 class SortController extends ChangeNotifier {
   final SheetDataUsecase sheetDataUsecase;
   final SortUsecase sortUseCase;
-  final WorkbookUseCase workbookUsecase;
+  final WorkbookUsecase workbookUsecase;
 
   final CalculationService calculationService = CalculationService();
   late StreamSubscription _subscription;
@@ -62,48 +62,31 @@ class SortController extends ChangeNotifier {
     sortUseCase.lightCalculations(sheetId);
   }
 
-  bool _handleSortProgressDataMsg(
+  Future<Stream<SortProgressDataMsg>> launchCalculation(String sheetId) {
+    return sortUseCase.launchCalculation(sheetId);
+  }
+
+  bool handleSortProgressDataMsg(
     SortProgressDataMsg sortProgressDataMsg,
     String sheetId,
   ) {
-    bool stopLoop = true;
-    try {
-      stopLoop = sortUseCase.handleSortProgressDataMsg(
-        sortProgressDataMsg,
-        sheetId,
-      );
-    } on StateError catch (_) {
-      return true;
-    }
-    if (sortProgressDataMsg.newBestSortFound &&
-        sortUseCase.getToApplyNextSort(sheetId)) {
-      final List<UpdateUnit> updates = sortUseCase.sortTable(sheetId);
-      applyUpdatesNoSort(updates, sheetId, false);
-      if (sortUseCase.getToApplyOnce(sheetId)) {
-        sortUseCase.setToApplyOnce(sheetId, false);
-      }
-    }
-    return stopLoop;
+    return sortUseCase.handleSortProgressDataMsg(sortProgressDataMsg, sheetId);
   }
 
-  Future<void> launchCalculation(String sheetId) async {
-    if (!getAnalysisDone(sheetId)) {
-      await analyze(sheetId);
-    }
-    await for (final SortProgressDataMsg sortProgressDataMsg
-        in await sortUseCase.launchCalculation(sheetId)) {
-      if (_handleSortProgressDataMsg(sortProgressDataMsg, sheetId)) {
-        break;
-      }
-    }
+  bool getToApplyNextSort(String sheetId) {
+    return sortUseCase.getToApplyNextSort(sheetId);
   }
 
-  void applyUpdatesNoSort(
-    List<UpdateUnit> updates,
-    String sheetId,
-    bool isFromHistory,
-  ) {
-    sheetDataUsecase.applyUpdatesNoSort(updates, sheetId, isFromHistory);
+  List<UpdateUnit> sortTable(String sheetId) {
+    return sortUseCase.sortTable(sheetId);
+  }
+
+  bool getToApplyOnce(String sheetId) {
+    return sortUseCase.getToApplyOnce(sheetId);
+  }
+
+  void setToApplyOnce(String sheetId, bool toApplyOnce) {
+    sortUseCase.setToApplyOnce(sheetId, toApplyOnce);
   }
 
   bool isApplyBetterSortButtonLocked() {

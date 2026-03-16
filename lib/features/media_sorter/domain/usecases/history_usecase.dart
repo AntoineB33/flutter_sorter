@@ -6,8 +6,8 @@ class HistoryUsecase {
 
   HistoryUsecase(this.historyRepository);
 
-  void moveInUpdateHistory(int direction) {
-    historyRepository.moveInUpdateHistory(direction);
+  UpdateData? moveInUpdateHistory(int direction) {
+    return historyRepository.moveInUpdateHistory(direction);
   }
   
   void stopEditing(String prevValue) {

@@ -2,22 +2,19 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
-import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/models/scroll_request.dart';
 import 'package:trying_flutter/utils/logger.dart';
-import 'package:uuid/uuid.dart';
-import 'package:rxdart/rxdart.dart';
 
 class SpreadsheetCoordinator {
   final HistoryController historyController;
@@ -51,7 +48,7 @@ class SpreadsheetCoordinator {
     workbookController.loadLastSelections(lastSelectionSuccess);
     sortController.loadSortStatus();
     for (var sheetId in sortController.getRecentSheetIds()) {
-      sortController.launchCalculation(sheetId);
+      launchCalculation(sheetId);
     }
   }
 
@@ -63,6 +60,15 @@ class SpreadsheetCoordinator {
     }
     selectionController.stopEditing('', false);
     await workbookController.loadSheet(sheetId, init);
+    gridController.updateRowColCount(
+      currentSheetId,
+      visibleHeight:
+          selectionController.getScrollOffsetX(currentSheetId) +
+          gridController.row1ToScreenBottomHeight,
+      visibleWidth:
+          selectionController.getScrollOffsetY(currentSheetId) +
+          gridController.colBToScreenRightWidth,
+    );
     if (!init) {
       selectionController.sheetSwitched();
     }
@@ -87,27 +93,22 @@ class SpreadsheetCoordinator {
 
   void delete() {
     final updates = sheetDataController.delete();
-    applyUpdatesAndSort(updates, currentSheetId, false, false);
+    applyUpdatesAndSort(updates, currentSheetId, false, false, false);
   }
 
   void paste() async {
     final result = await sheetDataController.paste();
     result.fold(
       (failure) => logger.e("The pasted text contains unsupported characters."),
-      (updates) => applyUpdatesAndSort(updates, currentSheetId, false, false),
+      (updates) => applyUpdatesAndSort(updates, currentSheetId, false, false, false),
     );
   }
 
   void setCellContent(String newValue) {
     int rowId = primarySelectedCell.x;
     int colId = primarySelectedCell.y;
-    String prevValue = sheetDataController.getCellContent(
-      rowId,
-      colId,
-      currentSheetId,
-    );
-    final updates = [CellUpdate(rowId, colId, newValue, prevValue)];
-    applyUpdatesAndSort(updates, currentSheetId, false, false);
+    final updates = [CellUpdate(rowId, colId, newValue)];
+    applyUpdatesAndSort(updates, currentSheetId, false, false, selectionController.editingMode);
   }
 
   void applyUpdatesAndSort(
@@ -115,20 +116,59 @@ class SpreadsheetCoordinator {
     String sheetId,
     bool isFromHistory,
     bool isFromSort,
+    bool isFromEditing,
   ) {
-    applyUpdatesNoSort(updates, sheetId, isFromHistory);
+    applyUpdatesNoSort(updates, sheetId, isFromHistory, isFromEditing);
     if (!isFromSort) {
       sortController.lightCalculations(sheetId);
-      sortController.launchCalculation(sheetId);
+      launchCalculation(sheetId);
     }
+  }
+
+  Future<void> launchCalculation(String sheetId) async {
+    if (!sortController.getAnalysisDone(sheetId)) {
+      await sortController.analyze(sheetId);
+    }
+    await for (final SortProgressDataMsg sortProgressDataMsg
+        in await sortController.launchCalculation(sheetId)) {
+      if (_handleSortProgressDataMsg(sortProgressDataMsg, sheetId)) {
+        break;
+      }
+    }
+  }
+  
+  bool _handleSortProgressDataMsg(
+    SortProgressDataMsg sortProgressDataMsg,
+    String sheetId,
+  ) {
+    bool stopLoop = true;
+    try {
+      stopLoop = sortController.handleSortProgressDataMsg(
+        sortProgressDataMsg,
+        sheetId,
+      );
+    } on StateError catch (_) {
+      return true;
+    }
+    if (sortProgressDataMsg.newBestSortFound &&
+        sortController.getToApplyNextSort(sheetId)) {
+      final List<UpdateUnit> updates = sortController.sortTable(sheetId);
+      applyUpdatesNoSort(updates, sheetId, false, false);
+      if (sortController.getToApplyOnce(sheetId)) {
+        sortController.setToApplyOnce(sheetId, false);
+      }
+    }
+    return stopLoop;
   }
 
   void applyUpdatesNoSort(
     List<UpdateUnit> updates,
     String sheetId,
     bool isFromHistory,
+    bool isFromEditing,
   ) {
-    sortController.applyUpdatesNoSort(updates, sheetId, isFromHistory);
+    sheetDataController.applyUpdatesNoSort(updates, sheetId, isFromHistory, isFromEditing);
+    gridController.adjustRowHeightAfterUpdate(sheetId, updates);
   }
   
   void onTap(NodeStruct node) {
@@ -213,4 +253,138 @@ class SpreadsheetCoordinator {
     setPrimarySelection(0, 0, true, true);
     selectionController.selectAll();
   }
+
+  void undo() {
+    moveInUpdateHistory(-1);
+  }
+
+  void redo() {
+    moveInUpdateHistory(1);
+  }
+
+  void moveInUpdateHistory(int direction) {
+    final updateData = historyController.moveInUpdateHistory(direction);
+    if (updateData != null) {
+      applyUpdatesAndSort(updateData.updates, updateData.sheetId, true, false, false);
+    }
+  }
+
+  KeyEventResult handle(
+    BuildContext context,
+    KeyEvent event,
+    HistoryController historyController,
+  ) {
+    if (selectionController.editingMode) {
+      return KeyEventResult.ignored;
+    }
+
+    if (event is KeyUpEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    final keyLabel = event.logicalKey.keyLabel.toLowerCase();
+    final logicalKey = event.logicalKey;
+    final isControl =
+        HardwareKeyboard.instance.isControlPressed ||
+        HardwareKeyboard.instance.isMetaPressed;
+    final isAlt = HardwareKeyboard.instance.isAltPressed;
+
+    if (logicalKey == LogicalKeyboardKey.enter ||
+        logicalKey == LogicalKeyboardKey.numpadEnter) {
+      selectionController.startEditing();
+      return KeyEventResult.handled;
+    }
+
+    if (logicalKey == LogicalKeyboardKey.arrowUp) {
+      selectionController.setPrimarySelection(
+        max(primarySelectedCell.x - 1, 0),
+        primarySelectedCell.y,
+        false,
+      );
+      return KeyEventResult.handled;
+    } else if (logicalKey == LogicalKeyboardKey.arrowDown) {
+      selectionController.setPrimarySelection(
+        primarySelectedCell.x + 1,
+        primarySelectedCell.y,
+        false,
+      );
+      return KeyEventResult.handled;
+    } else if (logicalKey == LogicalKeyboardKey.arrowLeft) {
+      selectionController.setPrimarySelection(
+        primarySelectedCell.x,
+        max(0, primarySelectedCell.y - 1),
+        false,
+      );
+      return KeyEventResult.handled;
+    } else if (logicalKey == LogicalKeyboardKey.arrowRight) {
+      selectionController.setPrimarySelection(
+        primarySelectedCell.x,
+        primarySelectedCell.y + 1,
+        false,
+      );
+      return KeyEventResult.handled;
+    }
+
+    if (isControl && keyLabel == 'c') {
+      sheetDataController.copyToClipboard();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selection copied'),
+          duration: Duration(milliseconds: 500),
+        ),
+      );
+      return KeyEventResult.handled;
+    } else if (isControl && keyLabel == 'v') {
+      paste();
+    } else if (keyLabel == 'delete' || keyLabel == 'backspace') {
+      delete();
+      return KeyEventResult.handled;
+    } else if (isControl && keyLabel == 'z') {
+      undo();
+      return KeyEventResult.handled;
+    } else if (isControl && keyLabel == 'y') {
+      redo();
+      return KeyEventResult.handled;
+    }
+
+    final bool isPrintable =
+        event.character != null &&
+        event.character!.isNotEmpty &&
+        !isControl &&
+        !isAlt &&
+        logicalKey.keyId > 32;
+
+    if (isPrintable) {
+      startEditing(initialInput: event.character);
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+  
+
+  void applyDefaultColumnSequence() {
+    applyUpdatesAndSort([
+        ColumnTypeUpdate(
+          1,
+          ColumnType.dependencies,
+        ),
+        ColumnTypeUpdate(
+          2,
+          ColumnType.dependencies,
+        ),
+        ColumnTypeUpdate(
+          3,
+          ColumnType.dependencies,
+        ),
+        ColumnTypeUpdate(7, ColumnType.urls),
+        ColumnTypeUpdate(
+          8,
+          ColumnType.dependencies,
+        ),
+      ], currentSheetId, false, false, false
+    );
+  }
+
+
 }

@@ -49,15 +49,7 @@ class SheetData {
     );
   }
 
-  // Uses the generated code, but keeps your custom error handling!
-  factory SheetData.fromJson(Map<String, dynamic> json) {
-    try {
-      return _$SheetDataFromJson(json);
-    } catch (e) {
-      debugPrint("Error parsing SheetData from JSON: $e");
-      return SheetData.empty();
-    }
-  }
+  factory SheetData.fromJson(Map<String, dynamic> json) => _$SheetDataFromJson(json);
 
   Map<String, dynamic> toJson() => _$SheetDataToJson(this);
 }

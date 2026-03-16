@@ -35,6 +35,14 @@ class SelectionUsecase {
     _failureSubscription.cancel();
   }
 
+  double getScrollOffsetX(String sheetId) {
+    return selectionRepository.getScrollOffsetX(sheetId);
+  }
+
+  double getScrollOffsetY(String sheetId) {
+    return selectionRepository.getScrollOffsetY(sheetId);
+  }
+
   void clearLastSelection() {
     selectionRepository.clearLastSelection();
   }

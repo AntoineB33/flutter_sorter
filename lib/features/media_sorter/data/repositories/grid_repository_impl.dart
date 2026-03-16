@@ -18,6 +18,8 @@ class GridRepositoryImpl implements GridRepository {
   final WorkbookCache workbookCache;
   final SelectionCache selectionCache;
 
+  String get currentSheetId => workbookCache.currentSheetId;
+
   GridRepositoryImpl(this.loadedSheetsCache, this.workbookCache, this.selectionCache);
 
   int rowCount(String sheetId) {
@@ -139,21 +141,21 @@ class GridRepositoryImpl implements GridRepository {
   }
 
   @override
-  bool adjustRowHeightAfterUpdate(String sheetId, List<UpdateUnit> updates) {
+  void adjustRowHeightAfterUpdate(String sheetId, List<UpdateUnit> updates) {
     SheetData sheet = loadedSheetsCache.getSheet(sheetId);
     for (var update in updates) {
       if (update is CellUpdate) {
         final int row = update.rowId;
         final int col = update.colId;
         final String newValue = update.newValue;
-        final String prevValue = update.prevValue;
+        final String prevValue = update.prevValue!;
 
         if (row >= sheet.rowsBottomPos.length &&
-            row >= rowCount(sheet.sheetContent)) {
+            row >= rowCount(sheetId)) {
           break;
         }
 
-        double heightItNeeds = calculateRequiredRowHeight(newValue, col);
+        double heightItNeeds = calculateRequiredRowHeight(sheetId, newValue, col);
 
         if (heightItNeeds > GetDefaultSizes.getDefaultRowHeight() &&
             sheet.rowsBottomPos.length <= row) {
@@ -184,13 +186,14 @@ class GridRepositoryImpl implements GridRepository {
                 if (row < sheet.sheetContent.table.length) {
                   for (
                     int j = 0;
-                    j < colCount(currentSheet.sheetContent);
+                    j < colCount(sheetId);
                     j++
                   ) {
                     if (j == col) continue;
                     newHeight = max(
                       calculateRequiredRowHeight(
-                        currentSheet.sheetContent.table[row][j],
+                        sheetId,
+                        sheet.sheetContent.table[row][j],
                         j,
                       ),
                       newHeight,
@@ -202,56 +205,53 @@ class GridRepositoryImpl implements GridRepository {
                   double heightDiff = currentHeight - newHeight;
                   for (
                     int r = row;
-                    r < currentSheet.rowsBottomPos.length;
+                    r < sheet.rowsBottomPos.length;
                     r++
                   ) {
-                    currentSheet.rowsBottomPos[r] -= heightDiff;
+                    sheet.rowsBottomPos[r] -= heightDiff;
                   }
                   if (newHeight == GetDefaultSizes.getDefaultRowHeight()) {
-                    int removeFrom = currentSheet.rowsBottomPos.length;
+                    int removeFrom = sheet.rowsBottomPos.length;
                     for (
-                      int r = currentSheet.rowsBottomPos.length - 1;
+                      int r = sheet.rowsBottomPos.length - 1;
                       r >= 0;
                       r--
                     ) {
-                      if (r < currentSheet.rowsManuallyAdjustedHeight.length &&
-                              currentSheet.rowsManuallyAdjustedHeight[r] ||
-                          currentSheet.rowsBottomPos[r] >
-                              (r == 0 ? 0 : currentSheet.rowsBottomPos[r - 1]) +
+                      if (r < sheet.rowsManuallyAdjustedHeight.length &&
+                              sheet.rowsManuallyAdjustedHeight[r] ||
+                          sheet.rowsBottomPos[r] >
+                              (r == 0 ? 0 : sheet.rowsBottomPos[r - 1]) +
                                   GetDefaultSizes.getDefaultRowHeight()) {
                         break;
                       }
                       removeFrom--;
                     }
-                    currentSheet.rowsBottomPos = currentSheet.rowsBottomPos
+                    sheet.rowsBottomPos = sheet.rowsBottomPos
                         .sublist(0, removeFrom);
                   }
                 }
               }
             } else if (heightItNeeds > currentHeight) {
               double heightDiff = heightItNeeds - currentHeight;
-              for (int r = row; r < currentSheet.rowsBottomPos.length; r++) {
-                currentSheet.rowsBottomPos[r] =
-                    currentSheet.rowsBottomPos[r] + heightDiff;
+              for (int r = row; r < sheet.rowsBottomPos.length; r++) {
+                sheet.rowsBottomPos[r] =
+                    sheet.rowsBottomPos[r] + heightDiff;
               }
             }
           }
         } else if (heightItNeeds == GetDefaultSizes.getDefaultRowHeight() &&
-            row == currentSheet.rowsBottomPos.length - 1) {
+            row == sheet.rowsBottomPos.length - 1) {
           int i = row;
-          while (currentSheet.rowsBottomPos[i] ==
+          while (sheet.rowsBottomPos[i] ==
                   GetDefaultSizes.getDefaultRowHeight() &&
               row > 0) {
-            currentSheet.rowsBottomPos.removeLast();
+            sheet.rowsBottomPos.removeLast();
             i--;
           }
         }
       }
     }
-    updateRowColCount(
-      false,
-      visibleHeight: row1ToScreenBottomHeight,
-      visibleWidth: colBToScreenRightWidth,
-    );
-  }
+    }
+
+
 }

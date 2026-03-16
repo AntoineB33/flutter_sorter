@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/material.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
@@ -11,6 +10,7 @@ import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_c
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
@@ -144,11 +144,6 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
             startRow + r,
             startCol + c,
             val,
-            loadedSheetsCache.getCellContent(
-              workbookCache.currentSheetId,
-              startRow + r,
-              startCol + c,
-            ),
           ),
         );
       }
@@ -181,13 +176,23 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
+  ColumnType getColumnType(int colId, String sheetId) {
+    return loadedSheetsCache.getColumnType(sheetId, colId);
+  }
+
+  void setSheet(String sheetId, SheetData sheetData) {
+    loadedSheetsCache.setSheet(sheetId, sheetData);
+    scheduleSheetSave(sheetId);
+  }
+
+  @override
   Future<Either<Failure, void>> loadSheet(String sheetId) async {
     if (!loadedSheetsCache.containsSheetId(sheetId)) {
       try {
         SheetData sheet = await dataSource.getSheet(sheetId);
-        loadedSheetsCache.setSheet(sheetId, sheet);
+        setSheet(sheetId, sheet);
       } on CacheException catch (e) {
-        loadedSheetsCache.setSheet(sheetId, SheetData.empty());
+        setSheet(sheetId, SheetData.empty());
         return Left(CacheFailure(e));
       }
     }
@@ -196,8 +201,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
 
   @override
   Future<void> addNewSheet(String sheetId) async {
-    loadedSheetsCache.setSheet(sheetId, SheetData.empty());
-    scheduleSheetSave(sheetId);
+    setSheet(sheetId, SheetData.empty());
   }
 
   @override
@@ -211,14 +215,15 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
           cell.x,
           cell.y,
           '',
-          loadedSheetsCache.getCellContent(
-            workbookCache.currentSheetId,
-            cell.x,
-            cell.y,
-          ),
         ),
       );
     }
     return updates;
+  }
+
+  @override
+  void update(List<UpdateUnit> updates, String sheetId) {
+    loadedSheetsCache.update(updates, sheetId);
+    scheduleSheetSave(sheetId);
   }
 }

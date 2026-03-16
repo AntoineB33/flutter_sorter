@@ -7,7 +7,6 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/gr
 import 'package:trying_flutter/features/media_sorter/application/state/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/managers/spreadsheet_keyboard_delegate.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
@@ -339,7 +338,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       onDoubleTap: () {
         controller.startEditing();
       },
-      onTapOutside: selectionController.stopEditing,
+      onTapOutside: selectionController.stopEditing(previousContent, false),
       onChanged: (newValue) {
         controller.onChanged(newValue);
       },
@@ -359,15 +358,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
             true,
           );
         }
-        selectionController.stopEditing();
-        historyService.commitHistory([
-          CellUpdate(
-            rowId: dataRow,
-            colId: dataCol,
-            prevValue: previousContent,
-            newValue: newValue,
-          ),
-        ]);
+        selectionController.stopEditing(previousContent, true);
         _focusNode.requestFocus();
       },
       onEscape: (String previousContent) {
@@ -477,8 +468,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         position,
         col,
       );
-    } else if (result != null) {
-      debugPrint("Action $result on column $col");
     }
   }
 }

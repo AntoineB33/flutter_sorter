@@ -23,7 +23,7 @@ class GridUsecase {
   double getTargetTop(String sheetId, int rowId) {
     return gridRepository.getTargetTop(sheetId, rowId);
   }
-
+  
   void adjustRowHeightAfterUpdate(String sheetId, List<UpdateUnit> updateData) {
     gridRepository.adjustRowHeightAfterUpdate(sheetId, updateData);
   }

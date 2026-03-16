@@ -16,10 +16,6 @@ class TreeUsecase {
     treeRepository.populateTree(roots);
   }
 
-  void onTap(NodeStruct node) {
-    treeRepository.onTap(node);
-  }
-
   void populateAllTrees(
     NodeStruct mentionsRoot,
     NodeStruct searchRoot,

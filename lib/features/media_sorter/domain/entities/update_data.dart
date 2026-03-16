@@ -33,9 +33,9 @@ class CellUpdate extends UpdateUnit {
   int rowId;
   int colId;
   @JsonKey(includeFromJson: false, includeToJson: false)
-  String prevValue;
+  String? prevValue;
   String newValue;
-  CellUpdate(this.rowId, this.colId, this.newValue, this.prevValue);
+  CellUpdate(this.rowId, this.colId, this.newValue, {this.prevValue});
 
   factory CellUpdate.fromJson(Map<String, dynamic> json) =>
       _$CellUpdateFromJson(json);
@@ -48,7 +48,7 @@ class ColumnTypeUpdate extends UpdateUnit {
   int colId;
   ColumnType newColumnType;
   ColumnType? previousColumnType;
-  ColumnTypeUpdate(this.colId, this.newColumnType, this.previousColumnType);
+  ColumnTypeUpdate(this.colId, this.newColumnType,{ this.previousColumnType});
 
   factory ColumnTypeUpdate.fromJson(Map<String, dynamic> json) =>
       _$ColumnTypeUpdateFromJson(json);

@@ -1,10 +1,6 @@
-import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 
 class SelectionCache {
   final Map<String, SelectionData> _lastSelections = {};
@@ -13,6 +9,14 @@ class SelectionCache {
 
   bool containsSheetId(String sheetId) {
     return _lastSelections.containsKey(sheetId);
+  }
+
+  double getScrollOffsetX(String sheetId) {
+    return _lastSelections[sheetId]?.scrollOffsetX ?? 0.0;
+  }
+
+  double getScrollOffsetY(String sheetId) {
+    return _lastSelections[sheetId]?.scrollOffsetY ?? 0.0;
   }
 
   List<String> getSheetIds() {

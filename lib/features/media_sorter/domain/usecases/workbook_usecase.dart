@@ -10,13 +10,13 @@ import 'package:trying_flutter/features/media_sorter/domain/repositories/workboo
 import 'package:trying_flutter/features/media_sorter/domain/helpers/utils_services.dart';
 import 'package:trying_flutter/utils/logger.dart';
 
-class WorkbookUseCase {
+class WorkbookUsecase {
   final WorkbookRepository workbookRepository;
   final SelectionRepository selectionRepository;
   final SortRepository sortRepository;
   final SheetDataRepository sheetDataRepository;
 
-  WorkbookUseCase(
+  WorkbookUsecase(
     this.workbookRepository,
     this.selectionRepository,
     this.sortRepository,
@@ -64,14 +64,16 @@ class WorkbookUseCase {
         workbookCacheChanged = true;
       }
     }
-    return selectionCacheChanged || workbookCacheChanged
-        ? Left(
-            CacheRepairedFailure(
-              workbookCacheChanged: workbookCacheChanged,
-              selectionCacheChanged: selectionCacheChanged,
-            ),
-          )
-        : Right(null);
+    if (selectionCacheChanged || workbookCacheChanged) {
+      UtilsServices.handleDataCorruption(
+        Left(
+          CacheRepairedFailure(
+            workbookCacheChanged: workbookCacheChanged,
+            selectionCacheChanged: selectionCacheChanged,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> loadSheet(String sheetId, bool init) async {
@@ -87,31 +89,17 @@ class WorkbookUseCase {
         );
         final success = UtilsServices.handleDataCorruption(result);
         if (!success) {
-          selectionRepository.clearLastSelection(sheetId);
+          selectionRepository.clearSheetSelection(sheetId);
         }
       }
     } else {
-      workbookRepository.addNewSheetId(sheetId);
+      workbookRepository.addNewSheetId(sheetId, 0);
       sheetDataRepository.addNewSheet(sheetId);
       sortRepository.addNewAnalysisResult(sheetId);
-      selectionRepository.clearLastSelection(sheetId);
+      selectionRepository.clearSheetSelection(sheetId);
     }
-    currentSheetName = sheetId;
     if (!init) {
       selectionRepository.saveLastSelection();
     }
-
-    // Trigger Controller updates
-    selectionController.updateRowColCount(
-      sheet,
-      currentSheetName,
-      visibleHeight:
-          selectionController.scrollOffsetX +
-          _gridController.row1ToScreenBottomHeight,
-      visibleWidth:
-          selectionController.scrollOffsetY +
-          _gridController.colBToScreenRightWidth,
-      notify: false,
-    );
   }
 }

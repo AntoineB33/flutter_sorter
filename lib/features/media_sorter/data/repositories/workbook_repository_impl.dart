@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/utils_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
@@ -12,7 +13,7 @@ import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.d
 import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
 
 class WorkbookRepositoryImpl implements WorkbookRepository {
-  final FileSheetLocalDataSource fileSheetLocalDataSource;
+  final IFileSheetLocalDataSource fileSheetLocalDataSource;
 
   final LoadedSheetsCache loadedSheetsCache;
   final SelectionCache selectionCache;

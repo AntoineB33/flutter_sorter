@@ -8,15 +8,7 @@ class HistoryController extends ChangeNotifier {
 
   HistoryController(this.historyUsecase);
 
-  void moveInUpdateHistory(int direction) {
-    historyUsecase.moveInUpdateHistory(direction);
-  }
-
-  void undo() {
-    moveInUpdateHistory(-1);
-  }
-
-  void redo() {
-    moveInUpdateHistory(1);
+  UpdateData? moveInUpdateHistory(int direction) {
+    return historyUsecase.moveInUpdateHistory(direction);
   }
 }

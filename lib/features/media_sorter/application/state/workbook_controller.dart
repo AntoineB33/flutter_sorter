@@ -6,7 +6,7 @@ import 'package:trying_flutter/features/media_sorter/domain/helpers/calculation_
 
 class WorkbookController extends ChangeNotifier {
   // --- usecases ---
-  final WorkbookUseCase workbookUseCase;
+  final WorkbookUsecase workbookUseCase;
   final SortUsecase sortUseCase;
   final CalculationService calculationService = CalculationService();
 
@@ -35,9 +35,7 @@ class WorkbookController extends ChangeNotifier {
     return workbookUseCase.getRecentSheetIds();
   }
 
-  Future<void> loadSheet(
-    String name,
-    bool init) async {
+  Future<void> loadSheet(String name, bool init) async {
     workbookUseCase.loadSheet(name, init);
     notifyListeners();
   }

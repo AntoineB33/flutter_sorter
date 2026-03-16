@@ -1,24 +1,9 @@
 import 'dart:async';
-import 'dart:math';
-import 'package:isar/isar.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:flutter/foundation.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/history_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/selection_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sort_usecase.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
-import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
-import 'package:uuid/uuid.dart';
 
 class SelectionController extends ChangeNotifier {
   final SelectionUsecase selectionUsecase;
@@ -31,6 +16,14 @@ class SelectionController extends ChangeNotifier {
     this.sortUsecase,
     this.historyUsecase,
   );
+
+  double getScrollOffsetX(String sheetId) {
+    return selectionUsecase.getScrollOffsetX(sheetId);
+  }
+
+  double getScrollOffsetY(String sheetId) {
+    return selectionUsecase.getScrollOffsetY(sheetId);
+  }
 
   SelectionData getSelectionData(String sheetId) {
     return selectionUsecase.getSelectionData(sheetId);

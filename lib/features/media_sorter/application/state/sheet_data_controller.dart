@@ -43,61 +43,16 @@ class SheetDataController extends ChangeNotifier {
     return sheetDataUsecase.getCellContent(row, col, sheetId);
   }
 
-  void onChanged(String newValue) {
-    update(
-      UpdateData(Uuid().v4(), DateTime.now(), [
-        CellUpdate(
-          selectionDataStore.primarySelectedCell.x,
-          selectionDataStore.primarySelectedCell.y,
-          newValue,
-          loadedSheetsData.getCellContent(
-            selectionDataStore.primarySelectedCell.x,
-            selectionDataStore.primarySelectedCell.y,
-          ),
-        ),
-      ]),
-      false,
-    );
-    notifyListeners();
-    scheduleSheetSave(currentSheetName);
-    sortService.calculate(currentSheetName);
-  }
-
   List<CellUpdate> delete() {
     return sheetDataUsecase.delete();
   }
 
-  void applyDefaultColumnSequence() {
-    update(
-      UpdateData(Uuid().v4(), DateTime.now(), [
-        ColumnTypeUpdate(
-          1,
-          ColumnType.dependencies,
-          loadedSheetsData.getColumnType(1),
-        ),
-        ColumnTypeUpdate(
-          2,
-          ColumnType.dependencies,
-          loadedSheetsData.getColumnType(2),
-        ),
-        ColumnTypeUpdate(
-          3,
-          ColumnType.dependencies,
-          loadedSheetsData.getColumnType(3),
-        ),
-        ColumnTypeUpdate(7, ColumnType.urls, loadedSheetsData.getColumnType(7)),
-        ColumnTypeUpdate(
-          8,
-          ColumnType.dependencies,
-          loadedSheetsData.getColumnType(8),
-        ),
-      ]),
-      true,
-    );
-  }
-
-  void setCellContent(Point<int> cell, String newVal) {
-    sheetDataUsecase.setCellContent(cell, newVal);
-    notifyListeners();
+  void applyUpdatesNoSort(
+    List<UpdateUnit> updates,
+    String sheetId,
+    bool isFromHistory,
+      bool isFromEditing,
+  ) {
+    sheetDataUsecase.applyUpdatesNoSort(updates, sheetId, isFromHistory, isFromEditing);
   }
 }

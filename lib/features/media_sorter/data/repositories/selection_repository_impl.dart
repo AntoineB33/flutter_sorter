@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/utils_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
@@ -15,7 +16,7 @@ import 'package:trying_flutter/features/media_sorter/domain/repositories/selecti
 class SelectionRepositoryImpl implements SelectionRepository {
   late ManageWaitingTasks<void> _saveLastSelectionExecutor;
   late ManageWaitingTasks<void> _saveAllLastSelectedExecutor;
-  final FileSheetLocalDataSource _saveDataSource;
+  final IFileSheetLocalDataSource _saveDataSource;
   final SelectionCache _selectionCache;
   final LoadedSheetsCache _loadedSheetsCache;
   final WorkbookCache _workbookCache;
@@ -25,9 +26,11 @@ class SelectionRepositoryImpl implements SelectionRepository {
   @override
   Stream<Failure> get failureStream => _errorController.stream;
   String get currentSheetId => _workbookCache.currentSheetId;
+  SelectionData get selection =>
+      _selectionCache.getSelectionData(_workbookCache.currentSheetId);
   @override
   Point<int> get primarySelectedCell =>
-      _selectionCache.getSelectionData(currentSheetId).primarySelectedCell;
+      selection.primarySelectedCell;
 
   SelectionRepositoryImpl(
     this._saveDataSource,
@@ -46,31 +49,56 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
-  SelectionData getSelectionData(String sheetId) {
-    return _selectionCache.getSelectionData(sheetId);
-  }
-
-  @override
   void setSelectionData(String sheetId, SelectionData selectionData) {
     _selectionCache.setSelectionData(sheetId, selectionData);
+    saveAllLastSelected();
+  }
+  
+  @override
+  void removeSelectionData(String sheetId) {
+    _selectionCache.removeSelectionData(sheetId);
+    saveAllLastSelected();
   }
 
   @override
   void selectAll() {
-    SelectionData selection = _selectionCache.getSelectionData(currentSheetId);
     selection.selectedCells.clear();
     for (int r = 0; r < _loadedSheetsCache.rowCount(currentSheetId); r++) {
       for (int c = 0; c < _loadedSheetsCache.colCount(currentSheetId); c++) {
         selection.selectedCells.add(Point(r, c));
       }
     }
+    saveLastSelection();
+  }
+
+  @override
+  Future<Either<Failure, void>> loadLastSelections(
+    bool lastSelectionLoaded,
+  ) async {
+    final result = await UtilsService.handleDataSourceCall(
+      () => _saveDataSource.getAllLastSelected(),
+    );
+    return result.fold((failure) => Left(failure), (ids) {
+      _selectionCache.setLastSelections(
+        ids,
+        currentSheetId,
+        lastSelectionLoaded,
+      );
+      saveAllLastSelected();
+      return Right(null);
+    });
+  }
+
+  @override
+  SelectionData getSelectionData(String sheetId) {
+    return _selectionCache.getSelectionData(sheetId);
   }
 
   @override
   void saveLastSelection() {
     _saveLastSelectionExecutor.execute(() async {
       await _saveDataSource.saveLastSelection(
-        _selectionCache.getSelectionData(currentSheetId),
+        selection,
       );
     });
   }
@@ -94,7 +122,7 @@ class SelectionRepositoryImpl implements SelectionRepository {
       () => _saveDataSource.getLastSelection(),
     );
     return result.fold((failure) => Left(failure), (lastSelection) {
-      _selectionCache.setSelectionData(currentSheetId, lastSelection);
+      setSelectionData(currentSheetId, lastSelection);
       return Right(null);
     });
   }
@@ -105,24 +133,22 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
-  Future<Either<Failure, void>> loadLastSelections(
-    bool lastSelectionLoaded,
-  ) async {
-    final result = await UtilsService.handleDataSourceCall(
-      () => _saveDataSource.getAllLastSelected(),
-    );
-    return result.fold((failure) => Left(failure), (ids) {
-      _selectionCache.setLastSelections(
-        ids,
-        currentSheetId,
-        lastSelectionLoaded,
-      );
-    });
+  double getScrollOffsetX(String sheetId) {
+    return _selectionCache.getScrollOffsetX(sheetId);
+  }
+
+  @override
+  double getScrollOffsetY(String sheetId) {
+    return _selectionCache.getScrollOffsetY(sheetId);
+  }
+
+  @override
+  List<String> getSheetIds() {
+    return _selectionCache.getSheetIds();
   }
 
   @override
   void setPrimarySelection(int row, int col, bool keepSelection) {
-    SelectionData selection = _selectionCache.getSelectionData(currentSheetId);
     if (!keepSelection) {
       selection.selectedCells.clear();
     }
@@ -132,6 +158,11 @@ class SelectionRepositoryImpl implements SelectionRepository {
 
   @override
   void clearLastSelection() {
-    _selectionCache.setSelectionData(currentSheetId, SelectionData.empty());
+    setSelectionData(currentSheetId, SelectionData.empty());
+  }
+
+  @override
+  void clearSheetSelection(String sheetId) {
+    setSelectionData(sheetId, SelectionData.empty());
   }
 }

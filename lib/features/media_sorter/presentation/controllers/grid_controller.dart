@@ -19,7 +19,6 @@ class GridController extends ChangeNotifier {
   ScrollController get verticalController => _verticalController;
   ScrollController get horizontalController => _horizontalController;
 
-
   // Size of the window: useful to determine how many rows and columns to show.
   // Informed by the UI at startup and each time the user resizes it.
   double row1ToScreenBottomHeight = 0.0;
@@ -31,11 +30,15 @@ class GridController extends ChangeNotifier {
 
   final SheetDataUsecase sheetDataUsecase;
   final GridUsecase gridUsecase;
-  final WorkbookUseCase workbookUsecase;
+  final WorkbookUsecase workbookUsecase;
   final SelectionUsecase selectionUsecase;
 
-  GridController(this.sheetDataUsecase, this.gridUsecase, this.workbookUsecase, this.selectionUsecase);
-
+  GridController(
+    this.sheetDataUsecase,
+    this.gridUsecase,
+    this.workbookUsecase,
+    this.selectionUsecase,
+  );
 
   int rowCount(String sheetId) {
     return sheetDataUsecase.rowCount(sheetId);
@@ -44,36 +47,41 @@ class GridController extends ChangeNotifier {
   int colCount(String sheetId) {
     return sheetDataUsecase.colCount(sheetId);
   }
-  
+
   int minRows(String sheetId, int rowCount, double height) {
     return gridUsecase.minRows(sheetId, rowCount, height);
   }
-  
+
   int minCols(String sheetId, int colCount, double width) {
     return gridUsecase.minCols(sheetId, colCount, width);
   }
-  
-  
+
   void adjustRowHeightAfterUpdate(String sheetId, List<UpdateUnit> updateData) {
     gridUsecase.adjustRowHeightAfterUpdate(sheetId, updateData);
     updateRowColCount(
       sheetId,
-      false,
       visibleHeight: row1ToScreenBottomHeight,
       visibleWidth: colBToScreenRightWidth,
     );
   }
-  
+
   void scrollToCell(int rowId, int colId) {
     String currentSheetId = workbookUsecase.currentSheetId;
-    SelectionData lastSelection = selectionUsecase.getSelectionData(currentSheetId);
+    SelectionData lastSelection = selectionUsecase.getSelectionData(
+      currentSheetId,
+    );
     bool scrollX = true;
     bool scrollY = true;
     SheetData currentSheet = sheetDataUsecase.getSheet(currentSheetId);
     if (rowId > 0) {
       // Vertical Logic
-      final double targetTop = gridUsecase.getTargetTop(currentSheetId, rowId) - gridUsecase.getTargetTop(currentSheetId, 1);
-      final double targetBottom = gridUsecase.getTargetTop(currentSheetId, rowId + 1);
+      final double targetTop =
+          gridUsecase.getTargetTop(currentSheetId, rowId) -
+          gridUsecase.getTargetTop(currentSheetId, 1);
+      final double targetBottom = gridUsecase.getTargetTop(
+        currentSheetId,
+        rowId + 1,
+      );
       final double verticalViewport =
           _verticalController.position.viewportDimension -
           currentSheet.rowHeaderWidth;
@@ -82,7 +90,7 @@ class GridController extends ChangeNotifier {
         lastSelection.scrollOffsetX = targetTop;
       } else if (targetBottom > _verticalController.offset + verticalViewport) {
         lastSelection.scrollOffsetX = targetBottom - verticalViewport;
-        updateRowColCount(currentSheetId, true, visibleHeight: targetBottom);
+        updateRowColCount(currentSheetId, visibleHeight: targetBottom);
       } else {
         scrollY = false;
       }
@@ -90,8 +98,13 @@ class GridController extends ChangeNotifier {
 
     if (colId > 0) {
       // Horizontal Logic
-      final double targetLeft = gridUsecase.getTargetLeft(currentSheetId, colId) - gridUsecase.getTargetLeft(currentSheetId, 1);
-      final double targetRight = gridUsecase.getTargetLeft(currentSheetId, colId + 1);
+      final double targetLeft =
+          gridUsecase.getTargetLeft(currentSheetId, colId) -
+          gridUsecase.getTargetLeft(currentSheetId, 1);
+      final double targetRight = gridUsecase.getTargetLeft(
+        currentSheetId,
+        colId + 1,
+      );
       final double horizontalViewport =
           _horizontalController.position.viewportDimension -
           currentSheet.rowHeaderWidth;
@@ -115,10 +128,12 @@ class GridController extends ChangeNotifier {
       );
     }
   }
-  
+
   void scrollToLastSelection() {
     String currentSheetId = workbookUsecase.currentSheetId;
-    SelectionData lastSelection = selectionUsecase.getSelectionData(currentSheetId);
+    SelectionData lastSelection = selectionUsecase.getSelectionData(
+      currentSheetId,
+    );
     scrollTo(
       ScrollRequest(
         xOffset: lastSelection.scrollOffsetY,
@@ -132,22 +147,20 @@ class GridController extends ChangeNotifier {
   }
 
   void updateRowColCountCurrentSheet(
-    bool notify,{
+    bool notify, {
     double? visibleHeight,
     double? visibleWidth,
   }) {
     String sheetId = workbookUsecase.currentSheetId;
     updateRowColCount(
       sheetId,
-      false,
       visibleHeight: row1ToScreenBottomHeight,
       visibleWidth: colBToScreenRightWidth,
     );
   }
 
   void updateRowColCount(
-    String sheetId,
-    bool notify,{
+    String sheetId, {
     double? visibleHeight,
     double? visibleWidth,
   }) {
@@ -163,24 +176,16 @@ class GridController extends ChangeNotifier {
     }
     if (visibleWidth != null) {
       colBToScreenRightWidth = visibleWidth;
-      targetCols = minCols(
-        sheetId,
-        colCount(sheetId),
-        colBToScreenRightWidth,
-      );
+      targetCols = minCols(sheetId, colCount(sheetId), colBToScreenRightWidth);
     }
     if (targetRows != tableViewRows || targetCols != tableViewCols) {
       tableViewRows = targetRows;
       tableViewCols = targetCols;
-      if (notify) {
-        notifyListeners();
-      }
+      notifyListeners();
     }
   }
 
-  bool isRowValid(
-    int rowId,
-  ) {
+  bool isRowValid(int rowId) {
     return gridUsecase.isRowValid(rowId);
   }
 

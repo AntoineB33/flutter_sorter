@@ -128,15 +128,15 @@ class SortUsecase {
             workbookSelectionCacheChanged = true;
           }
         }
-        return sortStatusChanged || workbookSelectionCacheChanged
-            ? Left(
+        if (sortStatusChanged || workbookSelectionCacheChanged) {
+            UtilsServices.handleDataCorruption(Left(
                 CacheRepairedFailure(
                   sortStatusChanged: sortStatusChanged,
                   workbookCacheChanged: workbookSelectionCacheChanged,
                   selectionCacheChanged: workbookSelectionCacheChanged,
                 ),
-              )
-            : Right(null);
+              ));
+          }
       },
     );
   }

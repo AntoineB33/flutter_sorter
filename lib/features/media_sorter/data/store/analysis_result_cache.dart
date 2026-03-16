@@ -63,5 +63,9 @@ class AnalysisResultCache {
     _analysisResults[sheetId]!.sortedWithValidSort = sorted;
   }
 
+  void addNewAnalysisResult(String sheetId) {
+    _analysisResults[sheetId] = AnalysisResult.empty();
+  }
+
   AnalysisResultCache(this.loadedSheetsDataStore);
 }

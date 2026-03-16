@@ -58,7 +58,6 @@ class AnalysisTreeNode extends StatelessWidget {
               InkWell(
                 onTap: () {
                   treeController.onTap(node);
-                  debugPrint("Selected node: ${node.message}");
                 },
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(

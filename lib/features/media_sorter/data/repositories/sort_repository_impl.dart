@@ -10,7 +10,6 @@ import 'package:trying_flutter/features/media_sorter/data/store/isolate_receive_
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sorting_progress_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
@@ -150,6 +149,12 @@ class SortRepositoryImpl implements SortRepository {
   void removeSortStatus(String sheetId) {
     sortStatusCache.removeSortStatus(sheetId);
     saveAllSortStatus();
+  }
+
+  @override
+  void addNewAnalysisResult(String sheetId) {
+    analysisResultCache.addNewAnalysisResult(sheetId);
+    saveAnalysisResult(sheetId);
   }
 
   @override
@@ -523,8 +528,7 @@ class SortRepositoryImpl implements SortRepository {
           CellUpdate(
             rowId,
             colId,
-            sortedTable[rowId][colId],
-            loadedSheetsCache.getCellContent(sheetId, rowId, colId),
+            sortedTable[rowId][colId]
           ),
         );
       }
