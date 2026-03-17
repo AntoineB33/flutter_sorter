@@ -66,10 +66,7 @@ class _SideMenuState extends State<SideMenu> {
   Widget build(BuildContext context) {
     final SpreadsheetCoordinator coordinator = context.watch<SpreadsheetCoordinator>();
     
-    final WorkbookController workbookController =
-        Provider.of<WorkbookController>(context);
-    final SelectionController selectionController =
-        Provider.of<SelectionController>(context);
+    final WorkbookController workbookController = context.watch<WorkbookController>();
     final SortController sortController = context.watch<SortController>();
     final TreeController treeController = context.watch<TreeController>();
 

@@ -84,7 +84,7 @@ class GridRepositoryImpl implements GridRepository {
   }
 
   
-
+  @override
   double getRowHeight(String sheetId, int row) {
     SheetData sheet = loadedSheetsCache.getSheet(sheetId);
     if (row < sheet.rowsBottomPos.length) {

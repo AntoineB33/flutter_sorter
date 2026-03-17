@@ -35,7 +35,93 @@ import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cach
 
 final sl = GetIt.instance; // sl = Service Locator
 
-Future<void> init() async {
-  final sharedPreferences = await SharedPreferences.getInstance();
-  sl.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
+Future<void> initMediaSorterDependencies() async {
+  IsolateReceivePortsCache isolateReceivePortsCache = IsolateReceivePortsCache();
+
+  IFileSheetLocalDataSource saveDataSource = FileSheetLocalDataSource(sl<SharedPreferences>());
+
+  LoadedSheetsCache loadedSheetsCache = LoadedSheetsCache();
+  SortStatusCache sortStatusCache = SortStatusCache(loadedSheetsCache);
+  AnalysisResultCache analysisResultCache = AnalysisResultCache(
+    loadedSheetsCache,
+  );
+  SelectionCache selectionCache = SelectionCache();
+  WorkbookCache workbookCache = WorkbookCache();
+  SortProgressCache sortProgressCache = SortProgressCache();
+
+  SheetDataRepositoryImpl sheetDataRepository = SheetDataRepositoryImpl(
+    loadedSheetsCache,
+    selectionCache,
+    workbookCache,
+    saveDataSource,
+  );
+  SortRepositoryImpl sortRepository = SortRepositoryImpl(
+    analysisResultCache,
+    loadedSheetsCache,
+    sortProgressCache,
+    sortStatusCache,
+    isolateReceivePortsCache,
+    saveDataSource,
+    selectionCache,
+    workbookCache,
+  );
+  GridRepositoryImpl gridRepository = GridRepositoryImpl(
+    loadedSheetsCache,
+    workbookCache,
+    selectionCache,
+  );
+  HistoryRepositoryImpl historyRepository = HistoryRepositoryImpl(
+    loadedSheetsCache,
+    workbookCache,
+    selectionCache,
+  );
+  WorkbookRepositoryImpl workbookRepository = WorkbookRepositoryImpl(
+    saveDataSource,
+    loadedSheetsCache,
+    selectionCache,
+    sortStatusCache,
+    workbookCache,
+  );
+  SelectionRepositoryImpl selectionRepository = SelectionRepositoryImpl(
+    saveDataSource,
+    selectionCache,
+    loadedSheetsCache,
+    workbookCache,
+  );
+
+  SheetDataUsecase getDataUseCase = SheetDataUsecase(
+    sheetDataRepository: SheetDataRepositoryImpl(
+      loadedSheetsCache,
+      selectionCache,
+      workbookCache,
+      saveDataSource,
+    ),
+    sortRepository: sortRepository,
+    gridRepository: gridRepository,
+    historyRepository: historyRepository,
+  );
+  SheetDataUsecase sheetDataUseCase = SheetDataUsecase(
+    sheetDataRepository: SheetDataRepositoryImpl(
+      loadedSheetsCache,
+      selectionCache,
+      workbookCache,
+      saveDataSource,
+    ),
+    sortRepository: sortRepository,
+    gridRepository: gridRepository,
+    historyRepository: historyRepository,
+  );
+  SortUsecase sortUsecase = SortUsecase(
+    sortRepository,
+    sheetDataRepository,
+    workbookRepository,
+    selectionRepository,
+  );
+  WorkbookUsecase workbookUsecase = WorkbookUsecase(workbookRepository, selectionRepository, sortRepository, sheetDataRepository);
+
+  SortController sortController = SortController(
+    sheetDataUseCase,
+    sortUsecase,
+    workbookUsecase,
+  );
 }

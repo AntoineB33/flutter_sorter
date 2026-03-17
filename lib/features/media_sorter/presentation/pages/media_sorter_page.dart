@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:trying_flutter/features/media_sorter/application/coordinators/spreadsheet_coordinator.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
 import 'package:trying_flutter/injection_container.dart';
@@ -18,9 +20,10 @@ class MediaSorterPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // 1. Data Controller (The Model)
+        ChangeNotifierProvider(create: (_) => sl<SpreadsheetCoordinator>()),
         ChangeNotifierProvider(create: (_) => sl<WorkbookController>()),
         ChangeNotifierProvider(create: (_) => sl<TreeController>()),
+        ChangeNotifierProvider(create: (_) => sl<SortController>()),
       ],
       child: Scaffold(
         appBar: const NavigationDropdown(),

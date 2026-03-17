@@ -40,6 +40,10 @@ class GridController extends ChangeNotifier {
     this.selectionUsecase,
   );
 
+  double getRowHeight(String sheetId, int rowId) {
+    return gridUsecase.getRowHeight(sheetId, rowId);
+  }
+
   int rowCount(String sheetId) {
     return sheetDataUsecase.rowCount(sheetId);
   }

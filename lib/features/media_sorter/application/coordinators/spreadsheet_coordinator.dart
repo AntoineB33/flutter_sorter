@@ -16,7 +16,7 @@ import 'package:trying_flutter/features/media_sorter/application/state/selection
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/utils/logger.dart';
 
-class SpreadsheetCoordinator {
+class SpreadsheetCoordinator extends ChangeNotifier {
   final HistoryController historyController;
   final SheetDataController sheetDataController;
   final GridController gridController;
@@ -39,6 +39,27 @@ class SpreadsheetCoordinator {
     this.treeController,
   ) {
     init();
+    historyController.addListener(() {
+      notifyListeners();
+    });
+    selectionController.addListener(() {
+      notifyListeners();
+    });
+    sheetDataController.addListener(() {
+      notifyListeners();
+    });
+    gridController.addListener(() {
+      notifyListeners();
+    });
+    sortController.addListener(() {
+      notifyListeners();
+    });
+    workbookController.addListener(() {
+      notifyListeners();
+    });
+    treeController.addListener(() {
+      notifyListeners();
+    });
   }
 
   Future<void> init() async {

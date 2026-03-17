@@ -21,23 +21,10 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 
 class SpreadsheetWidget extends StatefulWidget {
-  final GridController gridController;
-  final WorkbookController workbookController;
-  final SheetDataController dataController;
-  final SelectionController selectionController;
-
-  final SelectionCache selectionDataStore;
-  final LoadedSheetsCache dataStore;
 
   // 2. Require it in the constructor
   const SpreadsheetWidget({
     super.key,
-    required this.gridController,
-    required this.workbookController,
-    required this.dataController,
-    required this.selectionController,
-    required this.selectionDataStore,
-    required this.dataStore,
   });
 
   @override
@@ -55,7 +42,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   @override
   void initState() {
     super.initState();
-    _scrollSubscription = widget.gridController.onScrollEvent.listen((
+    _scrollSubscription = gridController.onScrollEvent.listen((
       request,
     ) async {
       if (!_verticalController.hasClients ||
@@ -190,7 +177,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                           columnBuilder: (index) => _buildColumnSpan(index),
                           rowBuilder: (index) => _buildRowSpan(
                             index,
-                            widget.workbookController,
                             widget.gridController,
                           ),
                           cellBuilder: (context, vicinity) =>
@@ -250,12 +236,12 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   TableSpan _buildRowSpan(
     int index,
-    WorkbookController controller,
     GridController gridController,
+    double colHeaderHeight,
   ) {
     if (index == 0) {
       return TableSpan(
-        extent: FixedTableSpanExtent(controller.sheet.colHeaderHeight),
+        extent: FixedTableSpanExtent(colHeaderHeight),
       );
     }
 

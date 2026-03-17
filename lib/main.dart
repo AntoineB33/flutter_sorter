@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trying_flutter/features/media_sorter/media_sorter_injection.dart';
 import 'app.dart';
 import 'core/services/storage_service.dart';
 import 'injection_container.dart' as di;
@@ -9,6 +11,7 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
   await di.init(); // Initialize the dependencies
+  initMediaSorterDependencies();
 
   // Load the saved route before the app interface renders
   final String savedRoute = await StorageService.getLastRoute();

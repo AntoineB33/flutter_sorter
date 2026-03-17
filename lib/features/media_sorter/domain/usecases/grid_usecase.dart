@@ -8,6 +8,10 @@ class GridUsecase {
 
   GridUsecase(this.gridRepository, this.treeRepository);
 
+  double getRowHeight(String sheetId, int rowId) {
+    return gridRepository.getRowHeight(sheetId, rowId);
+  }
+
   int minRows(String sheetId, int rowCount, double height) {
     return gridRepository.minRows(sheetId, rowCount, height);
   }
