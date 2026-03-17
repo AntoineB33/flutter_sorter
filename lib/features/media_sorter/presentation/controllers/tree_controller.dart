@@ -11,12 +11,16 @@ class TreeController extends ChangeNotifier {
   final TreeUsecase treeUsecase;
 
   // --- states ---
+  NodeStruct get errorRoot => treeUsecase.errorRoot;
+  NodeStruct get warningRoot => treeUsecase.warningRoot;
   final NodeStruct mentionsRoot = NodeStruct(
     instruction: SpreadsheetConstants.selectionMsg,
   );
   final NodeStruct searchRoot = NodeStruct(
     instruction: SpreadsheetConstants.searchMsg,
   );
+  NodeStruct get categoriesRoot => treeUsecase.categoriesRoot;
+  NodeStruct get distPairsRoot => treeUsecase.distPairsRoot;
 
   int rowCount(SheetContent content) => content.table.length;
   int colCount(SheetContent content) =>

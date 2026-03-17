@@ -18,8 +18,8 @@ class SideMenu extends StatefulWidget {
 
 class _SideMenuState extends State<SideMenu> {
   late TextEditingController _textEditingController;
-  ScrollController gridController.verticalController;
-  ScrollController gridController.horizontalController;
+  late ScrollController _verticalController;
+  late ScrollController _horizontalController;
 
   @override
   void initState() {
@@ -73,7 +73,7 @@ class _SideMenuState extends State<SideMenu> {
     final SortController sortController = context.watch<SortController>();
     final TreeController treeController = context.watch<TreeController>();
 
-    _textEditingController.text = widget.loadDataStore.currentSheetName;
+    _textEditingController.text = workbookController.currentSheetName;
 
     return Container(
       color: Colors.grey[50],
@@ -88,7 +88,7 @@ class _SideMenuState extends State<SideMenu> {
           const SizedBox(height: 16),
 
           // --- Autocomplete Input Field ---
-          _buildSheetAutocomplete(workbookController),
+          _buildSheetAutocomplete(workbookController, coordinator),
 
           const SizedBox(height: 10),
 
@@ -189,29 +189,34 @@ class _SideMenuState extends State<SideMenu> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             AnalysisTreeNode(
-                              node: widget.analysisDataStore.error,
+                              node: treeController.errorRoot,
                               controller: workbookController,
                               treeController: treeController,
                             ),
                             AnalysisTreeNode(
-                              node: workbookController.warningRoot,
+                              node: treeController.warningRoot,
                               controller: workbookController,
+                              treeController: treeController,
                             ),
                             AnalysisTreeNode(
                               node: treeController.mentionsRoot,
                               controller: workbookController,
+                              treeController: treeController,
                             ),
                             AnalysisTreeNode(
                               node: treeController.searchRoot,
                               controller: workbookController,
+                              treeController: treeController,
                             ),
                             AnalysisTreeNode(
-                              node: workbookController.categoriesRoot,
+                              node: treeController.categoriesRoot,
                               controller: workbookController,
+                              treeController: treeController,
                             ),
                             AnalysisTreeNode(
-                              node: workbookController.distPairsRoot,
+                              node: treeController.distPairsRoot,
                               controller: workbookController,
+                              treeController: treeController,
                             ),
                           ],
                         ),
@@ -227,7 +232,7 @@ class _SideMenuState extends State<SideMenu> {
     );
   }
 
-  Widget _buildSheetAutocomplete(WorkbookController workbookController) {
+  Widget _buildSheetAutocomplete(WorkbookController workbookController, SpreadsheetCoordinator coordinator) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Autocomplete<String>(
@@ -309,7 +314,7 @@ class _SideMenuState extends State<SideMenu> {
             );
           },
           onSelected: (String selection) {
-            coordinator.loadSheet(selection);
+            coordinator.loadSheet(selection, false);
           },
           fieldViewBuilder:
               (context, textController, focusNode, onFieldSubmitted) {
@@ -325,7 +330,7 @@ class _SideMenuState extends State<SideMenu> {
                     suffixIcon: Icon(Icons.table_chart),
                   ),
                   onSubmitted: (String value) {
-                    coordinator.loadSheet(value.trim());
+                    coordinator.loadSheet(value.trim(), false);
                   },
                 );
               },

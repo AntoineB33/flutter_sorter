@@ -65,10 +65,10 @@ class SpreadsheetCoordinator {
     await workbookController.loadSheet(sheetId, init);
     gridController.updateRowColCount(
       currentSheetId,
-      visibleHeight:
+      row1ToScreenBottomHeight:
           selectionController.getScrollOffsetX(currentSheetId) +
           gridController.row1ToScreenBottomHeight,
-      visibleWidth:
+      colBToScreenRightWidth:
           selectionController.getScrollOffsetY(currentSheetId) +
           gridController.colBToScreenRightWidth,
     );
@@ -88,7 +88,7 @@ class SpreadsheetCoordinator {
   ) {
     selectionController.setPrimarySelection(row, col, keepSelection);
     if (scrollTo) {
-      gridController.scrollToCell(row, col);
+      gridController.scrollToCell();
     }
     selectionController.saveLastSelection();
     treeController.updateMentionsContext(row, col);
@@ -139,7 +139,7 @@ class SpreadsheetCoordinator {
     if (!sortController.getAnalysisDone(sheetId)) {
       await sortController.analyze(sheetId);
     }
-    try{
+    try {
       await for (final SortProgressDataMsg sortProgressDataMsg
           in await sortController.launchCalculation(sheetId)) {
         if (_handleSortProgressDataMsg(sortProgressDataMsg, sheetId)) {
@@ -199,6 +199,9 @@ class SpreadsheetCoordinator {
       isFromEditing,
     );
     gridController.adjustRowHeightAfterUpdate(sheetId, updates);
+    if (isFromEditing) {
+      gridController.scrollToCell();
+    }
   }
 
   void onTap(NodeStruct node) {
@@ -315,7 +318,6 @@ class SpreadsheetCoordinator {
   KeyEventResult handle(
     BuildContext context,
     KeyEvent event,
-    HistoryController historyController,
   ) {
     if (selectionController.editingMode) {
       return KeyEventResult.ignored;

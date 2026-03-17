@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:trying_flutter/features/media_sorter/application/coordinators/spreadsheet_coordinator.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/selection_controller.dart';
@@ -24,11 +25,9 @@ class SpreadsheetWidget extends StatefulWidget {
   final WorkbookController workbookController;
   final SheetDataController dataController;
   final SelectionController selectionController;
-  final HistoryService historyService;
 
   final SelectionCache selectionDataStore;
   final LoadedSheetsCache dataStore;
-  final SpreadsheetKeyboardDelegate spreadsheetKeyboardDelegate;
 
   // 2. Require it in the constructor
   const SpreadsheetWidget({
@@ -37,10 +36,8 @@ class SpreadsheetWidget extends StatefulWidget {
     required this.workbookController,
     required this.dataController,
     required this.selectionController,
-    required this.historyService,
     required this.selectionDataStore,
     required this.dataStore,
-    required this.spreadsheetKeyboardDelegate,
   });
 
   @override
@@ -61,7 +58,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     _scrollSubscription = widget.gridController.onScrollEvent.listen((
       request,
     ) async {
-      if (!_verticalController.hasClients || !_horizontalController.hasClients) {
+      if (!_verticalController.hasClients ||
+          !_horizontalController.hasClients) {
         return;
       }
       _isProgrammaticScroll = true;
@@ -113,20 +111,17 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final SpreadsheetCoordinator coordinator = context.watch<SpreadsheetCoordinator>();
+
     return LayoutBuilder(
       builder: (context, constraints) {
         if (!_initialLayoutDone) {
           _initialLayoutDone = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) {
-              widget.gridController.updateRowColCount(
-                true,
-                visibleHeight:
-                    constraints.maxHeight -
-                    widget.workbookController.sheet.colHeaderHeight,
-                visibleWidth:
-                    constraints.maxWidth -
-                    widget.workbookController.sheet.rowHeaderWidth,
+              widget.gridController.updateRowColCountCurrentSheet(
+                heightViewport: constraints.maxHeight,
+                widthViewport: constraints.maxWidth,
               );
             }
           });
@@ -136,7 +131,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           focusNode: _focusNode,
           autofocus: true,
           onKeyEvent: (node, event) {
-            return widget.spreadsheetKeyboardDelegate.handle(context, event);
+            return coordinator.handle(context, event);
           },
           // --------------------------------------------------------
           // SCROLLBAR CONFIGURATION
@@ -205,7 +200,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                                 widget.workbookController,
                                 widget.dataController,
                                 widget.selectionController,
-                                widget.historyService,
                               ),
                         ),
                       );
@@ -230,20 +224,14 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         return false;
       }
       if (notification.metrics.axis == Axis.vertical) {
-        gridController.updateRowColCount(
-          true,
-          visibleHeight:
-              notification.metrics.pixels +
-              notification.metrics.viewportDimension -
-              controller.sheet.colHeaderHeight,
+        gridController.updateRowColCountCurrentSheet(
+          heightPixels: notification.metrics.pixels,
+          heightViewport: notification.metrics.viewportDimension,
         );
       } else if (notification.metrics.axis == Axis.horizontal) {
-        gridController.updateRowColCount(
-          true,
-          visibleWidth:
-              notification.metrics.pixels +
-              notification.metrics.viewportDimension -
-              controller.sheet.rowHeaderWidth,
+        gridController.updateRowColCountCurrentSheet(
+          widthPixels: notification.metrics.pixels,
+          widthViewport: notification.metrics.viewportDimension,
         );
       }
     }
@@ -283,7 +271,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     WorkbookController controller,
     SheetDataController dataController,
     SelectionController selectionController,
-    HistoryService historyService,
   ) {
     final int r = vicinity.row;
     final int c = vicinity.column;
@@ -332,7 +319,13 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
             controller.primarySelectedCell.y != dataCol) {
           controller.stopEditing();
         }
-        controller.setPrimarySelection(_verticalController, dataRow, dataCol, false, true);
+        controller.setPrimarySelection(
+          _verticalController,
+          dataRow,
+          dataCol,
+          false,
+          true,
+        );
         _focusNode.requestFocus();
       },
       onDoubleTap: () {

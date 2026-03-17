@@ -35,6 +35,14 @@ class TreeRepositoryImpl implements TreeRepository {
   String get currentSheetId => workbookCache.currentSheetId;
   AnalysisResult get result => analysisCache.getAnalysisResult(currentSheetId);
   SheetContent get sheetContent => loadedSheetsCache.getSheetContent(currentSheetId);
+  @override
+  NodeStruct get errorRoot => analysisCache.getAnalysisResult(currentSheetId).errorRoot;
+  @override
+  NodeStruct get warningRoot => analysisCache.getAnalysisResult(currentSheetId).warningRoot;
+  @override
+  NodeStruct get categoriesRoot => analysisCache.getAnalysisResult(currentSheetId).categoriesRoot;
+  @override
+  NodeStruct get distPairsRoot => analysisCache.getAnalysisResult(currentSheetId).distPairsRoot;
 
   TreeRepositoryImpl(
     this.analysisCache,

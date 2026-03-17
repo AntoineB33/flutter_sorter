@@ -6,6 +6,10 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 class LoadedSheetsCache {
   final Map<String, SheetData> _loadedSheetsData = {};
 
+  String getName(String sheetId) {
+    return _loadedSheetsData[sheetId]?.sheetName ?? '';
+  }
+
   bool containsSheetId(String sheetId) {
     return _loadedSheetsData.containsKey(sheetId);
   }

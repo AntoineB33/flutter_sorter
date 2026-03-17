@@ -11,6 +11,7 @@ class WorkbookController extends ChangeNotifier {
   final CalculationService calculationService = CalculationService();
 
   String get currentSheetId => workbookUseCase.currentSheetId;
+  String get currentSheetName => workbookUseCase.currentSheetName;
 
   WorkbookController({
     required this.workbookUseCase,

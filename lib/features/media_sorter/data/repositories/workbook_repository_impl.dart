@@ -24,6 +24,8 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   late StreamController<Failure> _failureStreamController;
   @override
   String get currentSheetId => workbookCache.currentSheetId;
+  @override
+  String get currentSheetName => loadedSheetsCache.getName(currentSheetId);
 
   WorkbookRepositoryImpl(
     this.fileSheetLocalDataSource,
