@@ -31,8 +31,11 @@ class HistoryRepositoryImpl implements HistoryRepository {
   @override
   void commitHistory(List<UpdateUnit> updates, String sheetId, bool isFromEditing) {
     final sheet = loadedSheetsDataStore.getSheet(sheetId);
-    if (isFromEditing && isLastChangeInSameEditingMode) {
-      (sheet.updateHistories[sheet.historyIndex] as CellUpdate).newValue = (updates.first as CellUpdate).newValue;
+    if (isFromEditing) {
+      if (isLastChangeInSameEditingMode) {
+        (sheet.updateHistories[sheet.historyIndex] as CellUpdate).newValue = (updates.first as CellUpdate).newValue;
+      }
+      isLastChangeInSameEditingMode = true;
     } else {
       final updateData = UpdateData(chronoIdCounter++, sheetId, updates);
       if (sheet.historyIndex < sheet.updateHistories.length - 1) {
@@ -52,6 +55,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
 
   @override
   void stopEditing(String prevValue) {
+    isLastChangeInSameEditingMode = false;
     final primarySelectedCell = selectionCache.getSelectionData(currentSheetId).primarySelectedCell;
     String newVal = loadedSheetsDataStore.getCellContent(
       currentSheetId,

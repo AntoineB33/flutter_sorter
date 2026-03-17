@@ -7,20 +7,22 @@ part of 'update_data.dart';
 // **************************************************************************
 
 UpdateData _$UpdateDataFromJson(Map<String, dynamic> json) => UpdateData(
-      json['id'] as String,
-      DateTime.parse(json['timestamp'] as String),
+      (json['chronoId'] as num).toInt(),
+      json['sheetId'] as String,
       (json['updates'] as List<dynamic>)
-          .map((e) =>
-              const UpdateUnitConverter().fromJson(e as Map<String, dynamic>))
+          .map((e) => UpdateUnit.fromJson(e as Map<String, dynamic>))
           .toList(),
+      timestamp: json['timestamp'] == null
+          ? null
+          : DateTime.parse(json['timestamp'] as String),
     );
 
 Map<String, dynamic> _$UpdateDataToJson(UpdateData instance) =>
     <String, dynamic>{
-      'id': instance.id,
       'timestamp': instance.timestamp.toIso8601String(),
-      'updates':
-          instance.updates.map(const UpdateUnitConverter().toJson).toList(),
+      'chronoId': instance.chronoId,
+      'sheetId': instance.sheetId,
+      'updates': instance.updates.map((e) => e.toJson()).toList(),
     };
 
 SheetNameUpdate _$SheetNameUpdateFromJson(Map<String, dynamic> json) =>
@@ -39,7 +41,7 @@ CellUpdate _$CellUpdateFromJson(Map<String, dynamic> json) => CellUpdate(
       (json['rowId'] as num).toInt(),
       (json['colId'] as num).toInt(),
       json['newValue'] as String,
-      json['prevValue'] as String,
+      prevValue: json['prevValue'] as String?,
     );
 
 Map<String, dynamic> _$CellUpdateToJson(CellUpdate instance) =>
@@ -54,7 +56,8 @@ ColumnTypeUpdate _$ColumnTypeUpdateFromJson(Map<String, dynamic> json) =>
     ColumnTypeUpdate(
       (json['colId'] as num).toInt(),
       $enumDecode(_$ColumnTypeEnumMap, json['newColumnType']),
-      $enumDecodeNullable(_$ColumnTypeEnumMap, json['previousColumnType']),
+      previousColumnType:
+          $enumDecodeNullable(_$ColumnTypeEnumMap, json['previousColumnType']),
     );
 
 Map<String, dynamic> _$ColumnTypeUpdateToJson(ColumnTypeUpdate instance) =>

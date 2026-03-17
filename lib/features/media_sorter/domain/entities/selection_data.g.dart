@@ -16,8 +16,6 @@ SelectionData _$SelectionDataFromJson(Map<String, dynamic> json) =>
           .fromJson(json['primarySelectedCell'] as Map<String, dynamic>),
       scrollOffsetX: (json['scrollOffsetX'] as num).toDouble(),
       scrollOffsetY: (json['scrollOffsetY'] as num).toDouble(),
-      editingMode: json['editingMode'] as bool,
-      previousContent: json['previousContent'] as String,
     );
 
 Map<String, dynamic> _$SelectionDataToJson(SelectionData instance) =>
@@ -28,6 +26,4 @@ Map<String, dynamic> _$SelectionDataToJson(SelectionData instance) =>
           const PointConverter().toJson(instance.primarySelectedCell),
       'scrollOffsetX': instance.scrollOffsetX,
       'scrollOffsetY': instance.scrollOffsetY,
-      'editingMode': instance.editingMode,
-      'previousContent': instance.previousContent,
     };

@@ -7,18 +7,15 @@ part of 'sort_status.dart';
 // **************************************************************************
 
 SortStatus _$SortStatusFromJson(Map<String, dynamic> json) => SortStatus(
-  resultCalculated: json['resultCalculated'] as bool,
-  analysisDone: json['validSortFound'] as bool,
-  toSort: json['toSort'] as bool,
-  isFindingBestSort: json['isFindingBestSort'] as bool,
-  sortWhileFindingBestSort: json['sortWhileFindingBestSort'] as bool,
-);
+      toApplyNextBestSort: json['toApplyNextBestSort'] as bool? ?? false,
+      toAlwaysApplyCurrentBestSort:
+          json['toAlwaysApplyCurrentBestSort'] as bool? ?? false,
+      analysisDone: json['analysisDone'] as bool? ?? true,
+    );
 
 Map<String, dynamic> _$SortStatusToJson(SortStatus instance) =>
     <String, dynamic>{
-      'resultCalculated': instance.resultCalculated,
-      'validSortFound': instance.analysisDone,
-      'toSort': instance.toSort,
-      'isFindingBestSort': instance.isFindingBestSort,
-      'sortWhileFindingBestSort': instance.sortWhileFindingBestSort,
+      'toApplyNextBestSort': instance.toApplyNextBestSort,
+      'toAlwaysApplyCurrentBestSort': instance.toAlwaysApplyCurrentBestSort,
+      'analysisDone': instance.analysisDone,
     };

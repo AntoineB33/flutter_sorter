@@ -10,6 +10,7 @@ import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
+import 'package:uuid/uuid.dart';
 
 class WorkbookRepositoryImpl implements WorkbookRepository {
   final IFileSheetLocalDataSource fileSheetLocalDataSource;
@@ -79,25 +80,32 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
       () => fileSheetLocalDataSource.recentSheetIds(),
     );
 
-    return result.fold((failure) => Left(failure), (ids) {
-      workbookCache.setRecentIds(ids);
-      bool changed = false;
-      int offset = 0;
-      for (int i = 0; i < workbookCache.getRecentSheetIds().length; i++) {
-        if (!UtilsService.isValidSheetName(
-          workbookCache.getRecentSheetIds()[i - offset],
-        )) {
-          workbookCache.removeSheet(i - offset);
-          offset++;
-          changed = true;
+    return result.fold(
+      (failure) {
+        // generate sheet id :
+        workbookCache.setRecentIds([Uuid().v4()]);
+        return Left(failure);
+      },
+      (ids) {
+        workbookCache.setRecentIds(ids);
+        bool changed = false;
+        int offset = 0;
+        for (int i = 0; i < workbookCache.getRecentSheetIds().length; i++) {
+          if (!UtilsService.isValidSheetName(
+            workbookCache.getRecentSheetIds()[i - offset],
+          )) {
+            workbookCache.removeSheet(i - offset);
+            offset++;
+            changed = true;
+          }
         }
-      }
-      if (changed) {
-        saveRecentSheetIds();
-        return Left(CacheRepairedFailure(workbookCacheChanged: true));
-      }
-      return Right(null);
-    });
+        if (changed) {
+          saveRecentSheetIds();
+          return Left(CacheRepairedFailure(workbookCacheChanged: true));
+        }
+        return Right(null);
+      },
+    );
   }
 
   @override

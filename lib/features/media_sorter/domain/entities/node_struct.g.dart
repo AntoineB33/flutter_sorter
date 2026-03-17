@@ -33,7 +33,7 @@ NodeStruct _$NodeStructFromJson(Map<String, dynamic> json) => NodeStruct(
           .map((e) => NodeStruct.fromJson(e as Map<String, dynamic>))
           .toList()
       ..isExpanded = json['isExpanded'] as bool
-      ..idOnTap = json['idOnTap'] as String?
+      ..idOnTap = $enumDecodeNullable(_$OnTapActionEnumMap, json['idOnTap'])
       ..defaultOnTap = json['defaultOnTap'] as bool
       ..cellsToSelect = (json['cellsToSelect'] as List<dynamic>?)
           ?.map((e) => Cell.fromJson(e as Map<String, dynamic>))
@@ -56,7 +56,14 @@ Map<String, dynamic> _$NodeStructToJson(NodeStruct instance) =>
       'hideIfEmpty': instance.hideIfEmpty,
       'startOpen': instance.startOpen,
       'isExpanded': instance.isExpanded,
-      'idOnTap': instance.idOnTap,
+      'idOnTap': _$OnTapActionEnumMap[instance.idOnTap],
       'defaultOnTap': instance.defaultOnTap,
       'cellsToSelect': instance.cellsToSelect,
     };
+
+const _$OnTapActionEnumMap = {
+  OnTapAction.selectCell: 'selectCell',
+  OnTapAction.selectAttribute: 'selectAttribute',
+  OnTapAction.cycle: 'cycle',
+  OnTapAction.defaultAction: 'defaultAction',
+};
