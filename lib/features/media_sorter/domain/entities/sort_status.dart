@@ -4,13 +4,13 @@ part 'sort_status.g.dart';
 
 @JsonSerializable()
 class SortStatus {
-  bool toApplyOnce;
-  bool toAlwaysApply;
+  bool toApplyNextBestSort;
+  bool toAlwaysApplyCurrentBestSort;
   bool analysisDone;
 
   SortStatus({
-    this.toApplyOnce = false,
-    this.toAlwaysApply = false,
+    this.toApplyNextBestSort = false,
+    this.toAlwaysApplyCurrentBestSort = false,
     this.analysisDone = true,
   });
 

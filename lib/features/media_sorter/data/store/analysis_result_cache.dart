@@ -7,7 +7,7 @@ class AnalysisResultCache {
 
   final LoadedSheetsCache loadedSheetsDataStore;
 
-  bool getFindingBestSort(String sheetId) {
+  bool isFindingBestSort(String sheetId) {
     return _getAnalysisResult(sheetId).isFindingBestSort;
   }
 
@@ -16,7 +16,7 @@ class AnalysisResultCache {
   }
 
   bool sortedWithCurrentBestSort(String sheetId) {
-    return _getAnalysisResult(sheetId).sortedWithValidSort;
+    return _getAnalysisResult(sheetId).sortedWithCurrentBestSort;
   }
 
   List<bool> isMedium(String sheetId) {
@@ -51,8 +51,12 @@ class AnalysisResultCache {
     return _getAnalysisResult(sheetId).groupsToMaximize.isEmpty;
   }
 
-  bool sortedWithValidSort(String sheetId) {
+  bool isSortedWithValidSort(String sheetId) {
     return _getAnalysisResult(sheetId).sortedWithValidSort;
+  }
+
+  void setSortedWithCurrentBestSort(String sheetId, bool value) {
+    _getAnalysisResult(sheetId).sortedWithCurrentBestSort = value;
   }
 
   void setFindingBestSort(String sheetId, bool findingBestSort) {
@@ -69,6 +73,10 @@ class AnalysisResultCache {
 
   void addNewAnalysisResult(String sheetId) {
     _analysisResults[sheetId] = AnalysisResult.empty();
+  }
+
+  void setValidSortIsImpossible(String sheetId, bool impossible) {
+    _analysisResults[sheetId]!.validSortIsImpossible = impossible;
   }
 
   AnalysisResultCache(this.loadedSheetsDataStore);

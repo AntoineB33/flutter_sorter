@@ -11,7 +11,9 @@ class SortStatusCache {
   Map<String, SortStatus> get sortStatusBySheet => _sortStatusBySheet;
 
   bool isSorting(String sheetId) {
-    return containsSheet(sheetId) && (_sortStatusBySheet[sheetId]!.toApplyOnce || _sortStatusBySheet[sheetId]!.toAlwaysApply);
+    return containsSheet(sheetId) &&
+        (_sortStatusBySheet[sheetId]!.toApplyNextBestSort ||
+            _sortStatusBySheet[sheetId]!.toAlwaysApplyCurrentBestSort);
   }
 
   bool containsSheet(String sheetId) {
@@ -19,7 +21,12 @@ class SortStatusCache {
   }
 
   bool getToApplyOnce(String sheetId) {
-    return _sortStatusBySheet[sheetId]?.toApplyOnce ?? false;
+    return _sortStatusBySheet[sheetId]?.toApplyNextBestSort ?? false;
+  }
+
+  bool willNextBestSortBeApplied(String sheetId) {
+    return _sortStatusBySheet[sheetId]!.toApplyNextBestSort ||
+        _sortStatusBySheet[sheetId]!.toAlwaysApplyCurrentBestSort;
   }
 
   List<String> getSheetIds() {
@@ -30,19 +37,19 @@ class SortStatusCache {
     return _sortStatusBySheet[sheetId]?.analysisDone ?? false;
   }
 
-  bool getToAlwaysApply(String sheetId) {
-    return _sortStatusBySheet[sheetId]?.toAlwaysApply ?? false;
+  bool isCurrentBestSortAlwaysApplied(String sheetId) {
+    return _sortStatusBySheet[sheetId]?.toAlwaysApplyCurrentBestSort ?? false;
   }
 
-  void setToApplyOnce(String sheetId, bool toSortOnce) {
+  void setToApplyOnce(String sheetId, bool value) {
     if (_sortStatusBySheet.containsKey(sheetId)) {
-      _sortStatusBySheet[sheetId]!.toApplyOnce = toSortOnce;
+      _sortStatusBySheet[sheetId]!.toApplyNextBestSort = value;
     }
   }
 
-  void setToAlwaysApply(String sheetId, bool toAlwaysApply) {
+  void setToAlwaysApplyBestSort(String sheetId, bool toAlwaysApply) {
     if (_sortStatusBySheet.containsKey(sheetId)) {
-      _sortStatusBySheet[sheetId]!.toAlwaysApply = toAlwaysApply;
+      _sortStatusBySheet[sheetId]!.toAlwaysApplyCurrentBestSort = toAlwaysApply;
     }
   }
 

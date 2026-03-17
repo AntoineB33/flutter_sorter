@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:trying_flutter/features/media_sorter/application/coordinators/spreadsheet_coordinator.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
@@ -63,6 +64,8 @@ class _SideMenuState extends State<SideMenu> {
 
   @override
   Widget build(BuildContext context) {
+    final SpreadsheetCoordinator coordinator = context.watch<SpreadsheetCoordinator>();
+    
     final WorkbookController workbookController =
         Provider.of<WorkbookController>(context);
     final SelectionController selectionController =
@@ -89,9 +92,15 @@ class _SideMenuState extends State<SideMenu> {
 
           const SizedBox(height: 10),
 
-          ElevatedButton(
-            onPressed: sortController.isApplyBetterSortButtonLocked() ? null : coordinator.applyBetterSortButton,
-            child: const Text("Find better sort"),
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: sortController.isApplyBetterSortButtonLocked() ? null : coordinator.applyBetterSortButton,
+                child: const Text("Find better sort"),
+              ),
+              const SizedBox(width: 16),
+              Text(sortController.isSortedWithValidSort() ? "Sorted" : "Not Sorted"),
+            ],
           ),
 
           const SizedBox(height: 10),
@@ -112,7 +121,7 @@ class _SideMenuState extends State<SideMenu> {
                       const Text('Find best sort'),
                       const SizedBox(width: 8),
                       Switch(
-                        value: sortController.getFindBestSortToggle(),
+                        value: sortController.isFindingBestSort(),
                         onChanged: sortController.findBestSortToggle,
                       ),
                     ],
@@ -133,8 +142,8 @@ class _SideMenuState extends State<SideMenu> {
                       const Text('Feature Two'),
                       const SizedBox(width: 8),
                       Switch(
-                        value: sortController.getToAlwaysApplyToggle(),
-                        onChanged: sortController.alwaysApplySortToggle,
+                        value: sortController.isCurrentBestSortAlwaysApplied(),
+                        onChanged: sortController.isAlwaysApplySortToggleLocked() ? null : coordinator.alwaysApplySortToggle,
                       ),
                     ],
                   ),

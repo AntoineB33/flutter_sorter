@@ -76,55 +76,63 @@ class SortController extends ChangeNotifier {
     return sortUseCase.handleSortProgressDataMsg(sortProgressDataMsg, sheetId);
   }
 
-  bool getToApplyNextSort(String sheetId) {
-    return sortUseCase.getToApplyNextSort(sheetId);
+  bool willNextBestSortBeApplied(String sheetId) {
+    return sortUseCase.willNextBestSortBeApplied(sheetId);
   }
 
-  List<UpdateUnit> sortTable(String sheetId) {
-    return sortUseCase.sortTable(sheetId);
+  List<UpdateUnit> sortTableWithCurrentBestSort(String sheetId) {
+    return sortUseCase.sortTableWithCurrentBestSort(sheetId);
   }
 
   bool getToApplyOnce(String sheetId) {
     return sortUseCase.getToApplyOnce(sheetId);
   }
 
+  bool isCalculating(String sheetId) {
+    return sortUseCase.isCalculating(sheetId);
+  }
+
   void setToApplyOnce(String sheetId, bool toApplyOnce) {
     sortUseCase.setToApplyOnce(sheetId, toApplyOnce);
+  }
+
+  void setSortedWithCurrentBestSort(String sheetId, bool value) {
+    sortUseCase.setSortedWithCurrentBestSort(sheetId, value);
+  }
+
+  bool isSortedWithValidSort() {
+    return sortUseCase.isSortedWithValidSort(currentSheetId);
   }
 
   bool isApplyBetterSortButtonLocked() {
     return sortUseCase.isApplyBetterSortButtonLocked();
   }
 
-  bool isBetterSortFound() {
-    return sortUseCase.isBetterSortFound();
+  bool sortedWithCurrentBestSort(String sheetId) {
+    return sortUseCase.sortedWithCurrentBestSort(sheetId);
   }
 
   bool isApplyBetterSortButtonInAction() {
     return sortUseCase.isApplyBetterSortButtonInAction();
   }
 
-  bool applyBetterSortButton() {
-    return sortUseCase.applyBetterSortButton();
+  bool isFindingBestSort() {
+    return sortUseCase.isFindingBestSort(currentSheetId);
   }
 
-  bool getFindBestSortToggle() {
-    return sortUseCase.getFindBestSortToggle();
+  bool isAlwaysApplySortToggleLocked() {
+    return !sortUseCase.canFindBetterSort(currentSheetId);
   }
 
-  bool getToAlwaysApplyToggle() {
-    return sortUseCase.getToAlwaysApplyToggle();
+  bool isCurrentBestSortAlwaysApplied() {
+    return sortUseCase.isCurrentBestSortAlwaysApplied(currentSheetId);
   }
 
   void findBestSortToggle(bool value) {
     sortUseCase.setFindingBestSort(currentSheetId, value);
   }
 
-  bool showApplySortToggle() {
-    return sortUseCase.showApplySortToggle();
-  }
-
-  void alwaysApplySortToggle(bool toAlwaysApply) {
-    sortUseCase.setToAlwaysApply(currentSheetId, toAlwaysApply);
+  void setToAlwaysApplyBestSort(String sheetId, bool toAlwaysApply) {
+    sortUseCase.setToAlwaysApplyBestSort(sheetId, toAlwaysApply);
   }
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
@@ -125,9 +126,13 @@ class AnalysisResult {
   List<List<int>> groupAttribution;
   List<List<int>> groupsToMaximize;
 
+  bool validSortIsImpossible;
   bool isFindingBestSort;
   bool sortedWithValidSort;
+
+  // true if the table is currently sorted with the current best sort found, false otherwise. If no valid sort is found, should be true.
   bool sortedWithCurrentBestSort;
+
   bool bestSortPossibleFound;
 
   AnalysisResult({
@@ -150,6 +155,7 @@ class AnalysisResult {
     required this.isMedium,
     required this.validRowIndexes,
     required this.currentBestSort,
+    required this.validSortIsImpossible,
     required this.isFindingBestSort,
     required this.sortedWithValidSort,
     required this.sortedWithCurrentBestSort,
@@ -182,9 +188,10 @@ class AnalysisResult {
       validRowIndexes: [],
       formatedTable: [],
       currentBestSort: null,
+      validSortIsImpossible: false,
       isFindingBestSort: false,
       sortedWithValidSort: false,
-      sortedWithCurrentBestSort: false,
+      sortedWithCurrentBestSort: true,
       bestSortPossibleFound: false,
     );
   }

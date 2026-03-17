@@ -52,32 +52,28 @@ class SortUsecase {
     return sortRepository.getSheetIds();
   }
 
+  bool isSortedWithValidSort(String sheetId) {
+    return sortRepository.isSortedWithValidSort(sheetId);
+  }
+
   bool isApplyBetterSortButtonLocked() {
     return sortRepository.isApplyBetterSortButtonLocked();
   }
 
-  bool isBetterSortFound() {
-    return sortRepository.isBetterSortFound();
+  bool sortedWithCurrentBestSort(String sheetId) {
+    return sortRepository.sortedWithCurrentBestSort(sheetId);
   }
 
   bool isApplyBetterSortButtonInAction() {
     return sortRepository.isApplyBetterSortButtonInAction();
   }
 
-  bool applyBetterSortButton() {
-    return sortRepository.applyBetterSortButton();
-  }
-
   void setFindingBestSort(String sheetId, bool value) {
     sortRepository.setFindingBestSort(sheetId, value);
   }
 
-  bool showApplySortToggle() {
-    return sortRepository.showApplySortToggle();
-  }
-
-  void setToAlwaysApply(String sheetId, bool toAlwaysApply) {
-    sortRepository.setToAlwaysApply(sheetId, toAlwaysApply);
+  void setToAlwaysApplyBestSort(String sheetId, bool toAlwaysApply) {
+    sortRepository.setToAlwaysApplyBestSort(sheetId, toAlwaysApply);
   }
 
   Future<Stream<SortProgressDataMsg>> launchCalculation(String sheetId) {
@@ -94,29 +90,40 @@ class SortUsecase {
     );
   }
 
-  bool getToApplyNextSort(String sheetId) {
-    return sortRepository.getToApplyOnce(sheetId) ||
-        sortRepository.getToAlwaysApplyToggle(sheetId);
+  bool willNextBestSortBeApplied(String sheetId) {
+    return sortRepository.willNextBestSortBeApplied(sheetId);
   }
 
   bool getToApplyOnce(String sheetId) {
     return sortRepository.getToApplyOnce(sheetId);
   }
 
-  bool getFindBestSortToggle() {
-    return sortRepository.getFindBestSortToggle();
+  bool isCalculating(String sheetId) {
+    return sortRepository.isCalculating(sheetId);
   }
 
-  bool getToAlwaysApplyToggle() {
-    return sortRepository.getToAlwaysApplyToggle(currentSheetId);
+  bool isFindingBestSort(String sheetId) {
+    return sortRepository.isFindingBestSort(sheetId);
+  }
+
+  bool canFindBetterSort(String sheetId) {
+    return sortRepository.canFindBetterSort(sheetId);
+  }
+
+  bool isCurrentBestSortAlwaysApplied(String sheetId) {
+    return sortRepository.isCurrentBestSortAlwaysApplied(sheetId);
   }
 
   void setToApplyOnce(String sheetId, bool toApplyOnce) {
     sortRepository.setToApplyOnce(sheetId, toApplyOnce);
   }
 
-  List<UpdateUnit> sortTable(String sheetId) {
-    return sortRepository.sortMedia(sheetId);
+  void setSortedWithCurrentBestSort(String sheetId, bool value) {
+    sortRepository.setSortedWithCurrentBestSort(sheetId, value);
+  }
+
+  List<UpdateUnit> sortTableWithCurrentBestSort(String sheetId) {
+    return sortRepository.sortTableWithCurrentBestSort(sheetId);
   }
 
   Future<void> loadSortStatus() async {
