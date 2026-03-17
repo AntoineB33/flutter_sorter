@@ -1,20 +1,32 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/history_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/selection_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sort_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/workbook_usecase.dart';
 
 class SelectionController extends ChangeNotifier {
   final SelectionUsecase selectionUsecase;
   final SortUsecase sortUsecase;
   final HistoryUsecase historyUsecase;
+  final WorkbookUsecase workbookUsecase;
+  final SheetDataUsecase sheetDataUsecase;
+  
   bool editingMode = false;
+  String previousEditingValue = '';
+
+  String get currentSheetId => workbookUsecase.currentSheetId;
+  Point<int> get primarySelectedCell => selectionUsecase.primarySelectedCell;
 
   SelectionController(
     this.selectionUsecase,
     this.sortUsecase,
     this.historyUsecase,
+    this.workbookUsecase,
+    this.sheetDataUsecase,
   );
 
   double getScrollOffsetX(String sheetId) {
@@ -33,21 +45,21 @@ class SelectionController extends ChangeNotifier {
     selectionUsecase.saveLastSelection();
   }
 
-  bool isCellSelected(SelectionData selection, int row, int col) {
-    return selection.selectedCells.any(
+  bool isCellSelected(int row, int col) {
+    return selectionUsecase.getSelectionData(currentSheetId).selectedCells.any(
       (cell) => cell.x == row && cell.y == col,
     );
   }
 
-  bool isPrimarySelectedCell(SelectionData selection, int row, int col) {
-    return row == selection.primarySelectedCell.x &&
-        col == selection.primarySelectedCell.y;
+  bool isPrimarySelectedCell(int row, int col) {
+    return row == primarySelectedCell.x &&
+        col == primarySelectedCell.y;
   }
 
-  bool isCellEditing(SelectionData selection, int row, int col) =>
+  bool isCellEditing(int row, int col) =>
       editingMode &&
-      selection.primarySelectedCell.x == row &&
-      selection.primarySelectedCell.y == col;
+      primarySelectedCell.x == row &&
+      primarySelectedCell.y == col;
 
   Future<bool> loadLastSelection() async {
     bool success = await selectionUsecase.loadLastSelection();
@@ -69,9 +81,9 @@ class SelectionController extends ChangeNotifier {
     selectionUsecase.sheetSwitch();
   }
 
-  void stopEditing(String prevValue, bool updateHistory) {
+  void stopEditing(bool updateHistory) {
     if (updateHistory) {
-      historyUsecase.stopEditing(prevValue);
+      historyUsecase.stopEditing(previousEditingValue);
     }
     editingMode = false;
     notifyListeners();
@@ -85,6 +97,11 @@ class SelectionController extends ChangeNotifier {
     if (isSorting()) {
       return false;
     }
+    previousEditingValue = sheetDataUsecase.getCellContent(
+      primarySelectedCell.x,
+      primarySelectedCell.y,
+      currentSheetId,
+    );
     editingMode = true;
     saveLastSelection();
     notifyListeners();

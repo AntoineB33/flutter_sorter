@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
@@ -18,6 +19,8 @@ class SelectionUsecase {
   final WorkbookRepository workbookRepository;
 
   late StreamSubscription<Failure> _failureSubscription;
+
+  Point<int> get primarySelectedCell => selectionRepository.primarySelectedCell;
 
   SelectionUsecase(
     this.selectionRepository,

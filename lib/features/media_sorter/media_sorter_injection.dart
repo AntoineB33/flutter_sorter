@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:get_it/get_it.dart';
-import 'package:isar/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trying_flutter/features/media_sorter/application/coordinators/spreadsheet_coordinator.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/grid_repository_impl.dart';
@@ -9,18 +9,18 @@ import 'package:trying_flutter/features/media_sorter/data/repositories/history_r
 import 'package:trying_flutter/features/media_sorter/data/repositories/selection_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/sheet_data_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/sort_repository_impl.dart';
+import 'package:trying_flutter/features/media_sorter/data/repositories/tree_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/workbook_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/isolate_receive_ports_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sorting_progress_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/grid_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/history_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/selection_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sort_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/tree_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/workbook_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
@@ -88,29 +88,15 @@ Future<void> initMediaSorterDependencies() async {
     loadedSheetsCache,
     workbookCache,
   );
-
-  SheetDataUsecase getDataUseCase = SheetDataUsecase(
-    sheetDataRepository: SheetDataRepositoryImpl(
-      loadedSheetsCache,
-      selectionCache,
-      workbookCache,
-      saveDataSource,
-    ),
-    sortRepository: sortRepository,
-    gridRepository: gridRepository,
-    historyRepository: historyRepository,
+  TreeRepositoryImpl treeRepository = TreeRepositoryImpl(
+    analysisResultCache,
+    loadedSheetsCache,
+    selectionCache,
+    sortStatusCache,
+    workbookCache,
+    saveDataSource,
   );
-  SheetDataUsecase sheetDataUseCase = SheetDataUsecase(
-    sheetDataRepository: SheetDataRepositoryImpl(
-      loadedSheetsCache,
-      selectionCache,
-      workbookCache,
-      saveDataSource,
-    ),
-    sortRepository: sortRepository,
-    gridRepository: gridRepository,
-    historyRepository: historyRepository,
-  );
+  
   SortUsecase sortUsecase = SortUsecase(
     sortRepository,
     sheetDataRepository,
@@ -118,10 +104,78 @@ Future<void> initMediaSorterDependencies() async {
     selectionRepository,
   );
   WorkbookUsecase workbookUsecase = WorkbookUsecase(workbookRepository, selectionRepository, sortRepository, sheetDataRepository);
+  HistoryUsecase historyUsecase = HistoryUsecase(
+    historyRepository,
+  );
+  GridUsecase gridUsecase = GridUsecase(
+    gridRepository,
+    treeRepository
+  );
+  SelectionUsecase selectionUsecase = SelectionUsecase(
+    selectionRepository,
+    sheetDataRepository,
+    gridRepository,
+    historyRepository,
+    workbookRepository,
+  );
+  TreeUsecase treeUsecase = TreeUsecase(
+    treeRepository,
+  );
+  SheetDataUsecase sheetDataUsecase = SheetDataUsecase(
+    sheetDataRepository,
+    sortRepository,
+    gridRepository,
+    historyRepository,
+  );
 
   SortController sortController = SortController(
-    sheetDataUseCase,
+    sheetDataUsecase,
     sortUsecase,
     workbookUsecase,
   );
+  HistoryController historyController = HistoryController(
+    historyUsecase,
+  );
+  SheetDataController sheetDataController = SheetDataController(
+    sheetDataUsecase,
+    workbookUsecase,
+  );
+  GridController gridController = GridController(
+    sheetDataUsecase,
+    gridUsecase,
+    workbookUsecase,
+    selectionUsecase
+  );
+  SelectionController selectionController = SelectionController(
+    selectionUsecase,
+    sortUsecase,
+    historyUsecase,
+    workbookUsecase,
+    sheetDataUsecase,
+  );
+  WorkbookController workbookController = WorkbookController(
+    workbookUsecase,
+    sortUsecase,
+  );
+  TreeController treeController = TreeController(
+    treeUsecase
+  );
+
+  SpreadsheetCoordinator spreadsheetCoordinator = SpreadsheetCoordinator(
+    historyController,
+    sheetDataController,
+    gridController,
+    sortController,
+    selectionController,
+    workbookController,
+    treeController
+  );
+
+  sl.registerLazySingleton<SpreadsheetCoordinator>(() => spreadsheetCoordinator);
+  sl.registerLazySingleton<WorkbookController>(() => workbookController);
+  sl.registerLazySingleton<SheetDataController>(() => sheetDataController);
+  sl.registerLazySingleton<GridController>(() => gridController);
+  sl.registerLazySingleton<TreeController>(() => treeController);
+  sl.registerLazySingleton<SelectionController>(() => selectionController);
+  sl.registerLazySingleton<SheetDataUsecase>(() => sheetDataUsecase);
 }

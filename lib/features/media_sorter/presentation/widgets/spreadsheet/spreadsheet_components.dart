@@ -90,13 +90,12 @@ class SpreadsheetDataCell extends StatefulWidget {
   final bool isPrimarySelectedCell;
   final bool isSelected;
   final bool isEditing;
-  final String previousContent;
   final VoidCallback onTap;
   final VoidCallback onDoubleTap;
   final VoidCallback onTapOutside;
   final ValueChanged<String>? onChanged;
-  final void Function(String value, String previousContent, {bool moveUp}) onSave;
-  final void Function(String previousContent) onEscape;
+  final void Function(String value, {bool moveUp}) onSave;
+  final void Function() onEscape;
 
   const SpreadsheetDataCell({
     super.key,
@@ -107,7 +106,6 @@ class SpreadsheetDataCell extends StatefulWidget {
     required this.isPrimarySelectedCell,
     required this.isSelected,
     required this.isEditing,
-    required this.previousContent,
     required this.onTap,
     required this.onDoubleTap,
     required this.onTapOutside,
@@ -225,11 +223,11 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
             ): () =>
                 _insertNewline(),
             const SingleActivator(LogicalKeyboardKey.enter, shift: true): () =>
-                widget.onSave(_textController.text, widget.previousContent, moveUp: true),
+                widget.onSave(_textController.text, moveUp: true),
             const SingleActivator(LogicalKeyboardKey.enter): () =>
-                widget.onSave(_textController.text, widget.previousContent, moveUp: false),
+                widget.onSave(_textController.text, moveUp: false),
             const SingleActivator(LogicalKeyboardKey.escape): () =>
-                widget.onEscape(widget.previousContent),
+                widget.onEscape(),
           },
           child: ScrollConfiguration(
             behavior: ScrollConfiguration.of(

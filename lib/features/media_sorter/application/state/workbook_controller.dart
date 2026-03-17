@@ -13,10 +13,10 @@ class WorkbookController extends ChangeNotifier {
   String get currentSheetId => workbookUseCase.currentSheetId;
   String get currentSheetName => workbookUseCase.currentSheetName;
 
-  WorkbookController({
-    required this.workbookUseCase,
-    required this.sortUseCase,
-  });
+  WorkbookController(
+    this.workbookUseCase,
+    this.sortUseCase,
+  );
 
   Future<void> clearAllData() async {
     await workbookUseCase.clearAllData();

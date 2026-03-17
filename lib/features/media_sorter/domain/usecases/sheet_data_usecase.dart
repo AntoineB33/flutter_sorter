@@ -18,12 +18,12 @@ class SheetDataUsecase {
 
   final StreamSubscription<Failure> _failureSubscription;
 
-  SheetDataUsecase({
-    required this.sheetDataRepository,
-    required this.sortRepository,
-    required this.gridRepository,
-    required this.historyRepository,
-  }) : _failureSubscription = sheetDataRepository.failureStream.listen((failure) {
+  SheetDataUsecase(
+    this.sheetDataRepository,
+    this.sortRepository,
+    this.gridRepository,
+    this.historyRepository,
+  ) : _failureSubscription = sheetDataRepository.failureStream.listen((failure) {
           UtilsServices.handleDataCorruption(Left(failure));
         });
   

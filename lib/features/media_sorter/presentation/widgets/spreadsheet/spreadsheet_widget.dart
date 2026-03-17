@@ -3,29 +3,35 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:trying_flutter/features/media_sorter/application/coordinators/spreadsheet_coordinator.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/column_type_extensions.dart';
 import 'spreadsheet_components.dart';
-import 'dart:math' as math;
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
-import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 
 class SpreadsheetWidget extends StatefulWidget {
+  final GridController gridController;
+  final SelectionController selectionController;
+  final WorkbookController workbookController;
+  final SheetDataController sheetDataController;
+  final TreeController treeController;
+  final SpreadsheetCoordinator spreadsheetCoordinator;
 
   // 2. Require it in the constructor
-  const SpreadsheetWidget({
-    super.key,
-  });
+  const SpreadsheetWidget(
+    this.gridController,
+    this.selectionController,
+    this.workbookController, 
+    this.sheetDataController, 
+    this.treeController, 
+    this.spreadsheetCoordinator, {super.key});
 
   @override
   State<SpreadsheetWidget> createState() => _SpreadsheetWidgetState();
@@ -42,7 +48,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   @override
   void initState() {
     super.initState();
-    _scrollSubscription = gridController.onScrollEvent.listen((
+    _scrollSubscription = widget.gridController.onScrollEvent.listen((
       request,
     ) async {
       if (!_verticalController.hasClients ||
@@ -148,7 +154,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                       notification.metrics.axis == Axis.horizontal,
 
                   child: ListenableBuilder(
-                    listenable: widget.selectionDataStore,
+                    listenable: widget.selectionController,
                     builder: (context, child) {
                       return NotificationListener<ScrollNotification>(
                         onNotification: (notification) =>
@@ -178,14 +184,20 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                           rowBuilder: (index) => _buildRowSpan(
                             index,
                             widget.gridController,
+                            widget.gridController.colHeaderHeight,
                           ),
                           cellBuilder: (context, vicinity) =>
                               _buildCellDispatcher(
                                 context,
                                 vicinity,
+                                widget.spreadsheetCoordinator,
                                 widget.workbookController,
-                                widget.dataController,
+                                widget.sheetDataController,
                                 widget.selectionController,
+                                widget.sheetDataController,
+                                widget.treeController,
+                                widget.gridController,
+
                               ),
                         ),
                       );
@@ -246,7 +258,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     }
 
     final int dataRowIndex = index - 1;
-    final double rowHeight = gridController.getRowHeight(dataRowIndex);
+    final double rowHeight = gridController.getRowHeightCurrentSheet(dataRowIndex);
 
     return TableSpan(extent: FixedTableSpanExtent(rowHeight));
   }
@@ -254,9 +266,13 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   Widget _buildCellDispatcher(
     BuildContext context,
     TableVicinity vicinity,
-    WorkbookController controller,
+    SpreadsheetCoordinator coordinator,
+    WorkbookController workbookController,
     SheetDataController dataController,
     SelectionController selectionController,
+    SheetDataController sheetDataController,
+    TreeController treeController,
+    GridController gridController,
   ) {
     final int r = vicinity.row;
     final int c = vicinity.column;
@@ -271,12 +287,13 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         label: GetNames.getColumnLabel(c - 1),
         colIndex: c - 1,
         backgroundColor: GetNames.getColumnType(
-          controller.sheetContent,
+          widget.sheetDataController.sheetContent,
           c - 1,
         ).color,
         onContextMenu: (details) => _showColumnContextMenu(
           context,
-          controller,
+          coordinator,
+          workbookController,
           details.globalPosition,
           c - 1,
         ),
@@ -289,64 +306,37 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     final int dataRow = r - 1;
     final int dataCol = c - 1;
 
-    final bool isEditingCell = controller.isCellEditing(dataRow, dataCol);
+    final bool isEditingCell = selectionController.isCellEditing(dataRow, dataCol);
 
     return SpreadsheetDataCell(
       row: dataRow,
       col: dataCol,
-      content: controller.getCellContent(dataRow, dataCol),
-      isValid: controller.isRowValid(dataRow),
-      isPrimarySelectedCell: controller.isPrimarySelectedCell(dataRow, dataCol),
-      isSelected: controller.isCellSelected(dataRow, dataCol),
+      content: sheetDataController.getCellContentCurrentSheet(dataRow, dataCol),
+      isValid: gridController.isRowValid(dataRow),
+      isPrimarySelectedCell: selectionController.isPrimarySelectedCell(dataRow, dataCol),
+      isSelected: selectionController.isCellSelected(dataRow, dataCol),
       isEditing: isEditingCell,
-      previousContent: controller.previousContent,
       onTap: () {
-        if (controller.primarySelectedCell.x != dataRow ||
-            controller.primarySelectedCell.y != dataCol) {
-          controller.stopEditing();
-        }
-        controller.setPrimarySelection(
-          _verticalController,
+        coordinator.setPrimarySelection(
           dataRow,
           dataCol,
           false,
-          true,
         );
         _focusNode.requestFocus();
       },
       onDoubleTap: () {
-        controller.startEditing();
+        coordinator.startEditing();
       },
-      onTapOutside: selectionController.stopEditing(previousContent, false),
+      onTapOutside: () => selectionController.stopEditing(false),
       onChanged: (newValue) {
-        controller.onChanged(newValue);
+        coordinator.setCellContent(newValue);
       },
-      onSave: (String newValue, String previousContent, {bool moveUp = false}) {
-        if (moveUp) {
-          selectionController.setPrimarySelection(
-            max(0, dataRow - 1),
-            dataCol,
-            false,
-            true,
-          );
-        } else {
-          selectionController.setPrimarySelection(
-            dataRow + 1,
-            dataCol,
-            false,
-            true,
-          );
-        }
-        selectionController.stopEditing(previousContent, true);
+      onSave: (String newValue, {bool moveUp = false}) {
+        coordinator.onSave(newValue, moveUp);
         _focusNode.requestFocus();
       },
-      onEscape: (String previousContent) {
-        controller.updateCell(
-          controller.primarySelectedCell.x,
-          controller.primarySelectedCell.y,
-          previousContent,
-        );
-        controller.stopEditing(previousContent, false);
+      onEscape: () {
+        selectionController.stopEditing(false);
         _focusNode.requestFocus();
       },
     );
@@ -354,12 +344,13 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   Future<void> _showTypeMenu(
     BuildContext context,
-    WorkbookController controller,
-    SheetDataController dataController,
+    SpreadsheetCoordinator coordinator,
+    WorkbookController workbookController,
+    SheetDataController sheetDataController,
     Offset position,
     int col,
   ) async {
-    final currentType = GetNames.getColumnType(controller.sheetContent, col);
+    final currentType = GetNames.getColumnType(sheetDataController.sheetContent, col);
     final List<PopupMenuEntry<dynamic>> items = ColumnType.values
         .map<PopupMenuEntry<dynamic>>((entry) {
           return CheckedPopupMenuItem<ColumnType>(
@@ -402,18 +393,19 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
     if (result != null) {
       if (result is ColumnType) {
-        controller.setColumnType(col, result);
+        coordinator.setColumnType(col, result);
       } else if (result == 'default_sequence') {
         // Call the method on your controller to reset the sequence
         // Ensure this method exists in your SpreadsheetController
-        dataController.applyDefaultColumnSequence();
+        coordinator.applyDefaultColumnSequence();
       }
     }
   }
 
   void _showColumnContextMenu(
     BuildContext context,
-    WorkbookController controller,
+    SpreadsheetCoordinator coordinator,
+    WorkbookController workbookController,
     Offset position,
     int col,
   ) async {
@@ -442,7 +434,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     if (result == 'change_type') {
       await _showTypeMenu(
         context,
-        controller,
+        coordinator,
+        workbookController,
         context.read<SheetDataController>(),
         position,
         col,

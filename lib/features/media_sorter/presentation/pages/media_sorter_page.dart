@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:trying_flutter/features/media_sorter/application/coordinators/spreadsheet_coordinator.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/selection_controller.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
 import 'package:trying_flutter/injection_container.dart';
@@ -24,6 +27,7 @@ class MediaSorterPage extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => sl<WorkbookController>()),
         ChangeNotifierProvider(create: (_) => sl<TreeController>()),
         ChangeNotifierProvider(create: (_) => sl<SortController>()),
+        ChangeNotifierProvider(create: (_) => sl<SheetDataController>()),
       ],
       child: Scaffold(
         appBar: const NavigationDropdown(),
@@ -32,7 +36,7 @@ class MediaSorterPage extends StatelessWidget {
           minWidth: 150,
           maxWidth: 600,
           leftSide: SideMenu(),
-          rightSide: SpreadsheetWidget(),
+          rightSide: SpreadsheetWidget(sl<GridController>(), sl<SelectionController>(), sl<WorkbookController>(), sl<SheetDataController>(), sl<TreeController>(), sl<SpreadsheetCoordinator>()),
         ),
       ),
     );

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:trying_flutter/features/media_sorter/application/coordinators/spreadsheet_coordinator.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
@@ -20,6 +22,8 @@ class AnalysisTreeNode extends StatelessWidget {
     if (node.hideIfEmpty && node.children.isEmpty) {
       return const SizedBox.shrink();
     }
+
+    final SpreadsheetCoordinator coordinator = context.watch<SpreadsheetCoordinator>();
 
     final bool isLeaf = node.children.isEmpty;
     final bool isExpanded = node.isExpanded;
@@ -57,7 +61,7 @@ class AnalysisTreeNode extends StatelessWidget {
 
               InkWell(
                 onTap: () {
-                  treeController.onTap(node);
+                  coordinator.onTap(node);
                 },
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(

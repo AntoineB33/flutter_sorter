@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trying_flutter/features/media_sorter/media_sorter_injection.dart';
 import 'app.dart';
 import 'core/services/storage_service.dart';

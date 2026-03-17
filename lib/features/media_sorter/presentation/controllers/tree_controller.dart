@@ -26,9 +26,9 @@ class TreeController extends ChangeNotifier {
   int colCount(SheetContent content) =>
       content.table.isNotEmpty ? content.table[0].length : 0;
 
-  TreeController({
-    required this.treeUsecase,
-  });
+  TreeController(
+    this.treeUsecase,
+  );
 
   Point<int> onTapCellSelect(NodeStruct node) {
     return treeUsecase.onTapCellSelect(node);

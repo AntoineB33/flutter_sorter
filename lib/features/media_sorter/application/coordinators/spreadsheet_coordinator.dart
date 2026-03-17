@@ -82,7 +82,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
         treeController.onAnalysisAvailable();
       });
     }
-    selectionController.stopEditing('', false);
+    selectionController.stopEditing(false);
     await workbookController.loadSheet(sheetId, init);
     gridController.updateRowColCount(
       currentSheetId,
@@ -105,7 +105,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     int row,
     int col,
     bool keepSelection,
-    bool scrollTo,
+    { bool scrollTo = true,}
   ) {
     selectionController.setPrimarySelection(row, col, keepSelection);
     if (scrollTo) {
@@ -229,15 +229,15 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     switch (node.idOnTap) {
       case OnTapAction.selectAttribute:
         if (node.rowId != null) {
-          setPrimarySelection(node.rowId!, 0, false, true);
+          setPrimarySelection(node.rowId!, 0, false);
           break;
         }
         Point<int> selectedCell = treeController.onTapCellSelect(node);
-        setPrimarySelection(selectedCell.x, selectedCell.y, false, true);
+        setPrimarySelection(selectedCell.x, selectedCell.y, false);
         break;
       case OnTapAction.selectCell:
         if (node.rowId != null && node.colId != null) {
-          setPrimarySelection(node.rowId!, node.colId!, false, true);
+          setPrimarySelection(node.rowId!, node.colId!, false);
         }
         break;
       case OnTapAction.cycle:
@@ -254,12 +254,11 @@ class SpreadsheetCoordinator extends ChangeNotifier {
             node.newChildren![0].rowId!,
             node.newChildren![0].colId!,
             false,
-            true,
           );
         } else {
           final nextChild =
               node.newChildren![(found + 1) % node.newChildren!.length];
-          setPrimarySelection(nextChild.rowId!, nextChild.colId!, false, true);
+          setPrimarySelection(nextChild.rowId!, nextChild.colId!, false);
         }
         break;
       case OnTapAction.defaultAction:
@@ -282,7 +281,6 @@ class SpreadsheetCoordinator extends ChangeNotifier {
           node.cellsToSelect![nextIndex].rowId,
           node.cellsToSelect![nextIndex].colId,
           false,
-          true,
         );
         break;
       default:
@@ -311,7 +309,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void selectAll() {
-    setPrimarySelection(0, 0, true, true);
+    setPrimarySelection(0, 0, true);
     selectionController.selectAll();
   }
 
@@ -437,6 +435,36 @@ class SpreadsheetCoordinator extends ChangeNotifier {
         ColumnTypeUpdate(7, ColumnType.urls),
         ColumnTypeUpdate(8, ColumnType.dependencies),
       ],
+      currentSheetId,
+      false,
+      false,
+      false,
+    );
+  }
+
+  void onSave(String newValue, bool moveUp) {
+    if (moveUp) {
+      setPrimarySelection(
+        max(0, primarySelectedCell.x - 1),
+        primarySelectedCell.y,
+        false,
+      );
+    } else {
+      setPrimarySelection(
+        primarySelectedCell.x + 1,
+        primarySelectedCell.y,
+        false,
+      );
+    }
+    selectionController.stopEditing(true);
+  }
+
+  void setColumnType(int col, ColumnType type) {
+    final updates = [
+      ColumnTypeUpdate(col, type),
+    ];
+    applyUpdatesAndSort(
+      updates,
       currentSheetId,
       false,
       false,

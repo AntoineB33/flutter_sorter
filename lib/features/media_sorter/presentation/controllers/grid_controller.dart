@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/grid_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/selection_usecase.dart';
@@ -14,6 +13,9 @@ class GridController extends ChangeNotifier {
   // --- states ---
   final _scrollEventController = StreamController<ScrollRequest>.broadcast();
   Stream<ScrollRequest> get onScrollEvent => _scrollEventController.stream;
+  
+  double get rowHeaderWidth => sheetDataUsecase.getSheet(currentSheetId).rowHeaderWidth;
+  double get colHeaderHeight => sheetDataUsecase.getSheet(currentSheetId).colHeaderHeight;
 
   // Size of the window: useful to determine how many rows and columns to show.
   // Informed by the UI at startup and each time the user resizes it.
@@ -39,6 +41,10 @@ class GridController extends ChangeNotifier {
     this.workbookUsecase,
     this.selectionUsecase,
   );
+
+  double getRowHeightCurrentSheet(int rowId) {
+    return gridUsecase.getRowHeight(currentSheetId, rowId);
+  }
 
   double getRowHeight(String sheetId, int rowId) {
     return gridUsecase.getRowHeight(sheetId, rowId);
@@ -80,7 +86,6 @@ class GridController extends ChangeNotifier {
     );
     bool scrollX = true;
     bool scrollY = true;
-    SheetData currentSheet = sheetDataUsecase.getSheet(currentSheetId);
     if (rowId > 0) {
       // Vertical Logic
       final double targetTop =
