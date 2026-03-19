@@ -15,7 +15,7 @@ class GridRepositoryImpl implements GridRepository {
   final WorkbookCache workbookCache;
   final SelectionCache selectionCache;
 
-  String get currentSheetId => workbookCache.currentSheetId;
+  String? get currentSheetId => workbookCache.currentSheetId;
 
   GridRepositoryImpl(this.loadedSheetsCache, this.workbookCache, this.selectionCache);
 

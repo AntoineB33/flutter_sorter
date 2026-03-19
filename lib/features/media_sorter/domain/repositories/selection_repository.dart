@@ -6,7 +6,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/selection_d
 
 abstract class SelectionRepository {
   Stream<Failure> get failureStream;
-  Point<int> get primarySelectedCell;
+  Point<int>? get primarySelectedCell;
   bool containsSheetId(String sheetId);
   double getScrollOffsetX(String sheetId);
   double getScrollOffsetY(String sheetId);

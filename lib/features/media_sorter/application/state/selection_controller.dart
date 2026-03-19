@@ -18,7 +18,7 @@ class SelectionController extends ChangeNotifier {
   bool editingMode = false;
   String previousEditingValue = '';
 
-  String get currentSheetId => workbookUsecase.currentSheetId;
+  String? get currentSheetId => workbookUsecase.currentSheetId;
   Point<int> get primarySelectedCell => selectionUsecase.primarySelectedCell;
 
   SelectionController(
@@ -46,7 +46,7 @@ class SelectionController extends ChangeNotifier {
   }
 
   bool isCellSelected(int row, int col) {
-    return selectionUsecase.getSelectionData(currentSheetId).selectedCells.any(
+    return currentSheetId != null && selectionUsecase.getSelectionData(currentSheetId!).selectedCells.any(
       (cell) => cell.x == row && cell.y == col,
     );
   }
@@ -63,7 +63,6 @@ class SelectionController extends ChangeNotifier {
 
   Future<bool> loadLastSelection() async {
     bool success = await selectionUsecase.loadLastSelection();
-    notifyListeners();
     return success;
   }
 
@@ -75,10 +74,6 @@ class SelectionController extends ChangeNotifier {
   }) {
     selectionUsecase.setPrimarySelection(row, col, keepSelection);
     notifyListeners();
-  }
-
-  void sheetSwitched() {
-    selectionUsecase.sheetSwitch();
   }
 
   void stopEditing(bool updateHistory) {
@@ -94,13 +89,13 @@ class SelectionController extends ChangeNotifier {
   }
 
   bool startEditing() {
-    if (isSorting()) {
+    if (isSorting() || currentSheetId == null) {
       return false;
     }
     previousEditingValue = sheetDataUsecase.getCellContent(
       primarySelectedCell.x,
       primarySelectedCell.y,
-      currentSheetId,
+      currentSheetId!,
     );
     editingMode = true;
     saveLastSelection();

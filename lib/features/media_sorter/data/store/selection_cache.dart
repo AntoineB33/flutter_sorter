@@ -31,12 +31,12 @@ class SelectionCache {
     return _lastSelections[sheetId] ??= SelectionData.empty();
   }
 
-  void setLastSelections(Map<String, SelectionData> lastSelections, String currentSheetId, bool lastSelectionLoaded) {
-    SelectionData currentSheetSelection = _lastSelections[currentSheetId]!;
+  void setLastSelections(Map<String, SelectionData> lastSelections, String currentSheetId) {
+    SelectionData? currentSheetSelection = _lastSelections[currentSheetId];
     _lastSelections
       ..clear()
       ..addAll(lastSelections);
-    if (lastSelectionLoaded) {
+    if (currentSheetSelection != null) {
       _lastSelections[currentSheetId] = currentSheetSelection;
     }
   }

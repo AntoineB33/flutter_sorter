@@ -64,11 +64,12 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   Future<void> init() async {
     await workbookController.clearAllData();
-    await workbookController.loadRecentSheetIds();
-    bool lastSelectionSuccess = await loadSheet(
+    workbookController.loadRecentSheetIds();
+    loadSheet(
       workbookController.currentSheetId,
       true,
     );
+    bool lastSelectionSuccess = await selectionController.loadLastSelection();
     workbookController.loadLastSelections(lastSelectionSuccess);
     sortController.loadSortStatus();
     for (var sheetId in sortController.getRecentSheetIds()) {
@@ -76,7 +77,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     }
   }
 
-  Future<bool> loadSheet(String sheetId, bool init) async {
+  Future<void> loadSheet(String sheetId, bool init) async {
     if (!sheetDataController.isLoaded(sheetId)) {
       sortController.loadAnalysisResult(sheetId).then((_) {
         treeController.onAnalysisAvailable();
@@ -84,29 +85,18 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     }
     selectionController.stopEditing(false);
     await workbookController.loadSheet(sheetId, init);
-    gridController.updateRowColCount(
-      currentSheetId,
-      row1ToScreenBottomHeight:
-          selectionController.getScrollOffsetX(currentSheetId) +
-          gridController.row1ToScreenBottomHeight,
-      colBToScreenRightWidth:
-          selectionController.getScrollOffsetY(currentSheetId) +
-          gridController.colBToScreenRightWidth,
-    );
-    if (!init) {
-      selectionController.sheetSwitched();
-    }
-    bool lastSelectionSuccess = await selectionController.loadLastSelection();
+    notifyListeners();
+    updateTreeAndRowColCount();
     gridController.scrollToLastSelection();
-    return lastSelectionSuccess;
+    notifyListeners();
   }
 
   void setPrimarySelection(
     int row,
     int col,
-    bool keepSelection,
-    { bool scrollTo = true,}
-  ) {
+    bool keepSelection, {
+    bool scrollTo = true,
+  }) {
     selectionController.setPrimarySelection(row, col, keepSelection);
     if (scrollTo) {
       gridController.scrollToCell();
@@ -219,10 +209,22 @@ class SpreadsheetCoordinator extends ChangeNotifier {
       isFromHistory,
       isFromEditing,
     );
-    gridController.adjustRowHeightAfterUpdate(sheetId, updates);
+    gridController.adjustRowHeightAfterUpdate(currentSheetId, updates);
+    updateTreeAndRowColCount();
     if (isFromEditing) {
       gridController.scrollToCell();
     }
+  }
+
+  void updateTreeAndRowColCount() {
+    gridController.updateRowColCount(
+      currentSheetId,
+      row0TopToScreenBottomHeight:
+          gridController.row0TopToScreenBottomHeight,
+      colALeftToScreenRightWidth:
+          gridController.colALeftToScreenRightWidth,
+    );
+    treeController.onAnalysisAvailable();
   }
 
   void onTap(NodeStruct node) {
@@ -334,10 +336,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     }
   }
 
-  KeyEventResult handle(
-    BuildContext context,
-    KeyEvent event,
-  ) {
+  KeyEventResult handle(BuildContext context, KeyEvent event) {
     if (selectionController.editingMode) {
       return KeyEventResult.ignored;
     }
@@ -460,15 +459,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void setColumnType(int col, ColumnType type) {
-    final updates = [
-      ColumnTypeUpdate(col, type),
-    ];
-    applyUpdatesAndSort(
-      updates,
-      currentSheetId,
-      false,
-      false,
-      false,
-    );
+    final updates = [ColumnTypeUpdate(col, type)];
+    applyUpdatesAndSort(updates, currentSheetId, false, false, false);
   }
 }

@@ -38,6 +38,5 @@ class WorkbookController extends ChangeNotifier {
 
   Future<void> loadSheet(String name, bool init) async {
     workbookUseCase.loadSheet(name, init);
-    notifyListeners();
   }
 }

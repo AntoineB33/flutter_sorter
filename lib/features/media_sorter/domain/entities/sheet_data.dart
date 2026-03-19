@@ -1,24 +1,35 @@
+import 'dart:math';
+
 import 'package:json_annotation/json_annotation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
+import 'package:drift/drift.dart';
 
-// This is the file that build_runner will generate
-part 'sheet_data.g.dart';
-
-@JsonSerializable(explicitToJson: true)
 class SheetData {
-  SheetContent sheetContent;
+  final int id;
+  String title;
+  final Map<(int, int), String> cells;
+  final Map<int, ColumnType> columnTypes;
   List<UpdateData> updateHistories;
   int historyIndex;
   List<double> rowsBottomPos;
   List<double> colRightPos;
   List<bool> rowsManuallyAdjustedHeight;
   List<bool> colsManuallyAdjustedWidth;
-  String sheetName;
   double colHeaderHeight;
   double rowHeaderWidth;
+  List<Point<int>> selectedCells;
+  Point<int> primarySelectedCell;
+  double scrollOffsetX;
+  double scrollOffsetY;
+  final List<int> bestSortFound;
+  final List<int> cursors;
+  final List<List<int>> possibleIntsById;
+  final List<List<List<int>>> validAreasById;
+  final List<int> bestDistFound;
+  int sortIndex;
 
   SheetData({
     required this.sheetContent,

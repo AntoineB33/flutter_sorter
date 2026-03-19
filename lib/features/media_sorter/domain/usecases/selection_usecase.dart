@@ -54,11 +54,6 @@ class SelectionUsecase {
     selectionRepository.selectAll();
   }
 
-  void sheetSwitch() {
-    selectionRepository.saveAllLastSelected();
-    selectionRepository.saveLastSelection();
-  }
-
   void setPrimarySelection(int row, int col, bool keepSelection) {
     selectionRepository.setPrimarySelection(row, col, keepSelection);
   }

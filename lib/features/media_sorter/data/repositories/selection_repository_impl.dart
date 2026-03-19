@@ -24,12 +24,12 @@ class SelectionRepositoryImpl implements SelectionRepository {
 
   @override
   Stream<Failure> get failureStream => _errorController.stream;
-  String get currentSheetId => _workbookCache.currentSheetId;
-  SelectionData get selection =>
-      _selectionCache.getSelectionData(_workbookCache.currentSheetId);
+  String? get currentSheetId => _workbookCache.currentSheetId;
+  SelectionData? get selection => currentSheetId != null ?
+      _selectionCache.getSelectionData(currentSheetId!) : null;
   @override
-  Point<int> get primarySelectedCell =>
-      selection.primarySelectedCell;
+  Point<int>? get primarySelectedCell =>
+      selection?.primarySelectedCell;
 
   SelectionRepositoryImpl(
     this._saveDataSource,
@@ -61,10 +61,11 @@ class SelectionRepositoryImpl implements SelectionRepository {
 
   @override
   void selectAll() {
-    selection.selectedCells.clear();
-    for (int r = 0; r < _loadedSheetsCache.rowCount(currentSheetId); r++) {
-      for (int c = 0; c < _loadedSheetsCache.colCount(currentSheetId); c++) {
-        selection.selectedCells.add(Point(r, c));
+    if (selection == null) return;
+    selection!.selectedCells.clear();
+    for (int r = 0; r < _loadedSheetsCache.rowCount(currentSheetId!); r++) {
+      for (int c = 0; c < _loadedSheetsCache.colCount(currentSheetId!); c++) {
+        selection!.selectedCells.add(Point(r, c));
       }
     }
     saveLastSelection();
@@ -81,7 +82,6 @@ class SelectionRepositoryImpl implements SelectionRepository {
       _selectionCache.setLastSelections(
         ids,
         currentSheetId,
-        lastSelectionLoaded,
       );
       saveAllLastSelected();
       return Right(null);

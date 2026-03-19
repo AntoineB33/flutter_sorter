@@ -12,19 +12,20 @@ class HistoryRepositoryImpl implements HistoryRepository {
   int chronoIdCounter = 0;
   bool isLastChangeInSameEditingMode = false;
 
-  String get currentSheetId => workbookCache.currentSheetId;
-  SheetData get currentSheet => loadedSheetsDataStore.getSheet(currentSheetId);
+  String? get currentSheetId => workbookCache.currentSheetId;
+  SheetData? get currentSheet => currentSheetId != null ? loadedSheetsDataStore.getSheet(currentSheetId!) : null;
 
   HistoryRepositoryImpl(this.loadedSheetsDataStore, this.workbookCache, this.selectionCache);
 
   @override
   UpdateData? moveInUpdateHistory(int direction) {
-    if (currentSheet.historyIndex + direction < 0 ||
-        currentSheet.historyIndex + direction >= currentSheet.updateHistories.length) {
+    if (currentSheet == null) return null;
+    if (currentSheet!.historyIndex + direction < 0 ||
+        currentSheet!.historyIndex + direction >= currentSheet!.updateHistories.length) {
       return null;
     }
-    currentSheet.historyIndex += direction;
-    final updateData = currentSheet.updateHistories[currentSheet.historyIndex];
+    currentSheet!.historyIndex += direction;
+    final updateData = currentSheet!.updateHistories[currentSheet!.historyIndex];
     return updateData;
   }
   
@@ -56,9 +57,9 @@ class HistoryRepositoryImpl implements HistoryRepository {
   @override
   void stopEditing(String prevValue) {
     isLastChangeInSameEditingMode = false;
-    final primarySelectedCell = selectionCache.getSelectionData(currentSheetId).primarySelectedCell;
+    final primarySelectedCell = selectionCache.getSelectionData(currentSheetId!).primarySelectedCell;
     String newVal = loadedSheetsDataStore.getCellContent(
-      currentSheetId,
+      currentSheetId!,
       primarySelectedCell.x,
       primarySelectedCell.y,
     );
@@ -70,7 +71,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
             primarySelectedCell.y,
             newVal,
           ),
-        ], currentSheetId, false
+        ], currentSheetId!, false
       );
   }
 }

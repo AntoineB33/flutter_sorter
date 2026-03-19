@@ -28,10 +28,12 @@ class SpreadsheetWidget extends StatefulWidget {
   const SpreadsheetWidget(
     this.gridController,
     this.selectionController,
-    this.workbookController, 
-    this.sheetDataController, 
-    this.treeController, 
-    this.spreadsheetCoordinator, {super.key});
+    this.workbookController,
+    this.sheetDataController,
+    this.treeController,
+    this.spreadsheetCoordinator, {
+    super.key,
+  });
 
   @override
   State<SpreadsheetWidget> createState() => _SpreadsheetWidgetState();
@@ -58,25 +60,27 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       _isProgrammaticScroll = true;
       List<Future<void>> animations = [];
 
-      if (request.yOffset != null && _verticalController.hasClients) {
-        animations.add(
-          _verticalController.animateTo(
-            request.yOffset!,
-            duration: request.duration,
-            curve: request.curve,
-          ),
-        );
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (request.yOffset != null && _verticalController.hasClients) {
+          animations.add(
+            _verticalController.animateTo(
+              request.yOffset!,
+              duration: request.duration,
+              curve: request.curve,
+            ),
+          );
+        }
 
-      if (request.xOffset != null && _horizontalController.hasClients) {
-        animations.add(
-          _horizontalController.animateTo(
-            request.xOffset!,
-            duration: request.duration,
-            curve: request.curve,
-          ),
-        );
-      }
+        if (request.xOffset != null && _horizontalController.hasClients) {
+          animations.add(
+            _horizontalController.animateTo(
+              request.xOffset!,
+              duration: request.duration,
+              curve: request.curve,
+            ),
+          );
+        }
+      });
 
       // Run both animations at the exact same time and wait for them to finish
       if (animations.isNotEmpty) {
@@ -104,7 +108,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final SpreadsheetCoordinator coordinator = context.watch<SpreadsheetCoordinator>();
+    final SpreadsheetCoordinator coordinator = context
+        .read<SpreadsheetCoordinator>();
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -112,9 +117,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
           _initialLayoutDone = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) {
-              widget.gridController.updateRowColCountCurrentSheet(
-                heightViewport: constraints.maxHeight,
-                widthViewport: constraints.maxWidth,
+              widget.gridController.initialLayoutConstraints(
+                maxHeight: constraints.maxHeight,
+                maxWidth: constraints.maxWidth,
               );
             }
           });
@@ -154,7 +159,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                       notification.metrics.axis == Axis.horizontal,
 
                   child: ListenableBuilder(
-                    listenable: widget.selectionController,
+                    listenable: widget.spreadsheetCoordinator,
                     builder: (context, child) {
                       return NotificationListener<ScrollNotification>(
                         onNotification: (notification) =>
@@ -184,7 +189,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                           rowBuilder: (index) => _buildRowSpan(
                             index,
                             widget.gridController,
-                            widget.gridController.colHeaderHeight,
+                            widget.gridController.colHeaderHeight(),
                           ),
                           cellBuilder: (context, vicinity) =>
                               _buildCellDispatcher(
@@ -197,7 +202,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                                 widget.sheetDataController,
                                 widget.treeController,
                                 widget.gridController,
-
                               ),
                         ),
                       );
@@ -252,13 +256,13 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     double colHeaderHeight,
   ) {
     if (index == 0) {
-      return TableSpan(
-        extent: FixedTableSpanExtent(colHeaderHeight),
-      );
+      return TableSpan(extent: FixedTableSpanExtent(colHeaderHeight));
     }
 
     final int dataRowIndex = index - 1;
-    final double rowHeight = gridController.getRowHeightCurrentSheet(dataRowIndex);
+    final double rowHeight = gridController.getRowHeightCurrentSheet(
+      dataRowIndex,
+    );
 
     return TableSpan(extent: FixedTableSpanExtent(rowHeight));
   }
@@ -306,22 +310,24 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     final int dataRow = r - 1;
     final int dataCol = c - 1;
 
-    final bool isEditingCell = selectionController.isCellEditing(dataRow, dataCol);
+    final bool isEditingCell = selectionController.isCellEditing(
+      dataRow,
+      dataCol,
+    );
 
     return SpreadsheetDataCell(
       row: dataRow,
       col: dataCol,
       content: sheetDataController.getCellContentCurrentSheet(dataRow, dataCol),
       isValid: gridController.isRowValid(dataRow),
-      isPrimarySelectedCell: selectionController.isPrimarySelectedCell(dataRow, dataCol),
+      isPrimarySelectedCell: selectionController.isPrimarySelectedCell(
+        dataRow,
+        dataCol,
+      ),
       isSelected: selectionController.isCellSelected(dataRow, dataCol),
       isEditing: isEditingCell,
       onTap: () {
-        coordinator.setPrimarySelection(
-          dataRow,
-          dataCol,
-          false,
-        );
+        coordinator.setPrimarySelection(dataRow, dataCol, false);
         _focusNode.requestFocus();
       },
       onDoubleTap: () {
@@ -350,7 +356,10 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     Offset position,
     int col,
   ) async {
-    final currentType = GetNames.getColumnType(sheetDataController.sheetContent, col);
+    final currentType = GetNames.getColumnType(
+      sheetDataController.sheetContent,
+      col,
+    );
     final List<PopupMenuEntry<dynamic>> items = ColumnType.values
         .map<PopupMenuEntry<dynamic>>((entry) {
           return CheckedPopupMenuItem<ColumnType>(
