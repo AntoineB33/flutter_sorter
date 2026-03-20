@@ -15,9 +15,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 
-class SheetDataRepositoryImpl implements SheetDataRepository {
-  final AppDatabase _db;
-  
+class SheetDataRepositoryImpl implements SheetDataRepository {  
   final LoadedSheetsCache loadedSheetsCache;
   final SelectionCache selectionCache;
   final WorkbookCache workbookCache;

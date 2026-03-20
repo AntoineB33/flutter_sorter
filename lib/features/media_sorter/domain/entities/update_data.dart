@@ -9,7 +9,7 @@ class UpdateData {
   final DateTime timestamp;
   final int chronoId;
   final String sheetId;
-  final List<UpdateUnit> updates;
+  final Map<String, UpdateUnit> updates;
   UpdateData(this.chronoId, this.sheetId, this.updates,
     {DateTime? timestamp})
     : timestamp = timestamp ?? DateTime.now();
