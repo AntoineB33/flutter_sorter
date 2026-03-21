@@ -30,7 +30,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
   }
   
   @override
-  Map<String, UpdateUnit> commitHistory(Map<String, UpdateUnit> updates, String sheetId, bool isFromEditing) {
+  void commitHistory(Map<String, UpdateUnit> updates, String sheetId, bool isFromEditing) {
     final sheet = loadedSheetsDataStore.getSheet(sheetId);
     if (isFromEditing) {
       if (isLastChangeInSameEditingMode) {
@@ -46,6 +46,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
         );
       }
       sheet.updateHistories.add(updateData);
+      updates[]
       sheet.historyIndex++;
       if (sheet.historyIndex == 100) {
         sheet.updateHistories.removeAt(0);

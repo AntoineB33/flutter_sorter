@@ -179,6 +179,11 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     return loadedSheetsCache.getColumnType(sheetId, colId);
   }
 
+  @override
+  String getSheetName(String sheetId) {
+    return loadedSheetsCache.getSheetName(sheetId);
+  }
+
   void setSheet(String sheetId, SheetData sheetData) {
     loadedSheetsCache.setSheet(sheetId, sheetData);
     scheduleSheetSave(sheetId);

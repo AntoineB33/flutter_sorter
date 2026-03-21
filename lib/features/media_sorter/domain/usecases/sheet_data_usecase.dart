@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:fpdart/fpdart.dart';
+import 'package:isar/isar.dart';
+import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
@@ -51,8 +53,9 @@ class SheetDataUsecase {
     return sheetDataRepository.getSheet(sheetId);
   }
 
-  void addPrevValue(List<UpdateUnit> updates, String sheetId) {
-    for (var update in updates) {
+  @useResult
+  void addPrevValue(Map<String, UpdateUnit> updates, String sheetId) {
+    for (var update in updates.values) {
       if (update is CellUpdate) {
         update.prevValue = sheetDataRepository.getCellContent(
           Point<int>(update.rowId, update.colId),
@@ -63,12 +66,14 @@ class SheetDataUsecase {
           update.colId,
           sheetId,
         );
+      } else if (update is SheetNameUpdate) {
+        update.previousName = sheetDataRepository.getSheetName(sheetId);
       }
     }
   }
 
   void applyUpdatesNoSort(
-    List<UpdateUnit> updates,
+    Map<String, UpdateUnit> updates,
     String sheetId,
     bool isFromHistory,
     bool isFromEditing,

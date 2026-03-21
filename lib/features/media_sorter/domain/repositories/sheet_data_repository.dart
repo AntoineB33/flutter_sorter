@@ -17,6 +17,7 @@ abstract class SheetDataRepository {
   Future<Either<Failure, List<CellUpdate>>> pasteSelection();
   String getCellContent(Point<int> cell, String sheetId);
   ColumnType getColumnType(int colId, String sheetId);
+  String getSheetName(String sheetId);
   Future<Either<Failure, void>> loadSheet(String sheetId);
   Future<void> addNewSheet(String sheetId);
   void update(List<UpdateUnit> updates, String sheetId);

@@ -13,6 +13,18 @@ class UpdateData {
   UpdateData(this.chronoId, this.sheetId, this.updates,
     {DateTime? timestamp})
     : timestamp = timestamp ?? DateTime.now();
+  
+  String getStringKey() {
+    return 'UpdateData-$timestamp-$chronoId';
+  }
+
+  bool isStringKey(String key) {
+    return key.startsWith('UpdateData-');
+  }
+
+  String getAddUpdateDataKey() {
+    return 'AddUpdateData-$sheetId';
+  }
 
   factory UpdateData.fromJson(Map<String, dynamic> json) =>
       _$UpdateDataFromJson(json);
@@ -43,9 +55,9 @@ sealed class UpdateUnit {
 class SheetNameUpdate extends UpdateUnit {
   final String type = 'SheetNameUpdate';
   final String newName;
-  final String? previousName;
+  String? previousName;
 
-  SheetNameUpdate(this.newName, this.previousName);
+  SheetNameUpdate(this.newName, {this.previousName});
 
   factory SheetNameUpdate.fromJson(Map<String, dynamic> json) =>
       _$SheetNameUpdateFromJson(json);

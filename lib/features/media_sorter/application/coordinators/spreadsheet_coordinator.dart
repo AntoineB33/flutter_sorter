@@ -198,7 +198,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyUpdatesNoSort(
-    List<UpdateUnit> updates,
+    Map<String, UpdateUnit> updates,
     String sheetId,
     bool isFromHistory,
     bool isFromEditing,
@@ -210,6 +210,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
       isFromEditing,
     );
     gridController.adjustRowHeightAfterUpdate(currentSheetId, updates);
+    sheetDataController.save(updates);
     updateTreeAndRowColCount();
     if (isFromEditing) {
       gridController.scrollToCell();

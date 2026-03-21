@@ -2,6 +2,6 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 
 abstract class HistoryRepository {
   UpdateData? moveInUpdateHistory(int direction);
-  void commitHistory(List<UpdateUnit> updates, String sheetId, bool isFromEditing);
+  void commitHistory(Map<String, UpdateUnit> updates, String sheetId, bool isFromEditing);
   void stopEditing(String prevValue);
 }
