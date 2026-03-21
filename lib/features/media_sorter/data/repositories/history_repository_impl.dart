@@ -34,7 +34,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
     final sheet = loadedSheetsDataStore.getSheet(sheetId);
     if (isFromEditing) {
       if (isLastChangeInSameEditingMode) {
-        (sheet.updateHistories[sheet.historyIndex] as CellUpdate).newValue = (updates.first as CellUpdate).newValue;
+        (sheet.updateHistories[sheet.historyIndex] as CellUpdate).newValue = (updates.values.first as CellUpdate).newValue;
       }
       isLastChangeInSameEditingMode = true;
     } else {

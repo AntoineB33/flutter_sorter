@@ -11,7 +11,7 @@ class SheetData {
   DateTime lastOpened;
   final Map<(int, int), String> cells;
   final Map<int, ColumnType> columnTypes;
-  final List<UpdateData> updateHistories;
+  List<UpdateData> updateHistories;
   int historyIndex;
   final List<double> rowsBottomPos;
   final List<double> colRightPos;
