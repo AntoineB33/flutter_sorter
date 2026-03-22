@@ -1,7 +1,7 @@
 
 class WorkbookCache {
   final List<String> _recentSheetIds = [];
-  String? get currentSheetId => _recentSheetIds.isNotEmpty ? _recentSheetIds.first : null;
+  String get currentSheetId => _recentSheetIds.first;
 
   bool containsSheetId(String sheetId) {
     return _recentSheetIds.contains(sheetId);

@@ -10,7 +10,7 @@ class HistoryUsecase {
     return historyRepository.moveInUpdateHistory(direction);
   }
   
-  void stopEditing(String prevValue) {
-    historyRepository.stopEditing(prevValue);
+  void stopEditing(Map<String, UpdateUnit> updates, bool escape) {
+    historyRepository.stopEditing(updates, escape);
   }
 }

@@ -5,13 +5,13 @@ import 'package:json_annotation/json_annotation.dart';
 part 'update_data.g.dart';
 
 @JsonSerializable(explicitToJson: true)
-class UpdateData {
+class UpdateData extends UpdateUnit {
   final DateTime timestamp;
   final int chronoId;
   final String sheetId;
   final Map<String, UpdateUnit> updates;
-  UpdateData(this.chronoId, this.sheetId, this.updates,
-    {DateTime? timestamp})
+  bool addOtherwiseRemove;
+  UpdateData(this.chronoId, this.sheetId, this.updates, {this.addOtherwiseRemove = false, DateTime? timestamp})
     : timestamp = timestamp ?? DateTime.now();
   
   String getStringKey() {
@@ -20,10 +20,6 @@ class UpdateData {
 
   bool isStringKey(String key) {
     return key.startsWith('UpdateData-');
-  }
-
-  String getAddUpdateDataKey() {
-    return 'AddUpdateData-$sheetId';
   }
 
   factory UpdateData.fromJson(Map<String, dynamic> json) =>
@@ -51,6 +47,13 @@ sealed class UpdateUnit {
   Map<String, dynamic> toJson();
 }
 
+class Pass extends UpdateUnit {
+  Pass();
+  factory Pass.fromJson() => Pass();
+  @override
+  Map<String, dynamic> toJson() => {};
+}
+
 @JsonSerializable()
 class SheetNameUpdate extends UpdateUnit {
   final String type = 'SheetNameUpdate';
@@ -74,6 +77,10 @@ class CellUpdate extends UpdateUnit {
   String? prevValue;
   String newValue;
   CellUpdate(this.rowId, this.colId, this.newValue, {this.prevValue});
+
+  String getStringKey() {
+    return 'CellUpdate-$rowId-$colId';
+  }
 
   factory CellUpdate.fromJson(Map<String, dynamic> json) =>
       _$CellUpdateFromJson(json);

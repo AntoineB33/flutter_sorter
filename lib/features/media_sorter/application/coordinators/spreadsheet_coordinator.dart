@@ -459,6 +459,12 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     selectionController.stopEditing(true);
   }
 
+  void stopEditing(bool escape) {
+    Map<String, UpdateData> updates = {};
+    selectionController.stopEditing(updates, escape);
+    sheetDataController.save(updates);
+  }
+
   void setColumnType(int col, ColumnType type) {
     final updates = [ColumnTypeUpdate(col, type)];
     applyUpdatesAndSort(updates, currentSheetId, false, false, false);

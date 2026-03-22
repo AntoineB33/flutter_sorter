@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:drift/drift.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 
 class SheetDataTables extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -12,6 +15,8 @@ class SheetDataTables extends Table {
   RealColumn get scrollOffsetX => real()();
   RealColumn get scrollOffsetY => real()();
   IntColumn get sortIndex => integer()();
+
+  static String get historyIndexUpdateKey => 'historyIndex';
 }
 
 // Store the position-content map here
@@ -46,40 +51,32 @@ class SheetColumnTypes extends Table {
   Set<Column> get primaryKey => {sheetId, columnIndex}; 
 }
 
+class UpdateUnitMapConverter extends TypeConverter<Map<String, UpdateUnit>, String> {
+  const UpdateUnitMapConverter();
+
+  @override
+  Map<String, UpdateUnit> fromSql(String fromDb) {
+    final decoded = jsonDecode(fromDb) as Map<String, dynamic>;
+    return decoded.map((key, value) {
+      return MapEntry(
+        key,
+        UpdateUnit.fromJson(value as Map<String, dynamic>),
+      );
+    });
+  }
+
+  @override
+  String toSql(Map<String, UpdateUnit> value) {
+    final encoded = value.map((key, val) => MapEntry(key, val.toJson()));
+    return jsonEncode(encoded);
+  }
+}
+
 class UpdateHistories extends Table {
   IntColumn get chronoId => integer().autoIncrement()(); // Primary key
   IntColumn get sheetId => integer().references(SheetDataTables, #id)();
   DateTimeColumn get timestamp => dateTime()();
-}
-
-// 2. Table specifically for SheetNameUpdates
-class NameUpdateUnits extends Table {
-  // Foreign key back to the UpdateHistories header
-  IntColumn get updateChronoId => integer().references(UpdateHistories, #chronoId)();
-  DateTimeColumn get timestamp => dateTime()();
-  
-  TextColumn get newName => text()();
-  TextColumn get previousName => text().nullable()();
-}
-
-// 3. Table specifically for CellUpdates
-class CellUpdateUnits extends Table {
-  // Foreign key back to the UpdateHistories header
-  IntColumn get updateChronoId => integer().references(UpdateHistories, #chronoId)();
-  
-  IntColumn get rowId => integer()();
-  IntColumn get colId => integer()();
-  TextColumn get prevValue => text().nullable()();
-  TextColumn get newValue => text()();
-}
-
-class ColumnTypeUpdateUnits extends Table {
-  // Foreign key back to the UpdateHistories header
-  IntColumn get updateChronoId => integer().references(UpdateHistories, #chronoId)();
-  
-  IntColumn get columnId => integer()();
-  IntColumn get prevType => intEnum<ColumnType>().nullable()();
-  IntColumn get newType => intEnum<ColumnType>()();
+  TextColumn get updates => text().map(const UpdateUnitMapConverter())();
 }
 
 class RowsBottomPos extends Table {

@@ -11,7 +11,7 @@ class SaveRepositoryImpl with WidgetsBindingObserver implements SaveRepository {
   
   // The Map acts as our cache. Using the entity's ID as the key 
   // guarantees the "latest wins" behavior automatically.
-  final Map<String, UpdateData> _pendingSaves = {};
+  final Map<String, UpdateUnit> _pendingSaves = {};
   
   // The trigger for our debounce logic
   final PublishSubject<void> _saveTrigger = PublishSubject<void>();
@@ -29,9 +29,8 @@ class SaveRepositoryImpl with WidgetsBindingObserver implements SaveRepository {
 
   /// Called by your Use Cases
   @override
-  void save(UpdateData entity) {
-    // 1. Add/Update the cache. If the ID exists, it overwrites the old one.
-    _pendingSaves[entity.id] = entity;
+  void save(Map<String, UpdateUnit> updates) {
+    _pendingSaves.addAll(updates);
     
     // 2. Send a signal. RxDart will absorb rapid signals and only emit 
     // to the listener once 800ms has passed with no new signals.

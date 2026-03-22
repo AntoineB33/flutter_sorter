@@ -1,3 +1,4 @@
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
@@ -12,8 +13,8 @@ class HistoryRepositoryImpl implements HistoryRepository {
   int chronoIdCounter = 0;
   bool isLastChangeInSameEditingMode = false;
 
-  String? get currentSheetId => workbookCache.currentSheetId;
-  SheetData? get currentSheet => currentSheetId != null ? loadedSheetsDataStore.getSheet(currentSheetId!) : null;
+  String get currentSheetId => workbookCache.currentSheetId;
+  SheetData get currentSheet => loadedSheetsDataStore.getSheet(currentSheetId);
 
   HistoryRepositoryImpl(this.loadedSheetsDataStore, this.workbookCache, this.selectionCache);
 
@@ -28,51 +29,57 @@ class HistoryRepositoryImpl implements HistoryRepository {
     final updateData = currentSheet!.updateHistories[currentSheet!.historyIndex];
     return updateData;
   }
+
+  void _removeLastHistoryEditingMode(Map<String, UpdateUnit> updates) {
+    UpdateData lastUpdateData = currentSheet.updateHistories.last;
+    lastUpdateData.addOtherwiseRemove = false;
+    currentSheet.updateHistories.removeAt(currentSheet.historyIndex);
+    currentSheet.historyIndex--;
+    updates[lastUpdateData.getStringKey()] = lastUpdateData;
+    updates[SheetDataTables.historyIndexUpdateKey] = Pass();
+  }
   
   @override
   void commitHistory(Map<String, UpdateUnit> updates, String sheetId, bool isFromEditing) {
     final sheet = loadedSheetsDataStore.getSheet(sheetId);
+    final updateData = UpdateData(chronoIdCounter++, sheetId, updates);
     if (isFromEditing) {
       if (isLastChangeInSameEditingMode) {
-        (sheet.updateHistories[sheet.historyIndex] as CellUpdate).newValue = (updates.values.first as CellUpdate).newValue;
+        CellUpdate cellUpdate = updates.values.first as CellUpdate;
+        CellUpdate prevCellUpdate = sheet.updateHistories[sheet.historyIndex].updates.values.first as CellUpdate;
+        if (cellUpdate.newValue == prevCellUpdate.prevValue) {
+          _removeLastHistoryEditingMode(updates);
+          isLastChangeInSameEditingMode = false;
+          return;
+        }
+        cellUpdate.prevValue = prevCellUpdate.prevValue;
+        sheet.updateHistories[sheet.historyIndex] = updateData;
+        return;
       }
       isLastChangeInSameEditingMode = true;
-    } else {
-      final updateData = UpdateData(chronoIdCounter++, sheetId, updates);
-      if (sheet.historyIndex < sheet.updateHistories.length - 1) {
-        sheet.updateHistories = sheet.updateHistories.sublist(
-          0,
-          sheet.historyIndex + 1,
-        );
-      }
-      sheet.updateHistories.add(updateData);
-      updates[]
-      sheet.historyIndex++;
-      if (sheet.historyIndex == 100) {
-        sheet.updateHistories.removeAt(0);
-        sheet.historyIndex--;
-      }
     }
+    if (sheet.historyIndex < sheet.updateHistories.length - 1) {
+      sheet.updateHistories = sheet.updateHistories.sublist(
+        0,
+        sheet.historyIndex + 1,
+      );
+    }
+    sheet.updateHistories.add(updateData);
+    updates[updateData.getStringKey()] = updateData;
+    sheet.historyIndex++;
+    if (sheet.historyIndex == 100) {
+      updates[sheet.updateHistories.first.getStringKey()] = sheet.updateHistories.first;
+      sheet.updateHistories.removeAt(0);
+      sheet.historyIndex--;
+    }
+    updates[SheetDataTables.historyIndexUpdateKey] = Pass();
   }
 
   @override
-  void stopEditing(String prevValue) {
+  void stopEditing(Map<String, UpdateUnit> updates, bool escape) {
+    if (escape && isLastChangeInSameEditingMode) {
+      _removeLastHistoryEditingMode(updates);
+    }
     isLastChangeInSameEditingMode = false;
-    final primarySelectedCell = selectionCache.getSelectionData(currentSheetId!).primarySelectedCell;
-    String newVal = loadedSheetsDataStore.getCellContent(
-      currentSheetId!,
-      primarySelectedCell.x,
-      primarySelectedCell.y,
-    );
-    if (newVal == prevValue) return;
-    commitHistory(
-        [
-          CellUpdate(
-            primarySelectedCell.x,
-            primarySelectedCell.y,
-            newVal,
-          ),
-        ], currentSheetId!, false
-      );
   }
 }

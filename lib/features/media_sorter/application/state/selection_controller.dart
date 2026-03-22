@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:flutter/foundation.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/history_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/selection_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data_usecase.dart';
@@ -16,7 +17,6 @@ class SelectionController extends ChangeNotifier {
   final SheetDataUsecase sheetDataUsecase;
   
   bool editingMode = false;
-  String previousEditingValue = '';
 
   String? get currentSheetId => workbookUsecase.currentSheetId;
   Point<int> get primarySelectedCell => selectionUsecase.primarySelectedCell;
@@ -76,10 +76,8 @@ class SelectionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void stopEditing(bool updateHistory) {
-    if (updateHistory) {
-      historyUsecase.stopEditing(previousEditingValue);
-    }
+  void stopEditing(Map<String, UpdateData> updates, bool escape) {
+    historyUsecase.stopEditing(updates, escape);
     editingMode = false;
     notifyListeners();
   }

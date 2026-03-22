@@ -9,6 +9,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 import 'package:trying_flutter/features/media_sorter/domain/helpers/utils_services.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
 
@@ -17,6 +18,7 @@ class SheetDataUsecase {
   final SortRepository sortRepository;
   final GridRepository gridRepository;
   final HistoryRepository historyRepository;
+  final SaveRepository saveRepository;
 
   final StreamSubscription<Failure> _failureSubscription;
 
@@ -25,6 +27,7 @@ class SheetDataUsecase {
     this.sortRepository,
     this.gridRepository,
     this.historyRepository,
+    this.saveRepository,
   ) : _failureSubscription = sheetDataRepository.failureStream.listen((failure) {
           UtilsServices.handleDataCorruption(Left(failure));
         });
@@ -83,6 +86,9 @@ class SheetDataUsecase {
       historyRepository.commitHistory(updates, sheetId, isFromEditing);
     }
     sheetDataRepository.update(updates, sheetId);
+  }
+  void save(Map<String, UpdateUnit> updates) {
+    saveRepository.save(updates);
   }
 
   List<CellUpdate> delete() {

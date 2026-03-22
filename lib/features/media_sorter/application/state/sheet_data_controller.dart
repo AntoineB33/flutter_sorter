@@ -45,4 +45,8 @@ class SheetDataController extends ChangeNotifier {
   ) {
     sheetDataUsecase.applyUpdatesNoSort(updates, sheetId, isFromHistory, isFromEditing);
   }
+
+  void save(Map<String, UpdateUnit> updates) {
+    sheetDataUsecase.save(updates);
+  }
 }
