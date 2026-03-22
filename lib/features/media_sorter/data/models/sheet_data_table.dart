@@ -73,9 +73,9 @@ class UpdateUnitMapConverter extends TypeConverter<Map<String, UpdateUnit>, Stri
 }
 
 class UpdateHistories extends Table {
-  IntColumn get chronoId => integer().autoIncrement()(); // Primary key
-  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
   DateTimeColumn get timestamp => dateTime()();
+  IntColumn get chronoId => integer()();
+  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
   TextColumn get updates => text().map(const UpdateUnitMapConverter())();
 }
 

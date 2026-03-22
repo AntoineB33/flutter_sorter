@@ -20,13 +20,12 @@ class HistoryRepositoryImpl implements HistoryRepository {
 
   @override
   UpdateData? moveInUpdateHistory(int direction) {
-    if (currentSheet == null) return null;
-    if (currentSheet!.historyIndex + direction < 0 ||
-        currentSheet!.historyIndex + direction >= currentSheet!.updateHistories.length) {
+    if (currentSheet.historyIndex + direction < 0 ||
+        currentSheet.historyIndex + direction >= currentSheet.updateHistories.length) {
       return null;
     }
-    currentSheet!.historyIndex += direction;
-    final updateData = currentSheet!.updateHistories[currentSheet!.historyIndex];
+    currentSheet.historyIndex += direction;
+    final updateData = currentSheet.updateHistories[currentSheet.historyIndex];
     return updateData;
   }
 
@@ -46,7 +45,8 @@ class HistoryRepositoryImpl implements HistoryRepository {
     if (isFromEditing) {
       if (isLastChangeInSameEditingMode) {
         CellUpdate cellUpdate = updates.values.first as CellUpdate;
-        CellUpdate prevCellUpdate = sheet.updateHistories[sheet.historyIndex].updates.values.first as CellUpdate;
+        UpdateData lastUpdateData = currentSheet.updateHistories.last;
+        CellUpdate prevCellUpdate = lastUpdateData.updates.values.first as CellUpdate;
         if (cellUpdate.newValue == prevCellUpdate.prevValue) {
           _removeLastHistoryEditingMode(updates);
           isLastChangeInSameEditingMode = false;
@@ -54,6 +54,9 @@ class HistoryRepositoryImpl implements HistoryRepository {
         }
         cellUpdate.prevValue = prevCellUpdate.prevValue;
         sheet.updateHistories[sheet.historyIndex] = updateData;
+        lastUpdateData.addOtherwiseRemove = false;
+        updates[lastUpdateData.getStringKey()] = lastUpdateData;
+        updates[updateData.getStringKey()] = updateData;
         return;
       }
       isLastChangeInSameEditingMode = true;
