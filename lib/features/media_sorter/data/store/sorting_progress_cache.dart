@@ -8,7 +8,7 @@ class SortProgressCache {
     if (!_dataBySheet.containsKey(sheetId)) {
       return false;
     }
-    return _dataBySheet[sheetId]!.cursors[0] == _dataBySheet[sheetId]!.possibleIntsById[0].length && _dataBySheet[sheetId]!.bestDistFound.isEmpty;
+    return !_dataBySheet[sheetId]!.hasMoreToExplore() && _dataBySheet[sheetId]!.bestDistFound.isEmpty;
   }
 
   SortProgressData getSortProgressData(String sheetId) {

@@ -306,7 +306,7 @@ class SortRepositoryImpl implements SortRepository {
     if (sortProgressDataMsg.newBestSortFound &&
         sortProgressCache.getSortProgressData(sheetId).bestDistFound.isEmpty) {
       bool isNaturalOrderValid = true;
-      if (sort.bestDistFound.isNotEmpty) {
+      if (sort.hasValidSort()) {
         for (int k = 0; k < sort.bestSortFound.length; k++) {
           if (sort.bestSortFound[k] != k) {
             isNaturalOrderValid = false;
@@ -318,7 +318,7 @@ class SortRepositoryImpl implements SortRepository {
     }
     sortProgressCache.update(sheetId, sort);
     saveDataProgress(sheetId);
-    if (sort.cursors[0] == sort.possibleIntsById[0].length) {
+    if (!sort.hasMoreToExplore()) {
       removeSortStatus(sheetId);
       if (sort.bestDistFound.isEmpty) {
         setValidSortIsImpossible(sheetId, true);

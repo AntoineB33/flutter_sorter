@@ -5,33 +5,14 @@ import 'package:trying_flutter/features/media_sorter/presentation/constants/page
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 
-class SheetData {
+class CoreSheetContent {
   final int id;
   String title;
   DateTime lastOpened;
   final Map<(int, int), String> cells;
   final Map<int, ColumnType> columnTypes;
-  List<UpdateData> updateHistories;
-  int historyIndex;
-  final List<double> rowsBottomPos;
-  final List<double> colRightPos;
-  final List<bool> rowsManuallyAdjustedHeight;
-  final List<bool> colsManuallyAdjustedWidth;
-  double colHeaderHeight;
-  double rowHeaderWidth;
-  final List<Point<int>> selectedCells;
-  int primarySelectedCellX;
-  int primarySelectedCellY;
-  double scrollOffsetX;
-  double scrollOffsetY;
-  final List<int> bestSortFound;
-  final List<int> cursors;
-  final List<List<int>> possibleIntsById;
-  final List<List<List<int>>> validAreasById;
-  final List<int> bestDistFound;
-  int sortIndex;
 
-  SheetData({
+  CoreSheetContent({
     required this.sheetContent,
     required this.updateHistories,
     required this.historyIndex,
