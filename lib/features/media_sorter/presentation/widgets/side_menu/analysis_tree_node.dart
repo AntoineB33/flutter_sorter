@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:trying_flutter/features/media_sorter/application/coordinators/spreadsheet_coordinator.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
 
 class AnalysisTreeNode extends StatelessWidget {
   final NodeStruct node;
   final WorkbookController controller;
+  final TreeController treeController;
 
   const AnalysisTreeNode({
     super.key,
     required this.node,
     required this.controller,
+    required this.treeController,
   });
 
   @override
@@ -17,6 +22,8 @@ class AnalysisTreeNode extends StatelessWidget {
     if (node.hideIfEmpty && node.children.isEmpty) {
       return const SizedBox.shrink();
     }
+
+    final SpreadsheetCoordinator coordinator = context.watch<SpreadsheetCoordinator>();
 
     final bool isLeaf = node.children.isEmpty;
     final bool isExpanded = node.isExpanded;
@@ -47,15 +54,14 @@ class AnalysisTreeNode extends StatelessWidget {
                       color: Colors.grey[700],
                     ),
                     onPressed: () {
-                      controller.toggleNodeExpansion(node, !isExpanded);
+                      treeController.nodeExpansion(node, !isExpanded);
                     },
                   ),
                 ),
 
               InkWell(
                 onTap: () {
-                  node.onTap(node);
-                  debugPrint("Selected node: ${node.message}");
+                  coordinator.onTap(node);
                 },
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(
@@ -94,7 +100,7 @@ class AnalysisTreeNode extends StatelessWidget {
                 children: node.children
                     .map(
                       (child) =>
-                          AnalysisTreeNode(node: child, controller: controller),
+                          AnalysisTreeNode(node: child, controller: controller, treeController: treeController),
                     )
                     .toList(),
               ),

@@ -1,286 +1,242 @@
-import 'dart:math';
+import 'dart:async';
 
-import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
+import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
-import 'package:trying_flutter/features/media_sorter/domain/usecases/layout_calculator.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/grid_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/selection_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data_usecase.dart';
+import 'package:trying_flutter/features/media_sorter/domain/usecases/workbook_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
+import 'package:trying_flutter/features/media_sorter/presentation/models/scroll_request.dart';
 
-class GridController {
+class GridController extends ChangeNotifier {
   // --- states ---
-  double row1ToScreenBottomHeight = 0.0;
-  double colBToScreenRightWidth = 0.0;
+  final _scrollEventController = StreamController<ScrollRequest>.broadcast();
+  Stream<ScrollRequest> get onScrollEvent => _scrollEventController.stream;
 
-  late void Function(SheetData sheet, Map<String, SelectionData> lastSelectionBySheet, String currentSheetName, {
-    double ? visibleHeight,
-    double ? visibleWidth,
-    bool notify,
-    bool save}) updateRowColCount;
-  late bool Function(SheetData sheet, AnalysisResult result, SortStatus sortStatus) canBeSorted;
-  late String Function(List<List<String>> table, int row, int col) getCellContent;
+  // Size of the window: useful to determine how many rows and columns to show.
+  // Informed by the UI at startup and each time the user resizes it.
+  double row0TopToScreenBottomHeight = 0.0;
+  double colALeftToScreenRightWidth = 0.0;
 
-  final SpreadsheetLayoutCalculator _layoutCalculator =
-      SpreadsheetLayoutCalculator();
+  // Number of cells in the tableView widget.
+  int tableViewRows = 0;
+  int tableViewCols = 0;
 
-  
-  int rowCount(SheetContent content) => content.table.length;
-  int colCount(SheetContent content) => content.table.isNotEmpty ? content.table[0].length : 0;
-      
-  GridController(); 
+  final SheetDataUsecase sheetDataUsecase;
+  final GridUsecase gridUsecase;
+  final WorkbookUsecase workbookUsecase;
+  final SelectionUsecase selectionUsecase;
 
+  String? get currentSheetId => workbookUsecase.currentSheetId;
 
-  int minRows(SheetData sheet, List<double> rowsBottomPos, int rowCount, double height) {
-    double tableHeight = getTargetTop(sheet, rowCount - 1);
-    if (height >= tableHeight) {
-      return rowsBottomPos.length +
-          ((height - getTargetTop(sheet, rowsBottomPos.length - 1) + 1) /
-                  GetDefaultSizes.getDefaultRowHeight())
-              .ceil();
+  GridController(
+    this.sheetDataUsecase,
+    this.gridUsecase,
+    this.workbookUsecase,
+    this.selectionUsecase,
+  );
+
+  double colHeaderHeight() {
+    try {
+      return sheetDataUsecase.getSheet(currentSheetId).colHeaderHeight;
+    } catch (e) {
+      return PageConstants.defaultColHeaderHeight;
     }
-    return rowCount;
-  }
-  
-  (int, int) getNewRowColCount(SelectionData selection, SheetData sheet, int rowCount, int colCount,     double? visibleHeight,
-    double? visibleWidth,
-  ) {
-    int targetRows = selection.tableViewRows;
-    int targetCols = selection.tableViewCols;
-    if (visibleHeight != null) {
-      row1ToScreenBottomHeight = visibleHeight;
-      targetRows = minRows(
-        sheet,
-        sheet.rowsBottomPos,
-        rowCount,
-        row1ToScreenBottomHeight,
-      );
-    }
-    if (visibleWidth != null) {
-      colBToScreenRightWidth = visibleWidth;
-      targetCols = minCols(
-        sheet,
-        sheet.colRightPos,
-        colCount,
-        colBToScreenRightWidth,
-      );
-    }
-    return (targetRows, targetCols);
   }
 
+  double getRowHeightCurrentSheet(int rowId) {
+    return gridUsecase.getRowHeight(currentSheetId, rowId);
+  }
 
-  double getRowHeight(SheetData sheet, int row) {
-    if (row < sheet.rowsBottomPos.length) {
-      if (row == 0) {
-        return sheet.rowsBottomPos[0];
+  double getRowHeight(String sheetId, int rowId) {
+    return gridUsecase.getRowHeight(sheetId, rowId);
+  }
+
+  int rowCount(String sheetId) {
+    return sheetDataUsecase.rowCount(sheetId);
+  }
+
+  int colCount(String sheetId) {
+    return sheetDataUsecase.colCount(sheetId);
+  }
+
+  int minRows(String sheetId, int rowCount, double height) {
+    return gridUsecase.minRows(sheetId, rowCount, height);
+  }
+
+  int minCols(String sheetId, int colCount, double width) {
+    return gridUsecase.minCols(sheetId, colCount, width);
+  }
+
+  void adjustRowHeightAfterUpdate(String sheetId, List<UpdateUnit> updateData) {
+    gridUsecase.adjustRowHeightAfterUpdate(sheetId, updateData);
+  }
+
+  void scrollToCell() {
+    final selection = selectionUsecase
+        .getSelectionData(currentSheetId);
+    final primarySelectedCell = selection
+        .primarySelectedCell;
+    int rowId = primarySelectedCell.x;
+    int colId = primarySelectedCell.y;
+    SelectionData lastSelection = selectionUsecase.getSelectionData(
+      currentSheetId,
+    );
+    bool scrollX = true;
+    bool scrollY = true;
+    if (rowId > 0) {
+      // Vertical Logic
+      final double targetTop =
+          gridUsecase.getTargetTop(currentSheetId, rowId) -
+          gridUsecase.getTargetTop(currentSheetId, 1);
+      final double targetBottom = gridUsecase.getTargetTop(
+        currentSheetId,
+        rowId + 1,
+      );
+      final double verticalViewport = row0TopToScreenBottomHeight;
+
+      if (targetTop < selection.scrollOffsetX) {
+        lastSelection.scrollOffsetX = targetTop;
+      } else if (targetBottom > verticalViewport) {
+        lastSelection.scrollOffsetX += targetBottom - verticalViewport;
+        updateRowColCount(
+          currentSheetId,
+          true,
+          false
+        );
       } else {
-        return sheet.rowsBottomPos[row] - sheet.rowsBottomPos[row - 1];
+        scrollY = false;
       }
     }
-    return GetDefaultSizes.getDefaultRowHeight();
-  }
 
-  double getTargetTop(SheetData sheet, int row) {
-    if (row <= 0) return 0.0;
-    final int nbKnownBottomPos = sheet.rowsBottomPos.length;
-    var rowsBottomPos = sheet.rowsBottomPos;
-    final int tableHeight = nbKnownBottomPos == 0
-        ? 0
-        : rowsBottomPos.last.toInt();
-    final double targetTop = row - 1 < nbKnownBottomPos
-        ? rowsBottomPos[row - 1].toDouble()
-        : tableHeight +
-              (row - nbKnownBottomPos) * GetDefaultSizes.getDefaultRowHeight();
-    return targetTop;
-  }
-
-  double getTargetLeft(SheetData sheet, int col) {
-    if (col <= 0) return 0.0;
-    final int nbKnownRightPos = sheet.colRightPos.length;
-    var columnsRightPos = sheet.colRightPos;
-    final int tableWidth = nbKnownRightPos == 0
-        ? 0
-        : columnsRightPos.last.toInt();
-    final double targetRight = col - 1 < nbKnownRightPos
-        ? columnsRightPos[col - 1].toDouble()
-        : tableWidth +
-              (col - nbKnownRightPos) * GetDefaultSizes.getDefaultCellWidth();
-    return targetRight;
-  }
-
-  int minCols(SheetData sheet, List<double> colRightPos, int colCount, double width) {
-    double tableWidth = getTargetLeft(sheet, colCount - 1);
-    if (width >= tableWidth) {
-      return colRightPos.length +
-          ((width - getTargetLeft(sheet, colRightPos.length - 1) + 1) /
-                  GetDefaultSizes.getDefaultCellWidth())
-              .ceil();
-    }
-    return colCount;
-  }
-
-  double getColumnWidth(SheetData sheet, int col) {
-    return getTargetLeft(sheet, col + 1) - getTargetLeft(sheet, col);
-  }
-
-  double calculateRequiredRowHeight(SheetData sheet, String text, int colId) {
-    final double availableWidth =
-        getColumnWidth(sheet, colId) - PageConstants.horizontalPadding;
-    return _layoutCalculator.calculateRowHeight(text, availableWidth);
-  }
-
-  void adjustRowHeightAfterUpdate(
-    SheetData sheet,
-    Map<String, SelectionData> lastSelectionBySheet,
-    String currentSheetName,
-    int row,
-    int col,
-    double row1ToScreenBottomHeight,
-    double colBToScreenRightWidth,
-    String newValue,
-    String prevValue,
-  ) {
-    if (row >= sheet.rowsBottomPos.length &&
-        row >= rowCount(sheet.sheetContent)) {
-      updateRowColCount(
-        sheet,
-        lastSelectionBySheet,
-        currentSheetName,
-        visibleHeight: row1ToScreenBottomHeight,
-        visibleWidth: colBToScreenRightWidth,
-        notify: false,
+    if (colId > 0) {
+      // Horizontal Logic
+      final double targetLeft =
+          gridUsecase.getTargetLeft(currentSheetId, colId) -
+          gridUsecase.getTargetLeft(currentSheetId, 1);
+      final double targetRight = gridUsecase.getTargetLeft(
+        currentSheetId,
+        colId + 1,
       );
-      return;
-    }
 
-    double heightItNeeds = calculateRequiredRowHeight(
-      sheet,
-      newValue,
-      col,
+      if (targetLeft < selection.scrollOffsetY) {
+        lastSelection.scrollOffsetY = targetLeft;
+      } else if (targetRight > colALeftToScreenRightWidth) {
+        lastSelection.scrollOffsetY += targetRight - colALeftToScreenRightWidth;
+        updateRowColCount(
+          currentSheetId,
+          false,
+          true,
+        );
+      } else {
+        scrollX = false;
+      }
+    }
+    if (scrollX || scrollY) {
+      scrollTo(
+        ScrollRequest(
+          xOffset: scrollX ? lastSelection.scrollOffsetY : null,
+          yOffset: scrollY ? lastSelection.scrollOffsetX : null,
+        ),
+      );
+    }
+  }
+
+  void scrollToLastSelection() {
+    SelectionData lastSelection = selectionUsecase.getSelectionData(
+      currentSheetId,
     );
+    scrollTo(
+      ScrollRequest(
+        xOffset: lastSelection.scrollOffsetY,
+        yOffset: lastSelection.scrollOffsetX,
+      ),
+    );
+  }
 
-    if (heightItNeeds > GetDefaultSizes.getDefaultRowHeight() &&
-        sheet.rowsBottomPos.length <= row) {
-      int prevRowsBottomPosLength = sheet.rowsBottomPos.length;
-      sheet.rowsBottomPos.addAll(
-        List.filled(row + 1 - sheet.rowsBottomPos.length, 0),
-      );
-      for (int i = prevRowsBottomPosLength; i <= row; i++) {
-        sheet.rowsBottomPos[i] = i == 0
-            ? GetDefaultSizes.getDefaultRowHeight()
-            : sheet.rowsBottomPos[i - 1] +
-                  GetDefaultSizes.getDefaultRowHeight();
-      }
-    }
+  void scrollTo(ScrollRequest request) {
+    _scrollEventController.add(request);
+  }
 
-    if (row < sheet.rowsBottomPos.length) {
-      if (sheet.rowsManuallyAdjustedHeight.length <= row ||
-          !sheet.rowsManuallyAdjustedHeight[row]) {
-        double currentHeight = getRowHeight(sheet, row);
-        if (heightItNeeds < currentHeight) {
-          double heightItNeeded = calculateRequiredRowHeight(
-            sheet,
-            prevValue,
-            col,
-          );
-          if (heightItNeeded == currentHeight) {
-            double newHeight = heightItNeeds;
-            if (row < sheet.sheetContent.table.length) {
-              for (int j = 0; j < colCount(sheet.sheetContent); j++) {
-                if (j == col) continue;
-                newHeight = max(
-                  calculateRequiredRowHeight(
-                    sheet,
-                    sheet.sheetContent.table[row][j],
-                    j,
-                  ),
-                  newHeight,
-                );
-                if (newHeight == heightItNeeded) break;
-              }
-            }
-            if (newHeight < heightItNeeded) {
-              double heightDiff = currentHeight - newHeight;
-              for (
-                int r = row;
-                r < sheet.rowsBottomPos.length;
-                r++
-              ) {
-                sheet.rowsBottomPos[r] -= heightDiff;
-              }
-              if (newHeight == GetDefaultSizes.getDefaultRowHeight()) {
-                int removeFrom = sheet.rowsBottomPos.length;
-                for (
-                  int r = sheet.rowsBottomPos.length - 1;
-                  r >= 0;
-                  r--
-                ) {
-                  if (r <
-                              sheet.rowsManuallyAdjustedHeight
-                                  .length &&
-                          sheet.rowsManuallyAdjustedHeight[r] ||
-                      sheet.rowsBottomPos[r] >
-                          (r == 0
-                                  ? 0
-                                  : sheet.rowsBottomPos[r - 1]) +
-                              GetDefaultSizes.getDefaultRowHeight()) {
-                    break;
-                  }
-                  removeFrom--;
-                }
-                sheet.rowsBottomPos = sheet
-                    .rowsBottomPos
-                    .sublist(0, removeFrom);
-              }
-            }
-          }
-        } else if (heightItNeeds > currentHeight) {
-          double heightDiff = heightItNeeds - currentHeight;
-          for (
-            int r = row;
-            r < sheet.rowsBottomPos.length;
-            r++
-          ) {
-            sheet.rowsBottomPos[r] =
-                sheet.rowsBottomPos[r] + heightDiff;
-          }
-        }
-      }
-    } else if (heightItNeeds == GetDefaultSizes.getDefaultRowHeight() &&
-        row == sheet.rowsBottomPos.length - 1) {
-      int i = row;
-      while (sheet.rowsBottomPos[i] ==
-              GetDefaultSizes.getDefaultRowHeight() &&
-          row > 0) {
-        sheet.rowsBottomPos.removeLast();
-        i--;
-      }
+  void initialLayoutConstraints({
+    required double maxHeight,
+    required double maxWidth,
+  }) {
+    double colHeaderHeight = sheetDataUsecase
+        .getSheet(currentSheetId)
+        .colHeaderHeight;
+    double rowHeaderWidth = sheetDataUsecase
+        .getSheet(currentSheetId)
+        .rowHeaderWidth;
+    updateRowColCountCurrentSheet(
+      heightViewport: maxHeight - colHeaderHeight,
+      widthViewport: maxWidth - rowHeaderWidth,
+    );
+  }
+
+  void updateRowColCountCurrentSheet({
+    double? heightPixels,
+    double? heightViewport,
+    double? widthPixels,
+    double? widthViewport,
+  }) {
+    final selection = selectionUsecase.getSelectionData(currentSheetId);
+    if (heightPixels != null) {
+      selection.scrollOffsetX = heightPixels;
     }
+    if (widthPixels != null) {
+      selection.scrollOffsetY = widthPixels;
+    }
+    double? row0TopToScreenBottomHeight = (heightViewport != null || heightPixels != null)
+        ? heightPixels ?? selection.scrollOffsetX + (heightViewport ?? this.row0TopToScreenBottomHeight)
+        : null;
+    double? colALeftToScreenRightWidth = (widthViewport != null || widthPixels != null)
+        ? widthPixels ?? selection.scrollOffsetY + (widthViewport ?? this.colALeftToScreenRightWidth)
+        : null;
     updateRowColCount(
-      sheet,
-      lastSelectionBySheet,
-      currentSheetName,
-      visibleHeight: row1ToScreenBottomHeight,
-      visibleWidth: colBToScreenRightWidth,
-      notify: false,
+      currentSheetId,
+      row0TopToScreenBottomHeight != null,
+      colALeftToScreenRightWidth != null,
     );
   }
 
-  bool isRowValid(SheetData sheet, int rowId, AnalysisResult result, SortStatus sortStatus) {
-    if (canBeSorted(sheet, result, sortStatus)) {
-      return rowId < result.isMedium.length && result.isMedium[rowId];
+  void updateRowColCount(
+    String sheetId,
+    bool updateRowCount,
+    bool updateColCount
+    ) {
+    int targetRows = tableViewRows;
+    int targetCols = tableViewCols;
+    if (updateRowCount) {
+      targetRows = minRows(
+        sheetId,
+        rowCount(sheetId),
+        row0TopToScreenBottomHeight,
+      );
     }
-    if (rowId == 0) {
-      return false;
+    if (updateColCount) {
+      targetCols = minCols(
+        sheetId,
+        colCount(sheetId),
+        colALeftToScreenRightWidth,
+      );
     }
-    for (int srcColId = 0; srcColId < colCount(sheet.sheetContent); srcColId++) {
-      if (GetNames.isSourceColumn(sheet.sheetContent.columnTypes[srcColId]) && getCellContent(sheet.sheetContent.table, rowId, srcColId).isNotEmpty) {
-        return true;
-      }
+    if (targetRows != tableViewRows || targetCols != tableViewCols) {
+      tableViewRows = targetRows;
+      tableViewCols = targetCols;
+      notifyListeners();
     }
-    return false;
   }
 
+  bool isRowValid(int rowId) {
+    return gridUsecase.isRowValid(rowId);
+  }
+
+  @override
+  void dispose() {
+    _scrollEventController.close();
+    super.dispose();
+  }
 }

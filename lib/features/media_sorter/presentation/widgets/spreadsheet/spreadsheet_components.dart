@@ -90,12 +90,12 @@ class SpreadsheetDataCell extends StatefulWidget {
   final bool isPrimarySelectedCell;
   final bool isSelected;
   final bool isEditing;
-  final String previousContent;
   final VoidCallback onTap;
   final VoidCallback onDoubleTap;
+  final VoidCallback onTapOutside;
   final ValueChanged<String>? onChanged;
   final void Function(String value, {bool moveUp}) onSave;
-  final void Function(String previousContent) onEscape;
+  final void Function() onEscape;
 
   const SpreadsheetDataCell({
     super.key,
@@ -106,9 +106,9 @@ class SpreadsheetDataCell extends StatefulWidget {
     required this.isPrimarySelectedCell,
     required this.isSelected,
     required this.isEditing,
-    required this.previousContent,
     required this.onTap,
     required this.onDoubleTap,
+    required this.onTapOutside,
     required this.onChanged,
     required this.onSave,
     required this.onEscape,
@@ -227,36 +227,41 @@ class _SpreadsheetDataCellState extends State<SpreadsheetDataCell> {
             const SingleActivator(LogicalKeyboardKey.enter): () =>
                 widget.onSave(_textController.text, moveUp: false),
             const SingleActivator(LogicalKeyboardKey.escape): () =>
-                widget.onEscape(widget.previousContent),
+                widget.onEscape(),
           },
           child: ScrollConfiguration(
             behavior: ScrollConfiguration.of(
               context,
             ).copyWith(scrollbars: false),
-            child: TextField(
-              controller: _textController,
-              focusNode: _editFocusNode,
-              autofocus: true,
-              maxLines: null,
-              minLines: 1,
-              onChanged: widget.onChanged,
-              textAlignVertical: TextAlignVertical.top,
-
-              // FIX: Use unified StrutStyle
-              strutStyle: effectiveStrut,
-              // FIX: Use unified TextStyle with fixed letterSpacing
-              style: PageConstants.cellStyle,
-
-              decoration: const InputDecoration(
-                contentPadding: EdgeInsets.zero,
-                isDense: true,
-                border: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
-              ),
-              onSubmitted: (value) => widget.onSave(value, moveUp: false),
+            child: TapRegion(
+              groupId: 'cell_editor', // Groups regions so they don't trigger each other
+              onTapOutside: (PointerDownEvent event) {
+                widget.onTapOutside();
+              },
+              child: TextField(
+                controller: _textController,
+                focusNode: _editFocusNode,
+                autofocus: true,
+                maxLines: null,
+                minLines: 1,
+                onChanged: widget.onChanged,
+                textAlignVertical: TextAlignVertical.top,
+              
+                // FIX: Use unified StrutStyle
+                strutStyle: effectiveStrut,
+                // FIX: Use unified TextStyle with fixed letterSpacing
+                style: PageConstants.cellStyle,
+              
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.zero,
+                  isDense: true,
+                  border: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                ),
+              )
             ),
           ),
         ),

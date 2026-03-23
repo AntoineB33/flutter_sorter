@@ -49,5 +49,17 @@ analyzer:
     
     # Treat unused catch clauses (e.g., inside try/catch) as warnings
     unused_catch_clause: warning
+
+    
+    # Treat unused results of function calls as errors when @useResult is used
+    unused_result: error
   plugins:
     - custom_lint
+  exclude:
+    - "build/**"
+    - ".dart_tool/**"
+    - "**/*.g.dart"      # If you use code generation
+    - "**/*.freezed.dart" # If you use Freezed
+    - "ios/**"
+    - "android/**"
+    - "web/**"

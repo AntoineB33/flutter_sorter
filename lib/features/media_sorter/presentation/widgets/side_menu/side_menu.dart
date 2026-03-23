@@ -2,8 +2,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:trying_flutter/features/media_sorter/application/coordinators/spreadsheet_coordinator.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
-import 'package:trying_flutter/features/media_sorter/presentation/controllers/workbook_controller.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
 import 'analysis_tree_node.dart';
 
 class SideMenu extends StatefulWidget {
@@ -61,13 +63,13 @@ class _SideMenuState extends State<SideMenu> {
 
   @override
   Widget build(BuildContext context) {
-    final WorkbookController workbookController =
-        Provider.of<WorkbookController>(context);
-    final TreeController treeController = Provider.of<TreeController>(context);
+    final SpreadsheetCoordinator coordinator = context.watch<SpreadsheetCoordinator>();
+    
+    final WorkbookController workbookController = context.watch<WorkbookController>();
+    final SortController sortController = context.watch<SortController>();
+    final TreeController treeController = context.watch<TreeController>();
 
-    if (_textEditingController.text != workbookController.currentSheetName) {
-      _textEditingController.text = workbookController.currentSheetName;
-    }
+    _textEditingController.text = workbookController.currentSheetName;
 
     return Container(
       color: Colors.grey[50],
@@ -82,91 +84,72 @@ class _SideMenuState extends State<SideMenu> {
           const SizedBox(height: 16),
 
           // --- Autocomplete Input Field ---
-          _buildSheetAutocomplete(workbookController),
+          _buildSheetAutocomplete(workbookController, coordinator),
 
           const SizedBox(height: 10),
 
           Row(
-            mainAxisAlignment:
-                MainAxisAlignment.center, // Centers the buttons horizontally
             children: [
-              // 1. Sort Media Button (Blue)
               ElevatedButton(
-                onPressed:
-                    workbookController.canBeSorted() &&
-                            !workbookController.sorted()
-                        ? workbookController.sortMedia
-                        : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  // Size reduction properties:
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  textStyle: const TextStyle(fontSize: 12),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  // Disabled state:
-                  disabledBackgroundColor: workbookController.sorted()
-                      ? Colors.grey
-                      : Colors.blue.withValues(alpha: 0.5),
-                ),
-                child: const Text("Sort media"),
+                onPressed: sortController.isApplyBetterSortButtonLocked() ? null : coordinator.applyBetterSortButton,
+                child: const Text("Find better sort"),
               ),
-
-              const SizedBox(width: 8), // Reduced spacing to match smaller buttons
-
-              // 2. Find Best Sort Button (Orange)
-              ElevatedButton(
-                onPressed:
-                    workbookController.canBeSorted() &&
-                            !workbookController.isFindingBestSort &&
-                            !workbookController.isFindingBestSortAndSort &&
-                            !workbookController.isBestSort
-                        ? workbookController.findBestSortToggle
-                        : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange, // New color
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  textStyle: const TextStyle(fontSize: 12),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  workbookController.isFindingBestSort
-                      ? "Stop sorting"
-                      : "Find the best order",
-                ),
-              ),
-
-              const SizedBox(width: 8), 
-
-              // 3. Find Best Sort & Apply Button (Purple)
-              ElevatedButton(
-                onPressed:
-                    workbookController.canBeSorted() &&
-                            !workbookController.isFindingBestSort &&
-                            !workbookController.isFindingBestSortAndSort &&
-                            !workbookController.isBestSort
-                        ? workbookController.findBestSortAndSortToggle
-                        : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple, // New color
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  textStyle: const TextStyle(fontSize: 12),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  workbookController.isFindingBestSortAndSort // Corrected variable
-                      ? "Stop sorting"
-                      : "Find & apply order", // Slightly changed to differentiate from button 2
-                ),
-              ),
+              const SizedBox(width: 16),
+              Text(sortController.isSortedWithValidSort() ? "Sorted" : "Not Sorted"),
             ],
           ),
 
+          const SizedBox(height: 10),
+          // The horizontally scrollable area
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                // --- Toggle 1 ---
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Text('Find best sort'),
+                      const SizedBox(width: 8),
+                      Switch(
+                        value: sortController.isFindingBestSort(),
+                        onChanged: sortController.findBestSortToggle,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(width: 16), // Spacing between the toggles
+                
+                // --- Toggle 2 ---
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Text('Feature Two'),
+                      const SizedBox(width: 8),
+                      Switch(
+                        value: sortController.isCurrentBestSortAlwaysApplied(),
+                        onChanged: sortController.isAlwaysApplySortToggleLocked() ? null : coordinator.alwaysApplySortToggle,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // You can add more toggles here, and the Row will continue to scroll horizontally
+              ],
+            ),
+          ),
+        
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 10),
@@ -202,28 +185,34 @@ class _SideMenuState extends State<SideMenu> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             AnalysisTreeNode(
-                              node: workbookController.errorRoot,
+                              node: treeController.errorRoot,
                               controller: workbookController,
+                              treeController: treeController,
                             ),
                             AnalysisTreeNode(
-                              node: workbookController.warningRoot,
+                              node: treeController.warningRoot,
                               controller: workbookController,
+                              treeController: treeController,
                             ),
                             AnalysisTreeNode(
                               node: treeController.mentionsRoot,
                               controller: workbookController,
+                              treeController: treeController,
                             ),
                             AnalysisTreeNode(
                               node: treeController.searchRoot,
                               controller: workbookController,
+                              treeController: treeController,
                             ),
                             AnalysisTreeNode(
-                              node: workbookController.categoriesRoot,
+                              node: treeController.categoriesRoot,
                               controller: workbookController,
+                              treeController: treeController,
                             ),
                             AnalysisTreeNode(
-                              node: workbookController.distPairsRoot,
+                              node: treeController.distPairsRoot,
                               controller: workbookController,
+                              treeController: treeController,
                             ),
                           ],
                         ),
@@ -239,13 +228,13 @@ class _SideMenuState extends State<SideMenu> {
     );
   }
 
-  Widget _buildSheetAutocomplete(WorkbookController workbookController) {
+  Widget _buildSheetAutocomplete(WorkbookController workbookController, SpreadsheetCoordinator coordinator) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Autocomplete<String>(
           optionsBuilder: (TextEditingValue textEditingValue) {
             final query = textEditingValue.text.toLowerCase();
-            final allSheets = workbookController.sheetNames;
+            final allSheets = workbookController.getRecentSheetIds();
             if (query.isEmpty) {
               final sorted = List<String>.from(allSheets);
               sorted.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
@@ -321,7 +310,7 @@ class _SideMenuState extends State<SideMenu> {
             );
           },
           onSelected: (String selection) {
-            workbookController.loadSheetByName(selection);
+            coordinator.loadSheet(selection, false);
           },
           fieldViewBuilder:
               (context, textController, focusNode, onFieldSubmitted) {
@@ -337,7 +326,7 @@ class _SideMenuState extends State<SideMenu> {
                     suffixIcon: Icon(Icons.table_chart),
                   ),
                   onSubmitted: (String value) {
-                    workbookController.loadSheetByName(value.trim());
+                    coordinator.loadSheet(value.trim(), false);
                   },
                 );
               },

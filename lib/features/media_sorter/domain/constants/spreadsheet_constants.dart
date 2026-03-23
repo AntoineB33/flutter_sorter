@@ -10,11 +10,6 @@ class SpreadsheetConstants {
   static const appearLast = "-appear_lst";
   static const first = "-fst";
   static const last = "-lst";
-  static const animationDurationMs = 100;
-  static const saveSheetDelayMs = 1000;
-  static const saveAnalysisResultDelayMs = 1000;
-  static const saveAllSortStatusDelayMs = 1000;
-  static const historyMaxLength = 100;
 
   static const all = -1;
   static const notUsedCst = -2;
@@ -37,7 +32,6 @@ class SpreadsheetConstants {
       "moved to unique mention in sprawl column for this attribute";
   static const refFromDepColMsg = "rows that have constraints based on it";
 
-  static const noSPNameFound = 'No Spreadsheet Name Found';
   static const defaultSheetName = 'Sheet1';
 
   static const folderName = 'media_sorter';
@@ -47,7 +41,4 @@ class SpreadsheetConstants {
   static const allAnalysisResultsFileName = 'all_analysis_results.json';
   static const lastOpenedSheetNameKey = 'lastOpenedSheetName';
   static const lastSelectedCellKey = 'lastSelectedCell';
-
-  // static const debugDelayMs = 500000000;
-  static const debugDelayMs = 0;
 }

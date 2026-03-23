@@ -1,0 +1,54 @@
+import 'dart:math';
+
+import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
+
+class SelectionCache {
+  final Map<String, SelectionData> _lastSelections = {};
+
+  Map<String, SelectionData> get lastSelections => Map.unmodifiable(_lastSelections);
+
+  bool containsSheetId(String sheetId) {
+    return _lastSelections.containsKey(sheetId);
+  }
+
+  double getScrollOffsetX(String sheetId) {
+    return _lastSelections[sheetId]?.scrollOffsetX ?? 0.0;
+  }
+
+  double getScrollOffsetY(String sheetId) {
+    return _lastSelections[sheetId]?.scrollOffsetY ?? 0.0;
+  }
+
+  List<String> getSheetIds() {
+    return _lastSelections.keys.toList();
+  }
+
+  List<Point<int>> getSelectedCells(String sheetId) {
+    return _lastSelections[sheetId]?.selectedCells ?? [];
+  }
+
+  SelectionData getSelectionData(String sheetId) {
+    return _lastSelections[sheetId] ??= SelectionData.empty();
+  }
+
+  void setLastSelections(Map<String, SelectionData> lastSelections, String currentSheetId) {
+    SelectionData? currentSheetSelection = _lastSelections[currentSheetId];
+    _lastSelections
+      ..clear()
+      ..addAll(lastSelections);
+    if (currentSheetSelection != null) {
+      _lastSelections[currentSheetId] = currentSheetSelection;
+    }
+  }
+
+  void setSelectionData(
+    String sheetId,
+    SelectionData selectionData,
+  ) {
+    _lastSelections[sheetId] = selectionData;
+  }
+
+  void removeSelectionData(String sheetId) {
+    _lastSelections.remove(sheetId);
+  }
+}

@@ -1,3 +1,9 @@
+
+import 'package:json_annotation/json_annotation.dart';
+
+part 'attribute.g.dart';
+
+@JsonSerializable()
 class Attribute {
   final String? name;
   int? rowId;
@@ -33,19 +39,8 @@ class Attribute {
   @override
   int get hashCode => Object.hash(name, rowId, colId);
 
-  factory Attribute.fromJson(Map<String, dynamic> json) {
-    return Attribute._(
-      name: json['name'] as String?,
-      rowId: json['rowId'] as int?,
-      colId: json['colId'] as int?,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'rowId': rowId,
-      'colId': colId,
-    };
-  }
+  factory Attribute.fromJson(Map<String, dynamic> json) => 
+      _$AttributeFromJson(json);
+  
+  Map<String, dynamic> toJson() => _$AttributeToJson(this);
 }

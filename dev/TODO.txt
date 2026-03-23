@@ -1,22 +1,24 @@
---- wip ---
+check each cache methods if all data changes are saved
 
+table of cells to map of cells
 
+ctrl + Z in edit mode
 
+readonly interfaces for data models
 
---- later features ---
+lightCalculate1
+sameResLightCheck
+changeResult
+lightCalculate2
+did result change?
 
-att1 with "att2 -appear_fst" means the first medium with att2 is a att1
-att1 with "att2 -fst" means all media with att1 come before other media with att2
+save all history updates
 
-
-OR and AND in dependencies
-
-
-
-
+save sheet names separately
 
 Adding a 5-minute screen-free break each hour (optional)
 
+play Youtube playlist
 
 
 Try a 30-second “blink break”:
