@@ -8,7 +8,7 @@ part 'update_data.g.dart';
 class UpdateData extends UpdateUnit {
   final DateTime timestamp;
   final int chronoId;
-  final String sheetId;
+  final int sheetId;
   final Map<String, UpdateUnit> updates;
   bool addOtherwiseRemove;
   UpdateData(this.chronoId, this.sheetId, this.updates, {this.addOtherwiseRemove = false, DateTime? timestamp})
@@ -25,6 +25,7 @@ class UpdateData extends UpdateUnit {
   factory UpdateData.fromJson(Map<String, dynamic> json) =>
       _$UpdateDataFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$UpdateDataToJson(this);
 }
 

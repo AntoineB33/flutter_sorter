@@ -27,7 +27,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   String get currentSheetId => workbookController.currentSheetId;
   Point<int> get primarySelectedCell =>
-      selectionController.getSelectionData(currentSheetId).primarySelectedCell;
+      selectionController.getSelectionData(currentSheetId);
 
   SpreadsheetCoordinator(
     this.historyController,
