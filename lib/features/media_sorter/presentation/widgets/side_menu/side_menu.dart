@@ -135,7 +135,7 @@ class _SideMenuState extends State<SideMenu> {
                   ),
                   child: Row(
                     children: [
-                      const Text('Feature Two'),
+                      const Text('Apply best sort automatically'),
                       const SizedBox(width: 8),
                       Switch(
                         value: sortController.isCurrentBestSortAlwaysApplied(),

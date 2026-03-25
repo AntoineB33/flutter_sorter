@@ -283,7 +283,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
     if (r == 0 && c == 0) {
       return SpreadsheetSelectAllCorner(
-        onTap: () => selectionController.selectAll(),
+        onTap: () => coordinator.selectAll(),
       );
     }
     if (r == 0) {
@@ -342,7 +342,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         _focusNode.requestFocus();
       },
       onEscape: () {
-        coordinator.stopEditing(false);
+        coordinator.stopEditing(true);
         _focusNode.requestFocus();
       },
     );

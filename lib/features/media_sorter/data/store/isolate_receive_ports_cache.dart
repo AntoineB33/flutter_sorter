@@ -11,9 +11,9 @@ class IsolateReceivePorts {
 }
 
 class IsolateReceivePortsCache {
-  final Map<String, IsolateReceivePorts> _isolatePorts = {};
+  final Map<int, IsolateReceivePorts> _isolatePorts = {};
 
-  void cancelB(String sheetId) {
+  void cancelB(int sheetId) {
     if (_isolatePorts[sheetId]!._isolateB != null) {
       // Kill the isolate immediately
       _isolatePorts[sheetId]!._isolateB!.kill(priority: Isolate.immediate);
@@ -26,7 +26,7 @@ class IsolateReceivePortsCache {
     }
   }
 
-  void cancelC(String sheetId) {
+  void cancelC(int sheetId) {
     if (_isolatePorts[sheetId]!._isolateC != null) {
       // Kill the isolate immediately
       _isolatePorts[sheetId]!._isolateC!.kill(priority: Isolate.immediate);
@@ -39,35 +39,35 @@ class IsolateReceivePortsCache {
     }
   }
 
-  void addIsolatePortIfNecessary(String sheetId) {
+  void addIsolatePortIfNecessary(int sheetId) {
     _isolatePorts[sheetId] ??= IsolateReceivePorts();
   }
 
-  void initPortB(String sheetId) {
+  void initPortB(int sheetId) {
     _isolatePorts[sheetId]!._portB = ReceivePort();
   }
 
-  void initPortC(String sheetId) {
+  void initPortC(int sheetId) {
     _isolatePorts[sheetId]!._portC = ReceivePort();
   }
 
-  SendPort getSendPortC(String sheetId) {
+  SendPort getSendPortC(int sheetId) {
     return _isolatePorts[sheetId]!._portC!.sendPort;
   }
 
-  ReceivePort getReceivePortB(String sheetId) {
+  ReceivePort getReceivePortB(int sheetId) {
     return _isolatePorts[sheetId]!._portB!;
   }
 
-  ReceivePort getReceivePortC(String sheetId) {
+  ReceivePort getReceivePortC(int sheetId) {
     return _isolatePorts[sheetId]!._portC!;
   }
 
-  void setIsolateB(String sheetId, Isolate? isolate) {
+  void setIsolateB(int sheetId, Isolate? isolate) {
     _isolatePorts[sheetId]!._isolateB = isolate;
   }
 
-  void setIsolateC(String sheetId, Isolate? isolate) {
+  void setIsolateC(int sheetId, Isolate? isolate) {
     _isolatePorts[sheetId]!._isolateC = isolate;
   }
 }

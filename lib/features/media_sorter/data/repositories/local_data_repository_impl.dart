@@ -6,7 +6,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/utils/logger.dart';
 
-class SaveRepositoryImpl with WidgetsBindingObserver implements SaveRepository {
+class LocalDataRepositoryImpl with WidgetsBindingObserver implements SaveRepository {
   final ILocalDataSource _localDataSource;
   
   // The Map acts as our cache. Using the entity's ID as the key 
@@ -17,7 +17,7 @@ class SaveRepositoryImpl with WidgetsBindingObserver implements SaveRepository {
   final PublishSubject<void> _saveTrigger = PublishSubject<void>();
   StreamSubscription? _saveSubscription;
 
-  SaveRepositoryImpl(this._localDataSource) {
+  LocalDataRepositoryImpl(this._localDataSource) {
     // Listen to app lifecycle changes (pause, background, etc.)
     WidgetsBinding.instance.addObserver(this);
 
@@ -55,10 +55,13 @@ class SaveRepositoryImpl with WidgetsBindingObserver implements SaveRepository {
       // We use putIfAbsent so we don't accidentally overwrite newer edits 
       // that a user might have made while the DB was failing.
       for (var item in itemsToSave) {
-        _pendingSaves.putIfAbsent(item.id, () => item);
+        _pendingSaves.putIfAbsent(item.getStringKey(), () => item);
       }
       logger.e("Database save failed. Items returned to cache. Error: $e");
     }
+  }
+
+  Future<List<int>> getRecentSheetIds() async {
   }
 
   /// App Lifecycle Hook
@@ -74,6 +77,7 @@ class SaveRepositoryImpl with WidgetsBindingObserver implements SaveRepository {
   }
 
   /// Clean up when the repository is destroyed
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _saveSubscription?.cancel();

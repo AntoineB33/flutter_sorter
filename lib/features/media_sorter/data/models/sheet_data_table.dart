@@ -15,8 +15,6 @@ class SheetDataTables extends Table {
   RealColumn get scrollOffsetX => real()();
   RealColumn get scrollOffsetY => real()();
   IntColumn get sortIndex => integer()();
-
-  static String get historyIndexUpdateKey => 'historyIndex';
 }
 
 // Store the position-content map here
@@ -173,3 +171,73 @@ class BestDistFound extends Table {
   Set<Column> get primaryKey => {sheetId, id};
 }
 
+class AnalysisResults extends Table {
+  // Excluded from JSON. Reconstituted in the constructor.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final NodeStruct errorRoot = NodeStruct(
+    instruction: SpreadsheetConstants.errorMsg,
+    hideIfEmpty: true,
+  );
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final NodeStruct warningRoot = NodeStruct(
+    instruction: SpreadsheetConstants.warningMsg,
+    hideIfEmpty: true,
+  );
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final NodeStruct categoriesRoot = NodeStruct(
+    instruction: SpreadsheetConstants.categoryMsg,
+  );
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final NodeStruct distPairsRoot = NodeStruct(
+    instruction: SpreadsheetConstants.distPairsMsg,
+  );
+
+  // Added as fields so json_serializable can automatically save/load them
+  final List<NodeStruct> errorChildren;
+  final List<NodeStruct> warningChildren;
+  final List<NodeStruct> categoryChildren;
+  final List<NodeStruct> distPairChildren;
+
+  /// 2D table of attribute identifiers (row index or name)
+  /// mentioned in each cell.
+  List<List<Set<Attribute>>> tableToAtt;
+  Map<String, Cell> names;
+  Map<String, List<int>> attToCol;
+  List<int> nameIndexes;
+  List<List<StrInt>> formatedTable;
+
+  /// Maps attribute identifiers (row index or name)
+  /// to a map of pointers (row index) to the column index,
+  /// in this direction so it is easy to diffuse characteristics to pointers.
+  @JsonKey(fromJson: _attColMapFromJson, toJson: _attColMapToJson)
+  Map<Attribute, Map<int, Cols>> attToRefFromAttColToCol;
+  @JsonKey(fromJson: _depColMapFromJson, toJson: _depColMapToJson)
+  Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol;
+  Map<int, Set<Attribute>> colToAtt;
+  List<bool> isMedium;
+  List<int> validRowIndexes;
+  List<int>? currentBestSort;
+
+  List<List<int>> validAreas;
+  Map<int, Map<int, List<SortingRule>>> myRules;
+  List<List<int>> groupAttribution;
+  List<List<int>> groupsToMaximize;
+
+  bool validSortIsImpossible;
+  bool isFindingBestSort;
+  bool sortedWithValidSort;
+
+  // true if the table is currently sorted with the current best sort found, false otherwise. If no valid sort is found, should be true.
+  bool sortedWithCurrentBestSort;
+
+  bool bestSortPossibleFound;
+}
+
+class SortStatusData extends Table {
+  bool toApplyNextBestSort;
+  bool toAlwaysApplyCurrentBestSort;
+  bool analysisDone;
+}

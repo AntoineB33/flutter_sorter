@@ -1,23 +1,23 @@
 
 class WorkbookCache {
-  final List<String> _recentSheetIds = [];
-  String get currentSheetId => _recentSheetIds.first;
+  final List<int> _recentSheetIds = [];
+  int get currentSheetId => _recentSheetIds.first;
 
-  bool containsSheetId(String sheetId) {
+  bool containsSheetId(int sheetId) {
     return _recentSheetIds.contains(sheetId);
   }
   
-  List<String> getRecentSheetIds() {
+  List<int> getRecentSheetIds() {
     return _recentSheetIds;
   }
 
-  void setRecentIds(List<String> recentIds) {
+  void setRecentIds(List<int> recentIds) {
     _recentSheetIds
       ..clear()
       ..addAll(recentIds);
   }
 
-  void addSheetId(String sheetId, int index) {
+  void addSheetId(int sheetId, int index) {
     _recentSheetIds.insert(index, sheetId);
   }
 

@@ -5,33 +5,33 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 
 abstract class SortRepository {
   Stream<Failure> get failureStream;
-  bool isSorting(String sheetId);
-  bool getAnalysisDone(String sheetId);
-  Future<void> analyze(String sheetId);
+  bool isSorting(int sheetId);
+  bool getAnalysisDone(int sheetId);
+  Future<void> analyze(int sheetId);
   List<String> getSheetIds();
   Future<Either<Failure, void>> loadSortStatus();
-  bool getToApplyOnce(String sheetId);
-  bool isCalculating(String sheetId);
-  bool isCurrentBestSortAlwaysApplied(String sheetId);
-  bool willNextBestSortBeApplied(String sheetId);
-  bool isFindingBestSort(String sheetId);
-  void setToApplyOnce(String sheetId, bool toApplyOnce);
-  void setSortedWithCurrentBestSort(String sheetId, bool value);
-  bool isSortedWithValidSort(String sheetId);
+  bool getToApplyOnce(int sheetId);
+  bool isCalculating(int sheetId);
+  bool isCurrentBestSortAlwaysApplied(int sheetId);
+  bool willNextBestSortBeApplied(int sheetId);
+  bool isFindingBestSort(int sheetId);
+  void setToApplyOnce(int sheetId, bool toApplyOnce);
+  void setSortedWithCurrentBestSort(int sheetId, bool value);
+  bool isSortedWithValidSort(int sheetId);
   bool handleSortProgressDataMsg(
     SortProgressDataMsg sortProgressDataMsg,
-    String sheetId,
+    int sheetId,
   );
-  List<UpdateUnit> sortTableWithCurrentBestSort(String sheetId);
-  void lightCalculations(String sheetId);
-  Future<Stream<SortProgressDataMsg>> launchCalculation(String sheetId);
-  bool canFindBetterSort(String sheetId);
+  Map<String, UpdateUnit> sortTableWithCurrentBestSort(int sheetId);
+  void lightCalculations(int sheetId);
+  Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId);
+  bool canFindBetterSort(int sheetId);
   bool isApplyBetterSortButtonLocked();
-  bool sortedWithCurrentBestSort(String sheetId);
+  bool sortedWithCurrentBestSort(int sheetId);
   bool isApplyBetterSortButtonInAction();
-  void setToAlwaysApplyBestSort(String sheetId, bool toAlwaysApply);
-  Future<Either<Failure, void>> loadAnalysisResult(String sheetId);
-  void removeSortStatus(String sheetId);
-  void addNewAnalysisResult(String sheetId);
-  void setFindingBestSort(String sheetId, bool value);
+  void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply);
+  Future<Either<Failure, void>> loadAnalysisResult(int sheetId);
+  void removeSortStatus(int sheetId);
+  void addNewAnalysisResult(int sheetId);
+  void setFindingBestSort(int sheetId, bool value);
 }

@@ -4,36 +4,40 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 
 class LoadedSheetsCache {
-  final Map<String, SheetData> _loadedSheetsData = {};
+  final Map<int, CoreSheetContent> _loadedSheetsData = {};
 
-  String getName(String sheetId) {
-    return _loadedSheetsData[sheetId]?.sheetName ?? '';
+  String getTitle(int sheetId) {
+    return _loadedSheetsData[sheetId]!.title;
   }
 
-  bool containsSheetId(String sheetId) {
+  bool containsSheetId(int sheetId) {
     return _loadedSheetsData.containsKey(sheetId);
   }
 
-  SheetData getSheet(String sheetId) {
+  CoreSheetContent getSheet(int sheetId) {
     return _loadedSheetsData[sheetId]!;
   }
 
-  SheetContent getSheetContent(String sheetId) {
-    return _loadedSheetsData[sheetId]!.sheetContent;
+  Map<(int, int), String> getCells(int sheetId) {
+    return _loadedSheetsData[sheetId]!.cells;
   }
 
-  int rowCount(String sheetId) {
-    return getSheetContent(sheetId).table.length;
+  Map<int, ColumnType> getColumnTypes(int sheetId) {
+    return _loadedSheetsData[sheetId]!.columnTypes;
   }
 
-  int colCount(String sheetId) {
-    return getSheetContent(sheetId).table.isEmpty
+  int rowCount(int sheetId) {
+    return getCells(sheetId).length;
+  }
+
+  int colCount(int sheetId) {
+    return getCells(sheetId).table.isEmpty
         ? 0
-        : getSheetContent(sheetId).table[0].length;
+        : getCells(sheetId).table[0].length;
   }
 
-  String getCellContent(String sheetId, int row, int col) {
-    final sheetContent = getSheetContent(sheetId);
+  String getCellContent(int sheetId, int row, int col) {
+    final sheetContent = getCells(sheetId);
     if (row < sheetContent.table.length &&
         col < sheetContent.table[row].length) {
       return sheetContent.table[row][col];
@@ -41,24 +45,24 @@ class LoadedSheetsCache {
     return "";
   }
 
-  ColumnType getColumnType(String sheetId, int col) {
-    final sheetContent = getSheetContent(sheetId);
+  ColumnType getColumnType(int sheetId, int col) {
+    final sheetContent = getCells(sheetId);
     if (col < sheetContent.columnTypes.length) {
       return sheetContent.columnTypes[col];
     }
     return ColumnType.attributes;
   }
 
-  String getSheetName(String sheetId) {
+  String getSheetName(int sheetId) {
     return _loadedSheetsData[sheetId]?.title ?? '';
   }
 
-  void setSheet(String sheetId, SheetData sheetData) {
+  void setSheet(int sheetId, CoreSheetContent sheetData) {
     _loadedSheetsData[sheetId] = sheetData;
   }
 
   void _increaseColumnCount(
-    String sheetId,
+    int sheetId,
     int col,
     SheetContent sheetContent,
   ) {
@@ -83,9 +87,7 @@ class LoadedSheetsCache {
     }
   }
 
-  void _updateCell(
-    String sheetId,
-    CellUpdate update) {
+  void _updateCell(int sheetId, CellUpdate update) {
     String prevValue = '';
     SheetContent sheetContent = _loadedSheetsData[sheetId]!.sheetContent;
     int row = update.rowId;
@@ -135,7 +137,7 @@ class LoadedSheetsCache {
     }
   }
 
-  void update(List<UpdateUnit> updates, String sheetId) {
+  void update(List<UpdateUnit> updates, int sheetId) {
     for (var update in updates) {
       if (update is CellUpdate) {
         _updateCell(sheetId, update);
@@ -147,7 +149,7 @@ class LoadedSheetsCache {
     }
   }
 
-  void _setColumnType(String sheetId, ColumnTypeUpdate update) {
+  void _setColumnType(int sheetId, ColumnTypeUpdate update) {
     int col = update.colId;
     ColumnType type = update.newColumnType;
     SheetContent sheetContent = _loadedSheetsData[sheetId]!.sheetContent;

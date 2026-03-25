@@ -186,7 +186,7 @@ class CalculationDatasource {
     List<int> lastOccurrenceIds = List.filled(n, -1);
     List<List<int>> lastOccurrence = List.generate(n, (_) => List.filled(n, -1));
     int distCheckId = 0;
-    for (id = 0; id <= sortProgressData.id; id++) {
+    for (id = 0; id <= sortProgressData.sortIndex; id++) {
       final result = getDist(groupAttribution, lastOccurrence, lastOccurrenceIds, bestSortFound, currentDist, id, distCheckId);
       distCheckId = result.newDistCheckId;
     }
@@ -238,7 +238,7 @@ class CalculationDatasource {
         } else if (id == n) {
           iterBeforeSend = iterBeforeSendCst;
           bestDistFound.setAll(0, currentDist);
-          sortProgressData.id = id;
+          sortProgressData.sortIndex = id;
           sendPort.send(sortProgressData);
           if (bestDistFound.every((element) => element == 0)) {
             return;
@@ -255,7 +255,7 @@ class CalculationDatasource {
       iterBeforeSend--;
       if (iterBeforeSend == 0) {
         iterBeforeSend = iterBeforeSendCst;
-        sortProgressData.id = id;
+        sortProgressData.sortIndex = id;
         sendPort.send(sortProgressData);
       }
     }

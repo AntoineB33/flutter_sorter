@@ -4,7 +4,6 @@ import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/calculation_datasource.dart';
-import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/utils_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/isolate_receive_ports_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
@@ -33,8 +32,6 @@ class SortRepositoryImpl implements SortRepository {
   final SelectionCache selectionCache;
   final WorkbookCache workbookCache;
 
-  final IFileSheetLocalDataSource saveDataSource;
-
   final StreamController<Failure> _failureController =
       StreamController<Failure>.broadcast();
 
@@ -44,20 +41,20 @@ class SortRepositoryImpl implements SortRepository {
 
   @override
   Stream<Failure> get failureStream => _failureController.stream;
-  String get currentSheetId => workbookCache.currentSheetId;
+  int get currentSheetId => workbookCache.currentSheetId;
 
   @override
-  bool isSorting(String sheetId) {
+  bool isSorting(int sheetId) {
     return sortStatusCache.isSorting(sheetId);
   }
 
   @override
-  bool getAnalysisDone(String sheetId) {
+  bool getAnalysisDone(int sheetId) {
     return sortStatusCache.getAnalysisDone(sheetId);
   }
 
   @override
-  Future<void> analyze(String sheetId) async {
+  Future<void> analyze(int sheetId) async {
     isolateReceivePortsCache.cancelB(sheetId);
     AnalysisReturn resultB = await runHeavyCalculationB(
       sheetId,
@@ -83,7 +80,7 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  bool canFindBetterSort(String sheetId) {
+  bool canFindBetterSort(int sheetId) {
     return !sortProgressCache.isValidSortImpossible(sheetId) &&
         (!analysisResultCache.bestSortPossibleFound(sheetId) ||
             !analysisResultCache.sortedWithCurrentBestSort(sheetId));
@@ -97,7 +94,7 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  bool sortedWithCurrentBestSort(String sheetId) {
+  bool sortedWithCurrentBestSort(int sheetId) {
     return analysisResultCache.sortedWithCurrentBestSort(sheetId);
   }
 
@@ -109,13 +106,13 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  void setToAlwaysApplyBestSort(String sheetId, bool toAlwaysApply) {
+  void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
     sortStatusCache.setToAlwaysApplyBestSort(currentSheetId, toAlwaysApply);
     saveAllSortStatus();
   }
 
   @override
-  Future<Either<Failure, void>> loadAnalysisResult(String sheetId) async {
+  Future<Either<Failure, void>> loadAnalysisResult(int sheetId) async {
     final result = await UtilsService.handleDataSourceCall(
       () => saveDataSource.getAnalysisResult(sheetId),
     );
@@ -126,30 +123,29 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  void removeSortStatus(String sheetId) {
+  void removeSortStatus(int sheetId) {
     sortStatusCache.removeSortStatus(sheetId);
     saveAllSortStatus();
   }
 
   @override
-  void addNewAnalysisResult(String sheetId) {
+  void addNewAnalysisResult(int sheetId) {
     analysisResultCache.addNewAnalysisResult(sheetId);
     saveAnalysisResult(sheetId);
   }
 
   @override
-  bool isCurrentBestSortAlwaysApplied(String sheetId) =>
+  bool isCurrentBestSortAlwaysApplied(int sheetId) =>
       sortStatusCache.isCurrentBestSortAlwaysApplied(sheetId);
   @override
-  bool willNextBestSortBeApplied(String sheetId) =>
+  bool willNextBestSortBeApplied(int sheetId) =>
       sortStatusCache.willNextBestSortBeApplied(sheetId);
   @override
-  bool getToApplyOnce(String sheetId) =>
-      sortStatusCache.getToApplyOnce(sheetId);
+  bool getToApplyOnce(int sheetId) => sortStatusCache.getToApplyOnce(sheetId);
   @override
-  bool isCalculating(String sheetId) => sortStatusCache.containsSheet(sheetId);
+  bool isCalculating(int sheetId) => sortStatusCache.containsSheet(sheetId);
   @override
-  bool isSortedWithValidSort(String sheetId) =>
+  bool isSortedWithValidSort(int sheetId) =>
       analysisResultCache.isSortedWithValidSort(sheetId);
 
   SortRepositoryImpl(
@@ -158,7 +154,6 @@ class SortRepositoryImpl implements SortRepository {
     this.sortProgressCache,
     this.sortStatusCache,
     this.isolateReceivePortsCache,
-    this.saveDataSource,
     this.selectionCache,
     this.workbookCache,
   ) {
@@ -184,13 +179,13 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  void setToApplyOnce(String sheetId, bool toApplyOnce) {
+  void setToApplyOnce(int sheetId, bool toApplyOnce) {
     sortStatusCache.setToApplyOnce(sheetId, toApplyOnce);
     saveAllSortStatus();
   }
 
   @override
-  void setSortedWithCurrentBestSort(String sheetId, bool value) {
+  void setSortedWithCurrentBestSort(int sheetId, bool value) {
     analysisResultCache.setSortedWithCurrentBestSort(sheetId, value);
     saveAllSortStatus();
   }
@@ -249,7 +244,7 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  Future<Stream<SortProgressDataMsg>> launchCalculation(String sheetId) async {
+  Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId) async {
     isolateReceivePortsCache.initPortC(sheetId);
     final args = (
       isolateReceivePortsCache.getSendPortC(sheetId),
@@ -267,7 +262,7 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  PreCalculationsResult? lightCalculations(String sheetId) {
+  PreCalculationsResult? lightCalculations(int sheetId) {
     isolateReceivePortsCache.addIsolatePortIfNecessary(sheetId);
     PreCalculationsResult? result = lightCalculate1();
     if (result != null) {
@@ -292,7 +287,7 @@ class SortRepositoryImpl implements SortRepository {
     return null;
   }
 
-  void setSortedWithValidSort(String sheetId, bool sorted) {
+  void setSortedWithValidSort(int sheetId, bool sorted) {
     analysisResultCache.setSortedWithValidSort(sheetId, sorted);
     saveAnalysisResult(sheetId);
   }
@@ -300,7 +295,7 @@ class SortRepositoryImpl implements SortRepository {
   @override
   bool handleSortProgressDataMsg(
     SortProgressDataMsg sortProgressDataMsg,
-    String sheetId,
+    int sheetId,
   ) {
     SortProgressData sort = sortProgressDataMsg.sortProgressData;
     if (sortProgressDataMsg.newBestSortFound &&
@@ -330,35 +325,32 @@ class SortRepositoryImpl implements SortRepository {
         sortProgressDataMsg.sortProgressData.bestDistFound.every(
           (element) => element == 0,
         )) {
-      setFindingBestSort(sheetId, false);
       return true;
     }
     return sortProgressDataMsg.newBestSortFound &&
         !analysisResultCache.isFindingBestSort(sheetId);
   }
 
-  void setValidSortIsImpossible(String sheetId, bool impossible) {
+  void setValidSortIsImpossible(int sheetId, bool impossible) {
     analysisResultCache.setValidSortIsImpossible(sheetId, impossible);
     saveAnalysisResult(sheetId);
   }
 
   @override
-  void setFindingBestSort(String sheetId, bool findingBestSort) {
+  void setFindingBestSort(int sheetId, bool findingBestSort) {
     analysisResultCache.setFindingBestSort(sheetId, findingBestSort);
-    saveAnalysisResult(sheetId);
+    if (!findingBestSort && sortProgressCache.getSortProgressData(sheetId).bestDistFound.isNotEmpty) {
+      isolateReceivePortsCache.cancelC(sheetId);
+    }
   }
 
   @override
-  bool isFindingBestSort(String sheetId) {
+  bool isFindingBestSort(int sheetId) {
     return analysisResultCache.isFindingBestSort(sheetId);
   }
 
-  void cancelFindingBestSort(String sheetId) {
-    isolateReceivePortsCache.cancelC(sheetId);
-  }
-
   Future<AnalysisReturn> runHeavyCalculationB(
-    String sheetId,
+    int sheetId,
     AnalysisResult result,
   ) async {
     isolateReceivePortsCache.initPortB(sheetId);
@@ -367,7 +359,7 @@ class SortRepositoryImpl implements SortRepository {
       sheetId,
       await Isolate.spawn(CalculationService.runCalculation, [
         isolateReceivePortsCache.getReceivePortB(sheetId).sendPort,
-        loadedSheetsCache.getSheetContent(sheetId),
+        loadedSheetsCache.getCells(sheetId),
         result,
       ]),
     );
@@ -379,7 +371,7 @@ class SortRepositoryImpl implements SortRepository {
     return analysisReturn;
   }
 
-  void _sortResult(List<int> sortOrder, String sheetId) {
+  void _sortResult(List<int> sortOrder, int sheetId) {
     AnalysisResult result = analysisResultCache.getAnalysisResult(sheetId);
     int rowCount = result.tableToAtt.length;
     if (rowCount == 0) {
@@ -470,7 +462,7 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  List<UpdateUnit> sortTableWithCurrentBestSort(String sheetId) {
+  Map<String, UpdateUnit> sortTableWithCurrentBestSort(int sheetId) {
     List<int> sortOrder = [0];
     AnalysisResult result = analysisResultCache.getAnalysisResult(sheetId);
     List<int> stack = result.currentBestSort!
@@ -480,8 +472,8 @@ class SortRepositoryImpl implements SortRepository {
         .toList()
         .reversed
         .toList();
-    final table = loadedSheetsCache.getSheetContent(sheetId).table;
-    List<int> added = List.filled(table.length, 0);
+    final table = loadedSheetsCache.getCells(sheetId);
+    List<int> added = List.filled(loadedSheetsCache.rowCount(sheetId), 0);
     for (int i in stack) {
       added[i] = 1;
     }
@@ -551,7 +543,7 @@ class SortRepositoryImpl implements SortRepository {
     return updates;
   }
 
-  void saveAnalysisResult(String sheetId) async {
+  void saveAnalysisResult(int sheetId) async {
     _saveAnalysisResultExecutor.execute(() async {
       try {
         await saveDataSource.saveAnalysisResult(
@@ -576,7 +568,7 @@ class SortRepositoryImpl implements SortRepository {
     });
   }
 
-  void saveDataProgress(String sheetId) {
+  void saveDataProgress(int sheetId) {
     _saveSortProgressExecutor.execute(() async {
       try {
         await saveDataSource.saveSortProgression(

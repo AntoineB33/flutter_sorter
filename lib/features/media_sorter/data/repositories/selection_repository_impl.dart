@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/utils_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
@@ -15,7 +14,6 @@ import 'package:trying_flutter/features/media_sorter/domain/repositories/selecti
 class SelectionRepositoryImpl implements SelectionRepository {
   late ManageWaitingTasks<void> _saveLastSelectionExecutor;
   late ManageWaitingTasks<void> _saveAllLastSelectedExecutor;
-  final IFileSheetLocalDataSource _saveDataSource;
   final SelectionCache _selectionCache;
   final LoadedSheetsCache _loadedSheetsCache;
   final WorkbookCache _workbookCache;
@@ -24,15 +22,14 @@ class SelectionRepositoryImpl implements SelectionRepository {
 
   @override
   Stream<Failure> get failureStream => _errorController.stream;
-  String? get currentSheetId => _workbookCache.currentSheetId;
-  SelectionData? get selection => currentSheetId != null ?
-      _selectionCache.getSelectionData(currentSheetId!) : null;
+  int get currentSheetId => _workbookCache.currentSheetId;
+  SelectionData get selection => _selectionCache.getSelectionData(currentSheetId);
   @override
-  Point<int>? get primarySelectedCell =>
-      selection?.primarySelectedCell;
+  int get primarySelectedCellX => selection.primarySelectedCellX;
+  @override
+  int get primarySelectedCellY => selection.primarySelectedCellY;
 
   SelectionRepositoryImpl(
-    this._saveDataSource,
     this._selectionCache,
     this._loadedSheetsCache,
     this._workbookCache,
@@ -48,13 +45,13 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
-  void setSelectionData(String sheetId, SelectionData selectionData) {
+  void setSelectionData(int sheetId, SelectionData selectionData) {
     _selectionCache.setSelectionData(sheetId, selectionData);
     saveAllLastSelected();
   }
-  
+
   @override
-  void removeSelectionData(String sheetId) {
+  void removeSelectionData(int sheetId) {
     _selectionCache.removeSelectionData(sheetId);
     saveAllLastSelected();
   }
@@ -63,8 +60,8 @@ class SelectionRepositoryImpl implements SelectionRepository {
   void selectAll() {
     if (selection == null) return;
     selection!.selectedCells.clear();
-    for (int r = 0; r < _loadedSheetsCache.rowCount(currentSheetId!); r++) {
-      for (int c = 0; c < _loadedSheetsCache.colCount(currentSheetId!); c++) {
+    for (int r = 0; r < _loadedSheetsCache.rowCount(currentSheetId); r++) {
+      for (int c = 0; c < _loadedSheetsCache.colCount(currentSheetId); c++) {
         selection!.selectedCells.add(Point(r, c));
       }
     }
@@ -79,26 +76,21 @@ class SelectionRepositoryImpl implements SelectionRepository {
       () => _saveDataSource.getAllLastSelected(),
     );
     return result.fold((failure) => Left(failure), (ids) {
-      _selectionCache.setLastSelections(
-        ids,
-        currentSheetId,
-      );
+      _selectionCache.setLastSelections(ids, currentSheetId);
       saveAllLastSelected();
       return Right(null);
     });
   }
 
   @override
-  SelectionData getSelectionData(String sheetId) {
+  SelectionData getSelectionData(int sheetId) {
     return _selectionCache.getSelectionData(sheetId);
   }
 
   @override
   void saveLastSelection() {
     _saveLastSelectionExecutor.execute(() async {
-      await _saveDataSource.saveLastSelection(
-        selection,
-      );
+      await _saveDataSource.saveLastSelection(selection);
     });
   }
 
@@ -127,17 +119,17 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
-  bool containsSheetId(String sheetId) {
+  bool containsSheetId(int sheetId) {
     return _selectionCache.containsSheetId(sheetId);
   }
 
   @override
-  double getScrollOffsetX(String sheetId) {
+  double getScrollOffsetX(int sheetId) {
     return _selectionCache.getScrollOffsetX(sheetId);
   }
 
   @override
-  double getScrollOffsetY(String sheetId) {
+  double getScrollOffsetY(int sheetId) {
     return _selectionCache.getScrollOffsetY(sheetId);
   }
 
@@ -161,7 +153,7 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
-  void clearSheetSelection(String sheetId) {
+  void clearSheetSelection(int sheetId) {
     setSelectionData(sheetId, SelectionData.empty());
   }
 }

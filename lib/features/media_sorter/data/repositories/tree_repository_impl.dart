@@ -28,21 +28,26 @@ class TreeRepositoryImpl implements TreeRepository {
   final WorkbookCache workbookCache;
 
   final IFileSheetLocalDataSource saveDataSource;
-  
-  final Map<String, ManageWaitingTasks<void>> _saveResultExecutors = {};
-  final StreamController<Failure> _failureStreamController = StreamController.broadcast();
 
-  String get currentSheetId => workbookCache.currentSheetId;
+  final Map<String, ManageWaitingTasks<void>> _saveResultExecutors = {};
+  final StreamController<Failure> _failureStreamController =
+      StreamController.broadcast();
+
+  int get currentSheetId => workbookCache.currentSheetId;
   AnalysisResult get result => analysisCache.getAnalysisResult(currentSheetId);
-  SheetContent get sheetContent => loadedSheetsCache.getSheetContent(currentSheetId);
+  SheetContent get sheetContent => loadedSheetsCache.getCells(currentSheetId);
   @override
-  NodeStruct get errorRoot => analysisCache.getAnalysisResult(currentSheetId).errorRoot;
+  NodeStruct get errorRoot =>
+      analysisCache.getAnalysisResult(currentSheetId).errorRoot;
   @override
-  NodeStruct get warningRoot => analysisCache.getAnalysisResult(currentSheetId).warningRoot;
+  NodeStruct get warningRoot =>
+      analysisCache.getAnalysisResult(currentSheetId).warningRoot;
   @override
-  NodeStruct get categoriesRoot => analysisCache.getAnalysisResult(currentSheetId).categoriesRoot;
+  NodeStruct get categoriesRoot =>
+      analysisCache.getAnalysisResult(currentSheetId).categoriesRoot;
   @override
-  NodeStruct get distPairsRoot => analysisCache.getAnalysisResult(currentSheetId).distPairsRoot;
+  NodeStruct get distPairsRoot =>
+      analysisCache.getAnalysisResult(currentSheetId).distPairsRoot;
 
   TreeRepositoryImpl(
     this.analysisCache,
@@ -59,20 +64,17 @@ class TreeRepositoryImpl implements TreeRepository {
     }
     _failureStreamController.close();
   }
-  
-  int rowCount(String sheetId) {
+
+  int rowCount(int sheetId) {
     return loadedSheetsCache.rowCount(sheetId);
   }
 
-  int colCount(String sheetId) {
+  int colCount(int sheetId) {
     return loadedSheetsCache.colCount(sheetId);
   }
 
   @override
-  void populateAllTrees(
-    NodeStruct mentionsRoot,
-    NodeStruct searchRoot,
-  ) {
+  void populateAllTrees(NodeStruct mentionsRoot, NodeStruct searchRoot) {
     AnalysisResult result = analysisCache.getAnalysisResult(currentSheetId);
     populateTree([
       result.errorRoot,
@@ -83,24 +85,23 @@ class TreeRepositoryImpl implements TreeRepository {
       result.distPairsRoot,
     ]);
   }
-  
+
   @override
-  bool isRowValid(
-    int rowId,
-  ) {
+  bool isRowValid(int rowId) {
     if (sortStatusCache.getAnalysisDone(currentSheetId)) {
-      return rowId < analysisCache.isMedium(currentSheetId).length && analysisCache.isMedium(currentSheetId)[rowId];
+      return rowId < analysisCache.isMedium(currentSheetId).length &&
+          analysisCache.isMedium(currentSheetId)[rowId];
     }
     if (rowId == 0) {
       return false;
     }
-    for (
-      int srcColId = 0;
-      srcColId < colCount(currentSheetId);
-      srcColId++
-    ) {
-      if (GetNames.isSourceColumn(loadedSheetsCache.getSheetContent(currentSheetId).columnTypes[srcColId]) &&
-          loadedSheetsCache.getCellContent(currentSheetId, rowId, srcColId).isNotEmpty) {
+    for (int srcColId = 0; srcColId < colCount(currentSheetId); srcColId++) {
+      if (GetNames.isSourceColumn(
+            loadedSheetsCache.getCells(currentSheetId).columnTypes[srcColId],
+          ) &&
+          loadedSheetsCache
+              .getCellContent(currentSheetId, rowId, srcColId)
+              .isNotEmpty) {
         return true;
       }
     }
@@ -109,7 +110,6 @@ class TreeRepositoryImpl implements TreeRepository {
 
   @override
   Point<int> onTapCellSelect(NodeStruct node) {
-
     List<Cell> cells = [];
     List<MapEntry> entries = [];
 
@@ -143,8 +143,16 @@ class TreeRepositoryImpl implements TreeRepository {
     int found = -1;
     for (int i = 0; i < cells.length; i++) {
       final child = cells[i];
-      if (selectionDataStore.getSelectionData(currentSheetId).primarySelectedCell.x == child.rowId &&
-          selectionDataStore.getSelectionData(currentSheetId).primarySelectedCell.y == child.colId) {
+      if (selectionDataStore
+                  .getSelectionData(currentSheetId)
+                  .primarySelectedCell
+                  .x ==
+              child.rowId &&
+          selectionDataStore
+                  .getSelectionData(currentSheetId)
+                  .primarySelectedCell
+                  .y ==
+              child.colId) {
         found = i;
         break;
       }
@@ -154,7 +162,6 @@ class TreeRepositoryImpl implements TreeRepository {
     return Point(cells[index].rowId, cells[index].colId);
   }
 
-  
   @override
   void populateTree(List<NodeStruct> roots) {
     for (final root in roots) {
@@ -331,7 +338,8 @@ class TreeRepositoryImpl implements TreeRepository {
     int colId = node.colId!;
     node.cellsToSelect = node.cells;
 
-    if (rowId >= rowCount(currentSheetId) || colId >= colCount(currentSheetId)) {
+    if (rowId >= rowCount(currentSheetId) ||
+        colId >= colCount(currentSheetId)) {
       return;
     }
 
@@ -388,7 +396,9 @@ class TreeRepositoryImpl implements TreeRepository {
 
     List<NodeStruct> rowCells = [];
     for (int colId = 0; colId < sheetContent.columnTypes.length; colId++) {
-      if (loadedSheetsCache.getCellContent(currentSheetId, rowId, colId).isNotEmpty) {
+      if (loadedSheetsCache
+          .getCellContent(currentSheetId, rowId, colId)
+          .isNotEmpty) {
         rowCells.add(
           NodeStruct(
             cell: Cell(rowId: rowId, colId: colId),
@@ -402,10 +412,7 @@ class TreeRepositoryImpl implements TreeRepository {
         NodeStruct(message: 'Content of the row', newChildren: rowCells),
       );
     }
-    _populateAttributeNode(
-      node,
-      true,
-    );
+    _populateAttributeNode(node, true);
   }
 
   void _populateColumnNode(NodeStruct node, bool populateChildren) {

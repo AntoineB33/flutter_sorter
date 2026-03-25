@@ -1,8 +1,10 @@
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/history_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/history_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 
@@ -10,50 +12,64 @@ class HistoryRepositoryImpl implements HistoryRepository {
   final LoadedSheetsCache loadedSheetsDataStore;
   final WorkbookCache workbookCache;
   final SelectionCache selectionCache;
+  final HistoryCache historyCache;
   int chronoIdCounter = 0;
   bool isLastChangeInSameEditingMode = false;
 
-  String get currentSheetId => workbookCache.currentSheetId;
-  SheetData get currentSheet => loadedSheetsDataStore.getSheet(currentSheetId);
+  int get currentSheetId => workbookCache.currentSheetId;
+  CoreSheetContent get currentSheet =>
+      loadedSheetsDataStore.getSheet(currentSheetId);
+  HistoryData get historyData => historyCache[currentSheetId]!;
 
-  HistoryRepositoryImpl(this.loadedSheetsDataStore, this.workbookCache, this.selectionCache);
+  HistoryRepositoryImpl(
+    this.loadedSheetsDataStore,
+    this.workbookCache,
+    this.selectionCache,
+    this.historyCache,
+  );
 
   @override
   UpdateData? moveInUpdateHistory(int direction) {
-    if (currentSheet.historyIndex + direction < 0 ||
-        currentSheet.historyIndex + direction >= currentSheet.updateHistories.length) {
+    if (historyData.historyIndex + direction < 0 ||
+        historyData.historyIndex + direction >=
+            historyData.updateHistories.length) {
       return null;
     }
-    currentSheet.historyIndex += direction;
-    final updateData = currentSheet.updateHistories[currentSheet.historyIndex];
+    historyData.historyIndex += direction;
+    final updateData = historyData.updateHistories[historyData.historyIndex];
     return updateData;
   }
 
   void _removeLastHistoryEditingMode(Map<String, UpdateUnit> updates) {
-    UpdateData lastUpdateData = currentSheet.updateHistories.last;
+    UpdateData lastUpdateData = historyData.updateHistories.last;
     lastUpdateData.addOtherwiseRemove = false;
-    currentSheet.updateHistories.removeAt(currentSheet.historyIndex);
-    currentSheet.historyIndex--;
+    historyData.updateHistories.removeAt(historyData.historyIndex);
+    historyData.historyIndex--;
     updates[lastUpdateData.getStringKey()] = lastUpdateData;
-    updates[SheetDataTables.historyIndexUpdateKey] = Pass();
+    final historyChg = HistoryIndexChg(currentSheetId, historyData.historyIndex);
+    updates[historyChg.historyIndexKey] = historyChg;
   }
-  
+
   @override
-  void commitHistory(Map<String, UpdateUnit> updates, String sheetId, bool isFromEditing) {
-    final sheet = loadedSheetsDataStore.getSheet(sheetId);
+  void commitHistory(
+    Map<String, UpdateUnit> updates,
+    int sheetId,
+    bool isFromEditing,
+  ) {
     final updateData = UpdateData(chronoIdCounter++, sheetId, updates);
     if (isFromEditing) {
       if (isLastChangeInSameEditingMode) {
         CellUpdate cellUpdate = updates.values.first as CellUpdate;
-        UpdateData lastUpdateData = currentSheet.updateHistories.last;
-        CellUpdate prevCellUpdate = lastUpdateData.updates.values.first as CellUpdate;
+        UpdateData lastUpdateData = historyData.updateHistories.last;
+        CellUpdate prevCellUpdate =
+            lastUpdateData.updates.values.first as CellUpdate;
         if (cellUpdate.newValue == prevCellUpdate.prevValue) {
           _removeLastHistoryEditingMode(updates);
           isLastChangeInSameEditingMode = false;
           return;
         }
         cellUpdate.prevValue = prevCellUpdate.prevValue;
-        sheet.updateHistories[sheet.historyIndex] = updateData;
+        historyData.updateHistories[historyData.historyIndex] = updateData;
         lastUpdateData.addOtherwiseRemove = false;
         updates[lastUpdateData.getStringKey()] = lastUpdateData;
         updates[updateData.getStringKey()] = updateData;
@@ -61,27 +77,29 @@ class HistoryRepositoryImpl implements HistoryRepository {
       }
       isLastChangeInSameEditingMode = true;
     }
-    if (sheet.historyIndex < sheet.updateHistories.length - 1) {
-      sheet.updateHistories = sheet.updateHistories.sublist(
+    if (historyData.historyIndex < historyData.updateHistories.length - 1) {
+      historyData.updateHistories = historyData.updateHistories.sublist(
         0,
-        sheet.historyIndex + 1,
+        historyData.historyIndex + 1,
       );
     }
-    sheet.updateHistories.add(updateData);
+    historyData.updateHistories.add(updateData);
     updates[updateData.getStringKey()] = updateData;
-    sheet.historyIndex++;
-    if (sheet.historyIndex == 100) {
-      updates[sheet.updateHistories.first.getStringKey()] = sheet.updateHistories.first;
-      sheet.updateHistories.removeAt(0);
-      sheet.historyIndex--;
+    historyData.historyIndex++;
+    if (historyData.historyIndex == 100) {
+      updates[historyData.updateHistories.first.getStringKey()] =
+          historyData.updateHistories.first;
+      historyData.updateHistories.removeAt(0);
+      historyData.historyIndex--;
     }
-    updates[SheetDataTables.historyIndexUpdateKey] = Pass();
+    final historyChg = HistoryIndexChg(currentSheetId, historyData.historyIndex);
+    updates[historyChg.historyIndexKey] = historyChg;
   }
 
   @override
-  void stopEditing(Map<String, UpdateUnit> updates, bool escape) {
+  void stopEditing(bool escape, {Map<String, UpdateUnit>? updates}) {
     if (escape && isLastChangeInSameEditingMode) {
-      _removeLastHistoryEditingMode(updates);
+      _removeLastHistoryEditingMode(updates!);
     }
     isLastChangeInSameEditingMode = false;
   }

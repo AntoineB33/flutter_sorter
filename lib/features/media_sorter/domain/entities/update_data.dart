@@ -11,15 +11,17 @@ class UpdateData extends UpdateUnit {
   final int sheetId;
   final Map<String, UpdateUnit> updates;
   bool addOtherwiseRemove;
-  UpdateData(this.chronoId, this.sheetId, this.updates, {this.addOtherwiseRemove = false, DateTime? timestamp})
-    : timestamp = timestamp ?? DateTime.now();
-  
+  UpdateData(
+    this.chronoId,
+    this.sheetId,
+    this.updates, {
+    this.addOtherwiseRemove = false,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+
+    @override
   String getStringKey() {
     return 'UpdateData-$timestamp-$chronoId';
-  }
-
-  bool isStringKey(String key) {
-    return key.startsWith('UpdateData-');
   }
 
   factory UpdateData.fromJson(Map<String, dynamic> json) =>
@@ -31,6 +33,8 @@ class UpdateData extends UpdateUnit {
 
 sealed class UpdateUnit {
   const UpdateUnit();
+
+  String getStringKey();
 
   factory UpdateUnit.fromJson(Map<String, dynamic> json) {
     switch (json['type']) {
@@ -48,39 +52,34 @@ sealed class UpdateUnit {
   Map<String, dynamic> toJson();
 }
 
-class Pass extends UpdateUnit {
-  Pass();
-  factory Pass.fromJson() => Pass();
-  @override
-  Map<String, dynamic> toJson() => {};
-}
-
 @JsonSerializable()
-class SheetNameUpdate extends UpdateUnit {
-  final String type = 'SheetNameUpdate';
-  final String newName;
-  String? previousName;
-
-  SheetNameUpdate(this.newName, {this.previousName});
-
-  factory SheetNameUpdate.fromJson(Map<String, dynamic> json) =>
-      _$SheetNameUpdateFromJson(json);
-
+class HistoryIndexChg extends UpdateUnit {
+  final int sheetId;
+  final int historyIndex;
+  HistoryIndexChg(this.sheetId, this.historyIndex);
   @override
-  Map<String, dynamic> toJson() => _$SheetNameUpdateToJson(this);
+  String getStringKey() {
+    return 'historyIndex-$sheetId';
+  }
+  factory HistoryIndexChg.fromJson(Map<String, dynamic> json) =>
+    _$HistoryIndexChgFromJson(json);
+  @override
+  Map<String, dynamic> toJson() => _$HistoryIndexChgToJson(this);
 }
 
 @JsonSerializable()
 class CellUpdate extends UpdateUnit {
   final String type = 'CellUpdate';
+  final int sheetId;
   final int rowId;
   final int colId;
   String? prevValue;
   String newValue;
-  CellUpdate(this.rowId, this.colId, this.newValue, {this.prevValue});
+  CellUpdate(this.sheetId, this.rowId, this.colId, this.newValue, {this.prevValue});
 
+  @override
   String getStringKey() {
-    return 'CellUpdate-$rowId-$colId';
+    return 'CellUpdate-$sheetId-$rowId-$colId';
   }
 
   factory CellUpdate.fromJson(Map<String, dynamic> json) =>
@@ -90,13 +89,19 @@ class CellUpdate extends UpdateUnit {
   Map<String, dynamic> toJson() => _$CellUpdateToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class ColumnTypeUpdate extends UpdateUnit {
   final String type = 'ColumnTypeUpdate';
+  final int sheetId;
   final int colId;
   final ColumnType newColumnType;
   ColumnType? previousColumnType;
-  ColumnTypeUpdate(this.colId, this.newColumnType, {this.previousColumnType});
+  ColumnTypeUpdate(this.sheetId, this.colId, this.newColumnType, {this.previousColumnType});
+
+  @override
+  String getStringKey() {
+    return 'ColumnTypeUpdate-$sheetId-$colId';
+  }
 
   factory ColumnTypeUpdate.fromJson(Map<String, dynamic> json) =>
       _$ColumnTypeUpdateFromJson(json);

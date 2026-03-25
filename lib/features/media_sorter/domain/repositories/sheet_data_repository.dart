@@ -8,17 +8,17 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 
 abstract class SheetDataRepository {
   Stream<Failure> get failureStream;
-  bool containsSheetId(String sheetId);
-  int rowCount(String sheetId);
-  int colCount(String sheetId);
-  SheetData getSheet(String sheetId);
-  List<CellUpdate> delete();
+  bool containsSheetId(int sheetId);
+  int rowCount(int sheetId);
+  int colCount(int sheetId);
+  CoreSheetContent getSheet(int sheetId);
+  Map<String, UpdateUnit> delete();
   Future<void> copySelectionToClipboard();
-  Future<Either<Failure, List<CellUpdate>>> pasteSelection();
-  String getCellContent(Point<int> cell, String sheetId);
-  ColumnType getColumnType(int colId, String sheetId);
-  String getSheetName(String sheetId);
-  Future<Either<Failure, void>> loadSheet(String sheetId);
-  Future<void> addNewSheet(String sheetId);
-  void update(List<UpdateUnit> updates, String sheetId);
+  Future<Either<Failure, Map<String, UpdateUnit>>> pasteSelection();
+  String getCellContent(Point<int> cell, int sheetId);
+  ColumnType getColumnType(int colId, int sheetId);
+  String getSheetName(int sheetId);
+  Future<Either<Failure, void>> loadSheet(int sheetId);
+  Future<void> addNewSheet(int sheetId);
+  void update(List<UpdateUnit> updates, int sheetId);
 }

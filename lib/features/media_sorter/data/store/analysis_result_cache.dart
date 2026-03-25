@@ -7,75 +7,75 @@ class AnalysisResultCache {
 
   final LoadedSheetsCache loadedSheetsDataStore;
 
-  bool isFindingBestSort(String sheetId) {
+  bool isFindingBestSort(int sheetId) {
     return _getAnalysisResult(sheetId).isFindingBestSort;
   }
 
-  bool bestSortPossibleFound(String sheetId) {
+  bool bestSortPossibleFound(int sheetId) {
     return _getAnalysisResult(sheetId).bestSortPossibleFound;
   }
 
-  bool sortedWithCurrentBestSort(String sheetId) {
+  bool sortedWithCurrentBestSort(int sheetId) {
     return _getAnalysisResult(sheetId).sortedWithCurrentBestSort;
   }
 
-  List<bool> isMedium(String sheetId) {
+  List<bool> isMedium(int sheetId) {
     return _getAnalysisResult(sheetId).isMedium;
   }
 
-  AnalysisResult _getAnalysisResult(String sheetId) {
+  AnalysisResult _getAnalysisResult(int sheetId) {
     return _analysisResults[sheetId]!;
   }
 
-  Map<int, Map<int, List<SortingRule>>> getMyRules(String sheetId) {
+  Map<int, Map<int, List<SortingRule>>> getMyRules(int sheetId) {
     return _getAnalysisResult(sheetId).myRules;
   }
 
-  List<List<int>> getGroupAttribution(String sheetId) {
+  List<List<int>> getGroupAttribution(int sheetId) {
     return _getAnalysisResult(sheetId).groupAttribution;
   }
 
-  AnalysisResult getAnalysisResult(String sheetId) {
+  AnalysisResult getAnalysisResult(int sheetId) {
     return _getAnalysisResult(sheetId);
   }
 
-  bool validRowIndexesEmpty(String sheetId) {
+  bool validRowIndexesEmpty(int sheetId) {
     return _getAnalysisResult(sheetId).validRowIndexes.isEmpty;
   }
 
-  bool myRulesEmpty(String sheetId) {
+  bool myRulesEmpty(int sheetId) {
     return _getAnalysisResult(sheetId).myRules.isEmpty;
   }
 
-  bool groupsToMaximizeEmpty(String sheetId) {
+  bool groupsToMaximizeEmpty(int sheetId) {
     return _getAnalysisResult(sheetId).groupsToMaximize.isEmpty;
   }
 
-  bool isSortedWithValidSort(String sheetId) {
+  bool isSortedWithValidSort(int sheetId) {
     return _getAnalysisResult(sheetId).sortedWithValidSort;
   }
 
-  void setSortedWithCurrentBestSort(String sheetId, bool value) {
+  void setSortedWithCurrentBestSort(int sheetId, bool value) {
     _getAnalysisResult(sheetId).sortedWithCurrentBestSort = value;
   }
 
-  void setFindingBestSort(String sheetId, bool findingBestSort) {
+  void setFindingBestSort(int sheetId, bool findingBestSort) {
     _analysisResults[sheetId]!.isFindingBestSort = findingBestSort;
   }
 
-  void updateResults(String sheetId, AnalysisResult newResult) {
+  void updateResults(int sheetId, AnalysisResult newResult) {
     _analysisResults[sheetId] = newResult;
   }
 
-  void setSortedWithValidSort(String sheetId, bool sorted) {
+  void setSortedWithValidSort(int sheetId, bool sorted) {
     _analysisResults[sheetId]!.sortedWithValidSort = sorted;
   }
 
-  void addNewAnalysisResult(String sheetId) {
+  void addNewAnalysisResult(int sheetId) {
     _analysisResults[sheetId] = AnalysisResult.empty();
   }
 
-  void setValidSortIsImpossible(String sheetId, bool impossible) {
+  void setValidSortIsImpossible(int sheetId, bool impossible) {
     _analysisResults[sheetId]!.validSortIsImpossible = impossible;
   }
 

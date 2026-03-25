@@ -1,6 +1,6 @@
 class LayoutData {
-  final List<double> rowsBottomPos;
-  final List<double> colRightPos;
+  List<double> rowsBottomPos;
+  List<double> colRightPos;
   final List<bool> rowsManuallyAdjustedHeight;
   final List<bool> colsManuallyAdjustedWidth;
   double colHeaderHeight;

@@ -1,25 +1,24 @@
-import 'dart:math';
-
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 
 abstract class SelectionRepository {
   Stream<Failure> get failureStream;
-  Point<int>? get primarySelectedCell;
-  bool containsSheetId(String sheetId);
-  double getScrollOffsetX(String sheetId);
-  double getScrollOffsetY(String sheetId);
-  List<String> getSheetIds();
+  int get primarySelectedCellX;
+  int get primarySelectedCellY;
+  bool containsSheetId(int sheetId);
+  double getScrollOffsetX(int sheetId);
+  double getScrollOffsetY(int sheetId);
+  List<int> getSheetIds();
   Future<Either<Failure, void>> loadLastSelections(bool lastSelectionLoaded);
   Future<Either<Failure, void>> loadLastSelection();
   void saveLastSelection();
   void saveAllLastSelected();
   void setPrimarySelection(int row, int col, bool keepSelection);
   void clearLastSelection();
-  void clearSheetSelection(String sheetId);
-  SelectionData getSelectionData(String sheetId);
+  void clearSheetSelection(int sheetId);
+  SelectionData getSelectionData(int sheetId);
   void selectAll();
-  void setSelectionData(String sheetId, SelectionData selectionData);
-  void removeSelectionData(String sheetId);
+  void setSelectionData(int sheetId, SelectionData selectionData);
+  void removeSelectionData(int sheetId);
 }

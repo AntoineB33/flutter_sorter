@@ -8,7 +8,7 @@ part of 'update_data.dart';
 
 UpdateData _$UpdateDataFromJson(Map<String, dynamic> json) => UpdateData(
   (json['chronoId'] as num).toInt(),
-  json['sheetId'] as String,
+  (json['sheetId'] as num).toInt(),
   (json['updates'] as Map<String, dynamic>).map(
     (k, e) => MapEntry(k, UpdateUnit.fromJson(e as Map<String, dynamic>)),
   ),
@@ -27,6 +27,44 @@ Map<String, dynamic> _$UpdateDataToJson(UpdateData instance) =>
       'addOtherwiseRemove': instance.addOtherwiseRemove,
     };
 
+HistoryIndexChg _$HistoryIndexChgFromJson(Map<String, dynamic> json) =>
+    HistoryIndexChg(
+      (json['sheetId'] as num).toInt(),
+      (json['historyIndex'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$HistoryIndexChgToJson(HistoryIndexChg instance) =>
+    <String, dynamic>{
+      'sheetId': instance.sheetId,
+      'historyIndex': instance.historyIndex,
+    };
+
+FindBestSortChg _$FindBestSortChgFromJson(Map<String, dynamic> json) =>
+    FindBestSortChg(
+      (json['sheetId'] as num).toInt(),
+      json['findingBestSort'] as bool,
+    );
+
+Map<String, dynamic> _$FindBestSortChgToJson(FindBestSortChg instance) =>
+    <String, dynamic>{
+      'sheetId': instance.sheetId,
+      'findingBestSort': instance.findingBestSort,
+    };
+
+AlwaysApplyBestSortChg _$AlwaysApplyBestSortChgFromJson(
+  Map<String, dynamic> json,
+) => AlwaysApplyBestSortChg(
+  (json['sheetId'] as num).toInt(),
+  json['toAlwaysApplyBestSort'] as bool,
+);
+
+Map<String, dynamic> _$AlwaysApplyBestSortChgToJson(
+  AlwaysApplyBestSortChg instance,
+) => <String, dynamic>{
+  'sheetId': instance.sheetId,
+  'toAlwaysApplyBestSort': instance.toAlwaysApplyBestSort,
+};
+
 SheetNameUpdate _$SheetNameUpdateFromJson(Map<String, dynamic> json) =>
     SheetNameUpdate(
       json['newName'] as String,
@@ -40,6 +78,7 @@ Map<String, dynamic> _$SheetNameUpdateToJson(SheetNameUpdate instance) =>
     };
 
 CellUpdate _$CellUpdateFromJson(Map<String, dynamic> json) => CellUpdate(
+  (json['sheetId'] as num).toInt(),
   (json['rowId'] as num).toInt(),
   (json['colId'] as num).toInt(),
   json['newValue'] as String,
@@ -48,6 +87,7 @@ CellUpdate _$CellUpdateFromJson(Map<String, dynamic> json) => CellUpdate(
 
 Map<String, dynamic> _$CellUpdateToJson(CellUpdate instance) =>
     <String, dynamic>{
+      'sheetId': instance.sheetId,
       'rowId': instance.rowId,
       'colId': instance.colId,
       'prevValue': instance.prevValue,

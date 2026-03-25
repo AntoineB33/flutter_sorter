@@ -2,16 +2,19 @@ import 'dart:async';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trying_flutter/features/media_sorter/application/coordinators/spreadsheet_coordinator.dart';
-import 'package:trying_flutter/features/media_sorter/data/datasources/file_sheet_local_datasource.dart';
-import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_sheet_local_datasource.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/grid_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/history_repository_impl.dart';
+import 'package:trying_flutter/features/media_sorter/data/repositories/local_data_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/selection_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/sheet_data_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/sort_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/tree_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/workbook_repository_impl.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/history_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/isolate_receive_ports_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sorting_progress_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
@@ -36,9 +39,12 @@ import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cach
 final sl = GetIt.instance; // sl = Service Locator
 
 Future<void> initMediaSorterDependencies() async {
-  IsolateReceivePortsCache isolateReceivePortsCache = IsolateReceivePortsCache();
+  IsolateReceivePortsCache isolateReceivePortsCache =
+      IsolateReceivePortsCache();
 
-  IFileSheetLocalDataSource saveDataSource = FileSheetLocalDataSource(sl<SharedPreferences>());
+  AppDatabase database = AppDatabase();
+
+  DriftLocalDataSource saveDataSource = DriftLocalDataSource(database);
 
   LoadedSheetsCache loadedSheetsCache = LoadedSheetsCache();
   SortStatusCache sortStatusCache = SortStatusCache(loadedSheetsCache);
@@ -46,14 +52,15 @@ Future<void> initMediaSorterDependencies() async {
     loadedSheetsCache,
   );
   SelectionCache selectionCache = SelectionCache();
+  LayoutCache layoutCache = LayoutCache();
   WorkbookCache workbookCache = WorkbookCache();
   SortProgressCache sortProgressCache = SortProgressCache();
+  HistoryCache historyCache = HistoryCache();
 
   SheetDataRepositoryImpl sheetDataRepository = SheetDataRepositoryImpl(
     loadedSheetsCache,
     selectionCache,
     workbookCache,
-    saveDataSource,
   );
   SortRepositoryImpl sortRepository = SortRepositoryImpl(
     analysisResultCache,
@@ -61,7 +68,6 @@ Future<void> initMediaSorterDependencies() async {
     sortProgressCache,
     sortStatusCache,
     isolateReceivePortsCache,
-    saveDataSource,
     selectionCache,
     workbookCache,
   );
@@ -69,11 +75,16 @@ Future<void> initMediaSorterDependencies() async {
     loadedSheetsCache,
     workbookCache,
     selectionCache,
+    layoutCache,
   );
   HistoryRepositoryImpl historyRepository = HistoryRepositoryImpl(
     loadedSheetsCache,
     workbookCache,
     selectionCache,
+    historyCache,
+  );
+  LocalDataRepositoryImpl saveRepository = LocalDataRepositoryImpl(
+    saveDataSource,
   );
   WorkbookRepositoryImpl workbookRepository = WorkbookRepositoryImpl(
     saveDataSource,
@@ -96,21 +107,21 @@ Future<void> initMediaSorterDependencies() async {
     workbookCache,
     saveDataSource,
   );
-  
+
   SortUsecase sortUsecase = SortUsecase(
     sortRepository,
     sheetDataRepository,
     workbookRepository,
     selectionRepository,
   );
-  WorkbookUsecase workbookUsecase = WorkbookUsecase(workbookRepository, selectionRepository, sortRepository, sheetDataRepository);
-  HistoryUsecase historyUsecase = HistoryUsecase(
-    historyRepository,
+  WorkbookUsecase workbookUsecase = WorkbookUsecase(
+    workbookRepository,
+    selectionRepository,
+    sortRepository,
+    sheetDataRepository,
   );
-  GridUsecase gridUsecase = GridUsecase(
-    gridRepository,
-    treeRepository
-  );
+  HistoryUsecase historyUsecase = HistoryUsecase(historyRepository);
+  GridUsecase gridUsecase = GridUsecase(gridRepository, treeRepository);
   SelectionUsecase selectionUsecase = SelectionUsecase(
     selectionRepository,
     sheetDataRepository,
@@ -118,14 +129,13 @@ Future<void> initMediaSorterDependencies() async {
     historyRepository,
     workbookRepository,
   );
-  TreeUsecase treeUsecase = TreeUsecase(
-    treeRepository,
-  );
+  TreeUsecase treeUsecase = TreeUsecase(treeRepository);
   SheetDataUsecase sheetDataUsecase = SheetDataUsecase(
     sheetDataRepository,
     sortRepository,
     gridRepository,
     historyRepository,
+    saveRepository,
   );
 
   SortController sortController = SortController(
@@ -133,9 +143,7 @@ Future<void> initMediaSorterDependencies() async {
     sortUsecase,
     workbookUsecase,
   );
-  HistoryController historyController = HistoryController(
-    historyUsecase,
-  );
+  HistoryController historyController = HistoryController(historyUsecase);
   SheetDataController sheetDataController = SheetDataController(
     sheetDataUsecase,
     workbookUsecase,
@@ -144,7 +152,7 @@ Future<void> initMediaSorterDependencies() async {
     sheetDataUsecase,
     gridUsecase,
     workbookUsecase,
-    selectionUsecase
+    selectionUsecase,
   );
   SelectionController selectionController = SelectionController(
     selectionUsecase,
@@ -157,9 +165,7 @@ Future<void> initMediaSorterDependencies() async {
     workbookUsecase,
     sortUsecase,
   );
-  TreeController treeController = TreeController(
-    treeUsecase
-  );
+  TreeController treeController = TreeController(treeUsecase);
 
   SpreadsheetCoordinator spreadsheetCoordinator = SpreadsheetCoordinator(
     historyController,
@@ -168,14 +174,33 @@ Future<void> initMediaSorterDependencies() async {
     sortController,
     selectionController,
     workbookController,
-    treeController
+    treeController,
   );
 
-  sl.registerLazySingleton<SpreadsheetCoordinator>(() => spreadsheetCoordinator);
+  sl.registerLazySingleton<SpreadsheetCoordinator>(
+    () => spreadsheetCoordinator,
+  );
   sl.registerLazySingleton<WorkbookController>(() => workbookController);
   sl.registerLazySingleton<SheetDataController>(() => sheetDataController);
   sl.registerLazySingleton<GridController>(() => gridController);
   sl.registerLazySingleton<TreeController>(() => treeController);
   sl.registerLazySingleton<SelectionController>(() => selectionController);
   sl.registerLazySingleton<SheetDataUsecase>(() => sheetDataUsecase);
+
+  sl.registerLazySingleton<LocalDataRepositoryImpl>(
+    () => saveRepository,
+    dispose: (repo) => repo.dispose(),
+  );
+  sl.registerLazySingleton<SelectionRepositoryImpl>(
+    () => selectionRepository,
+    dispose: (repo) => repo.dispose(),
+  );
+  sl.registerLazySingleton<SheetDataRepositoryImpl>(
+    () => sheetDataRepository,
+    dispose: (repo) => repo.dispose(),
+  );
+  sl.registerLazySingleton<SortRepositoryImpl>(
+    () => sortRepository,
+    dispose: (repo) => repo.dispose(),
+  );
 }

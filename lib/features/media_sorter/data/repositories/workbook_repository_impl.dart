@@ -23,9 +23,9 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   late ManageWaitingTasks<void> _saveRecentSheetIdsExecutor;
   late StreamController<Failure> _failureStreamController;
   @override
-  String get currentSheetId => workbookCache.currentSheetId;
+  int get currentSheetId => workbookCache.currentSheetId;
   @override
-  String get currentSheetName => loadedSheetsCache.getName(currentSheetId);
+  String get currentSheetName => loadedSheetsCache.getTitle(currentSheetId);
 
   WorkbookRepositoryImpl(
     this.fileSheetLocalDataSource,
@@ -47,7 +47,7 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   }
 
   @override
-  bool containsSheetId(String sheetId) {
+  bool containsSheetId(int sheetId) {
     return workbookCache.containsSheetId(sheetId);
   }
 
@@ -65,7 +65,7 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   }
 
   @override
-  void addNewSheetId(String sheetId, int index) {
+  void addNewSheetId(int sheetId, int index) {
     workbookCache.addSheetId(sheetId, index);
     _saveRecentSheetIdsExecutor.execute(() async {
       await fileSheetLocalDataSource.saveRecentSheetIds(

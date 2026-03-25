@@ -1,7 +1,6 @@
 
-import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
+import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 
 class CoreSheetContent {
   final int id;
@@ -9,6 +8,10 @@ class CoreSheetContent {
   DateTime lastOpened;
   final Map<(int, int), String> cells;
   final Map<int, ColumnType> columnTypes;
+  int lastRow;
+  int lastCol;
+
+  static int _idCounter = 0;
 
   CoreSheetContent({
     required this.id,
@@ -16,15 +19,19 @@ class CoreSheetContent {
     required this.lastOpened,
     required this.cells,
     required this.columnTypes,
+    required this.lastRow,
+    required this.lastCol,
   });
 
-  factory CoreSheetContent.empty({required int id}) {
+  factory CoreSheetContent.empty() {
     return CoreSheetContent(
-      id: id,
-      title: PageConstants.defaultSheetTitle,
+      id: _idCounter++,
+      title: SpreadsheetConstants.defaultSheetTitle,
       lastOpened: DateTime.now(),
       cells: {},
       columnTypes: {},
+      lastRow: 0,
+      lastCol: 0,
     );
   }
 }

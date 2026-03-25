@@ -10,21 +10,21 @@ class SortStatusCache {
 
   Map<String, SortStatus> get sortStatusBySheet => _sortStatusBySheet;
 
-  bool isSorting(String sheetId) {
+  bool isSorting(int sheetId) {
     return containsSheet(sheetId) &&
         (_sortStatusBySheet[sheetId]!.toApplyNextBestSort ||
             _sortStatusBySheet[sheetId]!.toAlwaysApplyCurrentBestSort);
   }
 
-  bool containsSheet(String sheetId) {
+  bool containsSheet(int sheetId) {
     return _sortStatusBySheet.containsKey(sheetId);
   }
 
-  bool getToApplyOnce(String sheetId) {
+  bool getToApplyOnce(int sheetId) {
     return _sortStatusBySheet[sheetId]?.toApplyNextBestSort ?? false;
   }
 
-  bool willNextBestSortBeApplied(String sheetId) {
+  bool willNextBestSortBeApplied(int sheetId) {
     return _sortStatusBySheet[sheetId]!.toApplyNextBestSort ||
         _sortStatusBySheet[sheetId]!.toAlwaysApplyCurrentBestSort;
   }
@@ -33,31 +33,31 @@ class SortStatusCache {
     return _sortStatusBySheet.keys.toList();
   }
 
-  bool getAnalysisDone(String sheetId) {
+  bool getAnalysisDone(int sheetId) {
     return _sortStatusBySheet[sheetId]?.analysisDone ?? false;
   }
 
-  bool isCurrentBestSortAlwaysApplied(String sheetId) {
+  bool isCurrentBestSortAlwaysApplied(int sheetId) {
     return _sortStatusBySheet[sheetId]?.toAlwaysApplyCurrentBestSort ?? false;
   }
 
-  void setToApplyOnce(String sheetId, bool value) {
+  void setToApplyOnce(int sheetId, bool value) {
     if (_sortStatusBySheet.containsKey(sheetId)) {
       _sortStatusBySheet[sheetId]!.toApplyNextBestSort = value;
     }
   }
 
-  void setToAlwaysApplyBestSort(String sheetId, bool toAlwaysApply) {
+  void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
     if (_sortStatusBySheet.containsKey(sheetId)) {
       _sortStatusBySheet[sheetId]!.toAlwaysApplyCurrentBestSort = toAlwaysApply;
     }
   }
 
-  void isAnalysing(String sheetId) {
+  void isAnalysing(int sheetId) {
     _sortStatusBySheet[sheetId] = SortStatus(analysisDone: false);
   }
 
-  void analysisIsDone(String sheetId, bool toFindValidSort) {
+  void analysisIsDone(int sheetId, bool toFindValidSort) {
     if (toFindValidSort) {
       _sortStatusBySheet[sheetId]!.analysisDone = true;
     } else {
@@ -71,7 +71,7 @@ class SortStatusCache {
       ..addAll(statuses);
   }
 
-  void removeSortStatus(String sheetId) {
+  void removeSortStatus(int sheetId) {
     if (_sortStatusBySheet.containsKey(sheetId)) {
       _sortStatusBySheet.remove(sheetId);
     }

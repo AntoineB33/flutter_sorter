@@ -17,7 +17,7 @@ class SortUsecase {
   final SelectionRepository selectionRepository;
 
   Stream<Failure> get failureStream => sortRepository.failureStream;
-  String get currentSheetId => workbookRepository.currentSheetId;
+  int get currentSheetId => workbookRepository.currentSheetId;
 
   SortUsecase(
     this.sortRepository,
@@ -26,7 +26,7 @@ class SortUsecase {
     this.selectionRepository,
   );
 
-  Future<void> loadAnalysisResult(String sheetId) async {
+  Future<void> loadAnalysisResult(int sheetId) async {
     Either<Failure, void> result;
     result = await sortRepository.loadAnalysisResult(sheetId);
     UtilsServices.handleDataCorruption(result);
@@ -36,15 +36,15 @@ class SortUsecase {
     return sortRepository.isSorting(currentSheetId);
   }
 
-  bool getAnalysisDone(String sheetId) {
+  bool getAnalysisDone(int sheetId) {
     return sortRepository.getAnalysisDone(sheetId);
   }
 
-  Future<void> analyze(String sheetId) {
+  Future<void> analyze(int sheetId) {
     return sortRepository.analyze(sheetId);
   }
 
-  void lightCalculations(String sheetId) {
+  void lightCalculations(int sheetId) {
     sortRepository.lightCalculations(sheetId);
   }
 
@@ -52,7 +52,7 @@ class SortUsecase {
     return sortRepository.getSheetIds();
   }
 
-  bool isSortedWithValidSort(String sheetId) {
+  bool isSortedWithValidSort(int sheetId) {
     return sortRepository.isSortedWithValidSort(sheetId);
   }
 
@@ -60,7 +60,7 @@ class SortUsecase {
     return sortRepository.isApplyBetterSortButtonLocked();
   }
 
-  bool sortedWithCurrentBestSort(String sheetId) {
+  bool sortedWithCurrentBestSort(int sheetId) {
     return sortRepository.sortedWithCurrentBestSort(sheetId);
   }
 
@@ -68,21 +68,26 @@ class SortUsecase {
     return sortRepository.isApplyBetterSortButtonInAction();
   }
 
-  void setFindingBestSort(String sheetId, bool value) {
+  void setFindingBestSort(int sheetId, bool value) {
     sortRepository.setFindingBestSort(sheetId, value);
+    FindBestSortChg findBestSortChg = FindBestSortChg(
+      sheetId,
+      value,
+    );
+    saveRepository.save({findBestSortChg.findingBestSortKey: findBestSortChg});
   }
 
-  void setToAlwaysApplyBestSort(String sheetId, bool toAlwaysApply) {
+  void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
     sortRepository.setToAlwaysApplyBestSort(sheetId, toAlwaysApply);
   }
 
-  Future<Stream<SortProgressDataMsg>> launchCalculation(String sheetId) {
+  Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId) {
     return sortRepository.launchCalculation(sheetId);
   }
 
   bool handleSortProgressDataMsg(
     SortProgressDataMsg sortProgressDataMsg,
-    String sheetId,
+    int sheetId,
   ) {
     return sortRepository.handleSortProgressDataMsg(
       sortProgressDataMsg,
@@ -90,39 +95,39 @@ class SortUsecase {
     );
   }
 
-  bool willNextBestSortBeApplied(String sheetId) {
+  bool willNextBestSortBeApplied(int sheetId) {
     return sortRepository.willNextBestSortBeApplied(sheetId);
   }
 
-  bool getToApplyOnce(String sheetId) {
+  bool getToApplyOnce(int sheetId) {
     return sortRepository.getToApplyOnce(sheetId);
   }
 
-  bool isCalculating(String sheetId) {
+  bool isCalculating(int sheetId) {
     return sortRepository.isCalculating(sheetId);
   }
 
-  bool isFindingBestSort(String sheetId) {
+  bool isFindingBestSort(int sheetId) {
     return sortRepository.isFindingBestSort(sheetId);
   }
 
-  bool canFindBetterSort(String sheetId) {
+  bool canFindBetterSort(int sheetId) {
     return sortRepository.canFindBetterSort(sheetId);
   }
 
-  bool isCurrentBestSortAlwaysApplied(String sheetId) {
+  bool isCurrentBestSortAlwaysApplied(int sheetId) {
     return sortRepository.isCurrentBestSortAlwaysApplied(sheetId);
   }
 
-  void setToApplyOnce(String sheetId, bool toApplyOnce) {
+  void setToApplyOnce(int sheetId, bool toApplyOnce) {
     sortRepository.setToApplyOnce(sheetId, toApplyOnce);
   }
 
-  void setSortedWithCurrentBestSort(String sheetId, bool value) {
+  void setSortedWithCurrentBestSort(int sheetId, bool value) {
     sortRepository.setSortedWithCurrentBestSort(sheetId, value);
   }
 
-  List<UpdateUnit> sortTableWithCurrentBestSort(String sheetId) {
+  Map<String, UpdateUnit> sortTableWithCurrentBestSort(int sheetId) {
     return sortRepository.sortTableWithCurrentBestSort(sheetId);
   }
 

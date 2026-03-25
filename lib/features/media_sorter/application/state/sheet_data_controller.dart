@@ -10,13 +10,14 @@ import 'package:trying_flutter/features/media_sorter/domain/usecases/workbook_us
 class SheetDataController extends ChangeNotifier {
   final SheetDataUsecase sheetDataUsecase;
   final WorkbookUsecase workbookUsecase;
-  
-    String get currentSheetId => workbookUsecase.currentSheetId;
-  SheetContent get sheetContent => sheetDataUsecase.getSheet(currentSheetId).sheetContent;
+
+  int get currentSheetId => workbookUsecase.currentSheetId;
+  SheetContent get sheetContent =>
+      sheetDataUsecase.getSheet(currentSheetId).sheetContent;
 
   SheetDataController(this.sheetDataUsecase, this.workbookUsecase);
 
-  Future<Either<Failure, List<CellUpdate>>> paste() {
+  Future<Either<Failure, Map<String, UpdateUnit>>> paste() {
     return sheetDataUsecase.paste();
   }
 
@@ -24,7 +25,7 @@ class SheetDataController extends ChangeNotifier {
     return sheetDataUsecase.copyToClipboard();
   }
 
-  bool isLoaded(String sheetId) {
+  bool isLoaded(int sheetId) {
     return sheetDataUsecase.containsSheetId(sheetId);
   }
 
@@ -32,17 +33,22 @@ class SheetDataController extends ChangeNotifier {
     return sheetDataUsecase.getCellContent(row, col, currentSheetId);
   }
 
-  List<CellUpdate> delete() {
+  Map<String, UpdateUnit> delete() {
     return sheetDataUsecase.delete();
   }
 
   void applyUpdatesNoSort(
     Map<String, UpdateUnit> updates,
-    String sheetId,
+    int sheetId,
     bool isFromHistory,
-      bool isFromEditing,
+    bool isFromEditing,
   ) {
-    sheetDataUsecase.applyUpdatesNoSort(updates, sheetId, isFromHistory, isFromEditing);
+    sheetDataUsecase.applyUpdatesNoSort(
+      updates,
+      sheetId,
+      isFromHistory,
+      isFromEditing,
+    );
   }
 
   void save(Map<String, UpdateUnit> updates) {

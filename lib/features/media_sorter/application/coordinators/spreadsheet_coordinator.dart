@@ -25,9 +25,11 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   final WorkbookController workbookController;
   final TreeController treeController;
 
-  String get currentSheetId => workbookController.currentSheetId;
-  Point<int> get primarySelectedCell =>
-      selectionController.getSelectionData(currentSheetId);
+  int get currentSheetId => workbookController.currentSheetId;
+  int get primarySelectedCellX =>
+      selectionController.getSelectionData(currentSheetId).primarySelectedCellX;
+  int get primarySelectedCellY =>
+      selectionController.getSelectionData(currentSheetId).primarySelectedCellY;
 
   SpreadsheetCoordinator(
     this.historyController,
@@ -64,28 +66,16 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   Future<void> init() async {
     await workbookController.clearAllData();
-    workbookController.loadRecentSheetIds();
-    loadSheet(
-      workbookController.currentSheetId,
-      true,
-    );
-    bool lastSelectionSuccess = await selectionController.loadLastSelection();
-    workbookController.loadLastSelections(lastSelectionSuccess);
-    sortController.loadSortStatus();
+    await workbookController.loadRecentSheetIds();
+    await loadSheet(workbookController.currentSheetId, true);
     for (var sheetId in sortController.getRecentSheetIds()) {
       launchCalculation(sheetId);
     }
   }
 
-  Future<void> loadSheet(String sheetId, bool init) async {
-    if (!sheetDataController.isLoaded(sheetId)) {
-      sortController.loadAnalysisResult(sheetId).then((_) {
-        treeController.onAnalysisAvailable();
-      });
-    }
+  Future<void> loadSheet(int sheetId, bool init) async {
     selectionController.stopEditing(false);
     await workbookController.loadSheet(sheetId, init);
-    notifyListeners();
     updateTreeAndRowColCount();
     gridController.scrollToLastSelection();
     notifyListeners();
@@ -120,9 +110,10 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void setCellContent(String newValue) {
-    int rowId = primarySelectedCell.x;
-    int colId = primarySelectedCell.y;
-    final updates = [CellUpdate(rowId, colId, newValue)];
+    int rowId = primarySelectedCellX;
+    int colId = primarySelectedCellY;
+    final cellUpdate = CellUpdate(currentSheetId, rowId, colId, newValue);
+    Map<String, UpdateUnit> updates = {cellUpdate.getStringKey(): cellUpdate};
     applyUpdatesAndSort(
       updates,
       currentSheetId,
@@ -133,8 +124,8 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyUpdatesAndSort(
-    List<UpdateUnit> updates,
-    String sheetId,
+    Map<String, UpdateUnit> updates,
+    int sheetId,
     bool isFromHistory,
     bool isFromSort,
     bool isFromEditing,
@@ -146,7 +137,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     }
   }
 
-  Future<void> launchCalculation(String sheetId) async {
+  Future<void> launchCalculation(int sheetId) async {
     if (!sortController.getAnalysisDone(sheetId)) {
       await sortController.analyze(sheetId);
     }
@@ -171,7 +162,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   bool _handleSortProgressDataMsg(
     SortProgressDataMsg sortProgressDataMsg,
-    String sheetId,
+    int sheetId,
   ) {
     bool stopLoop = true;
     stopLoop = sortController.handleSortProgressDataMsg(
@@ -188,8 +179,8 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     return stopLoop;
   }
 
-  void sortTableWithCurrentBestSort(String sheetId) {
-    final List<UpdateUnit> updates = sortController
+  void sortTableWithCurrentBestSort(int sheetId) {
+    final updates = sortController
         .sortTableWithCurrentBestSort(sheetId);
     applyUpdatesNoSort(updates, sheetId, false, false);
     if (sortController.getToApplyOnce(sheetId)) {
@@ -199,7 +190,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void applyUpdatesNoSort(
     Map<String, UpdateUnit> updates,
-    String sheetId,
+    int sheetId,
     bool isFromHistory,
     bool isFromEditing,
   ) {
@@ -218,12 +209,11 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void updateTreeAndRowColCount() {
-    gridController.updateRowColCount(
+    gridController.updateRowCount(
       currentSheetId,
-      row0TopToScreenBottomHeight:
-          gridController.row0TopToScreenBottomHeight,
-      colALeftToScreenRightWidth:
-          gridController.colALeftToScreenRightWidth,
+    );
+    gridController.updateColCount(
+      currentSheetId,
     );
     treeController.onAnalysisAvailable();
   }
@@ -247,7 +237,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
         int found = -1;
         for (int i = 0; i < node.newChildren!.length; i++) {
           final child = node.newChildren![i];
-          if (primarySelectedCell.x == child.rowId) {
+          if (primarySelectedCellX == child.rowId) {
             found = i;
             break;
           }
@@ -271,8 +261,8 @@ class SpreadsheetCoordinator extends ChangeNotifier {
         int found = -1;
         for (int i = 0; i < node.cellsToSelect!.length; i++) {
           final child = node.cellsToSelect![i];
-          if (primarySelectedCell.x == child.rowId &&
-              primarySelectedCell.y == child.colId) {
+          if (primarySelectedCellX == child.rowId &&
+              primarySelectedCellY == child.colId) {
             found = i;
             break;
           }
@@ -361,29 +351,29 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
     if (logicalKey == LogicalKeyboardKey.arrowUp) {
       selectionController.setPrimarySelection(
-        max(primarySelectedCell.x - 1, 0),
-        primarySelectedCell.y,
+        max(primarySelectedCellX - 1, 0),
+        primarySelectedCellY,
         false,
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowDown) {
       selectionController.setPrimarySelection(
-        primarySelectedCell.x + 1,
-        primarySelectedCell.y,
+        primarySelectedCellX + 1,
+        primarySelectedCellY,
         false,
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowLeft) {
       selectionController.setPrimarySelection(
-        primarySelectedCell.x,
-        max(0, primarySelectedCell.y - 1),
+        primarySelectedCellX,
+        max(0, primarySelectedCellY - 1),
         false,
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowRight) {
       selectionController.setPrimarySelection(
-        primarySelectedCell.x,
-        primarySelectedCell.y + 1,
+        primarySelectedCellX,
+        primarySelectedCellY + 1,
         false,
       );
       return KeyEventResult.handled;
@@ -427,14 +417,18 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyDefaultColumnSequence() {
-    applyUpdatesAndSort(
+    final updatesLst = 
       [
         ColumnTypeUpdate(1, ColumnType.dependencies),
         ColumnTypeUpdate(2, ColumnType.dependencies),
         ColumnTypeUpdate(3, ColumnType.dependencies),
         ColumnTypeUpdate(7, ColumnType.urls),
         ColumnTypeUpdate(8, ColumnType.dependencies),
-      ],
+      ];
+      Map<String, UpdateUnit> updates = {
+        for (var update in updatesLst) update.getStringKey(): update,
+      };
+    applyUpdatesAndSort(updates,
       currentSheetId,
       false,
       false,
@@ -445,14 +439,14 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   void onSave(String newValue, bool moveUp) {
     if (moveUp) {
       setPrimarySelection(
-        max(0, primarySelectedCell.x - 1),
-        primarySelectedCell.y,
+        max(0, primarySelectedCellX - 1),
+        primarySelectedCellY,
         false,
       );
     } else {
       setPrimarySelection(
-        primarySelectedCell.x + 1,
-        primarySelectedCell.y,
+        primarySelectedCellX + 1,
+        primarySelectedCellY,
         false,
       );
     }
@@ -461,12 +455,13 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void stopEditing(bool escape) {
     Map<String, UpdateData> updates = {};
-    selectionController.stopEditing(updates, escape);
+    selectionController.stopEditing(escape, updates: updates);
     sheetDataController.save(updates);
   }
 
   void setColumnType(int col, ColumnType type) {
-    final updates = [ColumnTypeUpdate(col, type)];
+    final update = ColumnTypeUpdate(col, type);
+    final updates = {update.getStringKey(): update};
     applyUpdatesAndSort(updates, currentSheetId, false, false, false);
   }
 }

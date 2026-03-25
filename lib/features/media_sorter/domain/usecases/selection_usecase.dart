@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/helpers/utils_services.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
@@ -20,7 +18,8 @@ class SelectionUsecase {
 
   late StreamSubscription<Failure> _failureSubscription;
 
-  Point<int> get primarySelectedCell => selectionRepository.primarySelectedCell;
+  int get primarySelectedCellX => selectionRepository.primarySelectedCellX;
+  int get primarySelectedCellY => selectionRepository.primarySelectedCellY;
 
   SelectionUsecase(
     this.selectionRepository,
@@ -38,11 +37,11 @@ class SelectionUsecase {
     _failureSubscription.cancel();
   }
 
-  double getScrollOffsetX(String sheetId) {
+  double getScrollOffsetX(int sheetId) {
     return selectionRepository.getScrollOffsetX(sheetId);
   }
 
-  double getScrollOffsetY(String sheetId) {
+  double getScrollOffsetY(int sheetId) {
     return selectionRepository.getScrollOffsetY(sheetId);
   }
 
@@ -58,7 +57,7 @@ class SelectionUsecase {
     selectionRepository.setPrimarySelection(row, col, keepSelection);
   }
 
-  SelectionData getSelectionData(String sheetId) {
+  SelectionData getSelectionData(int sheetId) {
     return selectionRepository.getSelectionData(sheetId);
   }
 

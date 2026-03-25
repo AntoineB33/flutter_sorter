@@ -15,11 +15,12 @@ class SelectionController extends ChangeNotifier {
   final HistoryUsecase historyUsecase;
   final WorkbookUsecase workbookUsecase;
   final SheetDataUsecase sheetDataUsecase;
-  
+
   bool editingMode = false;
 
-  String? get currentSheetId => workbookUsecase.currentSheetId;
-  Point<int> get primarySelectedCell => selectionUsecase.primarySelectedCell;
+  int get currentSheetId => workbookUsecase.currentSheetId;
+  int get primarySelectedCellX => selectionUsecase.primarySelectedCellX;
+  int get primarySelectedCellY => selectionUsecase.primarySelectedCellY;
 
   SelectionController(
     this.selectionUsecase,
@@ -29,15 +30,7 @@ class SelectionController extends ChangeNotifier {
     this.sheetDataUsecase,
   );
 
-  double getScrollOffsetX(String sheetId) {
-    return selectionUsecase.getScrollOffsetX(sheetId);
-  }
-
-  double getScrollOffsetY(String sheetId) {
-    return selectionUsecase.getScrollOffsetY(sheetId);
-  }
-
-  SelectionData getSelectionData(String sheetId) {
+  SelectionData getSelectionData(int sheetId) {
     return selectionUsecase.getSelectionData(sheetId);
   }
 
@@ -46,25 +39,18 @@ class SelectionController extends ChangeNotifier {
   }
 
   bool isCellSelected(int row, int col) {
-    return currentSheetId != null && selectionUsecase.getSelectionData(currentSheetId!).selectedCells.any(
-      (cell) => cell.x == row && cell.y == col,
-    );
+    return selectionUsecase
+            .getSelectionData(currentSheetId)
+            .selectedCells
+            .any((cell) => cell.x == row && cell.y == col);
   }
 
   bool isPrimarySelectedCell(int row, int col) {
-    return row == primarySelectedCell.x &&
-        col == primarySelectedCell.y;
+    return row == primarySelectedCellX && col == primarySelectedCellY;
   }
 
   bool isCellEditing(int row, int col) =>
-      editingMode &&
-      primarySelectedCell.x == row &&
-      primarySelectedCell.y == col;
-
-  Future<bool> loadLastSelection() async {
-    bool success = await selectionUsecase.loadLastSelection();
-    return success;
-  }
+      editingMode && primarySelectedCellX == row && primarySelectedCellY == col;
 
   void setPrimarySelection(
     int row,
@@ -76,8 +62,8 @@ class SelectionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void stopEditing(Map<String, UpdateData> updates, bool escape) {
-    historyUsecase.stopEditing(updates, escape);
+  void stopEditing(bool escape, {Map<String, UpdateUnit>? updates}) {
+    historyUsecase.stopEditing(escape, updates: updates);
     editingMode = false;
     notifyListeners();
   }
@@ -87,13 +73,13 @@ class SelectionController extends ChangeNotifier {
   }
 
   bool startEditing() {
-    if (isSorting() || currentSheetId == null) {
+    if (isSorting()) {
       return false;
     }
     previousEditingValue = sheetDataUsecase.getCellContent(
-      primarySelectedCell.x,
-      primarySelectedCell.y,
-      currentSheetId!,
+      primarySelectedCellX,
+      primarySelectedCellY,
+      currentSheetId,
     );
     editingMode = true;
     saveLastSelection();
@@ -103,9 +89,5 @@ class SelectionController extends ChangeNotifier {
 
   void selectAll() {
     selectionUsecase.selectAll();
-  }
-
-  void clearLastSelection() {
-    selectionUsecase.clearLastSelection();
   }
 }

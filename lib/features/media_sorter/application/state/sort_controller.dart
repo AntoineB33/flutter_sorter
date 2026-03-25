@@ -18,7 +18,7 @@ class SortController extends ChangeNotifier {
   final CalculationService calculationService = CalculationService();
   late StreamSubscription _subscription;
 
-  String get currentSheetId => workbookUsecase.currentSheetId;
+  int get currentSheetId => workbookUsecase.currentSheetId;
 
   SortController(
     this.sheetDataUsecase,
@@ -30,15 +30,7 @@ class SortController extends ChangeNotifier {
     });
   }
 
-  Future<void> loadAnalysisResult(String sheetId) {
-    return sortUseCase.loadAnalysisResult(sheetId);
-  }
-
-  Future<void> loadSortStatus() async {
-    sortUseCase.loadSortStatus();
-  }
-
-  List<String> getRecentSheetIds() {
+  List<int> getRecentSheetIds() {
     return workbookUsecase.getRecentSheetIds();
   }
 
@@ -52,50 +44,50 @@ class SortController extends ChangeNotifier {
     super.dispose();
   }
 
-  bool getAnalysisDone(String sheetId) {
+  bool getAnalysisDone(int sheetId) {
     return sortUseCase.getAnalysisDone(sheetId);
   }
 
-  Future<void> analyze(String sheetId) {
+  Future<void> analyze(int sheetId) {
     return sortUseCase.analyze(sheetId);
   }
 
-  void lightCalculations(String sheetId) {
+  void lightCalculations(int sheetId) {
     sortUseCase.lightCalculations(sheetId);
   }
 
-  Future<Stream<SortProgressDataMsg>> launchCalculation(String sheetId) {
+  Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId) {
     return sortUseCase.launchCalculation(sheetId);
   }
 
   bool handleSortProgressDataMsg(
     SortProgressDataMsg sortProgressDataMsg,
-    String sheetId,
+    int sheetId,
   ) {
     return sortUseCase.handleSortProgressDataMsg(sortProgressDataMsg, sheetId);
   }
 
-  bool willNextBestSortBeApplied(String sheetId) {
+  bool willNextBestSortBeApplied(int sheetId) {
     return sortUseCase.willNextBestSortBeApplied(sheetId);
   }
 
-  List<UpdateUnit> sortTableWithCurrentBestSort(String sheetId) {
+  Map<String, UpdateUnit> sortTableWithCurrentBestSort(int sheetId) {
     return sortUseCase.sortTableWithCurrentBestSort(sheetId);
   }
 
-  bool getToApplyOnce(String sheetId) {
+  bool getToApplyOnce(int sheetId) {
     return sortUseCase.getToApplyOnce(sheetId);
   }
 
-  bool isCalculating(String sheetId) {
+  bool isCalculating(int sheetId) {
     return sortUseCase.isCalculating(sheetId);
   }
 
-  void setToApplyOnce(String sheetId, bool toApplyOnce) {
+  void setToApplyOnce(int sheetId, bool toApplyOnce) {
     sortUseCase.setToApplyOnce(sheetId, toApplyOnce);
   }
 
-  void setSortedWithCurrentBestSort(String sheetId, bool value) {
+  void setSortedWithCurrentBestSort(int sheetId, bool value) {
     sortUseCase.setSortedWithCurrentBestSort(sheetId, value);
   }
 
@@ -107,12 +99,8 @@ class SortController extends ChangeNotifier {
     return sortUseCase.isApplyBetterSortButtonLocked();
   }
 
-  bool sortedWithCurrentBestSort(String sheetId) {
+  bool sortedWithCurrentBestSort(int sheetId) {
     return sortUseCase.sortedWithCurrentBestSort(sheetId);
-  }
-
-  bool isApplyBetterSortButtonInAction() {
-    return sortUseCase.isApplyBetterSortButtonInAction();
   }
 
   bool isFindingBestSort() {
@@ -131,7 +119,7 @@ class SortController extends ChangeNotifier {
     sortUseCase.setFindingBestSort(currentSheetId, value);
   }
 
-  void setToAlwaysApplyBestSort(String sheetId, bool toAlwaysApply) {
+  void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
     sortUseCase.setToAlwaysApplyBestSort(sheetId, toAlwaysApply);
   }
 }

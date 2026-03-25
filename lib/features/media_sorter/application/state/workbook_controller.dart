@@ -10,13 +10,10 @@ class WorkbookController extends ChangeNotifier {
   final SortUsecase sortUseCase;
   final CalculationService calculationService = CalculationService();
 
-  String get currentSheetId => workbookUseCase.currentSheetId;
+  int get currentSheetId => workbookUseCase.currentSheetId;
   String get currentSheetName => workbookUseCase.currentSheetName;
 
-  WorkbookController(
-    this.workbookUseCase,
-    this.sortUseCase,
-  );
+  WorkbookController(this.workbookUseCase, this.sortUseCase);
 
   Future<void> clearAllData() async {
     await workbookUseCase.clearAllData();
@@ -24,19 +21,13 @@ class WorkbookController extends ChangeNotifier {
 
   Future<void> loadRecentSheetIds() async {
     await workbookUseCase.loadRecentSheetIds();
-    notifyListeners();
   }
 
-  Future<void> loadLastSelections(bool success) async {
-    await workbookUseCase.loadLastSelections(success);
-    notifyListeners();
-  }
-
-  List<String> getRecentSheetIds() {
+  List<int> getRecentSheetIds() {
     return workbookUseCase.getRecentSheetIds();
   }
 
-  Future<void> loadSheet(String name, bool init) async {
-    workbookUseCase.loadSheet(name, init);
+  Future<void> loadSheet(int sheetId, bool init) async {
+    workbookUseCase.loadSheet(sheetId, init);
   }
 }

@@ -28,36 +28,38 @@ class SheetDataUsecase {
     this.gridRepository,
     this.historyRepository,
     this.saveRepository,
-  ) : _failureSubscription = sheetDataRepository.failureStream.listen((failure) {
-          UtilsServices.handleDataCorruption(Left(failure));
-        });
-  
+  ) : _failureSubscription = sheetDataRepository.failureStream.listen((
+        failure,
+      ) {
+        UtilsServices.handleDataCorruption(Left(failure));
+      });
+
   void dispose() {
     _failureSubscription.cancel();
   }
 
-  bool containsSheetId(String sheetId) {
+  bool containsSheetId(int sheetId) {
     return sheetDataRepository.containsSheetId(sheetId);
   }
 
-  int rowCount(String sheetId) {
+  int rowCount(int sheetId) {
     return sheetDataRepository.rowCount(sheetId);
   }
 
-  int colCount(String sheetId) {
+  int colCount(int sheetId) {
     return sheetDataRepository.colCount(sheetId);
   }
 
-  String getCellContent(int row, int col, String sheetId) {
+  String getCellContent(int row, int col, int sheetId) {
     return sheetDataRepository.getCellContent(Point<int>(row, col), sheetId);
   }
 
-  SheetData getSheet(String sheetId) {
+  SheetData getSheet(int sheetId) {
     return sheetDataRepository.getSheet(sheetId);
   }
 
   @useResult
-  void addPrevValue(Map<String, UpdateUnit> updates, String sheetId) {
+  void addPrevValue(Map<String, UpdateUnit> updates, int sheetId) {
     for (var update in updates.values) {
       if (update is CellUpdate) {
         update.prevValue = sheetDataRepository.getCellContent(
@@ -77,7 +79,7 @@ class SheetDataUsecase {
 
   void applyUpdatesNoSort(
     Map<String, UpdateUnit> updates,
-    String sheetId,
+    int sheetId,
     bool isFromHistory,
     bool isFromEditing,
   ) {
@@ -87,15 +89,16 @@ class SheetDataUsecase {
     }
     sheetDataRepository.update(updates, sheetId);
   }
+
   void save(Map<String, UpdateUnit> updates) {
     saveRepository.save(updates);
   }
 
-  List<CellUpdate> delete() {
+  Map<String, UpdateUnit> delete() {
     return sheetDataRepository.delete();
   }
 
-  Future<Either<Failure, List<CellUpdate>>> paste() {
+  Future<Either<Failure, Map<String, UpdateUnit>>> paste() {
     return sheetDataRepository.pasteSelection();
   }
 
