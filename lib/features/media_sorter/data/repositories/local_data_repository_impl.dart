@@ -11,7 +11,7 @@ class LocalDataRepositoryImpl with WidgetsBindingObserver implements SaveReposit
   
   // The Map acts as our cache. Using the entity's ID as the key 
   // guarantees the "latest wins" behavior automatically.
-  final Map<String, UpdateUnit> _pendingSaves = {};
+  final Map<Record, UpdateUnit> _pendingSaves = {};
   
   // The trigger for our debounce logic
   final PublishSubject<void> _saveTrigger = PublishSubject<void>();
