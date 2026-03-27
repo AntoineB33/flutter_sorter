@@ -17,7 +17,7 @@ class SheetDataController extends ChangeNotifier {
 
   SheetDataController(this.sheetDataUsecase, this.workbookUsecase);
 
-  Future<Either<Failure, Map<String, UpdateUnit>>> paste() {
+  Future<Either<Failure, Map<Record, UpdateUnit>>> paste() {
     return sheetDataUsecase.paste();
   }
 
@@ -33,12 +33,12 @@ class SheetDataController extends ChangeNotifier {
     return sheetDataUsecase.getCellContent(row, col, currentSheetId);
   }
 
-  Map<String, UpdateUnit> delete() {
+  Map<Record, UpdateUnit> delete() {
     return sheetDataUsecase.delete();
   }
 
   void applyUpdatesNoSort(
-    Map<String, UpdateUnit> updates,
+    Map<Record, UpdateUnit> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,
@@ -51,7 +51,7 @@ class SheetDataController extends ChangeNotifier {
     );
   }
 
-  void save(Map<String, UpdateUnit> updates) {
+  void save(Map<Record, UpdateUnit> updates) {
     sheetDataUsecase.save(updates);
   }
 }

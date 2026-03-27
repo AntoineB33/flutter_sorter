@@ -12,9 +12,9 @@ abstract class SheetDataRepository {
   int rowCount(int sheetId);
   int colCount(int sheetId);
   CoreSheetContent getSheet(int sheetId);
-  Map<String, UpdateUnit> delete();
+  Map<Record, UpdateUnit> delete();
   Future<void> copySelectionToClipboard();
-  Future<Either<Failure, Map<String, UpdateUnit>>> pasteSelection();
+  Future<Either<Failure, Map<Record, UpdateUnit>>> pasteSelection();
   String getCellContent(Point<int> cell, int sheetId);
   ColumnType getColumnType(int colId, int sheetId);
   String getSheetName(int sheetId);

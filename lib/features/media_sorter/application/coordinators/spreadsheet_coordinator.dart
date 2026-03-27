@@ -113,7 +113,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     int rowId = primarySelectedCellX;
     int colId = primarySelectedCellY;
     final cellUpdate = CellUpdate(currentSheetId, rowId, colId, newValue);
-    Map<String, UpdateUnit> updates = {cellUpdate.getStringKey(): cellUpdate};
+    Map<Record, UpdateUnit> updates = {cellUpdate.getRecord(): cellUpdate};
     applyUpdatesAndSort(
       updates,
       currentSheetId,
@@ -124,7 +124,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyUpdatesAndSort(
-    Map<String, UpdateUnit> updates,
+    Map<Record, UpdateUnit> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromSort,
@@ -189,7 +189,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyUpdatesNoSort(
-    Map<String, UpdateUnit> updates,
+    Map<Record, UpdateUnit> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,
@@ -419,14 +419,14 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   void applyDefaultColumnSequence() {
     final updatesLst = 
       [
-        ColumnTypeUpdate(1, ColumnType.dependencies),
-        ColumnTypeUpdate(2, ColumnType.dependencies),
-        ColumnTypeUpdate(3, ColumnType.dependencies),
-        ColumnTypeUpdate(7, ColumnType.urls),
-        ColumnTypeUpdate(8, ColumnType.dependencies),
+        ColumnTypeUpdate(currentSheetId, 1, ColumnType.dependencies),
+        ColumnTypeUpdate(currentSheetId, 2, ColumnType.dependencies),
+        ColumnTypeUpdate(currentSheetId, 3, ColumnType.dependencies),
+        ColumnTypeUpdate(currentSheetId, 7, ColumnType.urls),
+        ColumnTypeUpdate(currentSheetId, 8, ColumnType.dependencies),
       ];
-      Map<String, UpdateUnit> updates = {
-        for (var update in updatesLst) update.getStringKey(): update,
+      Map<Record, UpdateUnit> updates = {
+        for (var update in updatesLst) update.getRecord(): update,
       };
     applyUpdatesAndSort(updates,
       currentSheetId,
@@ -461,7 +461,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void setColumnType(int col, ColumnType type) {
     final update = ColumnTypeUpdate(col, type);
-    final updates = {update.getStringKey(): update};
+    final updates = {update.getRecord(): update};
     applyUpdatesAndSort(updates, currentSheetId, false, false, false);
   }
 }

@@ -40,23 +40,23 @@ class HistoryRepositoryImpl implements HistoryRepository {
     return updateData;
   }
 
-  void _removeLastHistoryEditingMode(Map<String, UpdateUnit> updates) {
+  void _removeLastHistoryEditingMode(Map<Record, UpdateUnit> updates) {
     UpdateData lastUpdateData = historyData.updateHistories.last;
     lastUpdateData.addOtherwiseRemove = false;
     historyData.updateHistories.removeAt(historyData.historyIndex);
     historyData.historyIndex--;
-    updates[lastUpdateData.getStringKey()] = lastUpdateData;
+    updates[lastUpdateData.getRecord()] = lastUpdateData;
     final historyChg = HistoryIndexChg(currentSheetId, historyData.historyIndex);
     updates[historyChg.historyIndexKey] = historyChg;
   }
 
   @override
   void commitHistory(
-    Map<String, UpdateUnit> updates,
+    Map<Record, UpdateUnit> updates,
     int sheetId,
     bool isFromEditing,
   ) {
-    final updateData = UpdateData(chronoIdCounter++, sheetId, updates);
+    final updateData = UpdateData(chronoIdCounter++, sheetId, updates, true);
     if (isFromEditing) {
       if (isLastChangeInSameEditingMode) {
         CellUpdate cellUpdate = updates.values.first as CellUpdate;
@@ -71,33 +71,39 @@ class HistoryRepositoryImpl implements HistoryRepository {
         cellUpdate.prevValue = prevCellUpdate.prevValue;
         historyData.updateHistories[historyData.historyIndex] = updateData;
         lastUpdateData.addOtherwiseRemove = false;
-        updates[lastUpdateData.getStringKey()] = lastUpdateData;
-        updates[updateData.getStringKey()] = updateData;
+        updates[lastUpdateData.getRecord()] = lastUpdateData;
+        updates[updateData.getRecord()] = updateData;
         return;
       }
       isLastChangeInSameEditingMode = true;
     }
     if (historyData.historyIndex < historyData.updateHistories.length - 1) {
+      for (int i = historyData.historyIndex + 1; i < historyData.updateHistories.length; i++) {
+        historyData.updateHistories[i].addOtherwiseRemove = false;
+        updates[historyData.updateHistories[i].getRecord()] =
+            historyData.updateHistories[i];
+      }
       historyData.updateHistories = historyData.updateHistories.sublist(
         0,
         historyData.historyIndex + 1,
       );
     }
     historyData.updateHistories.add(updateData);
-    updates[updateData.getStringKey()] = updateData;
+    updates[updateData.getRecord()] = updateData;
     historyData.historyIndex++;
     if (historyData.historyIndex == 100) {
-      updates[historyData.updateHistories.first.getStringKey()] =
+      historyData.updateHistories.first.addOtherwiseRemove = false;
+      updates[historyData.updateHistories.first.getRecord()] =
           historyData.updateHistories.first;
       historyData.updateHistories.removeAt(0);
       historyData.historyIndex--;
     }
-    final historyChg = HistoryIndexChg(currentSheetId, historyData.historyIndex);
-    updates[historyChg.historyIndexKey] = historyChg;
+    final historyChg = SheetDataUpdate(currentSheetId, historyIndex: historyData.historyIndex);
+    updates[historyChg.getRecord()] = historyChg;
   }
 
   @override
-  void stopEditing(bool escape, {Map<String, UpdateUnit>? updates}) {
+  void stopEditing(bool escape, {Map<Record, UpdateUnit>? updates}) {
     if (escape && isLastChangeInSameEditingMode) {
       _removeLastHistoryEditingMode(updates!);
     }

@@ -62,7 +62,7 @@ class SelectionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void stopEditing(bool escape, {Map<String, UpdateUnit>? updates}) {
+  void stopEditing(bool escape, {Map<Record, UpdateUnit>? updates}) {
     historyUsecase.stopEditing(escape, updates: updates);
     editingMode = false;
     notifyListeners();

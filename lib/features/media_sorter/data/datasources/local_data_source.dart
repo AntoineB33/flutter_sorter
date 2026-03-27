@@ -5,7 +5,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 import 'package:drift/drift.dart';
 
 abstract class ILocalDataSource {
-  Future<void> batchInsertOrUpdate(List<UpdateCompanion> items);
+  Future<void> batchInsertOrUpdate(List<UpdateUnit> items);
 }
 
 // The Implementation
@@ -15,7 +15,7 @@ class DriftLocalDataSource implements ILocalDataSource {
   DriftLocalDataSource(this.db);
 
   @override
-  Future<void> batchInsertOrUpdate(List<UpdateCompanion> items) async {
+  Future<void> batchInsertOrUpdate(List<UpdateUnit> items) async {
     final cellUpserts = <SheetCellsCompanion>[];
     final cellDeletes = <SheetCellsCompanion>[];
     final columnTypeUpserts = <SheetColumnTypesCompanion>[];
@@ -27,21 +27,18 @@ class DriftLocalDataSource implements ILocalDataSource {
       if (item is UpdateData) {
         UpdateData updateData = item;
         if (updateData.addOtherwiseRemove) {
-          await db.into(db.updateHistories).insertOnConflictUpdate(
-            UpdateHistoriesCompanion.insert(
-              chronoId: updateData.chronoId,
-              sheetId: updateData.sheetId,
-              updates: updateData.toJson(),
-              timestamp: updateData.timestamp,
-            ),
-          );
+          historyUpserts.add(UpdateHistoriesCompanion(
+            sheetId: Value(updateData.sheetId),
+            chronoId: Value(updateData.chronoId),
+            timestamp: Value(updateData.timestamp),
+            updates: Value(updateData.updates),
+          ));
         } else {
-          await (db.delete(db.updateHistories)
-                ..where((tbl) =>
-                    tbl.timestamp.equals(updateData.timestamp) &
-                    tbl.chronoId.equals(updateData.chronoId) &
-                    tbl.sheetId.equals(updateData.sheetId)))
-              .go();
+          historyDeletes.add(UpdateHistoriesCompanion(
+            sheetId: Value(updateData.sheetId),
+            chronoId: Value(updateData.chronoId),
+            timestamp: Value(updateData.timestamp),
+          ));
         }
       } else if (item is CellUpdate) {
         // Create a companion object mapped to your SheetCells table
@@ -67,10 +64,7 @@ class DriftLocalDataSource implements ILocalDataSource {
         } else {
           columnTypeUpserts.add(companion);
         }
-      } else if (item is SheetNameUpdate) {
-        await (db.update(db.sheetDataTables)
-              ..where((tbl) => tbl.id.equals(item.sheetId)))
-            .write(SheetDataTablesCompanion(name: Value(item.newName)));
+      } else if () {
       }
     }
 

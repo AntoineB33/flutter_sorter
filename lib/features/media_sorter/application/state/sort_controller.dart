@@ -71,7 +71,7 @@ class SortController extends ChangeNotifier {
     return sortUseCase.willNextBestSortBeApplied(sheetId);
   }
 
-  Map<String, UpdateUnit> sortTableWithCurrentBestSort(int sheetId) {
+  Map<Record, UpdateUnit> sortTableWithCurrentBestSort(int sheetId) {
     return sortUseCase.sortTableWithCurrentBestSort(sheetId);
   }
 

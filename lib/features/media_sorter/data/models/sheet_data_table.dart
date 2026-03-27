@@ -49,11 +49,11 @@ class SheetColumnTypes extends Table {
   Set<Column> get primaryKey => {sheetId, columnIndex}; 
 }
 
-class UpdateUnitMapConverter extends TypeConverter<Map<String, UpdateUnit>, String> {
+class UpdateUnitMapConverter extends TypeConverter<Map<Record, UpdateUnit>, String> {
   const UpdateUnitMapConverter();
 
   @override
-  Map<String, UpdateUnit> fromSql(String fromDb) {
+  Map<Record, UpdateUnit> fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as Map<String, dynamic>;
     return decoded.map((key, value) {
       return MapEntry(
@@ -64,7 +64,7 @@ class UpdateUnitMapConverter extends TypeConverter<Map<String, UpdateUnit>, Stri
   }
 
   @override
-  String toSql(Map<String, UpdateUnit> value) {
+  String toSql(Map<Record, UpdateUnit> value) {
     final encoded = value.map((key, val) => MapEntry(key, val.toJson()));
     return jsonEncode(encoded);
   }

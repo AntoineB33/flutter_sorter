@@ -462,7 +462,7 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  Map<String, UpdateUnit> sortTableWithCurrentBestSort(int sheetId) {
+  Map<Record, UpdateUnit> sortTableWithCurrentBestSort(int sheetId) {
     List<int> sortOrder = [0];
     AnalysisResult result = analysisResultCache.getAnalysisResult(sheetId);
     List<int> stack = result.currentBestSort!

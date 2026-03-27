@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:drift/drift.dart';
 import 'package:flutter/widgets.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
@@ -6,12 +7,35 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/utils/logger.dart';
 
+class MergedInsertable<T extends Object> implements Insertable<T> {
+  final Insertable<T> baseUpdate;
+  final Insertable<T> newUpdate;
+
+  MergedInsertable(this.baseUpdate, this.newUpdate);
+
+  @override
+  Map<String, Expression<Object>> toColumns(bool nullToAbsent) {
+    // The newUpdate map will overwrite any matching keys in the baseUpdate map.
+    return {
+      ...baseUpdate.toColumns(nullToAbsent),
+      ...newUpdate.toColumns(nullToAbsent),
+    };
+  }
+}
+
+/// Extension to make usage clean across your entire app.
+extension MergeInsertableExt<T extends Object> on Insertable<T> {
+  Insertable<T> merge(Insertable<T> other) => MergedInsertable(this, other);
+}
+
 class LocalDataRepositoryImpl with WidgetsBindingObserver implements SaveRepository {
   final ILocalDataSource _localDataSource;
   
   // The Map acts as our cache. Using the entity's ID as the key 
   // guarantees the "latest wins" behavior automatically.
   final Map<Record, UpdateUnit> _pendingSaves = {};
+  
+  bool _isMicrotaskScheduled = false;
   
   // The trigger for our debounce logic
   final PublishSubject<void> _saveTrigger = PublishSubject<void>();
@@ -29,12 +53,18 @@ class LocalDataRepositoryImpl with WidgetsBindingObserver implements SaveReposit
 
   /// Called by your Use Cases
   @override
-  void save(Map<String, UpdateUnit> updates) {
+  void save(Map<Record, UpdateUnit> updates) {
     _pendingSaves.addAll(updates);
     
     // 2. Send a signal. RxDart will absorb rapid signals and only emit 
     // to the listener once 800ms has passed with no new signals.
-    _saveTrigger.add(null);
+    if (!_isMicrotaskScheduled) {
+      _isMicrotaskScheduled = true;
+      scheduleMicrotask(() {
+        _isMicrotaskScheduled = false;
+        _saveTrigger.add(null); // Trigger the debounce stream
+      });
+    }
   }
 
   /// Takes the current cache, clears it, and writes to Drift
@@ -55,7 +85,7 @@ class LocalDataRepositoryImpl with WidgetsBindingObserver implements SaveReposit
       // We use putIfAbsent so we don't accidentally overwrite newer edits 
       // that a user might have made while the DB was failing.
       for (var item in itemsToSave) {
-        _pendingSaves.putIfAbsent(item.getStringKey(), () => item);
+        _pendingSaves.putIfAbsent(item.getRecord(), () => item);
       }
       logger.e("Database save failed. Items returned to cache. Error: $e");
     }

@@ -111,7 +111,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  Future<Either<Failure, Map<String, UpdateUnit>>> pasteSelection() async {
+  Future<Either<Failure, Map<Record, UpdateUnit>>> pasteSelection() async {
     final text = await _clipboardService.getText();
     if (text == null) return Left(ClipboardEmptyFailure());
     // if contains "
@@ -119,7 +119,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       return Left(ClipboardUnsupportedCharactersFailure());
     }
 
-    final Map<String, UpdateUnit> updates = {};
+    final Map<Record, UpdateUnit> updates = {};
     final rows = text.split('\n');
     int startRow = selectionCache
         .getSelectionData(workbookCache.currentSheetId)
@@ -132,7 +132,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       for (int c = 0; c < columns.length; c++) {
         String val = columns[c].replaceAll('\r', '');
         final cellUpdate = CellUpdate(startRow + r, startCol + c, val);
-        updates[cellUpdate.getStringKey()] = cellUpdate;
+        updates[cellUpdate.getRecord()] = cellUpdate;
       }
     }
     return Right(updates);
@@ -197,14 +197,14 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  Map<String, UpdateUnit> delete() {
-    Map<String, UpdateUnit> updates = {};
+  Map<Record, UpdateUnit> delete() {
+    Map<Record, UpdateUnit> updates = {};
     for (Point<int> cell
         in selectionCache
             .getSelectionData(workbookCache.currentSheetId)
             .selectedCells) {
       final cellUpdate = CellUpdate(cell.x, cell.y, '');
-      updates[cellUpdate.getStringKey()] = cellUpdate;
+      updates[cellUpdate.getRecord()] = cellUpdate;
     }
     return updates;
   }

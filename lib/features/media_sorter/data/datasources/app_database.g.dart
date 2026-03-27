@@ -1279,7 +1279,7 @@ class $UpdateHistoriesTable extends UpdateHistories
     ),
   );
   @override
-  late final GeneratedColumnWithTypeConverter<Map<String, UpdateUnit>, String>
+  late final GeneratedColumnWithTypeConverter<Map<Record, UpdateUnit>, String>
   updates =
       GeneratedColumn<String>(
         'updates',
@@ -1287,7 +1287,7 @@ class $UpdateHistoriesTable extends UpdateHistories
         false,
         type: DriftSqlType.string,
         requiredDuringInsert: true,
-      ).withConverter<Map<String, UpdateUnit>>(
+      ).withConverter<Map<Record, UpdateUnit>>(
         $UpdateHistoriesTable.$converterupdates,
       );
   @override
@@ -1363,7 +1363,7 @@ class $UpdateHistoriesTable extends UpdateHistories
     return $UpdateHistoriesTable(attachedDatabase, alias);
   }
 
-  static TypeConverter<Map<String, UpdateUnit>, String> $converterupdates =
+  static TypeConverter<Map<Record, UpdateUnit>, String> $converterupdates =
       const UpdateUnitMapConverter();
 }
 
@@ -1371,7 +1371,7 @@ class UpdateHistory extends DataClass implements Insertable<UpdateHistory> {
   final DateTime timestamp;
   final int chronoId;
   final int sheetId;
-  final Map<String, UpdateUnit> updates;
+  final Map<Record, UpdateUnit> updates;
   const UpdateHistory({
     required this.timestamp,
     required this.chronoId,
@@ -1410,7 +1410,7 @@ class UpdateHistory extends DataClass implements Insertable<UpdateHistory> {
       timestamp: serializer.fromJson<DateTime>(json['timestamp']),
       chronoId: serializer.fromJson<int>(json['chronoId']),
       sheetId: serializer.fromJson<int>(json['sheetId']),
-      updates: serializer.fromJson<Map<String, UpdateUnit>>(json['updates']),
+      updates: serializer.fromJson<Map<Record, UpdateUnit>>(json['updates']),
     );
   }
   @override
@@ -1420,7 +1420,7 @@ class UpdateHistory extends DataClass implements Insertable<UpdateHistory> {
       'timestamp': serializer.toJson<DateTime>(timestamp),
       'chronoId': serializer.toJson<int>(chronoId),
       'sheetId': serializer.toJson<int>(sheetId),
-      'updates': serializer.toJson<Map<String, UpdateUnit>>(updates),
+      'updates': serializer.toJson<Map<Record, UpdateUnit>>(updates),
     };
   }
 
@@ -1428,7 +1428,7 @@ class UpdateHistory extends DataClass implements Insertable<UpdateHistory> {
     DateTime? timestamp,
     int? chronoId,
     int? sheetId,
-    Map<String, UpdateUnit>? updates,
+    Map<Record, UpdateUnit>? updates,
   }) => UpdateHistory(
     timestamp: timestamp ?? this.timestamp,
     chronoId: chronoId ?? this.chronoId,
@@ -1471,7 +1471,7 @@ class UpdateHistoriesCompanion extends UpdateCompanion<UpdateHistory> {
   final Value<DateTime> timestamp;
   final Value<int> chronoId;
   final Value<int> sheetId;
-  final Value<Map<String, UpdateUnit>> updates;
+  final Value<Map<Record, UpdateUnit>> updates;
   final Value<int> rowid;
   const UpdateHistoriesCompanion({
     this.timestamp = const Value.absent(),
@@ -1484,7 +1484,7 @@ class UpdateHistoriesCompanion extends UpdateCompanion<UpdateHistory> {
     required DateTime timestamp,
     required int chronoId,
     required int sheetId,
-    required Map<String, UpdateUnit> updates,
+    required Map<Record, UpdateUnit> updates,
     this.rowid = const Value.absent(),
   }) : timestamp = Value(timestamp),
        chronoId = Value(chronoId),
@@ -1510,7 +1510,7 @@ class UpdateHistoriesCompanion extends UpdateCompanion<UpdateHistory> {
     Value<DateTime>? timestamp,
     Value<int>? chronoId,
     Value<int>? sheetId,
-    Value<Map<String, UpdateUnit>>? updates,
+    Value<Map<Record, UpdateUnit>>? updates,
     Value<int>? rowid,
   }) {
     return UpdateHistoriesCompanion(
@@ -6727,7 +6727,7 @@ typedef $$UpdateHistoriesTableCreateCompanionBuilder =
       required DateTime timestamp,
       required int chronoId,
       required int sheetId,
-      required Map<String, UpdateUnit> updates,
+      required Map<Record, UpdateUnit> updates,
       Value<int> rowid,
     });
 typedef $$UpdateHistoriesTableUpdateCompanionBuilder =
@@ -6735,7 +6735,7 @@ typedef $$UpdateHistoriesTableUpdateCompanionBuilder =
       Value<DateTime> timestamp,
       Value<int> chronoId,
       Value<int> sheetId,
-      Value<Map<String, UpdateUnit>> updates,
+      Value<Map<Record, UpdateUnit>> updates,
       Value<int> rowid,
     });
 
@@ -6788,8 +6788,8 @@ class $$UpdateHistoriesTableFilterComposer
   );
 
   ColumnWithTypeConverterFilters<
-    Map<String, UpdateUnit>,
-    Map<String, UpdateUnit>,
+    Map<Record, UpdateUnit>,
+    Map<Record, UpdateUnit>,
     String
   >
   get updates => $composableBuilder(
@@ -6884,7 +6884,7 @@ class $$UpdateHistoriesTableAnnotationComposer
   GeneratedColumn<int> get chronoId =>
       $composableBuilder(column: $table.chronoId, builder: (column) => column);
 
-  GeneratedColumnWithTypeConverter<Map<String, UpdateUnit>, String>
+  GeneratedColumnWithTypeConverter<Map<Record, UpdateUnit>, String>
   get updates =>
       $composableBuilder(column: $table.updates, builder: (column) => column);
 
@@ -6945,7 +6945,7 @@ class $$UpdateHistoriesTableTableManager
                 Value<DateTime> timestamp = const Value.absent(),
                 Value<int> chronoId = const Value.absent(),
                 Value<int> sheetId = const Value.absent(),
-                Value<Map<String, UpdateUnit>> updates = const Value.absent(),
+                Value<Map<Record, UpdateUnit>> updates = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => UpdateHistoriesCompanion(
                 timestamp: timestamp,
@@ -6959,7 +6959,7 @@ class $$UpdateHistoriesTableTableManager
                 required DateTime timestamp,
                 required int chronoId,
                 required int sheetId,
-                required Map<String, UpdateUnit> updates,
+                required Map<Record, UpdateUnit> updates,
                 Value<int> rowid = const Value.absent(),
               }) => UpdateHistoriesCompanion.insert(
                 timestamp: timestamp,

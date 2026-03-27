@@ -59,7 +59,7 @@ class SheetDataUsecase {
   }
 
   @useResult
-  void addPrevValue(Map<String, UpdateUnit> updates, int sheetId) {
+  void addPrevValue(Map<Record, UpdateUnit> updates, int sheetId) {
     for (var update in updates.values) {
       if (update is CellUpdate) {
         update.prevValue = sheetDataRepository.getCellContent(
@@ -78,7 +78,7 @@ class SheetDataUsecase {
   }
 
   void applyUpdatesNoSort(
-    Map<String, UpdateUnit> updates,
+    Map<Record, UpdateUnit> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,
@@ -90,15 +90,15 @@ class SheetDataUsecase {
     sheetDataRepository.update(updates, sheetId);
   }
 
-  void save(Map<String, UpdateUnit> updates) {
+  void save(Map<Record, UpdateUnit> updates) {
     saveRepository.save(updates);
   }
 
-  Map<String, UpdateUnit> delete() {
+  Map<Record, UpdateUnit> delete() {
     return sheetDataRepository.delete();
   }
 
-  Future<Either<Failure, Map<String, UpdateUnit>>> paste() {
+  Future<Either<Failure, Map<Record, UpdateUnit>>> paste() {
     return sheetDataRepository.pasteSelection();
   }
 

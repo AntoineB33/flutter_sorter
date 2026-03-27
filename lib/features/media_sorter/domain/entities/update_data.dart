@@ -9,19 +9,19 @@ class UpdateData extends UpdateUnit {
   final DateTime timestamp;
   final int chronoId;
   final int sheetId;
-  final Map<String, UpdateUnit> updates;
+  final Map<Record, UpdateUnit> updates;
   bool addOtherwiseRemove;
   UpdateData(
     this.chronoId,
     this.sheetId,
-    this.updates, {
-    this.addOtherwiseRemove = false,
+    this.updates,
+    this.addOtherwiseRemove,{
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
 
-    @override
-  String getStringKey() {
-    return 'UpdateData-$timestamp-$chronoId';
+  @override
+  Record getRecord() {
+    return ('updateData', timestamp, chronoId, sheetId);
   }
 
   factory UpdateData.fromJson(Map<String, dynamic> json) =>
@@ -34,16 +34,16 @@ class UpdateData extends UpdateUnit {
 sealed class UpdateUnit {
   const UpdateUnit();
 
-  String getStringKey();
+  Record getRecord();
 
   factory UpdateUnit.fromJson(Map<String, dynamic> json) {
     switch (json['type']) {
-      case 'CellUpdate':
+      case CellUpdate.type:
         return CellUpdate.fromJson(json);
-      case 'ColumnTypeUpdate':
+      case ColumnTypeUpdate.type:
         return ColumnTypeUpdate.fromJson(json);
-      case 'SheetNameUpdate':
-        return SheetNameUpdate.fromJson(json);
+      case SheetDataUpdate.type:
+        return SheetDataUpdate.fromJson(json);
       default:
         throw Exception('Unknown UpdateUnit type: ${json['type']}');
     }
@@ -53,32 +53,60 @@ sealed class UpdateUnit {
 }
 
 @JsonSerializable()
-class HistoryIndexChg extends UpdateUnit {
+class SheetDataUpdate extends UpdateUnit {
+  static const String type = 'SheetDataUpdate';
   final int sheetId;
-  final int historyIndex;
-  HistoryIndexChg(this.sheetId, this.historyIndex);
+  final String? newName;
+  String? prevName;
+  final int? historyIndex;
+  int? prevHistoryIndex;
+  final double? colHeaderHeight;
+  double? prevColHeaderHeight;
+  final double? rowHeaderWidth;
+  double? prevRowHeaderWidth;
+  final int? primarySelectedCellX;
+  double? prevPrimarySelectedCellX;
+  final int? primarySelectedCellY;
+  double? prevPrimarySelectedCellY;
+  final double? scrollOffsetX;
+  double? prevScrollOffsetX;
+  final double? scrollOffsetY;
+  double? prevScrollOffsetY;
+  final int? sortIndex;
+  int? prevSortIndex;
+
+  SheetDataUpdate(this.sheetId, {this.newName, this.historyIndex, this.colHeaderHeight, this.rowHeaderWidth, this.primarySelectedCellX, this.primarySelectedCellY, this.scrollOffsetX, this.scrollOffsetY, this.sortIndex});
+
   @override
-  String getStringKey() {
-    return 'historyIndex-$sheetId';
+  Record getRecord() {
+    return (type, sheetId);
   }
-  factory HistoryIndexChg.fromJson(Map<String, dynamic> json) =>
-    _$HistoryIndexChgFromJson(json);
+
+  factory SheetDataUpdate.fromJson(Map<String, dynamic> json) =>
+      _$SheetDataUpdateFromJson(json);
+
   @override
-  Map<String, dynamic> toJson() => _$HistoryIndexChgToJson(this);
+  Map<String, dynamic> toJson() => _$SheetDataUpdateToJson(this);
 }
 
 @JsonSerializable()
 class CellUpdate extends UpdateUnit {
-  final String type = 'CellUpdate';
+  static const String type = 'CellUpdate';
   final int sheetId;
   final int rowId;
   final int colId;
   String? prevValue;
   String newValue;
-  CellUpdate(this.sheetId, this.rowId, this.colId, this.newValue, {this.prevValue});
+  CellUpdate(
+    this.sheetId,
+    this.rowId,
+    this.colId,
+    this.newValue, {
+    this.prevValue,
+  });
 
   @override
-  String getStringKey() {
+  String getRecord() {
     return 'CellUpdate-$sheetId-$rowId-$colId';
   }
 
@@ -91,15 +119,20 @@ class CellUpdate extends UpdateUnit {
 
 @JsonSerializable(explicitToJson: true)
 class ColumnTypeUpdate extends UpdateUnit {
-  final String type = 'ColumnTypeUpdate';
+  static const String type = 'ColumnTypeUpdate';
   final int sheetId;
   final int colId;
   final ColumnType newColumnType;
   ColumnType? previousColumnType;
-  ColumnTypeUpdate(this.sheetId, this.colId, this.newColumnType, {this.previousColumnType});
+  ColumnTypeUpdate(
+    this.sheetId,
+    this.colId,
+    this.newColumnType, {
+    this.previousColumnType,
+  });
 
   @override
-  String getStringKey() {
+  String getRecord() {
     return 'ColumnTypeUpdate-$sheetId-$colId';
   }
 

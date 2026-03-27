@@ -70,7 +70,7 @@ class GridController extends ChangeNotifier {
     return gridUsecase.minCols(sheetId, colCount, width);
   }
 
-  void adjustRowHeightAfterUpdate(int sheetId, Map<String, UpdateUnit> updateData) {
+  void adjustRowHeightAfterUpdate(int sheetId, Map<Record, UpdateUnit> updateData) {
     gridUsecase.adjustRowHeightAfterUpdate(sheetId, updateData);
   }
 

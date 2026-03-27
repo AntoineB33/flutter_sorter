@@ -153,7 +153,7 @@ class GridRepositoryImpl implements GridRepository {
   }
 
   @override
-  void adjustRowHeightAfterUpdate(int sheetId, Map<String, UpdateUnit> updates) {
+  void adjustRowHeightAfterUpdate(int sheetId, Map<Record, UpdateUnit> updates) {
     final layout = layoutCache.getLayout(sheetId);
     final coreSheetContent = loadedSheetsCache.getSheet(sheetId);
     for (var update in updates.values) {
