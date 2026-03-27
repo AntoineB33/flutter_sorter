@@ -2,13 +2,13 @@ import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_ca
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 
 class SortStatusCache {
-  final Map<String, SortStatus> _sortStatusBySheet = {};
+  final Map<int, SortStatus> _sortStatusBySheet = {};
 
   final LoadedSheetsCache loadedSheetsDataStore;
 
   SortStatusCache(this.loadedSheetsDataStore);
 
-  Map<String, SortStatus> get sortStatusBySheet => _sortStatusBySheet;
+  Map<int, SortStatus> get sortStatusBySheet => _sortStatusBySheet;
 
   bool isSorting(int sheetId) {
     return containsSheet(sheetId) &&
@@ -29,7 +29,7 @@ class SortStatusCache {
         _sortStatusBySheet[sheetId]!.toAlwaysApplyCurrentBestSort;
   }
 
-  List<String> getSheetIds() {
+  List<int> getSheetIds() {
     return _sortStatusBySheet.keys.toList();
   }
 
@@ -65,7 +65,7 @@ class SortStatusCache {
     }
   }
 
-  void setSortStatus(Map<String, SortStatus> statuses) {
+  void setSortStatus(Map<int, SortStatus> statuses) {
     _sortStatusBySheet
       ..clear()
       ..addAll(statuses);

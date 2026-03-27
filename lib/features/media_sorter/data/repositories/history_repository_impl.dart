@@ -45,8 +45,11 @@ class HistoryRepositoryImpl implements HistoryRepository {
     lastUpdateData.addOtherwiseRemove = false;
     historyData.updateHistories.removeAt(historyData.historyIndex);
     historyData.historyIndex--;
-    updates[lastUpdateData.getRecord()] = lastUpdateData;
-    final historyChg = HistoryIndexChg(currentSheetId, historyData.historyIndex);
+    updates[lastUpdateData.getKey()] = lastUpdateData;
+    final historyChg = HistoryIndexChg(
+      currentSheetId,
+      historyData.historyIndex,
+    );
     updates[historyChg.historyIndexKey] = historyChg;
   }
 
@@ -71,16 +74,20 @@ class HistoryRepositoryImpl implements HistoryRepository {
         cellUpdate.prevValue = prevCellUpdate.prevValue;
         historyData.updateHistories[historyData.historyIndex] = updateData;
         lastUpdateData.addOtherwiseRemove = false;
-        updates[lastUpdateData.getRecord()] = lastUpdateData;
-        updates[updateData.getRecord()] = updateData;
+        updates[lastUpdateData.getKey()] = lastUpdateData;
+        updates[updateData.getKey()] = updateData;
         return;
       }
       isLastChangeInSameEditingMode = true;
     }
     if (historyData.historyIndex < historyData.updateHistories.length - 1) {
-      for (int i = historyData.historyIndex + 1; i < historyData.updateHistories.length; i++) {
+      for (
+        int i = historyData.historyIndex + 1;
+        i < historyData.updateHistories.length;
+        i++
+      ) {
         historyData.updateHistories[i].addOtherwiseRemove = false;
-        updates[historyData.updateHistories[i].getRecord()] =
+        updates[historyData.updateHistories[i].getKey()] =
             historyData.updateHistories[i];
       }
       historyData.updateHistories = historyData.updateHistories.sublist(
@@ -89,17 +96,20 @@ class HistoryRepositoryImpl implements HistoryRepository {
       );
     }
     historyData.updateHistories.add(updateData);
-    updates[updateData.getRecord()] = updateData;
+    updates[updateData.getKey()] = updateData;
     historyData.historyIndex++;
     if (historyData.historyIndex == 100) {
       historyData.updateHistories.first.addOtherwiseRemove = false;
-      updates[historyData.updateHistories.first.getRecord()] =
+      updates[historyData.updateHistories.first.getKey()] =
           historyData.updateHistories.first;
       historyData.updateHistories.removeAt(0);
       historyData.historyIndex--;
     }
-    final historyChg = SheetDataUpdate(currentSheetId, historyIndex: historyData.historyIndex);
-    updates[historyChg.getRecord()] = historyChg;
+    final historyChg = SheetDataUpdate(
+      currentSheetId,
+      historyIndex: historyData.historyIndex,
+    );
+    updates[historyChg.getKey()] = historyChg;
   }
 
   @override

@@ -72,7 +72,7 @@ class SheetDataUsecase {
           sheetId,
         );
       } else if (update is SheetNameUpdate) {
-        update.previousName = sheetDataRepository.getSheetName(sheetId);
+        update.previousName = sheetDataRepository.getSheetTitle(sheetId);
       }
     }
   }

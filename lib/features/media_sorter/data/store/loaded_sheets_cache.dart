@@ -152,26 +152,26 @@ class LoadedSheetsCache {
   void _setColumnType(int sheetId, ColumnTypeUpdate update) {
     int col = update.colId;
     ColumnType type = update.newColumnType;
-    SheetContent sheetContent = _loadedSheetsData[sheetId]!.sheetContent;
+    final sheet = _loadedSheetsData[sheetId]!;
     if (type == ColumnType.attributes) {
       if (col < colCount(sheetId)) {
-        sheetContent.columnTypes[col] = type;
-        if (col == sheetContent.columnTypes.length - 1) {
+        sheet.columnTypes[col] = type;
+        if (col == sheet.columnTypes.length - 1) {
           while (col > 0) {
             col--;
-            if (sheetContent.columnTypes[col] != ColumnType.attributes) {
+            if (sheet.columnTypes[col] != ColumnType.attributes) {
               break;
             }
           }
-          sheetContent.columnTypes = sheetContent.columnTypes.sublist(
+          sheet.columnTypes = sheet.columnTypes.sublist(
             0,
             col + 1,
           );
         }
       }
     } else {
-      _increaseColumnCount(sheetId, col, sheetContent);
-      sheetContent.columnTypes[col] = type;
+      _increaseColumnCount(sheetId, col, sheet);
+      sheet.columnTypes[col] = type;
     }
   }
 }

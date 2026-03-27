@@ -8,7 +8,7 @@ abstract class SortRepository {
   bool isSorting(int sheetId);
   bool getAnalysisDone(int sheetId);
   Future<void> analyze(int sheetId);
-  List<String> getSheetIds();
+  List<int> getSheetIds();
   Future<Either<Failure, void>> loadSortStatus();
   bool getToApplyOnce(int sheetId);
   bool isCalculating(int sheetId);
@@ -30,7 +30,6 @@ abstract class SortRepository {
   bool sortedWithCurrentBestSort(int sheetId);
   bool isApplyBetterSortButtonInAction();
   void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply);
-  Future<Either<Failure, void>> loadAnalysisResult(int sheetId);
   void removeSortStatus(int sheetId);
   void addNewAnalysisResult(int sheetId);
   void setFindingBestSort(int sheetId, bool value);

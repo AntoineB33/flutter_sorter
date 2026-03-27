@@ -1,8 +1,11 @@
 import 'dart:convert';
 
+import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:drift/drift.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+
 
 class SheetDataTables extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -14,7 +17,16 @@ class SheetDataTables extends Table {
   IntColumn get primarySelectedCellY => integer()();
   RealColumn get scrollOffsetX => real()();
   RealColumn get scrollOffsetY => real()();
+
+  TextColumn get bestDistFound => text().map(const BestDistFoundConverter())();
   IntColumn get sortIndex => integer()();
+  
+  TextColumn get analysisResult => text().map(const AnalysisResultConverter())();
+  
+  BoolColumn get sortInProgress => boolean()();
+  BoolColumn get toApplyNextBestSort => boolean()();
+  BoolColumn get toAlwaysApplyCurrentBestSort => boolean()();
+  BoolColumn get analysisDone => boolean()();
 }
 
 // Store the position-content map here
@@ -49,11 +61,11 @@ class SheetColumnTypes extends Table {
   Set<Column> get primaryKey => {sheetId, columnIndex}; 
 }
 
-class UpdateUnitMapConverter extends TypeConverter<Map<Record, UpdateUnit>, String> {
+class UpdateUnitMapConverter extends TypeConverter<Map<String, UpdateUnit>, String> {
   const UpdateUnitMapConverter();
 
   @override
-  Map<Record, UpdateUnit> fromSql(String fromDb) {
+  Map<String, UpdateUnit> fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as Map<String, dynamic>;
     return decoded.map((key, value) {
       return MapEntry(
@@ -64,7 +76,7 @@ class UpdateUnitMapConverter extends TypeConverter<Map<Record, UpdateUnit>, Stri
   }
 
   @override
-  String toSql(Map<Record, UpdateUnit> value) {
+  String toSql(Map<String, UpdateUnit> value) {
     final encoded = value.map((key, val) => MapEntry(key, val.toJson()));
     return jsonEncode(encoded);
   }
@@ -75,6 +87,9 @@ class UpdateHistories extends Table {
   IntColumn get chronoId => integer()();
   IntColumn get sheetId => integer().references(SheetDataTables, #id)();
   TextColumn get updates => text().map(const UpdateUnitMapConverter())();
+
+  @override
+  Set<Column> get primaryKey => {timestamp, chronoId};
 }
 
 class RowsBottomPos extends Table {
@@ -171,38 +186,62 @@ class BestDistFound extends Table {
   Set<Column> get primaryKey => {sheetId, id};
 }
 
+class NodeStructListConverter extends TypeConverter<List<NodeStruct>, String> {
+  const NodeStructListConverter();
+
+  @override
+  List<NodeStruct> fromSql(String fromDb) {
+    final decoded = jsonDecode(fromDb) as List<dynamic>;
+    return decoded.map((e) => NodeStruct.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  @override
+  String toSql(List<NodeStruct> value) {
+    final encoded = value.map((e) => e.toJson()).toList();
+    return jsonEncode(encoded);
+  }
+}
+
+class BestDistFoundConverter extends TypeConverter<List<int>, String> {
+  const BestDistFoundConverter();
+
+  @override
+  List<int> fromSql(String fromDb) {
+    final decoded = jsonDecode(fromDb) as List<dynamic>;
+    return decoded.map((e) => e as int).toList();
+  }
+
+  @override
+  String toSql(List<int> value) {
+    return jsonEncode(value);
+  }
+}
+
+class AnalysisResultConverter extends TypeConverter<AnalysisResult, String> {
+  const AnalysisResultConverter();
+
+  @override
+  AnalysisResult fromSql(String fromDb) {
+    final decoded = jsonDecode(fromDb) as Map<String, dynamic>;
+    return AnalysisResult.fromJson(decoded);
+  }
+
+  @override
+  String toSql(AnalysisResult value) {
+    final encoded = value.toJson();
+    return jsonEncode(encoded);
+  }
+}
+
+/*
 class AnalysisResults extends Table {
-  // Excluded from JSON. Reconstituted in the constructor.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  final NodeStruct errorRoot = NodeStruct(
-    instruction: SpreadsheetConstants.errorMsg,
-    hideIfEmpty: true,
-  );
+  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
+  TextColumn get errorChildren => text().map(const NodeStructListConverter())();
+  TextColumn get warningChildren => text().map(const NodeStructListConverter())();
+  TextColumn get categoryChildren => text().map(const NodeStructListConverter())();
+  TextColumn get distPairChildren => text().map(const NodeStructListConverter())();
+  
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  final NodeStruct warningRoot = NodeStruct(
-    instruction: SpreadsheetConstants.warningMsg,
-    hideIfEmpty: true,
-  );
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  final NodeStruct categoriesRoot = NodeStruct(
-    instruction: SpreadsheetConstants.categoryMsg,
-  );
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  final NodeStruct distPairsRoot = NodeStruct(
-    instruction: SpreadsheetConstants.distPairsMsg,
-  );
-
-  // Added as fields so json_serializable can automatically save/load them
-  final List<NodeStruct> errorChildren;
-  final List<NodeStruct> warningChildren;
-  final List<NodeStruct> categoryChildren;
-  final List<NodeStruct> distPairChildren;
-
-  /// 2D table of attribute identifiers (row index or name)
-  /// mentioned in each cell.
   List<List<Set<Attribute>>> tableToAtt;
   Map<String, Cell> names;
   Map<String, List<int>> attToCol;
@@ -235,9 +274,4 @@ class AnalysisResults extends Table {
 
   bool bestSortPossibleFound;
 }
-
-class SortStatusData extends Table {
-  bool toApplyNextBestSort;
-  bool toAlwaysApplyCurrentBestSort;
-  bool analysisDone;
-}
+*/

@@ -6,7 +6,7 @@ import 'package:trying_flutter/features/media_sorter/domain/repositories/selecti
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
-import 'package:trying_flutter/features/media_sorter/domain/helpers/utils_services.dart';
+import 'package:trying_flutter/utils/logger.dart';
 
 class WorkbookUsecase {
   final WorkbookRepository workbookRepository;
@@ -24,6 +24,10 @@ class WorkbookUsecase {
   int get currentSheetId => workbookRepository.currentSheetId;
   String get currentSheetName => workbookRepository.currentSheetName;
 
+  String getSheetTitle(int sheetId) {
+    return sheetDataRepository.getSheetTitle(sheetId);
+  }
+
   List<int> getRecentSheetIds() {
     return workbookRepository.getRecentSheetIds();
   }
@@ -31,13 +35,17 @@ class WorkbookUsecase {
   Future<void> clearAllData() async {
     Either<Failure, void> result;
     result = await workbookRepository.clearAllData();
-    UtilsServices.handleDataCorruption(result);
+    if (result.isLeft()) {
+      logger.e('Failed to clear all data.');
+    }
   }
 
   Future<void> loadRecentSheetIds() async {
     Either<Failure, void> result;
     result = await workbookRepository.loadRecentSheetIds();
-    UtilsServices.handleDataCorruption(result);
+    if (result.isLeft()) {
+      logger.e('Failed to load recent sheet IDs.');
+    }
   }
 
   Future<void> loadSheet(int sheetId, bool init) async {
@@ -51,8 +59,7 @@ class WorkbookUsecase {
         Either<Failure, void> result = await sheetDataRepository.loadSheet(
           sheetId,
         );
-        final success = UtilsServices.handleDataCorruption(result);
-        if (!success) {
+        if (result.isLeft()) {
           selectionRepository.clearSheetSelection(sheetId);
         }
       }

@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:flutter/material.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/tree_usecase.dart';
 
 class TreeController extends ChangeNotifier {
@@ -21,10 +20,6 @@ class TreeController extends ChangeNotifier {
   );
   NodeStruct get categoriesRoot => treeUsecase.categoriesRoot;
   NodeStruct get distPairsRoot => treeUsecase.distPairsRoot;
-
-  int rowCount(SheetContent content) => content.table.length;
-  int colCount(SheetContent content) =>
-      content.table.isNotEmpty ? content.table[0].length : 0;
 
   TreeController(
     this.treeUsecase,

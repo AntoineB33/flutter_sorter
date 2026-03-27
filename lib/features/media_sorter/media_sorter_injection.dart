@@ -94,7 +94,6 @@ Future<void> initMediaSorterDependencies() async {
     workbookCache,
   );
   SelectionRepositoryImpl selectionRepository = SelectionRepositoryImpl(
-    saveDataSource,
     selectionCache,
     loadedSheetsCache,
     workbookCache,

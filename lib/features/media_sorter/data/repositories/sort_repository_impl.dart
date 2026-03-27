@@ -4,7 +4,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/calculation_datasource.dart';
-import 'package:trying_flutter/features/media_sorter/core/utility/utils_service.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/isolate_receive_ports_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sorting_progress_cache.dart';
@@ -24,6 +24,8 @@ import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cach
 enum PreCalculationsResult { impossible, analysisDone, sortDone, needToCorrect }
 
 class SortRepositoryImpl implements SortRepository {
+  final ILocalDataSource saveDataSource;
+
   final AnalysisResultCache analysisResultCache;
   final LoadedSheetsCache loadedSheetsCache;
   final SortProgressCache sortProgressCache;
@@ -75,7 +77,7 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  List<String> getSheetIds() {
+  List<int> getSheetIds() {
     return sortStatusCache.getSheetIds();
   }
 
@@ -112,17 +114,6 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  Future<Either<Failure, void>> loadAnalysisResult(int sheetId) async {
-    final result = await UtilsService.handleDataSourceCall(
-      () => saveDataSource.getAnalysisResult(sheetId),
-    );
-    return result.fold((failure) => Left(failure), (analysisResult) {
-      analysisResultCache.updateResults(sheetId, analysisResult);
-      return Right(null);
-    });
-  }
-
-  @override
   void removeSortStatus(int sheetId) {
     sortStatusCache.removeSortStatus(sheetId);
     saveAllSortStatus();
@@ -149,6 +140,7 @@ class SortRepositoryImpl implements SortRepository {
       analysisResultCache.isSortedWithValidSort(sheetId);
 
   SortRepositoryImpl(
+    this.saveDataSource,
     this.analysisResultCache,
     this.loadedSheetsCache,
     this.sortProgressCache,
@@ -192,9 +184,7 @@ class SortRepositoryImpl implements SortRepository {
 
   @override
   Future<Either<Failure, void>> loadSortStatus() async {
-    final result = await UtilsService.handleDataSourceCall(
-      () => saveDataSource.getSortStatus(),
-    );
+    final result = await saveDataSource.getSortStatus();
     return result.fold((failure) => Left(failure), (ids) {
       sortStatusCache.setSortStatus(ids);
       return Right(null);

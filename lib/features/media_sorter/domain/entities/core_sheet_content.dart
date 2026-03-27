@@ -7,7 +7,7 @@ class CoreSheetContent {
   String title;
   DateTime lastOpened;
   final Map<(int, int), String> cells;
-  final Map<int, ColumnType> columnTypes;
+  Map<int, ColumnType> columnTypes;
   int lastRow;
   int lastCol;
 

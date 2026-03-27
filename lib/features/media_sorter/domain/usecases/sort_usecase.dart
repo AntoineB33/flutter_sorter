@@ -131,39 +131,7 @@ class SortUsecase {
     return sortRepository.sortTableWithCurrentBestSort(sheetId);
   }
 
-  Future<void> loadSortStatus() async {
-    Either<Failure, void> result;
-    result = await sortRepository.loadSortStatus();
-    result.fold(
-      (failure) => UtilsServices.handleDataCorruption(Left(failure)),
-      (ids) {
-        bool sortStatusChanged = false;
-        bool workbookSelectionCacheChanged = false;
-        for (var sheetId in sortRepository.getSheetIds()) {
-          if (!UtilsService.isValidSheetName(sheetId)) {
-            sortRepository.removeSortStatus(sheetId);
-            sortStatusChanged = true;
-          } else if (!sheetDataRepository.containsSheetId(sheetId)) {
-            workbookRepository.addNewSheetId(sheetId, 1);
-            selectionRepository.setSelectionData(
-              sheetId,
-              SelectionData.empty(),
-            );
-            workbookSelectionCacheChanged = true;
-          }
-        }
-        if (sortStatusChanged || workbookSelectionCacheChanged) {
-          UtilsServices.handleDataCorruption(
-            Left(
-              CacheRepairedFailure(
-                sortStatusChanged: sortStatusChanged,
-                workbookCacheChanged: workbookSelectionCacheChanged,
-                selectionCacheChanged: workbookSelectionCacheChanged,
-              ),
-            ),
-          );
-        }
-      },
-    );
+  void loadSortStatus() {
+    sortRepository.loadSortStatus();
   }
 }

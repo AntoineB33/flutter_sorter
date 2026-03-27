@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:trying_flutter/features/media_sorter/application/coordinators/spreadsheet_coordinator.dart';
+import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
 import 'analysis_tree_node.dart';
@@ -66,6 +68,7 @@ class _SideMenuState extends State<SideMenu> {
     final SpreadsheetCoordinator coordinator = context.watch<SpreadsheetCoordinator>();
     
     final WorkbookController workbookController = context.watch<WorkbookController>();
+    final SheetDataController sheetDataController = context.watch<SheetDataController>();
     final SortController sortController = context.watch<SortController>();
     final TreeController treeController = context.watch<TreeController>();
 
@@ -84,7 +87,7 @@ class _SideMenuState extends State<SideMenu> {
           const SizedBox(height: 16),
 
           // --- Autocomplete Input Field ---
-          _buildSheetAutocomplete(workbookController, coordinator),
+          _buildSheetAutocomplete(workbookController, sheetDataController, coordinator),
 
           const SizedBox(height: 10),
 
@@ -228,22 +231,24 @@ class _SideMenuState extends State<SideMenu> {
     );
   }
 
-  Widget _buildSheetAutocomplete(WorkbookController workbookController, SpreadsheetCoordinator coordinator) {
+  Widget _buildSheetAutocomplete(WorkbookController workbookController, SheetDataController sheetDataController, SpreadsheetCoordinator coordinator) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Autocomplete<String>(
+        return Autocomplete<CoreSheetContent>(
+          displayStringForOption: (CoreSheetContent option) => option.title,
           optionsBuilder: (TextEditingValue textEditingValue) {
             final query = textEditingValue.text.toLowerCase();
             final allSheets = workbookController.getRecentSheetIds();
             if (query.isEmpty) {
-              final sorted = List<String>.from(allSheets);
-              sorted.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+              final sorted = List<CoreSheetContent>.from(allSheets);
+              sorted.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
               return sorted;
             }
-            final matches = <String>[];
-            final others = <String>[];
-            for (var sheet in allSheets) {
-              if (sheet.toLowerCase().contains(query)) {
+            final matches = <CoreSheetContent>[];
+            final others = <CoreSheetContent>[];
+            for (var sheetId in allSheets) {
+              CoreSheetContent sheet = sheetDataController.getSheet(sheetId);
+              if (sheet.title.toLowerCase().contains(query)) {
                 matches.add(sheet);
               } else {
                 others.add(sheet);

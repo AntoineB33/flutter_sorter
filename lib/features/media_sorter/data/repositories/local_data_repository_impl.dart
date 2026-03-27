@@ -28,15 +28,17 @@ extension MergeInsertableExt<T extends Object> on Insertable<T> {
   Insertable<T> merge(Insertable<T> other) => MergedInsertable(this, other);
 }
 
-class LocalDataRepositoryImpl with WidgetsBindingObserver implements SaveRepository {
+class LocalDataRepositoryImpl
+    with WidgetsBindingObserver
+    implements SaveRepository {
   final ILocalDataSource _localDataSource;
-  
-  // The Map acts as our cache. Using the entity's ID as the key 
+
+  // The Map acts as our cache. Using the entity's ID as the key
   // guarantees the "latest wins" behavior automatically.
   final Map<Record, UpdateUnit> _pendingSaves = {};
-  
+
   bool _isMicrotaskScheduled = false;
-  
+
   // The trigger for our debounce logic
   final PublishSubject<void> _saveTrigger = PublishSubject<void>();
   StreamSubscription? _saveSubscription;
@@ -47,7 +49,9 @@ class LocalDataRepositoryImpl with WidgetsBindingObserver implements SaveReposit
 
     // Set up the debounce listener
     _saveSubscription = _saveTrigger
-        .debounceTime(const Duration(milliseconds: 800)) // Adjust time as needed
+        .debounceTime(
+          const Duration(milliseconds: 800),
+        ) // Adjust time as needed
         .listen((_) => _flushToDatabase());
   }
 
@@ -55,8 +59,8 @@ class LocalDataRepositoryImpl with WidgetsBindingObserver implements SaveReposit
   @override
   void save(Map<Record, UpdateUnit> updates) {
     _pendingSaves.addAll(updates);
-    
-    // 2. Send a signal. RxDart will absorb rapid signals and only emit 
+
+    // 2. Send a signal. RxDart will absorb rapid signals and only emit
     // to the listener once 800ms has passed with no new signals.
     if (!_isMicrotaskScheduled) {
       _isMicrotaskScheduled = true;
@@ -72,7 +76,7 @@ class LocalDataRepositoryImpl with WidgetsBindingObserver implements SaveReposit
     if (_pendingSaves.isEmpty) return;
 
     // 1. Extract the items AND clear the map synchronously.
-    // Doing this immediately prevents asynchronous race conditions where 
+    // Doing this immediately prevents asynchronous race conditions where
     // a Use Case might add a new item while the DB is busy writing.
     final itemsToSave = _pendingSaves.values.toList();
     _pendingSaves.clear();
@@ -82,24 +86,23 @@ class LocalDataRepositoryImpl with WidgetsBindingObserver implements SaveReposit
       await _localDataSource.batchInsertOrUpdate(itemsToSave);
     } catch (e) {
       // ERROR HANDLING: If the save fails, we return the items to the cache.
-      // We use putIfAbsent so we don't accidentally overwrite newer edits 
+      // We use putIfAbsent so we don't accidentally overwrite newer edits
       // that a user might have made while the DB was failing.
       for (var item in itemsToSave) {
-        _pendingSaves.putIfAbsent(item.getRecord(), () => item);
+        _pendingSaves.putIfAbsent(item.getKey(), () => item);
       }
       logger.e("Database save failed. Items returned to cache. Error: $e");
     }
   }
 
-  Future<List<int>> getRecentSheetIds() async {
-  }
+  Future<List<int>> getRecentSheetIds() async {}
 
   /// App Lifecycle Hook
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // If the user minimizes the app or it gets killed, force a save immediately.
-    if (state == AppLifecycleState.paused || 
-        state == AppLifecycleState.detached || 
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached ||
         state == AppLifecycleState.hidden) {
       logger.i("App going to background! Forcing emergency flush...");
       _flushToDatabase();

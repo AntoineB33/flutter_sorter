@@ -26,6 +26,8 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   @override
   Stream<Failure> get failureStream => _errorController.stream;
 
+  int get currentSheetId => workbookCache.currentSheetId;
+
   late final SpreadsheetClipboardService _clipboardService =
       SpreadsheetClipboardService();
 
@@ -37,7 +39,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     this.workbookCache,
   );
   SelectionData get selection =>
-      selectionCache.getSelectionData(workbookCache.currentSheetId);
+      selectionCache.getSelectionData(currentSheetId);
 
   @override
   bool containsSheetId(int sheetId) {
@@ -81,12 +83,12 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     if (!selectedCellsTable.every((row) => row.every((cell) => !cell))) {
       await _clipboardService.copy(
         loadedSheetsCache.getCellContent(
-          workbookCache.currentSheetId,
+          currentSheetId,
           selectionCache
-              .getSelectionData(workbookCache.currentSheetId)
+              .getSelectionData(currentSheetId)
               .primarySelectedCellX,
           selectionCache
-              .getSelectionData(workbookCache.currentSheetId)
+              .getSelectionData(currentSheetId)
               .primarySelectedCellY,
         ),
       );
@@ -99,7 +101,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       List<String> rowData = [];
       for (int c = startCol; c <= endCol; c++) {
         rowData.add(
-          loadedSheetsCache.getCellContent(workbookCache.currentSheetId, r, c),
+          loadedSheetsCache.getCellContent(currentSheetId, r, c),
         );
       }
       buffer.write(rowData.join('\t')); // Tab separated for Excel compat
@@ -122,17 +124,17 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     final Map<Record, UpdateUnit> updates = {};
     final rows = text.split('\n');
     int startRow = selectionCache
-        .getSelectionData(workbookCache.currentSheetId)
+        .getSelectionData(currentSheetId)
         .primarySelectedCellX;
     int startCol = selectionCache
-        .getSelectionData(workbookCache.currentSheetId)
+        .getSelectionData(currentSheetId)
         .primarySelectedCellY;
     for (int r = 0; r < rows.length; r++) {
       final columns = rows[r].split('\t');
       for (int c = 0; c < columns.length; c++) {
         String val = columns[c].replaceAll('\r', '');
         final cellUpdate = CellUpdate(startRow + r, startCol + c, val);
-        updates[cellUpdate.getRecord()] = cellUpdate;
+        updates[cellUpdate.getKey()] = cellUpdate;
       }
     }
     return Right(updates);
@@ -168,7 +170,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  String getSheetName(int sheetId) {
+  String getSheetTitle(int sheetId) {
     return loadedSheetsCache.getSheetName(sheetId);
   }
 
@@ -201,10 +203,10 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     Map<Record, UpdateUnit> updates = {};
     for (Point<int> cell
         in selectionCache
-            .getSelectionData(workbookCache.currentSheetId)
+            .getSelectionData(currentSheetId)
             .selectedCells) {
-      final cellUpdate = CellUpdate(cell.x, cell.y, '');
-      updates[cellUpdate.getRecord()] = cellUpdate;
+      final cellUpdate = CellUpdate(currentSheetId, cell.x, cell.y, '');
+      updates[cellUpdate.getKey()] = cellUpdate;
     }
     return updates;
   }

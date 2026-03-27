@@ -68,13 +68,13 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     await workbookController.clearAllData();
     await workbookController.loadRecentSheetIds();
     await loadSheet(workbookController.currentSheetId, true);
+    await sortController.loadSortStatus();
     for (var sheetId in sortController.getRecentSheetIds()) {
       launchCalculation(sheetId);
     }
   }
 
   Future<void> loadSheet(int sheetId, bool init) async {
-    selectionController.stopEditing(false);
     await workbookController.loadSheet(sheetId, init);
     updateTreeAndRowColCount();
     gridController.scrollToLastSelection();
@@ -113,7 +113,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     int rowId = primarySelectedCellX;
     int colId = primarySelectedCellY;
     final cellUpdate = CellUpdate(currentSheetId, rowId, colId, newValue);
-    Map<Record, UpdateUnit> updates = {cellUpdate.getRecord(): cellUpdate};
+    Map<Record, UpdateUnit> updates = {cellUpdate.getKey(): cellUpdate};
     applyUpdatesAndSort(
       updates,
       currentSheetId,
@@ -180,8 +180,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void sortTableWithCurrentBestSort(int sheetId) {
-    final updates = sortController
-        .sortTableWithCurrentBestSort(sheetId);
+    final updates = sortController.sortTableWithCurrentBestSort(sheetId);
     applyUpdatesNoSort(updates, sheetId, false, false);
     if (sortController.getToApplyOnce(sheetId)) {
       sortController.setToApplyOnce(sheetId, false);
@@ -209,12 +208,8 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void updateTreeAndRowColCount() {
-    gridController.updateRowCount(
-      currentSheetId,
-    );
-    gridController.updateColCount(
-      currentSheetId,
-    );
+    gridController.updateRowCount(currentSheetId);
+    gridController.updateColCount(currentSheetId);
     treeController.onAnalysisAvailable();
   }
 
@@ -417,23 +412,17 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyDefaultColumnSequence() {
-    final updatesLst = 
-      [
-        ColumnTypeUpdate(currentSheetId, 1, ColumnType.dependencies),
-        ColumnTypeUpdate(currentSheetId, 2, ColumnType.dependencies),
-        ColumnTypeUpdate(currentSheetId, 3, ColumnType.dependencies),
-        ColumnTypeUpdate(currentSheetId, 7, ColumnType.urls),
-        ColumnTypeUpdate(currentSheetId, 8, ColumnType.dependencies),
-      ];
-      Map<Record, UpdateUnit> updates = {
-        for (var update in updatesLst) update.getRecord(): update,
-      };
-    applyUpdatesAndSort(updates,
-      currentSheetId,
-      false,
-      false,
-      false,
-    );
+    final updatesLst = [
+      ColumnTypeUpdate(currentSheetId, 1, ColumnType.dependencies),
+      ColumnTypeUpdate(currentSheetId, 2, ColumnType.dependencies),
+      ColumnTypeUpdate(currentSheetId, 3, ColumnType.dependencies),
+      ColumnTypeUpdate(currentSheetId, 7, ColumnType.urls),
+      ColumnTypeUpdate(currentSheetId, 8, ColumnType.dependencies),
+    ];
+    Map<Record, UpdateUnit> updates = {
+      for (var update in updatesLst) update.getKey(): update,
+    };
+    applyUpdatesAndSort(updates, currentSheetId, false, false, false);
   }
 
   void onSave(String newValue, bool moveUp) {
@@ -461,7 +450,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void setColumnType(int col, ColumnType type) {
     final update = ColumnTypeUpdate(col, type);
-    final updates = {update.getRecord(): update};
+    final updates = {update.getKey(): update};
     applyUpdatesAndSort(updates, currentSheetId, false, false, false);
   }
 }

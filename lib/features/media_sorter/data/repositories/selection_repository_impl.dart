@@ -69,20 +69,6 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
-  Future<Either<Failure, void>> loadLastSelections(
-    bool lastSelectionLoaded,
-  ) async {
-    final result = await UtilsService.handleDataSourceCall(
-      () => _saveDataSource.getAllLastSelected(),
-    );
-    return result.fold((failure) => Left(failure), (ids) {
-      _selectionCache.setLastSelections(ids, currentSheetId);
-      saveAllLastSelected();
-      return Right(null);
-    });
-  }
-
-  @override
   SelectionData getSelectionData(int sheetId) {
     return _selectionCache.getSelectionData(sheetId);
   }
@@ -104,17 +90,6 @@ class SelectionRepositoryImpl implements SelectionRepository {
   void saveAllLastSelected() {
     _saveAllLastSelectedExecutor.execute(() async {
       await _saveDataSource.saveAllLastSelected(_selectionCache.lastSelections);
-    });
-  }
-
-  @override
-  Future<Either<Failure, void>> loadLastSelection() async {
-    final result = await UtilsService.handleDataSourceCall(
-      () => _saveDataSource.getLastSelection(),
-    );
-    return result.fold((failure) => Left(failure), (lastSelection) {
-      setSelectionData(currentSheetId, lastSelection);
-      return Right(null);
     });
   }
 
