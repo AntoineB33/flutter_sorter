@@ -14,8 +14,6 @@ did result change?
 
 save all history updates
 
-save sheet names separately
-
 Adding a 5-minute screen-free break each hour (optional)
 
 play Youtube playlist
@@ -48,3 +46,13 @@ adb kill-server
 
 flutter build windows
 build\windows\x64\runner\Release\trying_flutter.exe
+
+
+
+
+
+
+minor to do list :
+
+infinite dimensions update history
+performant multiple cell selection

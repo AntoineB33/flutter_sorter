@@ -3,7 +3,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 
 abstract class GridRepository {
   LayoutData getLayout(int sheetId);
-  void adjustRowHeightAfterUpdate(int sheetId, Map<Record, UpdateUnit> updateData);
+  void adjustRowHeightAfterUpdate(int sheetId, Map<String, UpdateUnit> updateData);
   double getRowHeight(int sheetId, int rowId);
   int minRows(int sheetId, int rowCount, double height);
   int minCols(int sheetId, int colCount, double width);

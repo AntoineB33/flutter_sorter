@@ -2,26 +2,21 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:fpdart/fpdart.dart';
+import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
-import 'package:trying_flutter/features/media_sorter/core/utility/utils_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 
 class SelectionRepositoryImpl implements SelectionRepository {
-  late ManageWaitingTasks<void> _saveLastSelectionExecutor;
-  late ManageWaitingTasks<void> _saveAllLastSelectedExecutor;
   final SelectionCache _selectionCache;
   final LoadedSheetsCache _loadedSheetsCache;
   final WorkbookCache _workbookCache;
-  final StreamController<Failure> _errorController =
-      StreamController<Failure>.broadcast();
 
-  @override
-  Stream<Failure> get failureStream => _errorController.stream;
   int get currentSheetId => _workbookCache.currentSheetId;
   SelectionData get selection => _selectionCache.getSelectionData(currentSheetId);
   @override
@@ -33,16 +28,7 @@ class SelectionRepositoryImpl implements SelectionRepository {
     this._selectionCache,
     this._loadedSheetsCache,
     this._workbookCache,
-  ) {
-    _saveLastSelectionExecutor = ManageWaitingTasks<void>(
-      Duration(seconds: 2),
-      _errorController,
-    );
-    _saveAllLastSelectedExecutor = ManageWaitingTasks<void>(
-      Duration(seconds: 2),
-      _errorController,
-    );
-  }
+  );
 
   @override
   void setSelectionData(int sheetId, SelectionData selectionData) {
@@ -57,15 +43,19 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
-  void selectAll() {
-    if (selection == null) return;
-    selection!.selectedCells.clear();
+  @useResult
+  UpdateUnit selectAll() {
+    selection.selectedCells.clear();
     for (int r = 0; r < _loadedSheetsCache.rowCount(currentSheetId); r++) {
       for (int c = 0; c < _loadedSheetsCache.colCount(currentSheetId); c++) {
-        selection!.selectedCells.add(Point(r, c));
+        selection.selectedCells.add(CellPosition(r, c));
       }
     }
-    saveLastSelection();
+    return SheetDataUpdate(
+      currentSheetId,
+      true,
+      selectedCells: selection.selectedCells,
+    );
   }
 
   @override

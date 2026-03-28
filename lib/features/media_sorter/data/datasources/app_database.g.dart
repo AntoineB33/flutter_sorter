@@ -106,6 +106,57 @@ class $SheetDataTablesTable extends SheetDataTables
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  @override
+  late final GeneratedColumnWithTypeConverter<List<int>, String> bestSortFound =
+      GeneratedColumn<String>(
+        'best_sort_found',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<List<int>>($SheetDataTablesTable.$converterbestSortFound);
+  @override
+  late final GeneratedColumnWithTypeConverter<List<int>, String> bestDistFound =
+      GeneratedColumn<String>(
+        'best_dist_found',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<List<int>>($SheetDataTablesTable.$converterbestDistFound);
+  @override
+  late final GeneratedColumnWithTypeConverter<List<int>, String> cursors =
+      GeneratedColumn<String>(
+        'cursors',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<List<int>>($SheetDataTablesTable.$convertercursors);
+  @override
+  late final GeneratedColumnWithTypeConverter<List<List<int>>, String>
+  possibleInts =
+      GeneratedColumn<String>(
+        'possible_ints',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<List<List<int>>>(
+        $SheetDataTablesTable.$converterpossibleInts,
+      );
+  @override
+  late final GeneratedColumnWithTypeConverter<List<List<List<int>>>, String>
+  validAreas =
+      GeneratedColumn<String>(
+        'valid_areas',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<List<List<List<int>>>>(
+        $SheetDataTablesTable.$convertervalidAreas,
+      );
   static const VerificationMeta _sortIndexMeta = const VerificationMeta(
     'sortIndex',
   );
@@ -195,6 +246,11 @@ class $SheetDataTablesTable extends SheetDataTables
     primarySelectedCellY,
     scrollOffsetX,
     scrollOffsetY,
+    bestSortFound,
+    bestDistFound,
+    cursors,
+    possibleInts,
+    validAreas,
     sortIndex,
     analysisResult,
     sortInProgress,
@@ -399,6 +455,36 @@ class $SheetDataTablesTable extends SheetDataTables
         DriftSqlType.double,
         data['${effectivePrefix}scroll_offset_y'],
       )!,
+      bestSortFound: $SheetDataTablesTable.$converterbestSortFound.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}best_sort_found'],
+        )!,
+      ),
+      bestDistFound: $SheetDataTablesTable.$converterbestDistFound.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}best_dist_found'],
+        )!,
+      ),
+      cursors: $SheetDataTablesTable.$convertercursors.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}cursors'],
+        )!,
+      ),
+      possibleInts: $SheetDataTablesTable.$converterpossibleInts.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}possible_ints'],
+        )!,
+      ),
+      validAreas: $SheetDataTablesTable.$convertervalidAreas.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}valid_areas'],
+        )!,
+      ),
       sortIndex: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sort_index'],
@@ -433,6 +519,16 @@ class $SheetDataTablesTable extends SheetDataTables
     return $SheetDataTablesTable(attachedDatabase, alias);
   }
 
+  static TypeConverter<List<int>, String> $converterbestSortFound =
+      const ListIntConverter();
+  static TypeConverter<List<int>, String> $converterbestDistFound =
+      const ListIntConverter();
+  static TypeConverter<List<int>, String> $convertercursors =
+      const ListIntConverter();
+  static TypeConverter<List<List<int>>, String> $converterpossibleInts =
+      const ListListIntConverter();
+  static TypeConverter<List<List<List<int>>>, String> $convertervalidAreas =
+      const ListListListIntConverter();
   static TypeConverter<AnalysisResult, String> $converteranalysisResult =
       const AnalysisResultConverter();
 }
@@ -447,6 +543,11 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
   final int primarySelectedCellY;
   final double scrollOffsetX;
   final double scrollOffsetY;
+  final List<int> bestSortFound;
+  final List<int> bestDistFound;
+  final List<int> cursors;
+  final List<List<int>> possibleInts;
+  final List<List<List<int>>> validAreas;
   final int sortIndex;
   final AnalysisResult analysisResult;
   final bool sortInProgress;
@@ -463,6 +564,11 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
     required this.primarySelectedCellY,
     required this.scrollOffsetX,
     required this.scrollOffsetY,
+    required this.bestSortFound,
+    required this.bestDistFound,
+    required this.cursors,
+    required this.possibleInts,
+    required this.validAreas,
     required this.sortIndex,
     required this.analysisResult,
     required this.sortInProgress,
@@ -482,6 +588,31 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
     map['primary_selected_cell_y'] = Variable<int>(primarySelectedCellY);
     map['scroll_offset_x'] = Variable<double>(scrollOffsetX);
     map['scroll_offset_y'] = Variable<double>(scrollOffsetY);
+    {
+      map['best_sort_found'] = Variable<String>(
+        $SheetDataTablesTable.$converterbestSortFound.toSql(bestSortFound),
+      );
+    }
+    {
+      map['best_dist_found'] = Variable<String>(
+        $SheetDataTablesTable.$converterbestDistFound.toSql(bestDistFound),
+      );
+    }
+    {
+      map['cursors'] = Variable<String>(
+        $SheetDataTablesTable.$convertercursors.toSql(cursors),
+      );
+    }
+    {
+      map['possible_ints'] = Variable<String>(
+        $SheetDataTablesTable.$converterpossibleInts.toSql(possibleInts),
+      );
+    }
+    {
+      map['valid_areas'] = Variable<String>(
+        $SheetDataTablesTable.$convertervalidAreas.toSql(validAreas),
+      );
+    }
     map['sort_index'] = Variable<int>(sortIndex);
     {
       map['analysis_result'] = Variable<String>(
@@ -508,6 +639,11 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
       primarySelectedCellY: Value(primarySelectedCellY),
       scrollOffsetX: Value(scrollOffsetX),
       scrollOffsetY: Value(scrollOffsetY),
+      bestSortFound: Value(bestSortFound),
+      bestDistFound: Value(bestDistFound),
+      cursors: Value(cursors),
+      possibleInts: Value(possibleInts),
+      validAreas: Value(validAreas),
       sortIndex: Value(sortIndex),
       analysisResult: Value(analysisResult),
       sortInProgress: Value(sortInProgress),
@@ -536,6 +672,13 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
       ),
       scrollOffsetX: serializer.fromJson<double>(json['scrollOffsetX']),
       scrollOffsetY: serializer.fromJson<double>(json['scrollOffsetY']),
+      bestSortFound: serializer.fromJson<List<int>>(json['bestSortFound']),
+      bestDistFound: serializer.fromJson<List<int>>(json['bestDistFound']),
+      cursors: serializer.fromJson<List<int>>(json['cursors']),
+      possibleInts: serializer.fromJson<List<List<int>>>(json['possibleInts']),
+      validAreas: serializer.fromJson<List<List<List<int>>>>(
+        json['validAreas'],
+      ),
       sortIndex: serializer.fromJson<int>(json['sortIndex']),
       analysisResult: serializer.fromJson<AnalysisResult>(
         json['analysisResult'],
@@ -563,6 +706,11 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
       'primarySelectedCellY': serializer.toJson<int>(primarySelectedCellY),
       'scrollOffsetX': serializer.toJson<double>(scrollOffsetX),
       'scrollOffsetY': serializer.toJson<double>(scrollOffsetY),
+      'bestSortFound': serializer.toJson<List<int>>(bestSortFound),
+      'bestDistFound': serializer.toJson<List<int>>(bestDistFound),
+      'cursors': serializer.toJson<List<int>>(cursors),
+      'possibleInts': serializer.toJson<List<List<int>>>(possibleInts),
+      'validAreas': serializer.toJson<List<List<List<int>>>>(validAreas),
       'sortIndex': serializer.toJson<int>(sortIndex),
       'analysisResult': serializer.toJson<AnalysisResult>(analysisResult),
       'sortInProgress': serializer.toJson<bool>(sortInProgress),
@@ -584,6 +732,11 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
     int? primarySelectedCellY,
     double? scrollOffsetX,
     double? scrollOffsetY,
+    List<int>? bestSortFound,
+    List<int>? bestDistFound,
+    List<int>? cursors,
+    List<List<int>>? possibleInts,
+    List<List<List<int>>>? validAreas,
     int? sortIndex,
     AnalysisResult? analysisResult,
     bool? sortInProgress,
@@ -600,6 +753,11 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
     primarySelectedCellY: primarySelectedCellY ?? this.primarySelectedCellY,
     scrollOffsetX: scrollOffsetX ?? this.scrollOffsetX,
     scrollOffsetY: scrollOffsetY ?? this.scrollOffsetY,
+    bestSortFound: bestSortFound ?? this.bestSortFound,
+    bestDistFound: bestDistFound ?? this.bestDistFound,
+    cursors: cursors ?? this.cursors,
+    possibleInts: possibleInts ?? this.possibleInts,
+    validAreas: validAreas ?? this.validAreas,
     sortIndex: sortIndex ?? this.sortIndex,
     analysisResult: analysisResult ?? this.analysisResult,
     sortInProgress: sortInProgress ?? this.sortInProgress,
@@ -633,6 +791,19 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
       scrollOffsetY: data.scrollOffsetY.present
           ? data.scrollOffsetY.value
           : this.scrollOffsetY,
+      bestSortFound: data.bestSortFound.present
+          ? data.bestSortFound.value
+          : this.bestSortFound,
+      bestDistFound: data.bestDistFound.present
+          ? data.bestDistFound.value
+          : this.bestDistFound,
+      cursors: data.cursors.present ? data.cursors.value : this.cursors,
+      possibleInts: data.possibleInts.present
+          ? data.possibleInts.value
+          : this.possibleInts,
+      validAreas: data.validAreas.present
+          ? data.validAreas.value
+          : this.validAreas,
       sortIndex: data.sortIndex.present ? data.sortIndex.value : this.sortIndex,
       analysisResult: data.analysisResult.present
           ? data.analysisResult.value
@@ -664,6 +835,11 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
           ..write('primarySelectedCellY: $primarySelectedCellY, ')
           ..write('scrollOffsetX: $scrollOffsetX, ')
           ..write('scrollOffsetY: $scrollOffsetY, ')
+          ..write('bestSortFound: $bestSortFound, ')
+          ..write('bestDistFound: $bestDistFound, ')
+          ..write('cursors: $cursors, ')
+          ..write('possibleInts: $possibleInts, ')
+          ..write('validAreas: $validAreas, ')
           ..write('sortIndex: $sortIndex, ')
           ..write('analysisResult: $analysisResult, ')
           ..write('sortInProgress: $sortInProgress, ')
@@ -687,6 +863,11 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
     primarySelectedCellY,
     scrollOffsetX,
     scrollOffsetY,
+    bestSortFound,
+    bestDistFound,
+    cursors,
+    possibleInts,
+    validAreas,
     sortIndex,
     analysisResult,
     sortInProgress,
@@ -707,6 +888,11 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
           other.primarySelectedCellY == this.primarySelectedCellY &&
           other.scrollOffsetX == this.scrollOffsetX &&
           other.scrollOffsetY == this.scrollOffsetY &&
+          other.bestSortFound == this.bestSortFound &&
+          other.bestDistFound == this.bestDistFound &&
+          other.cursors == this.cursors &&
+          other.possibleInts == this.possibleInts &&
+          other.validAreas == this.validAreas &&
           other.sortIndex == this.sortIndex &&
           other.analysisResult == this.analysisResult &&
           other.sortInProgress == this.sortInProgress &&
@@ -726,6 +912,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataTable> {
   final Value<int> primarySelectedCellY;
   final Value<double> scrollOffsetX;
   final Value<double> scrollOffsetY;
+  final Value<List<int>> bestSortFound;
+  final Value<List<int>> bestDistFound;
+  final Value<List<int>> cursors;
+  final Value<List<List<int>>> possibleInts;
+  final Value<List<List<List<int>>>> validAreas;
   final Value<int> sortIndex;
   final Value<AnalysisResult> analysisResult;
   final Value<bool> sortInProgress;
@@ -742,6 +933,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataTable> {
     this.primarySelectedCellY = const Value.absent(),
     this.scrollOffsetX = const Value.absent(),
     this.scrollOffsetY = const Value.absent(),
+    this.bestSortFound = const Value.absent(),
+    this.bestDistFound = const Value.absent(),
+    this.cursors = const Value.absent(),
+    this.possibleInts = const Value.absent(),
+    this.validAreas = const Value.absent(),
     this.sortIndex = const Value.absent(),
     this.analysisResult = const Value.absent(),
     this.sortInProgress = const Value.absent(),
@@ -759,6 +955,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataTable> {
     required int primarySelectedCellY,
     required double scrollOffsetX,
     required double scrollOffsetY,
+    required List<int> bestSortFound,
+    required List<int> bestDistFound,
+    required List<int> cursors,
+    required List<List<int>> possibleInts,
+    required List<List<List<int>>> validAreas,
     required int sortIndex,
     required AnalysisResult analysisResult,
     required bool sortInProgress,
@@ -773,6 +974,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataTable> {
        primarySelectedCellY = Value(primarySelectedCellY),
        scrollOffsetX = Value(scrollOffsetX),
        scrollOffsetY = Value(scrollOffsetY),
+       bestSortFound = Value(bestSortFound),
+       bestDistFound = Value(bestDistFound),
+       cursors = Value(cursors),
+       possibleInts = Value(possibleInts),
+       validAreas = Value(validAreas),
        sortIndex = Value(sortIndex),
        analysisResult = Value(analysisResult),
        sortInProgress = Value(sortInProgress),
@@ -789,6 +995,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataTable> {
     Expression<int>? primarySelectedCellY,
     Expression<double>? scrollOffsetX,
     Expression<double>? scrollOffsetY,
+    Expression<String>? bestSortFound,
+    Expression<String>? bestDistFound,
+    Expression<String>? cursors,
+    Expression<String>? possibleInts,
+    Expression<String>? validAreas,
     Expression<int>? sortIndex,
     Expression<String>? analysisResult,
     Expression<bool>? sortInProgress,
@@ -808,6 +1019,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataTable> {
         'primary_selected_cell_y': primarySelectedCellY,
       if (scrollOffsetX != null) 'scroll_offset_x': scrollOffsetX,
       if (scrollOffsetY != null) 'scroll_offset_y': scrollOffsetY,
+      if (bestSortFound != null) 'best_sort_found': bestSortFound,
+      if (bestDistFound != null) 'best_dist_found': bestDistFound,
+      if (cursors != null) 'cursors': cursors,
+      if (possibleInts != null) 'possible_ints': possibleInts,
+      if (validAreas != null) 'valid_areas': validAreas,
       if (sortIndex != null) 'sort_index': sortIndex,
       if (analysisResult != null) 'analysis_result': analysisResult,
       if (sortInProgress != null) 'sort_in_progress': sortInProgress,
@@ -829,6 +1045,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataTable> {
     Value<int>? primarySelectedCellY,
     Value<double>? scrollOffsetX,
     Value<double>? scrollOffsetY,
+    Value<List<int>>? bestSortFound,
+    Value<List<int>>? bestDistFound,
+    Value<List<int>>? cursors,
+    Value<List<List<int>>>? possibleInts,
+    Value<List<List<List<int>>>>? validAreas,
     Value<int>? sortIndex,
     Value<AnalysisResult>? analysisResult,
     Value<bool>? sortInProgress,
@@ -846,6 +1067,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataTable> {
       primarySelectedCellY: primarySelectedCellY ?? this.primarySelectedCellY,
       scrollOffsetX: scrollOffsetX ?? this.scrollOffsetX,
       scrollOffsetY: scrollOffsetY ?? this.scrollOffsetY,
+      bestSortFound: bestSortFound ?? this.bestSortFound,
+      bestDistFound: bestDistFound ?? this.bestDistFound,
+      cursors: cursors ?? this.cursors,
+      possibleInts: possibleInts ?? this.possibleInts,
+      validAreas: validAreas ?? this.validAreas,
       sortIndex: sortIndex ?? this.sortIndex,
       analysisResult: analysisResult ?? this.analysisResult,
       sortInProgress: sortInProgress ?? this.sortInProgress,
@@ -890,6 +1116,35 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataTable> {
     if (scrollOffsetY.present) {
       map['scroll_offset_y'] = Variable<double>(scrollOffsetY.value);
     }
+    if (bestSortFound.present) {
+      map['best_sort_found'] = Variable<String>(
+        $SheetDataTablesTable.$converterbestSortFound.toSql(
+          bestSortFound.value,
+        ),
+      );
+    }
+    if (bestDistFound.present) {
+      map['best_dist_found'] = Variable<String>(
+        $SheetDataTablesTable.$converterbestDistFound.toSql(
+          bestDistFound.value,
+        ),
+      );
+    }
+    if (cursors.present) {
+      map['cursors'] = Variable<String>(
+        $SheetDataTablesTable.$convertercursors.toSql(cursors.value),
+      );
+    }
+    if (possibleInts.present) {
+      map['possible_ints'] = Variable<String>(
+        $SheetDataTablesTable.$converterpossibleInts.toSql(possibleInts.value),
+      );
+    }
+    if (validAreas.present) {
+      map['valid_areas'] = Variable<String>(
+        $SheetDataTablesTable.$convertervalidAreas.toSql(validAreas.value),
+      );
+    }
     if (sortIndex.present) {
       map['sort_index'] = Variable<int>(sortIndex.value);
     }
@@ -931,6 +1186,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataTable> {
           ..write('primarySelectedCellY: $primarySelectedCellY, ')
           ..write('scrollOffsetX: $scrollOffsetX, ')
           ..write('scrollOffsetY: $scrollOffsetY, ')
+          ..write('bestSortFound: $bestSortFound, ')
+          ..write('bestDistFound: $bestDistFound, ')
+          ..write('cursors: $cursors, ')
+          ..write('possibleInts: $possibleInts, ')
+          ..write('validAreas: $validAreas, ')
           ..write('sortIndex: $sortIndex, ')
           ..write('analysisResult: $analysisResult, ')
           ..write('sortInProgress: $sortInProgress, ')
@@ -4829,6 +5089,11 @@ typedef $$SheetDataTablesTableCreateCompanionBuilder =
       required int primarySelectedCellY,
       required double scrollOffsetX,
       required double scrollOffsetY,
+      required List<int> bestSortFound,
+      required List<int> bestDistFound,
+      required List<int> cursors,
+      required List<List<int>> possibleInts,
+      required List<List<List<int>>> validAreas,
       required int sortIndex,
       required AnalysisResult analysisResult,
       required bool sortInProgress,
@@ -4847,6 +5112,11 @@ typedef $$SheetDataTablesTableUpdateCompanionBuilder =
       Value<int> primarySelectedCellY,
       Value<double> scrollOffsetX,
       Value<double> scrollOffsetY,
+      Value<List<int>> bestSortFound,
+      Value<List<int>> bestDistFound,
+      Value<List<int>> cursors,
+      Value<List<List<int>>> possibleInts,
+      Value<List<List<List<int>>>> validAreas,
       Value<int> sortIndex,
       Value<AnalysisResult> analysisResult,
       Value<bool> sortInProgress,
@@ -5208,6 +5478,40 @@ class $$SheetDataTablesTableFilterComposer
   ColumnFilters<double> get scrollOffsetY => $composableBuilder(
     column: $table.scrollOffsetY,
     builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<List<int>, List<int>, String>
+  get bestSortFound => $composableBuilder(
+    column: $table.bestSortFound,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<List<int>, List<int>, String>
+  get bestDistFound => $composableBuilder(
+    column: $table.bestDistFound,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<List<int>, List<int>, String> get cursors =>
+      $composableBuilder(
+        column: $table.cursors,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnWithTypeConverterFilters<List<List<int>>, List<List<int>>, String>
+  get possibleInts => $composableBuilder(
+    column: $table.possibleInts,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<
+    List<List<List<int>>>,
+    List<List<List<int>>>,
+    String
+  >
+  get validAreas => $composableBuilder(
+    column: $table.validAreas,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 
   ColumnFilters<int> get sortIndex => $composableBuilder(
@@ -5625,6 +5929,31 @@ class $$SheetDataTablesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get bestSortFound => $composableBuilder(
+    column: $table.bestSortFound,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bestDistFound => $composableBuilder(
+    column: $table.bestDistFound,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cursors => $composableBuilder(
+    column: $table.cursors,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get possibleInts => $composableBuilder(
+    column: $table.possibleInts,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get validAreas => $composableBuilder(
+    column: $table.validAreas,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get sortIndex => $composableBuilder(
     column: $table.sortIndex,
     builder: (column) => ColumnOrderings(column),
@@ -5703,6 +6032,33 @@ class $$SheetDataTablesTableAnnotationComposer
 
   GeneratedColumn<double> get scrollOffsetY => $composableBuilder(
     column: $table.scrollOffsetY,
+    builder: (column) => column,
+  );
+
+  GeneratedColumnWithTypeConverter<List<int>, String> get bestSortFound =>
+      $composableBuilder(
+        column: $table.bestSortFound,
+        builder: (column) => column,
+      );
+
+  GeneratedColumnWithTypeConverter<List<int>, String> get bestDistFound =>
+      $composableBuilder(
+        column: $table.bestDistFound,
+        builder: (column) => column,
+      );
+
+  GeneratedColumnWithTypeConverter<List<int>, String> get cursors =>
+      $composableBuilder(column: $table.cursors, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<List<List<int>>, String> get possibleInts =>
+      $composableBuilder(
+        column: $table.possibleInts,
+        builder: (column) => column,
+      );
+
+  GeneratedColumnWithTypeConverter<List<List<List<int>>>, String>
+  get validAreas => $composableBuilder(
+    column: $table.validAreas,
     builder: (column) => column,
   );
 
@@ -6120,6 +6476,11 @@ class $$SheetDataTablesTableTableManager
                 Value<int> primarySelectedCellY = const Value.absent(),
                 Value<double> scrollOffsetX = const Value.absent(),
                 Value<double> scrollOffsetY = const Value.absent(),
+                Value<List<int>> bestSortFound = const Value.absent(),
+                Value<List<int>> bestDistFound = const Value.absent(),
+                Value<List<int>> cursors = const Value.absent(),
+                Value<List<List<int>>> possibleInts = const Value.absent(),
+                Value<List<List<List<int>>>> validAreas = const Value.absent(),
                 Value<int> sortIndex = const Value.absent(),
                 Value<AnalysisResult> analysisResult = const Value.absent(),
                 Value<bool> sortInProgress = const Value.absent(),
@@ -6136,6 +6497,11 @@ class $$SheetDataTablesTableTableManager
                 primarySelectedCellY: primarySelectedCellY,
                 scrollOffsetX: scrollOffsetX,
                 scrollOffsetY: scrollOffsetY,
+                bestSortFound: bestSortFound,
+                bestDistFound: bestDistFound,
+                cursors: cursors,
+                possibleInts: possibleInts,
+                validAreas: validAreas,
                 sortIndex: sortIndex,
                 analysisResult: analysisResult,
                 sortInProgress: sortInProgress,
@@ -6154,6 +6520,11 @@ class $$SheetDataTablesTableTableManager
                 required int primarySelectedCellY,
                 required double scrollOffsetX,
                 required double scrollOffsetY,
+                required List<int> bestSortFound,
+                required List<int> bestDistFound,
+                required List<int> cursors,
+                required List<List<int>> possibleInts,
+                required List<List<List<int>>> validAreas,
                 required int sortIndex,
                 required AnalysisResult analysisResult,
                 required bool sortInProgress,
@@ -6170,6 +6541,11 @@ class $$SheetDataTablesTableTableManager
                 primarySelectedCellY: primarySelectedCellY,
                 scrollOffsetX: scrollOffsetX,
                 scrollOffsetY: scrollOffsetY,
+                bestSortFound: bestSortFound,
+                bestDistFound: bestDistFound,
+                cursors: cursors,
+                possibleInts: possibleInts,
+                validAreas: validAreas,
                 sortIndex: sortIndex,
                 analysisResult: analysisResult,
                 sortInProgress: sortInProgress,

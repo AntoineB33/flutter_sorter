@@ -1,10 +1,9 @@
 import 'dart:async';
 
-import 'package:fpdart/fpdart.dart';
-import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
@@ -15,8 +14,7 @@ class SelectionUsecase {
   final GridRepository gridRepository;
   final HistoryRepository historyRepository;
   final WorkbookRepository workbookRepository;
-
-  late StreamSubscription<Failure> _failureSubscription;
+  final SaveRepository saveRepository;
 
   int get primarySelectedCellX => selectionRepository.primarySelectedCellX;
   int get primarySelectedCellY => selectionRepository.primarySelectedCellY;
@@ -27,15 +25,8 @@ class SelectionUsecase {
     this.gridRepository,
     this.historyRepository,
     this.workbookRepository,
-  ) {
-    _failureSubscription = selectionRepository.failureStream.listen((failure) {
-      UtilsServices.handleDataCorruption(Left(failure));
-    });
-  }
-
-  void dispose() {
-    _failureSubscription.cancel();
-  }
+    this.saveRepository,
+  );
 
   double getScrollOffsetX(int sheetId) {
     return selectionRepository.getScrollOffsetX(sheetId);
@@ -50,7 +41,8 @@ class SelectionUsecase {
   }
 
   void selectAll() {
-    selectionRepository.selectAll();
+    final update = selectionRepository.selectAll();
+    saveRepository.saveUpdate(update);
   }
 
   void setPrimarySelection(int row, int col, bool keepSelection) {
@@ -63,12 +55,6 @@ class SelectionUsecase {
 
   void saveLastSelection() {
     selectionRepository.saveLastSelection();
-  }
-
-  Future<bool> loadLastSelection() async {
-    Either<Failure, void> result;
-    result = await selectionRepository.loadLastSelection();
-    return UtilsServices.handleDataCorruption(result);
   }
 
   Future<SelectionData> getLastSelection() async {

@@ -8,12 +8,19 @@ enum RecordType {
   cellUpdate,
   columnTypeUpdate,
   sheetDataUpdate,
+  updateData,
+  rowsBottomPosUpdate,
+  colRightPosUpdate,
+  rowsManuallyAdjustedHeightUpdate,
+  colsManuallyAdjustedWidthUpdate,
 }
 
 sealed class UpdateUnit {
   const UpdateUnit();
 
   String getKey();
+
+  UpdateUnit merge(UpdateUnit newUpdate);
 
   factory UpdateUnit.fromJson(Map<String, dynamic> json) {
     switch (json['type']) {
@@ -23,6 +30,16 @@ sealed class UpdateUnit {
         return ColumnTypeUpdate.fromJson(json);
       case RecordType.sheetDataUpdate:
         return SheetDataUpdate.fromJson(json);
+      case RecordType.updateData:
+        return UpdateData.fromJson(json);
+      case RecordType.rowsBottomPosUpdate:
+        return RowsBottomPosUpdate.fromJson(json);
+      case RecordType.colRightPosUpdate:
+        return ColRightPosUpdate.fromJson(json);
+      case RecordType.rowsManuallyAdjustedHeightUpdate:
+        return RowsManuallyAdjustedHeightUpdate.fromJson(json);
+      case RecordType.colsManuallyAdjustedWidthUpdate:
+        return ColsManuallyAdjustedWidthUpdate.fromJson(json);
       default:
         throw Exception('Unknown UpdateUnit type: ${json['type']}');
     }
@@ -31,29 +48,47 @@ sealed class UpdateUnit {
   Map<String, dynamic> toJson();
 }
 
+class CellPosition {
+  final int row;
+  final int col;
+  CellPosition(this.row, this.col);
+  
+  factory CellPosition.fromJson(Map<String, dynamic> json) =>
+      CellPosition(json['row'] as int, json['col'] as int);
+  
+  Map<String, dynamic> toJson() => {
+        'row': row,
+        'col': col,
+      };
+}
+
 @JsonSerializable()
 class SheetDataUpdate extends UpdateUnit {
+  final RecordType type = RecordType.sheetDataUpdate;
   final int sheetId;
   final bool addOtherwiseRemove;
   final String? newName;
   String? prevName;
   final int? historyIndex;
-  int? prevHistoryIndex;
   final double? colHeaderHeight;
   double? prevColHeaderHeight;
   final double? rowHeaderWidth;
   double? prevRowHeaderWidth;
   final int? primarySelectedCellX;
-  double? prevPrimarySelectedCellX;
+  int? prevPrimarySelectedCellX;
   final int? primarySelectedCellY;
-  double? prevPrimarySelectedCellY;
+  int? prevPrimarySelectedCellY;
   final double? scrollOffsetX;
   double? prevScrollOffsetX;
   final double? scrollOffsetY;
   double? prevScrollOffsetY;
+  final List<CellPosition>? selectedCells;
+  final List<int>? bestSortFound;
   final List<int>? bestDistFound;
+  final List<int>? cursors;
+  final List<List<int>>? possibleInts;
+  final List<List<List<int>>>? validAreas;
   final int? sortIndex;
-  int? prevSortIndex;
 
   SheetDataUpdate(
     this.sheetId,
@@ -66,13 +101,55 @@ class SheetDataUpdate extends UpdateUnit {
     this.primarySelectedCellY,
     this.scrollOffsetX,
     this.scrollOffsetY,
+    this.selectedCells,
+    this.bestSortFound,
     this.bestDistFound,
+    this.cursors,
+    this.possibleInts,
+    this.validAreas,
     this.sortIndex,
   });
 
   @override
   String getKey() {
     return 'sheetDataUpdate:$sheetId';
+  }
+
+  @override
+  UpdateUnit merge(UpdateUnit newUpdate) {
+    final newSheetDataUpdate = newUpdate as SheetDataUpdate;
+
+    // 1. Merge constructor parameters
+    final merged = SheetDataUpdate(
+      newSheetDataUpdate.sheetId,
+      newSheetDataUpdate.addOtherwiseRemove, // Typically you'd want the newest boolean state
+      newName: newSheetDataUpdate.newName ?? newName,
+      historyIndex: newSheetDataUpdate.historyIndex ?? historyIndex,
+      colHeaderHeight: newSheetDataUpdate.colHeaderHeight ?? colHeaderHeight,
+      rowHeaderWidth: newSheetDataUpdate.rowHeaderWidth ?? rowHeaderWidth,
+      primarySelectedCellX: newSheetDataUpdate.primarySelectedCellX ?? primarySelectedCellX,
+      primarySelectedCellY: newSheetDataUpdate.primarySelectedCellY ?? primarySelectedCellY,
+      scrollOffsetX: newSheetDataUpdate.scrollOffsetX ?? scrollOffsetX,
+      scrollOffsetY: newSheetDataUpdate.scrollOffsetY ?? scrollOffsetY,
+      selectedCells: newSheetDataUpdate.selectedCells ?? selectedCells,
+      bestSortFound: newSheetDataUpdate.bestSortFound ?? bestSortFound,
+      bestDistFound: newSheetDataUpdate.bestDistFound ?? bestDistFound,
+      cursors: newSheetDataUpdate.cursors ?? cursors,
+      possibleInts: newSheetDataUpdate.possibleInts ?? possibleInts,
+      validAreas: newSheetDataUpdate.validAreas ?? validAreas,
+      sortIndex: newSheetDataUpdate.sortIndex ?? sortIndex,
+    );
+
+    // 2. Merge the mutable 'prev' properties (since they aren't in the constructor)
+    merged.prevName = newSheetDataUpdate.prevName ?? prevName;
+    merged.prevColHeaderHeight = newSheetDataUpdate.prevColHeaderHeight ?? prevColHeaderHeight;
+    merged.prevRowHeaderWidth = newSheetDataUpdate.prevRowHeaderWidth ?? prevRowHeaderWidth;
+    merged.prevPrimarySelectedCellX = newSheetDataUpdate.prevPrimarySelectedCellX ?? prevPrimarySelectedCellX;
+    merged.prevPrimarySelectedCellY = newSheetDataUpdate.prevPrimarySelectedCellY ?? prevPrimarySelectedCellY;
+    merged.prevScrollOffsetX = newSheetDataUpdate.prevScrollOffsetX ?? prevScrollOffsetX;
+    merged.prevScrollOffsetY = newSheetDataUpdate.prevScrollOffsetY ?? prevScrollOffsetY;
+
+    return merged;
   }
 
   factory SheetDataUpdate.fromJson(Map<String, dynamic> json) =>
@@ -84,6 +161,7 @@ class SheetDataUpdate extends UpdateUnit {
 
 @JsonSerializable()
 class CellUpdate extends UpdateUnit {
+  final RecordType type = RecordType.cellUpdate;
   final int sheetId;
   final int rowId;
   final int colId;
@@ -93,13 +171,22 @@ class CellUpdate extends UpdateUnit {
     this.sheetId,
     this.rowId,
     this.colId,
-    this.newValue, {
-    this.prevValue,
-  });
+    this.newValue);
 
   @override
   String getKey() {
     return 'cellUpdate:$sheetId:$rowId:$colId';
+  }
+
+  @override
+  UpdateUnit merge(UpdateUnit newUpdate) {
+    final newCellUpdate = newUpdate as CellUpdate;
+    return CellUpdate(
+      sheetId,
+      rowId,
+      colId,
+      newCellUpdate.newValue, // Always take the latest value
+    )..prevValue = newCellUpdate.prevValue ?? prevValue; // Keep the original prevValue if the new one is null
   }
 
   factory CellUpdate.fromJson(Map<String, dynamic> json) =>
@@ -111,6 +198,7 @@ class CellUpdate extends UpdateUnit {
 
 @JsonSerializable(explicitToJson: true)
 class ColumnTypeUpdate extends UpdateUnit {
+  final RecordType type = RecordType.columnTypeUpdate;
   final int sheetId;
   final int colId;
   final ColumnType newColumnType;
@@ -118,13 +206,21 @@ class ColumnTypeUpdate extends UpdateUnit {
   ColumnTypeUpdate(
     this.sheetId,
     this.colId,
-    this.newColumnType, {
-    this.previousColumnType,
-  });
+    this.newColumnType);
 
   @override
   String getKey() {
     return 'ColumnTypeUpdate:$sheetId:$colId';
+  }
+
+  @override
+  UpdateUnit merge(UpdateUnit newUpdate) {
+    final newColumnTypeUpdate = newUpdate as ColumnTypeUpdate;
+    return ColumnTypeUpdate(
+      sheetId,
+      colId,
+      newColumnTypeUpdate.newColumnType, // Always take the latest value
+    )..previousColumnType = newColumnTypeUpdate.previousColumnType ?? previousColumnType; // Keep the original previousColumnType if the new one is null
   }
 
   factory ColumnTypeUpdate.fromJson(Map<String, dynamic> json) =>
@@ -136,10 +232,11 @@ class ColumnTypeUpdate extends UpdateUnit {
 
 @JsonSerializable(explicitToJson: true)
 class UpdateData extends UpdateUnit {
+  final RecordType type = RecordType.updateData;
   final DateTime timestamp;
   final int chronoId;
   final int sheetId;
-  final Map<Record, UpdateUnit> updates;
+  final Map<String, UpdateUnit> updates;
   bool addOtherwiseRemove;
   UpdateData(
     this.chronoId,
@@ -154,6 +251,25 @@ class UpdateData extends UpdateUnit {
     return 'updateData:$timestamp:$chronoId:$sheetId';
   }
 
+  @override
+  UpdateUnit merge(UpdateUnit newUpdate) {
+    final newUpdateData = newUpdate as UpdateData;
+
+    for (var entry in updates.entries) {
+      updates.update(entry.key, (existing) => existing.merge(entry.value));
+    }
+    // 1. Merge constructor parameters
+    final merged = UpdateData(
+      chronoId,
+      sheetId,
+      updates,
+      addOtherwiseRemove || newUpdateData.addOtherwiseRemove,
+      timestamp: newUpdateData.timestamp.isAfter(timestamp) ? newUpdateData.timestamp : timestamp, // Keep the latest timestamp
+    );
+
+    return merged;
+  }
+
   factory UpdateData.fromJson(Map<String, dynamic> json) =>
       _$UpdateDataFromJson(json);
 
@@ -163,6 +279,7 @@ class UpdateData extends UpdateUnit {
 
 @JsonSerializable()
 class RowsBottomPosUpdate extends UpdateUnit {
+  final RecordType type = RecordType.rowsBottomPosUpdate;
   final int sheetId;
   bool addOtherwiseRemove;
   final int rowIndex;
@@ -182,6 +299,17 @@ class RowsBottomPosUpdate extends UpdateUnit {
     return 'RowsBottomPosUpdate:$sheetId:$rowIndex';
   }
 
+  @override
+  UpdateUnit merge(UpdateUnit newUpdate) {
+    final newRowsBottomPosUpdate = newUpdate as RowsBottomPosUpdate;
+    return RowsBottomPosUpdate(
+      sheetId,
+      addOtherwiseRemove || newRowsBottomPosUpdate.addOtherwiseRemove,
+      rowIndex,
+      newRowsBottomPosUpdate.newBottomPos, // Always take the latest value
+    )..prevBottomPos = newRowsBottomPosUpdate.prevBottomPos ?? prevBottomPos; // Keep the original prevBottomPos if the new one is null
+  }
+
   factory RowsBottomPosUpdate.fromJson(Map<String, dynamic> json) =>
       _$RowsBottomPosUpdateFromJson(json);
 
@@ -189,7 +317,9 @@ class RowsBottomPosUpdate extends UpdateUnit {
   Map<String, dynamic> toJson() => _$RowsBottomPosUpdateToJson(this);
 }
 
+@JsonSerializable()
 class ColRightPosUpdate extends UpdateUnit {
+  final RecordType type = RecordType.colRightPosUpdate;
   final int sheetId;
   bool addOtherwiseRemove;
   final int colIndex;
@@ -209,6 +339,17 @@ class ColRightPosUpdate extends UpdateUnit {
     return 'ColRightPosUpdate:$sheetId:$colIndex';
   }
 
+  @override
+  UpdateUnit merge(UpdateUnit newUpdate) {
+    final newColRightPosUpdate = newUpdate as ColRightPosUpdate;
+    return ColRightPosUpdate(
+      sheetId,
+      addOtherwiseRemove || newColRightPosUpdate.addOtherwiseRemove,
+      colIndex,
+      newColRightPosUpdate.newRightPos, // Always take the latest value
+    )..prevRightPos = newColRightPosUpdate.prevRightPos ?? prevRightPos; // Keep the original prevRightPos if the new one is null
+  }
+
   factory ColRightPosUpdate.fromJson(Map<String, dynamic> json) =>
       _$ColRightPosUpdateFromJson(json);
 
@@ -216,7 +357,9 @@ class ColRightPosUpdate extends UpdateUnit {
   Map<String, dynamic> toJson() => _$ColRightPosUpdateToJson(this);
 }
 
+@JsonSerializable()
 class RowsManuallyAdjustedHeightUpdate extends UpdateUnit {
+  final RecordType type = RecordType.rowsManuallyAdjustedHeightUpdate;
   final int sheetId;
   final bool addOtherwiseRemove;
   final int rowIndex;
@@ -236,6 +379,17 @@ class RowsManuallyAdjustedHeightUpdate extends UpdateUnit {
     return 'RowsManuallyAdjustedHeightUpdate:$sheetId:$rowIndex';
   }
 
+  @override
+  UpdateUnit merge(UpdateUnit newUpdate) {
+    final newRowsManuallyAdjustedHeightUpdate = newUpdate as RowsManuallyAdjustedHeightUpdate;
+    return RowsManuallyAdjustedHeightUpdate(
+      sheetId,
+      addOtherwiseRemove || newRowsManuallyAdjustedHeightUpdate.addOtherwiseRemove,
+      rowIndex,
+      newRowsManuallyAdjustedHeightUpdate.manuallyAdjusted, // Always take the latest value
+    )..prevManuallyAdjusted = newRowsManuallyAdjustedHeightUpdate.prevManuallyAdjusted ?? prevManuallyAdjusted; // Keep the original prevManuallyAdjusted if the new one is null
+  }
+
   factory RowsManuallyAdjustedHeightUpdate.fromJson(Map<String, dynamic> json) =>
       _$RowsManuallyAdjustedHeightUpdateFromJson(json);
 
@@ -243,7 +397,9 @@ class RowsManuallyAdjustedHeightUpdate extends UpdateUnit {
   Map<String, dynamic> toJson() => _$RowsManuallyAdjustedHeightUpdateToJson(this);
 }
 
+@JsonSerializable()
 class ColsManuallyAdjustedWidthUpdate extends UpdateUnit {
+  final RecordType type = RecordType.colsManuallyAdjustedWidthUpdate;
   final int sheetId;
   final bool addOtherwiseRemove;
   final int colIndex;
@@ -263,144 +419,20 @@ class ColsManuallyAdjustedWidthUpdate extends UpdateUnit {
     return 'ColsManuallyAdjustedWidthUpdate:$sheetId:$colIndex';
   }
 
+  @override
+  UpdateUnit merge(UpdateUnit newUpdate) {
+    final newColsManuallyAdjustedWidthUpdate = newUpdate as ColsManuallyAdjustedWidthUpdate;
+    return ColsManuallyAdjustedWidthUpdate(
+      sheetId,
+      addOtherwiseRemove || newColsManuallyAdjustedWidthUpdate.addOtherwiseRemove,
+      colIndex,
+      newColsManuallyAdjustedWidthUpdate.manuallyAdjusted, // Always take the latest value
+    )..prevManuallyAdjusted = newColsManuallyAdjustedWidthUpdate.prevManuallyAdjusted ?? prevManuallyAdjusted; // Keep the original prevManuallyAdjusted if the new one is null
+  }
+
   factory ColsManuallyAdjustedWidthUpdate.fromJson(Map<String, dynamic> json) =>
       _$ColsManuallyAdjustedWidthUpdateFromJson(json);
 
   @override
   Map<String, dynamic> toJson() => _$ColsManuallyAdjustedWidthUpdateToJson(this);
 }
-
-class SelectedCellsUpdate extends UpdateUnit {
-  final int sheetId;
-  final bool addOtherwiseRemove;
-  final int cellIndex;
-  final int row;
-  final int col;
-
-  SelectedCellsUpdate(
-    this.sheetId,
-    this.addOtherwiseRemove,
-    this.cellIndex,
-    this.row,
-    this.col,
-  );
-
-  @override
-  String getKey() {
-    return 'SelectedCellsUpdate:$sheetId:$cellIndex';
-  }
-
-  factory SelectedCellsUpdate.fromJson(Map<String, dynamic> json) =>
-      _$SelectedCellsUpdateFromJson(json);
-
-  @override
-  Map<String, dynamic> toJson() => _$SelectedCellsUpdateToJson(this);
-}
-
-class BestSortFoundUpdate extends UpdateUnit {
-  final int sheetId;
-  final bool addOtherwiseRemove;
-  final int sortIndex;
-  final int value;
-
-  BestSortFoundUpdate(
-    this.sheetId,
-    this.addOtherwiseRemove,
-    this.sortIndex,
-    this.value,
-  );
-
-  @override
-  String getKey() {
-    return 'BestSortFoundUpdate:$sheetId:$sortIndex';
-  }
-
-  factory BestSortFoundUpdate.fromJson(Map<String, dynamic> json) =>
-      _$BestSortFoundUpdateFromJson(json);
-
-  @override
-  Map<String, dynamic> toJson() => _$BestSortFoundUpdateToJson(this);
-}
-
-class CursorsUpdate extends UpdateUnit {
-  final int sheetId;
-  final bool addOtherwiseRemove;
-  final int cursorIndex;
-  final int value;
-
-  CursorsUpdate(
-    this.sheetId,
-    this.addOtherwiseRemove,
-    this.cursorIndex,
-    this.value,
-  );
-
-  @override
-  String getKey() {
-    return 'CursorsUpdate:$sheetId:$cursorIndex';
-  }
-
-  factory CursorsUpdate.fromJson(Map<String, dynamic> json) =>
-      _$CursorsUpdateFromJson(json);
-
-  @override
-  Map<String, dynamic> toJson() => _$CursorsUpdateToJson(this);
-}
-
-class PossibleIntsByIdUpdate extends UpdateUnit {
-  final int sheetId;
-  final bool addOtherwiseRemove;
-  final int id;
-  final int intIndex;
-  final int value;
-
-  PossibleIntsByIdUpdate(
-    this.sheetId,
-    this.addOtherwiseRemove,
-    this.id,
-    this.intIndex,
-    this.value,
-  );
-
-  @override
-  String getKey() {
-    return 'PossibleIntsByIdUpdate:$sheetId:$id:$intIndex';
-  }
-
-  factory PossibleIntsByIdUpdate.fromJson(Map<String, dynamic> json) =>
-      _$PossibleIntsByIdUpdateFromJson(json);
-
-  @override
-  Map<String, dynamic> toJson() => _$PossibleIntsByIdUpdateToJson(this);
-}
-
-class ValidAreasByIdUpdate extends UpdateUnit {
-  final int sheetId;
-  final bool addOtherwiseRemove;
-  final int id;
-  final int intIndex;
-  final int areaIndex;
-  final int areaEdge;
-
-  ValidAreasByIdUpdate(
-    this.sheetId,
-    this.addOtherwiseRemove,
-    this.id,
-    this.intIndex,
-    this.areaIndex,
-    this.areaEdge,
-  );
-
-  @override
-  String getKey() {
-    return 'ValidAreasByIdUpdate:$sheetId:$id:$intIndex:$areaIndex';
-  }
-
-  factory ValidAreasByIdUpdate.fromJson(Map<String, dynamic> json) =>
-      _$ValidAreasByIdUpdateFromJson(json);
-
-  @override
-  Map<String, dynamic> toJson() => _$ValidAreasByIdUpdateToJson(this);
-}
-
-

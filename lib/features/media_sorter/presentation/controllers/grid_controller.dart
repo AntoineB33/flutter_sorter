@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/grid_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/selection_usecase.dart';
@@ -70,7 +69,7 @@ class GridController extends ChangeNotifier {
     return gridUsecase.minCols(sheetId, colCount, width);
   }
 
-  void adjustRowHeightAfterUpdate(int sheetId, Map<Record, UpdateUnit> updateData) {
+  void adjustRowHeightAfterUpdate(int sheetId, Map<String, UpdateUnit> updateData) {
     gridUsecase.adjustRowHeightAfterUpdate(sheetId, updateData);
   }
 

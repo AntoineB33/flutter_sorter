@@ -127,7 +127,7 @@ class SortUsecase {
     sortRepository.setSortedWithCurrentBestSort(sheetId, value);
   }
 
-  Map<Record, UpdateUnit> sortTableWithCurrentBestSort(int sheetId) {
+  Map<String, UpdateUnit> sortTableWithCurrentBestSort(int sheetId) {
     return sortRepository.sortTableWithCurrentBestSort(sheetId);
   }
 

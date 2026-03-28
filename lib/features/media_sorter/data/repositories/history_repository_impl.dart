@@ -1,4 +1,3 @@
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/history_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
@@ -40,7 +39,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
     return updateData;
   }
 
-  void _removeLastHistoryEditingMode(Map<Record, UpdateUnit> updates) {
+  void _removeLastHistoryEditingMode(Map<String, UpdateUnit> updates) {
     UpdateData lastUpdateData = historyData.updateHistories.last;
     lastUpdateData.addOtherwiseRemove = false;
     historyData.updateHistories.removeAt(historyData.historyIndex);
@@ -55,7 +54,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
 
   @override
   void commitHistory(
-    Map<Record, UpdateUnit> updates,
+    Map<String, UpdateUnit> updates,
     int sheetId,
     bool isFromEditing,
   ) {
@@ -113,7 +112,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
   }
 
   @override
-  void stopEditing(bool escape, {Map<Record, UpdateUnit>? updates}) {
+  void stopEditing(bool escape, {Map<String, UpdateUnit>? updates}) {
     if (escape && isLastChangeInSameEditingMode) {
       _removeLastHistoryEditingMode(updates!);
     }

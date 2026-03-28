@@ -2,6 +2,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/column_type
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/utils/logger.dart';
 
 class LoadedSheetsCache {
   final Map<int, CoreSheetContent> _loadedSheetsData = {};
@@ -137,14 +138,22 @@ class LoadedSheetsCache {
     }
   }
 
-  void update(List<UpdateUnit> updates, int sheetId) {
-    for (var update in updates) {
-      if (update is CellUpdate) {
-        _updateCell(sheetId, update);
-      } else if (update is ColumnTypeUpdate) {
-        _setColumnType(sheetId, update);
-      } else {
-        throw Exception('Unsupported update type: ${update.runtimeType}');
+  void update(Map<String, UpdateUnit> updates, int sheetId) {
+    for (var update in updates.values) {
+      switch (update) {
+        case CellUpdate():
+          _updateCell(sheetId, update);
+          break;
+        case ColumnTypeUpdate():
+          _setColumnType(sheetId, update);
+          break;
+        case SheetDataUpdate():
+          if (update.newName != null) {
+            _loadedSheetsData[sheetId]!.title = update.newName!;
+          }
+          break;
+        default:
+          throw Exception('Unknown update type');
       }
     }
   }

@@ -31,7 +31,11 @@ class DriftLocalDataSource implements ILocalDataSource {
             primarySelectedCellY: item.primarySelectedCellY != null ? Value(item.primarySelectedCellY!) : Value.absent(),
             scrollOffsetX: item.scrollOffsetX != null ? Value(item.scrollOffsetX!) : Value.absent(),
             scrollOffsetY: item.scrollOffsetY != null ? Value(item.scrollOffsetY!) : Value.absent(),
+            bestSortFound: item.bestSortFound != null ? Value(item.bestSortFound!) : Value.absent(),
             bestDistFound: item.bestDistFound != null ? Value(item.bestDistFound!) : Value.absent(),
+            cursors: item.cursors != null ? Value(item.cursors!) : Value.absent(),
+            possibleInts: item.possibleInts != null ? Value(item.possibleInts!) : Value.absent(),
+            validAreas: item.validAreas != null ? Value(item.validAreas!) : Value.absent(),
             sortIndex: item.sortIndex != null ? Value(item.sortIndex!) : Value.absent(),
           );
           if (item.addOtherwiseRemove) {
@@ -161,23 +165,8 @@ class DriftLocalDataSource implements ILocalDataSource {
             batch.delete(db.colsManuallyAdjustedWidth, companion);
           }
           break;
-        case SelectedCellsUpdate():
-          final companion = SelectedCellsCompanion(
-            sheetId: Value(item.sheetId),
-            cellIndex: Value(item.cellIndex),
-            row: Value(item.row),
-            col: Value(item.col),
-          );
-          if (item.addOtherwiseRemove) {
-            batch.insert(
-              db.selectedCells,
-              companion, 
-              mode: InsertMode.insertOrReplace,
-            );
-          } else {
-            batch.delete(db.selectedCells, companion);
       }
-    }});
+    }  });
   }
 
   @override

@@ -113,7 +113,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  Future<Either<Failure, Map<Record, UpdateUnit>>> pasteSelection() async {
+  Future<Either<Failure, Map<String, UpdateUnit>>> pasteSelection() async {
     final text = await _clipboardService.getText();
     if (text == null) return Left(ClipboardEmptyFailure());
     // if contains "
@@ -121,7 +121,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       return Left(ClipboardUnsupportedCharactersFailure());
     }
 
-    final Map<Record, UpdateUnit> updates = {};
+    final Map<String, UpdateUnit> updates = {};
     final rows = text.split('\n');
     int startRow = selectionCache
         .getSelectionData(currentSheetId)
@@ -199,8 +199,8 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  Map<Record, UpdateUnit> delete() {
-    Map<Record, UpdateUnit> updates = {};
+  Map<String, UpdateUnit> delete() {
+    Map<String, UpdateUnit> updates = {};
     for (Point<int> cell
         in selectionCache
             .getSelectionData(currentSheetId)
@@ -212,7 +212,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  void update(List<UpdateUnit> updates, int sheetId) {
+  void update(Map<String, UpdateUnit> updates, int sheetId) {
     loadedSheetsCache.update(updates, sheetId);
     scheduleSheetSave(sheetId);
   }

@@ -12,13 +12,19 @@ abstract class SheetDataRepository {
   int rowCount(int sheetId);
   int colCount(int sheetId);
   CoreSheetContent getSheet(int sheetId);
-  Map<Record, UpdateUnit> delete();
+  Map<String, UpdateUnit> delete();
   Future<void> copySelectionToClipboard();
-  Future<Either<Failure, Map<Record, UpdateUnit>>> pasteSelection();
+  Future<Either<Failure, Map<String, UpdateUnit>>> pasteSelection();
   String getCellContent(Point<int> cell, int sheetId);
   ColumnType getColumnType(int colId, int sheetId);
   String getSheetTitle(int sheetId);
+  double getColHeaderHeight(int sheetId);
+  double getRowHeaderWidth(int sheetId);
+  int getPrimarySelectedCellX(int sheetId);
+  int getPrimarySelectedCellY(int sheetId); 
+  double getScrollOffsetX(int sheetId);
+  double getScrollOffsetY(int sheetId);
   Future<Either<Failure, void>> loadSheet(int sheetId);
   Future<void> addNewSheet(int sheetId);
-  void update(List<UpdateUnit> updates, int sheetId);
+  void update(Map<String, UpdateUnit> updates, int sheetId);
 }

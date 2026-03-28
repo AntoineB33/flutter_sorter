@@ -1,32 +1,10 @@
 import 'dart:async';
-import 'package:drift/drift.dart';
 import 'package:flutter/widgets.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/utils/logger.dart';
-
-class MergedInsertable<T extends Object> implements Insertable<T> {
-  final Insertable<T> baseUpdate;
-  final Insertable<T> newUpdate;
-
-  MergedInsertable(this.baseUpdate, this.newUpdate);
-
-  @override
-  Map<String, Expression<Object>> toColumns(bool nullToAbsent) {
-    // The newUpdate map will overwrite any matching keys in the baseUpdate map.
-    return {
-      ...baseUpdate.toColumns(nullToAbsent),
-      ...newUpdate.toColumns(nullToAbsent),
-    };
-  }
-}
-
-/// Extension to make usage clean across your entire app.
-extension MergeInsertableExt<T extends Object> on Insertable<T> {
-  Insertable<T> merge(Insertable<T> other) => MergedInsertable(this, other);
-}
 
 class LocalDataRepositoryImpl
     with WidgetsBindingObserver
@@ -35,7 +13,7 @@ class LocalDataRepositoryImpl
 
   // The Map acts as our cache. Using the entity's ID as the key
   // guarantees the "latest wins" behavior automatically.
-  final Map<Record, UpdateUnit> _pendingSaves = {};
+  final Map<String, UpdateUnit> _pendingSaves = {};
 
   bool _isMicrotaskScheduled = false;
 
@@ -57,8 +35,10 @@ class LocalDataRepositoryImpl
 
   /// Called by your Use Cases
   @override
-  void save(Map<Record, UpdateUnit> updates) {
-    _pendingSaves.addAll(updates);
+  void save(Map<String, UpdateUnit> updates) {
+    for (var entry in updates.entries) {
+      _pendingSaves.update(entry.key, (existing) => existing.merge(entry.value));
+    }
 
     // 2. Send a signal. RxDart will absorb rapid signals and only emit
     // to the listener once 800ms has passed with no new signals.
@@ -69,6 +49,11 @@ class LocalDataRepositoryImpl
         _saveTrigger.add(null); // Trigger the debounce stream
       });
     }
+  }
+
+  @override
+  void saveUpdate(UpdateUnit update) {
+    save({update.getKey(): update});
   }
 
   /// Takes the current cache, clears it, and writes to Drift
@@ -94,8 +79,6 @@ class LocalDataRepositoryImpl
       logger.e("Database save failed. Items returned to cache. Error: $e");
     }
   }
-
-  Future<List<int>> getRecentSheetIds() async {}
 
   /// App Lifecycle Hook
   @override

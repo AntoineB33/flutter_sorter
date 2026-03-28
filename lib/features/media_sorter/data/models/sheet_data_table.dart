@@ -17,8 +17,13 @@ class SheetDataTables extends Table {
   IntColumn get primarySelectedCellY => integer()();
   RealColumn get scrollOffsetX => real()();
   RealColumn get scrollOffsetY => real()();
+  TextColumn get selectedCells => text().map(const ListPointConverter())();
 
-  TextColumn get bestDistFound => text().map(const BestDistFoundConverter())();
+  TextColumn get bestSortFound => text().map(const ListIntConverter())();
+  TextColumn get bestDistFound => text().map(const ListIntConverter())();
+  TextColumn get cursors => text().map(const ListIntConverter())();
+  TextColumn get possibleInts => text().map(const ListListIntConverter())();
+  TextColumn get validAreas => text().map(const ListListListIntConverter())();
   IntColumn get sortIndex => integer()();
   
   TextColumn get analysisResult => text().map(const AnalysisResultConverter())();
@@ -202,8 +207,24 @@ class NodeStructListConverter extends TypeConverter<List<NodeStruct>, String> {
   }
 }
 
-class BestDistFoundConverter extends TypeConverter<List<int>, String> {
-  const BestDistFoundConverter();
+class ListPointConverter extends TypeConverter<List<(int rowId, int colId)>, String> {
+  const ListPointConverter();
+
+  @override
+  List<(int rowId, int colId)> fromSql(String fromDb) {
+    final decoded = jsonDecode(fromDb) as List<dynamic>;
+    return decoded.map((e) => (e[0] as int, e[1] as int)).toList();
+  }
+
+  @override
+  String toSql(List<(int rowId, int colId)> value) {
+    final encoded = value.map((e) => [e.$1, e.$2]).toList();
+    return jsonEncode(encoded);
+  }
+}
+
+class ListIntConverter extends TypeConverter<List<int>, String> {
+  const ListIntConverter();
 
   @override
   List<int> fromSql(String fromDb) {
@@ -213,6 +234,36 @@ class BestDistFoundConverter extends TypeConverter<List<int>, String> {
 
   @override
   String toSql(List<int> value) {
+    return jsonEncode(value);
+  }
+}
+
+class ListListIntConverter extends TypeConverter<List<List<int>>, String> {
+  const ListListIntConverter();
+
+  @override
+  List<List<int>> fromSql(String fromDb) {
+    final decoded = jsonDecode(fromDb) as List<dynamic>;
+    return decoded.map((e) => (e as List<dynamic>).map((i) => i as int).toList()).toList();
+  }
+
+  @override
+  String toSql(List<List<int>> value) {
+    return jsonEncode(value);
+  }
+}
+
+class ListListListIntConverter extends TypeConverter<List<List<List<int>>>, String> {
+  const ListListListIntConverter();
+
+  @override
+  List<List<List<int>>> fromSql(String fromDb) {
+    final decoded = jsonDecode(fromDb) as List<dynamic>;
+    return decoded.map((e) => (e as List<dynamic>).map((l) => (l as List<dynamic>).map((i) => i as int).toList()).toList()).toList();
+  }
+
+  @override
+  String toSql(List<List<List<int>>> value) {
     return jsonEncode(value);
   }
 }

@@ -68,7 +68,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     await workbookController.clearAllData();
     await workbookController.loadRecentSheetIds();
     await loadSheet(workbookController.currentSheetId, true);
-    await sortController.loadSortStatus();
+    sortController.loadSortStatus();
     for (var sheetId in sortController.getRecentSheetIds()) {
       launchCalculation(sheetId);
     }
@@ -113,7 +113,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     int rowId = primarySelectedCellX;
     int colId = primarySelectedCellY;
     final cellUpdate = CellUpdate(currentSheetId, rowId, colId, newValue);
-    Map<Record, UpdateUnit> updates = {cellUpdate.getKey(): cellUpdate};
+    Map<String, UpdateUnit> updates = {cellUpdate.getKey(): cellUpdate};
     applyUpdatesAndSort(
       updates,
       currentSheetId,
@@ -124,7 +124,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyUpdatesAndSort(
-    Map<Record, UpdateUnit> updates,
+    Map<String, UpdateUnit> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromSort,
@@ -188,7 +188,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyUpdatesNoSort(
-    Map<Record, UpdateUnit> updates,
+    Map<String, UpdateUnit> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,
@@ -419,7 +419,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
       ColumnTypeUpdate(currentSheetId, 7, ColumnType.urls),
       ColumnTypeUpdate(currentSheetId, 8, ColumnType.dependencies),
     ];
-    Map<Record, UpdateUnit> updates = {
+    Map<String, UpdateUnit> updates = {
       for (var update in updatesLst) update.getKey(): update,
     };
     applyUpdatesAndSort(updates, currentSheetId, false, false, false);
@@ -449,7 +449,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void setColumnType(int col, ColumnType type) {
-    final update = ColumnTypeUpdate(col, type);
+    final update = ColumnTypeUpdate(currentSheetId, col, type);
     final updates = {update.getKey(): update};
     applyUpdatesAndSort(updates, currentSheetId, false, false, false);
   }

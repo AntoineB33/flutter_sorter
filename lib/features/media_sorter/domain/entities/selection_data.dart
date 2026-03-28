@@ -1,7 +1,7 @@
-import 'dart:math';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 
 class SelectionData {
-  final List<Point<int>> selectedCells;
+  final List<CellPosition> selectedCells;
   int primarySelectedCellX;
   int primarySelectedCellY;
 

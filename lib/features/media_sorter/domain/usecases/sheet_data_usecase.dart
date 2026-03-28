@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:fpdart/fpdart.dart';
-import 'package:isar/isar.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/helpers/utils_services.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
@@ -20,23 +18,13 @@ class SheetDataUsecase {
   final HistoryRepository historyRepository;
   final SaveRepository saveRepository;
 
-  final StreamSubscription<Failure> _failureSubscription;
-
   SheetDataUsecase(
     this.sheetDataRepository,
     this.sortRepository,
     this.gridRepository,
     this.historyRepository,
     this.saveRepository,
-  ) : _failureSubscription = sheetDataRepository.failureStream.listen((
-        failure,
-      ) {
-        UtilsServices.handleDataCorruption(Left(failure));
-      });
-
-  void dispose() {
-    _failureSubscription.cancel();
-  }
+  );
 
   bool containsSheetId(int sheetId) {
     return sheetDataRepository.containsSheetId(sheetId);
@@ -54,12 +42,11 @@ class SheetDataUsecase {
     return sheetDataRepository.getCellContent(Point<int>(row, col), sheetId);
   }
 
-  SheetData getSheet(int sheetId) {
+  CoreSheetContent getSheet(int sheetId) {
     return sheetDataRepository.getSheet(sheetId);
   }
 
-  @useResult
-  void addPrevValue(Map<Record, UpdateUnit> updates, int sheetId) {
+  void addPrevValue(Map<String, UpdateUnit> updates, int sheetId) {
     for (var update in updates.values) {
       if (update is CellUpdate) {
         update.prevValue = sheetDataRepository.getCellContent(
@@ -71,14 +58,34 @@ class SheetDataUsecase {
           update.colId,
           sheetId,
         );
-      } else if (update is SheetNameUpdate) {
-        update.previousName = sheetDataRepository.getSheetTitle(sheetId);
+      } else if (update is SheetDataUpdate) {
+        if (update.newName != null) {
+          update.prevName = sheetDataRepository.getSheetTitle(sheetId);
+        }
+        if (update.colHeaderHeight != null) {
+          update.prevColHeaderHeight = sheetDataRepository.getColHeaderHeight(sheetId);
+        }
+        if (update.rowHeaderWidth != null) {
+          update.prevRowHeaderWidth = sheetDataRepository.getRowHeaderWidth(sheetId);
+        }
+        if (update.primarySelectedCellX != null) {
+          update.prevPrimarySelectedCellX = sheetDataRepository.getPrimarySelectedCellX(sheetId);
+        }
+        if (update.primarySelectedCellY != null) {
+          update.prevPrimarySelectedCellY = sheetDataRepository.getPrimarySelectedCellY(sheetId);
+        }
+        if (update.scrollOffsetX != null) {
+          update.prevScrollOffsetX = sheetDataRepository.getScrollOffsetX(sheetId);
+        }
+        if (update.scrollOffsetY != null) {
+          update.prevScrollOffsetY = sheetDataRepository.getScrollOffsetY(sheetId);
+        }
       }
     }
   }
 
   void applyUpdatesNoSort(
-    Map<Record, UpdateUnit> updates,
+    Map<String, UpdateUnit> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,
@@ -88,17 +95,18 @@ class SheetDataUsecase {
       historyRepository.commitHistory(updates, sheetId, isFromEditing);
     }
     sheetDataRepository.update(updates, sheetId);
-  }
-
-  void save(Map<Record, UpdateUnit> updates) {
     saveRepository.save(updates);
   }
 
-  Map<Record, UpdateUnit> delete() {
+  void save(Map<String, UpdateUnit> updates) {
+    saveRepository.save(updates);
+  }
+
+  Map<String, UpdateUnit> delete() {
     return sheetDataRepository.delete();
   }
 
-  Future<Either<Failure, Map<Record, UpdateUnit>>> paste() {
+  Future<Either<Failure, Map<String, UpdateUnit>>> paste() {
     return sheetDataRepository.pasteSelection();
   }
 

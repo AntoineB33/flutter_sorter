@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:get_it/get_it.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trying_flutter/features/media_sorter/application/coordinators/spreadsheet_coordinator.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';

@@ -22,7 +22,7 @@ abstract class SortRepository {
     SortProgressDataMsg sortProgressDataMsg,
     int sheetId,
   );
-  Map<Record, UpdateUnit> sortTableWithCurrentBestSort(int sheetId);
+  Map<String, UpdateUnit> sortTableWithCurrentBestSort(int sheetId);
   void lightCalculations(int sheetId);
   Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId);
   bool canFindBetterSort(int sheetId);
