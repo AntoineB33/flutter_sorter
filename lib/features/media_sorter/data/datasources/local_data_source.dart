@@ -1,12 +1,14 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:drift/drift.dart';
 
 abstract class ILocalDataSource {
   Future<void> batchInsertOrUpdate(List<UpdateUnit> items);
+  Future<Either<Exception, CoreSheetContent>> getSheet(int sheetId);
   Future<Either<Exception, Map<int, SortStatus>>> getSortStatus();
 }
 
@@ -167,6 +169,44 @@ class DriftLocalDataSource implements ILocalDataSource {
           break;
       }
     }  });
+  }
+
+  @override
+  Future<Either<Exception, CoreSheetContent>> getSheet(int sheetId) async {
+    try {
+      // 1. Start a selectOnly query
+      final query = db.selectOnly(db.sheetDataTables)..where(db.sheetDataTables.id.equals(sheetId));
+
+      // 4. Execute the query
+      final coreSheetContents = await query.get();
+
+      final cellQuery = db.select(db.sheetCells)..where((tbl) => tbl.sheetId.equals(sheetId));
+
+      final sheetCells = await cellQuery.get();
+      final cells = {
+        for (var cell in sheetCells) CellPosition(cell.row, cell.col): cell.content,
+      };
+
+      final columnTypeQuery = db.select(db.sheetColumnTypes)..where((tbl) => tbl.sheetId.equals(sheetId));
+
+      final columnTypes = {
+        for (var colType in await columnTypeQuery.get()) colType.columnIndex: ColumnType.values.firstWhere((v) => v.name == colType.columnType),
+      };
+      
+      final coreSheetContent = CoreSheetContent(
+        id: sheetId,
+        title: coreSheetContents.first.read(db.sheetDataTables.title)!,
+        lastOpened: coreSheetContents.first.read(db.sheetDataTables.lastOpened)!,
+        cells: cells,
+        columnTypes: columnTypes,
+      );
+
+      return Right(coreSheetContent);
+    } on Exception catch (e) {
+      return Left(e);
+    } catch (e) {
+      return Left(Exception(e.toString()));
+    }
   }
 
   @override

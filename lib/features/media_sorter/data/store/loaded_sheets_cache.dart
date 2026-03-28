@@ -23,10 +23,6 @@ class LoadedSheetsCache {
     return _loadedSheetsData[sheetId]!.cells;
   }
 
-  Map<int, ColumnType> getColumnTypes(int sheetId) {
-    return _loadedSheetsData[sheetId]!.columnTypes;
-  }
-
   int rowCount(int sheetId) {
     return getCells(sheetId).length;
   }
@@ -60,32 +56,6 @@ class LoadedSheetsCache {
 
   void setSheet(int sheetId, CoreSheetContent sheetData) {
     _loadedSheetsData[sheetId] = sheetData;
-  }
-
-  void _increaseColumnCount(
-    int sheetId,
-    int col,
-    SheetContent sheetContent,
-  ) {
-    if (col >= colCount(sheetId)) {
-      final needed = col + 1 - colCount(sheetId);
-      for (var r = 0; r < rowCount(sheetId); r++) {
-        sheetContent.table[r].addAll(List.filled(needed, '', growable: true));
-      }
-      sheetContent.columnTypes.addAll(
-        List.filled(needed, ColumnType.attributes),
-      );
-    }
-  }
-
-  void _decreaseRowCount(int row, int rowCount, SheetContent sheetContent) {
-    if (row == rowCount - 1) {
-      while (row >= 0 &&
-          !sheetContent.table[row].any((cell) => cell.isNotEmpty)) {
-        sheetContent.table.removeLast();
-        row--;
-      }
-    }
   }
 
   void _updateCell(int sheetId, CellUpdate update) {
@@ -162,24 +132,9 @@ class LoadedSheetsCache {
     int col = update.colId;
     ColumnType type = update.newColumnType;
     final sheet = _loadedSheetsData[sheetId]!;
-    if (type == ColumnType.attributes) {
-      if (col < colCount(sheetId)) {
-        sheet.columnTypes[col] = type;
-        if (col == sheet.columnTypes.length - 1) {
-          while (col > 0) {
-            col--;
-            if (sheet.columnTypes[col] != ColumnType.attributes) {
-              break;
-            }
-          }
-          sheet.columnTypes = sheet.columnTypes.sublist(
-            0,
-            col + 1,
-          );
-        }
-      }
+    if (type == ColumnType.attributes ) {
+      sheet.columnTypes.remove(col);
     } else {
-      _increaseColumnCount(sheetId, col, sheet);
       sheet.columnTypes[col] = type;
     }
   }

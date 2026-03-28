@@ -9,7 +9,8 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 
 class SheetDataTables extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get name => text()();
+  TextColumn get title => text()();
+  DateTimeColumn get lastOpened => dateTime()();
   IntColumn get historyIndex => integer()();
   RealColumn get colHeaderHeight => real()();
   RealColumn get rowHeaderWidth => real()();

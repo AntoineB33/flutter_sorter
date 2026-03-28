@@ -46,8 +46,8 @@ class SortRepositoryImpl implements SortRepository {
   int get currentSheetId => workbookCache.currentSheetId;
 
   @override
-  bool isSorting(int sheetId) {
-    return sortStatusCache.isSorting(sheetId);
+  bool isReordering(int sheetId) {
+    return sortStatusCache.isReordering(sheetId);
   }
 
   @override
@@ -329,7 +329,11 @@ class SortRepositoryImpl implements SortRepository {
   @override
   void setFindingBestSort(int sheetId, bool findingBestSort) {
     analysisResultCache.setFindingBestSort(sheetId, findingBestSort);
-    if (!findingBestSort && sortProgressCache.getSortProgressData(sheetId).bestDistFound.isNotEmpty) {
+    if (!findingBestSort &&
+        sortProgressCache
+            .getSortProgressData(sheetId)
+            .bestDistFound
+            .isNotEmpty) {
       isolateReceivePortsCache.cancelC(sheetId);
     }
   }

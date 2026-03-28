@@ -1,15 +1,18 @@
 
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 
 class CoreSheetContent {
   final int id;
   String title;
   DateTime lastOpened;
-  final Map<(int, int), String> cells;
+  final Map<CellPosition, String> cells;
   Map<int, ColumnType> columnTypes;
-  int lastRow;
-  int lastCol;
+  int lastRow = 0;
+  int lastCol = 0;
+  final List<int> usedRows = [];
+  final List<int> usedCols = [];
 
   static int _idCounter = 0;
 
@@ -19,8 +22,7 @@ class CoreSheetContent {
     required this.lastOpened,
     required this.cells,
     required this.columnTypes,
-    required this.lastRow,
-    required this.lastCol,
+
   });
 
   factory CoreSheetContent.empty() {
@@ -30,8 +32,6 @@ class CoreSheetContent {
       lastOpened: DateTime.now(),
       cells: {},
       columnTypes: {},
-      lastRow: 0,
-      lastCol: 0,
     );
   }
 }

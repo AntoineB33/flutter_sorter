@@ -32,8 +32,8 @@ class SortUsecase {
     UtilsServices.handleDataCorruption(result);
   }
 
-  bool isSorting() {
-    return sortRepository.isSorting(currentSheetId);
+  bool isReordering() {
+    return sortRepository.isReordering(currentSheetId);
   }
 
   bool getAnalysisDone(int sheetId) {
@@ -70,10 +70,7 @@ class SortUsecase {
 
   void setFindingBestSort(int sheetId, bool value) {
     sortRepository.setFindingBestSort(sheetId, value);
-    FindBestSortChg findBestSortChg = FindBestSortChg(
-      sheetId,
-      value,
-    );
+    FindBestSortChg findBestSortChg = FindBestSortChg(sheetId, value);
     saveRepository.save({findBestSortChg.findingBestSortKey: findBestSortChg});
   }
 

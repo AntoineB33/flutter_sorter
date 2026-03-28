@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
@@ -16,6 +17,8 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 
 class SheetDataRepositoryImpl implements SheetDataRepository {
+  final ILocalDataSource dataSource;
+  
   final LoadedSheetsCache loadedSheetsCache;
   final SelectionCache selectionCache;
   final WorkbookCache workbookCache;
@@ -34,6 +37,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   final Map<int, ManageWaitingTasks<void>> _saveSheetDataExecutor = {};
 
   SheetDataRepositoryImpl(
+    this.dataSource,
     this.loadedSheetsCache,
     this.selectionCache,
     this.workbookCache,
@@ -184,6 +188,8 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     if (!loadedSheetsCache.containsSheetId(sheetId)) {
       try {
         CoreSheetContent sheet = await dataSource.getSheet(sheetId);
+        for () {
+        }
         setSheet(sheetId, sheet);
       } on CacheException catch (e) {
         setSheet(sheetId, CoreSheetContent.empty());

@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/workbook_usecase.dart';
@@ -26,10 +25,6 @@ class SheetDataController extends ChangeNotifier {
 
   Future<void> copyToClipboard() {
     return sheetDataUsecase.copyToClipboard();
-  }
-
-  bool isLoaded(int sheetId) {
-    return sheetDataUsecase.containsSheetId(sheetId);
   }
 
   String getCellContentCurrentSheet(int row, int col) {

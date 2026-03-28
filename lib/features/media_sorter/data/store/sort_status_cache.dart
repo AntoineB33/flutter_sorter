@@ -10,7 +10,7 @@ class SortStatusCache {
 
   Map<int, SortStatus> get sortStatusBySheet => _sortStatusBySheet;
 
-  bool isSorting(int sheetId) {
+  bool isReordering(int sheetId) {
     return containsSheet(sheetId) &&
         (_sortStatusBySheet[sheetId]!.toApplyNextBestSort ||
             _sortStatusBySheet[sheetId]!.toAlwaysApplyCurrentBestSort);

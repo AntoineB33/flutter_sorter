@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
@@ -40,9 +39,9 @@ class SelectionController extends ChangeNotifier {
 
   bool isCellSelected(int row, int col) {
     return selectionUsecase
-            .getSelectionData(currentSheetId)
-            .selectedCells
-            .any((cell) => cell.x == row && cell.y == col);
+        .getSelectionData(currentSheetId)
+        .selectedCells
+        .any((cell) => cell.rowId == row && cell.colId == col);
   }
 
   bool isPrimarySelectedCell(int row, int col) {
@@ -68,19 +67,14 @@ class SelectionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isSorting() {
-    return sortUsecase.isSorting();
+  bool isReordering() {
+    return sortUsecase.isReordering();
   }
 
   bool startEditing() {
-    if (isSorting()) {
+    if (isReordering()) {
       return false;
     }
-    previousEditingValue = sheetDataUsecase.getCellContent(
-      primarySelectedCellX,
-      primarySelectedCellY,
-      currentSheetId,
-    );
     editingMode = true;
     saveLastSelection();
     notifyListeners();

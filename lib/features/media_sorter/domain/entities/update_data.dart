@@ -49,16 +49,16 @@ sealed class UpdateUnit {
 }
 
 class CellPosition {
-  final int row;
-  final int col;
-  CellPosition(this.row, this.col);
+  final int rowId;
+  final int colId;
+  CellPosition(this.rowId, this.colId);
   
   factory CellPosition.fromJson(Map<String, dynamic> json) =>
       CellPosition(json['row'] as int, json['col'] as int);
   
   Map<String, dynamic> toJson() => {
-        'row': row,
-        'col': col,
+        'row': rowId,
+        'col': colId,
       };
 }
 
@@ -69,6 +69,7 @@ class SheetDataUpdate extends UpdateUnit {
   final bool addOtherwiseRemove;
   final String? newName;
   String? prevName;
+  final DateTime? lastOpened;
   final int? historyIndex;
   final double? colHeaderHeight;
   double? prevColHeaderHeight;

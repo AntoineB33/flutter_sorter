@@ -15,6 +15,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_re
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/tree_repository.dart';
@@ -27,15 +28,13 @@ class TreeRepositoryImpl implements TreeRepository {
   final SortStatusCache sortStatusCache;
   final WorkbookCache workbookCache;
 
-  final IFileSheetLocalDataSource saveDataSource;
-
   final Map<String, ManageWaitingTasks<void>> _saveResultExecutors = {};
   final StreamController<Failure> _failureStreamController =
       StreamController.broadcast();
 
   int get currentSheetId => workbookCache.currentSheetId;
   AnalysisResult get result => analysisCache.getAnalysisResult(currentSheetId);
-  SheetContent get sheetContent => loadedSheetsCache.getCells(currentSheetId);
+  CoreSheetContent get sheetContent => loadedSheetsCache.getSheet(currentSheetId);
   @override
   NodeStruct get errorRoot =>
       analysisCache.getAnalysisResult(currentSheetId).errorRoot;
@@ -395,7 +394,7 @@ class TreeRepositoryImpl implements TreeRepository {
     if (!populateChildren) return;
 
     List<NodeStruct> rowCells = [];
-    for (int colId = 0; colId < sheetContent.columnTypes.length; colId++) {
+    for (int colId in sheetContent.columnTypes.keys) {
       if (loadedSheetsCache
           .getCellContent(currentSheetId, rowId, colId)
           .isNotEmpty) {

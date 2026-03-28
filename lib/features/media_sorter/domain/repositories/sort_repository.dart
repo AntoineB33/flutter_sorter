@@ -5,7 +5,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 
 abstract class SortRepository {
   Stream<Failure> get failureStream;
-  bool isSorting(int sheetId);
+  bool isReordering(int sheetId);
   bool getAnalysisDone(int sheetId);
   Future<void> analyze(int sheetId);
   List<int> getSheetIds();
