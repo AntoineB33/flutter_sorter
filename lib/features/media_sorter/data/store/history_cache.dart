@@ -1,7 +1,7 @@
 import 'package:trying_flutter/features/media_sorter/domain/entities/history_data.dart';
 
 class HistoryCache {
-  final Map<String, HistoryData> _cache = {};
+  final Map<int, HistoryData> _cache = {};
 
   HistoryData? operator [](int sheetId) => _cache[sheetId];
 

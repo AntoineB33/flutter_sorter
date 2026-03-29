@@ -1,10 +1,8 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/core/utility/utils_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/helpers/utils_services.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
@@ -25,12 +23,6 @@ class SortUsecase {
     this.workbookRepository,
     this.selectionRepository,
   );
-
-  Future<void> loadAnalysisResult(int sheetId) async {
-    Either<Failure, void> result;
-    result = await sortRepository.loadAnalysisResult(sheetId);
-    UtilsServices.handleDataCorruption(result);
-  }
 
   bool isReordering() {
     return sortRepository.isReordering(currentSheetId);

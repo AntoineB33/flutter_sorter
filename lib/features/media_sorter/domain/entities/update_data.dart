@@ -95,6 +95,7 @@ class SheetDataUpdate extends UpdateUnit {
     this.sheetId,
     this.addOtherwiseRemove, {
     this.newName,
+    this.lastOpened,
     this.historyIndex,
     this.colHeaderHeight,
     this.rowHeaderWidth,

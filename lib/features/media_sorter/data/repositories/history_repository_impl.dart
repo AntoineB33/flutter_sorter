@@ -45,11 +45,12 @@ class HistoryRepositoryImpl implements HistoryRepository {
     historyData.updateHistories.removeAt(historyData.historyIndex);
     historyData.historyIndex--;
     updates[lastUpdateData.getKey()] = lastUpdateData;
-    final historyChg = HistoryIndexChg(
+    final historyChg = SheetDataUpdate(
       currentSheetId,
-      historyData.historyIndex,
+      true,
+      historyIndex: historyData.historyIndex,
     );
-    updates[historyChg.historyIndexKey] = historyChg;
+    updates[historyChg.getKey()] = historyChg;
   }
 
   @override
@@ -106,6 +107,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
     }
     final historyChg = SheetDataUpdate(
       currentSheetId,
+      true,
       historyIndex: historyData.historyIndex,
     );
     updates[historyChg.getKey()] = historyChg;
