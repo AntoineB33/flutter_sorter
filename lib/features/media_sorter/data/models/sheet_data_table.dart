@@ -6,6 +6,7 @@ import 'package:drift/drift.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 
+@DataClassName('SheetDataEntity')
 class SheetDataTables extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get title => text()();
@@ -17,66 +18,71 @@ class SheetDataTables extends Table {
   IntColumn get primarySelectedCellY => integer()();
   RealColumn get scrollOffsetX => real()();
   RealColumn get scrollOffsetY => real()();
-  TextColumn get selectedCells => text().map(const ListPointConverter())();
+  TextColumn get selectedCells =>
+      text().map(const ListPointConverter())();
 
-  TextColumn get bestSortFound => text().map(const ListIntConverter())();
-  TextColumn get bestDistFound => text().map(const ListIntConverter())();
+  TextColumn get bestSortFound =>
+      text().map(const ListIntConverter())();
+  TextColumn get bestDistFound =>
+      text().map(const ListIntConverter())();
   TextColumn get cursors => text().map(const ListIntConverter())();
-  TextColumn get possibleInts => text().map(const ListListIntConverter())();
-  TextColumn get validAreas => text().map(const ListListListIntConverter())();
+  TextColumn get possibleInts =>
+      text().map(const ListListIntConverter())();
+  TextColumn get validAreas =>
+      text().map(const ListListListIntConverter())();
   IntColumn get sortIndex => integer()();
-  
-  TextColumn get analysisResult => text().map(const AnalysisResultConverter())();
-  
+
+  TextColumn get analysisResult =>
+      text().map(const AnalysisResultConverter())();
+
   BoolColumn get sortInProgress => boolean()();
   BoolColumn get toApplyNextBestSort => boolean()();
   BoolColumn get toAlwaysApplyCurrentBestSort => boolean()();
   BoolColumn get analysisDone => boolean()();
 }
 
-// Store the position-content map here
-class SheetCells extends Table {
+@DataClassName('SheetCellEntity')
+class SheetCellsTable extends Table {
   // Foreign key linking to the parent sheet
   IntColumn get sheetId => integer().references(SheetDataTables, #id)();
-  
+
   // The position
   IntColumn get row => integer()();
   IntColumn get col => integer()();
-  
+
   // The content
   TextColumn get content => text()();
 
   // A sheet cannot have two cells at the exact same row/col position
   @override
-  Set<Column> get primaryKey => {sheetId, row, col}; 
+  Set<Column> get primaryKey => {sheetId, row, col};
 }
 
-class SheetColumnTypes extends Table {
+@DataClassName('SheetColumnTypeEntity')
+class SheetColumnTypesTable extends Table {
   // Foreign key linking to the parent sheet
   IntColumn get sheetId => integer().references(SheetDataTables, #id)();
-  
+
   // The column index (0, 1, 2, etc.)
   IntColumn get columnIndex => integer()();
-  
+
   // Drift magic: Stores the enum as an int in SQLite, but returns the Enum in Dart
-  IntColumn get columnType => intEnum<ColumnType>()(); 
+  IntColumn get columnType => intEnum<ColumnType>()();
 
   // A sheet cannot have two different types defined for the same column index
   @override
-  Set<Column> get primaryKey => {sheetId, columnIndex}; 
+  Set<Column> get primaryKey => {sheetId, columnIndex};
 }
 
-class UpdateUnitMapConverter extends TypeConverter<Map<String, UpdateUnit>, String> {
+class UpdateUnitMapConverter
+    extends TypeConverter<Map<String, UpdateUnit>, String> {
   const UpdateUnitMapConverter();
 
   @override
   Map<String, UpdateUnit> fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as Map<String, dynamic>;
     return decoded.map((key, value) {
-      return MapEntry(
-        key,
-        UpdateUnit.fromJson(value as Map<String, dynamic>),
-      );
+      return MapEntry(key, UpdateUnit.fromJson(value as Map<String, dynamic>));
     });
   }
 
@@ -87,7 +93,8 @@ class UpdateUnitMapConverter extends TypeConverter<Map<String, UpdateUnit>, Stri
   }
 }
 
-class UpdateHistories extends Table {
+@DataClassName('UpdateHistoriesEntity')
+class UpdateHistoriesTable extends Table {
   DateTimeColumn get timestamp => dateTime()();
   IntColumn get chronoId => integer()();
   IntColumn get sheetId => integer().references(SheetDataTables, #id)();
@@ -97,7 +104,8 @@ class UpdateHistories extends Table {
   Set<Column> get primaryKey => {timestamp, chronoId};
 }
 
-class RowsBottomPos extends Table {
+@DataClassName('RowsBottomPosEntity')
+class RowsBottomPosTable extends Table {
   IntColumn get sheetId => integer().references(SheetDataTables, #id)();
   IntColumn get rowIndex => integer()();
   RealColumn get bottomPos => real()();
@@ -106,7 +114,8 @@ class RowsBottomPos extends Table {
   Set<Column> get primaryKey => {sheetId, rowIndex};
 }
 
-class ColRightPos extends Table {
+@DataClassName('ColRightPosEntity')
+class ColRightPosTable extends Table {
   IntColumn get sheetId => integer().references(SheetDataTables, #id)();
   IntColumn get colIndex => integer()();
   RealColumn get rightPos => real()();
@@ -115,7 +124,8 @@ class ColRightPos extends Table {
   Set<Column> get primaryKey => {sheetId, colIndex};
 }
 
-class RowsManuallyAdjustedHeight extends Table {
+@DataClassName('RowsManuallyAdjustedHeightEntity')
+class RowsManuallyAdjustedHeightTable extends Table {
   IntColumn get sheetId => integer().references(SheetDataTables, #id)();
   IntColumn get rowIndex => integer()();
   BoolColumn get manuallyAdjusted => boolean()();
@@ -124,7 +134,8 @@ class RowsManuallyAdjustedHeight extends Table {
   Set<Column> get primaryKey => {sheetId, rowIndex};
 }
 
-class ColsManuallyAdjustedWidth extends Table {
+@DataClassName('ColsManuallyAdjustedWidthEntity')
+class ColsManuallyAdjustedWidthTable extends Table {
   IntColumn get sheetId => integer().references(SheetDataTables, #id)();
   IntColumn get colIndex => integer()();
   BoolColumn get manuallyAdjusted => boolean()();
@@ -133,7 +144,8 @@ class ColsManuallyAdjustedWidth extends Table {
   Set<Column> get primaryKey => {sheetId, colIndex};
 }
 
-class SelectedCells extends Table {
+@DataClassName('SelectedCellsEntity')
+class SelectedCellsTable extends Table {
   IntColumn get sheetId => integer().references(SheetDataTables, #id)();
   IntColumn get cellIndex => integer()(); // To allow multiple selected cells
   IntColumn get row => integer()();
@@ -143,61 +155,15 @@ class SelectedCells extends Table {
   Set<Column> get primaryKey => {sheetId, cellIndex};
 }
 
-class BestSortFound extends Table {
-  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
-  IntColumn get sortIndex => integer()();
-  IntColumn get value => integer()();
-
-  @override
-  Set<Column> get primaryKey => {sheetId, sortIndex};
-}
-
-class Cursors extends Table {
-  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
-  IntColumn get cursorIndex => integer()();
-  IntColumn get value => integer()();
-
-  @override
-  Set<Column> get primaryKey => {sheetId, cursorIndex};
-}
-
-class PossibleIntsById extends Table {
-  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
-  IntColumn get id => integer()();
-  IntColumn get intIndex => integer()();
-  IntColumn get value => integer()();
-
-  @override
-  Set<Column> get primaryKey => {sheetId, id, intIndex};
-}
-
-class ValidAreasById extends Table {
-  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
-  IntColumn get id => integer()();
-  IntColumn get intIndex => integer()();
-  IntColumn get areaIndex => integer()();
-  IntColumn get areaEdge => integer()();
-
-  @override
-  Set<Column> get primaryKey => {sheetId, id, intIndex, areaIndex};
-}
-
-class BestDistFound extends Table {
-  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
-  IntColumn get id => integer()();
-  IntColumn get value => integer()();
-
-  @override
-  Set<Column> get primaryKey => {sheetId, id};
-}
-
 class NodeStructListConverter extends TypeConverter<List<NodeStruct>, String> {
   const NodeStructListConverter();
 
   @override
   List<NodeStruct> fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as List<dynamic>;
-    return decoded.map((e) => NodeStruct.fromJson(e as Map<String, dynamic>)).toList();
+    return decoded
+        .map((e) => NodeStruct.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   @override
@@ -244,7 +210,9 @@ class ListListIntConverter extends TypeConverter<List<List<int>>, String> {
   @override
   List<List<int>> fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as List<dynamic>;
-    return decoded.map((e) => (e as List<dynamic>).map((i) => i as int).toList()).toList();
+    return decoded
+        .map((e) => (e as List<dynamic>).map((i) => i as int).toList())
+        .toList();
   }
 
   @override
@@ -253,13 +221,20 @@ class ListListIntConverter extends TypeConverter<List<List<int>>, String> {
   }
 }
 
-class ListListListIntConverter extends TypeConverter<List<List<List<int>>>, String> {
+class ListListListIntConverter
+    extends TypeConverter<List<List<List<int>>>, String> {
   const ListListListIntConverter();
 
   @override
   List<List<List<int>>> fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as List<dynamic>;
-    return decoded.map((e) => (e as List<dynamic>).map((l) => (l as List<dynamic>).map((i) => i as int).toList()).toList()).toList();
+    return decoded
+        .map(
+          (e) => (e as List<dynamic>)
+              .map((l) => (l as List<dynamic>).map((i) => i as int).toList())
+              .toList(),
+        )
+        .toList();
   }
 
   @override
@@ -283,46 +258,3 @@ class AnalysisResultConverter extends TypeConverter<AnalysisResult, String> {
     return jsonEncode(encoded);
   }
 }
-
-/*
-class AnalysisResults extends Table {
-  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
-  TextColumn get errorChildren => text().map(const NodeStructListConverter())();
-  TextColumn get warningChildren => text().map(const NodeStructListConverter())();
-  TextColumn get categoryChildren => text().map(const NodeStructListConverter())();
-  TextColumn get distPairChildren => text().map(const NodeStructListConverter())();
-  
-
-  List<List<Set<Attribute>>> tableToAtt;
-  Map<String, Cell> names;
-  Map<String, List<int>> attToCol;
-  List<int> nameIndexes;
-  List<List<StrInt>> formatedTable;
-
-  /// Maps attribute identifiers (row index or name)
-  /// to a map of pointers (row index) to the column index,
-  /// in this direction so it is easy to diffuse characteristics to pointers.
-  @JsonKey(fromJson: _attColMapFromJson, toJson: _attColMapToJson)
-  Map<Attribute, Map<int, Cols>> attToRefFromAttColToCol;
-  @JsonKey(fromJson: _depColMapFromJson, toJson: _depColMapToJson)
-  Map<Attribute, Map<int, List<int>>> attToRefFromDepColToCol;
-  Map<int, Set<Attribute>> colToAtt;
-  List<bool> isMedium;
-  List<int> validRowIndexes;
-  List<int>? currentBestSort;
-
-  List<List<int>> validAreas;
-  Map<int, Map<int, List<SortingRule>>> myRules;
-  List<List<int>> groupAttribution;
-  List<List<int>> groupsToMaximize;
-
-  bool validSortIsImpossible;
-  bool isFindingBestSort;
-  bool sortedWithValidSort;
-
-  // true if the table is currently sorted with the current best sort found, false otherwise. If no valid sort is found, should be true.
-  bool sortedWithCurrentBestSort;
-
-  bool bestSortPossibleFound;
-}
-*/

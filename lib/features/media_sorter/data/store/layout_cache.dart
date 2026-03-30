@@ -6,4 +6,8 @@ class LayoutCache {
   LayoutData getLayout(int sheetId) {
     return _layouts[sheetId]!;
   }
+
+  void setLayout(int sheetId, LayoutData layoutData) {
+    _layouts[sheetId] = layoutData;
+  }
 }

@@ -254,7 +254,7 @@ class _SideMenuState extends State<SideMenu> {
                 others.add(sheet);
               }
             }
-            others.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+            others.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
             return [...matches, ...others];
           },
           optionsViewBuilder: (context, onSelected, options) {
@@ -269,13 +269,13 @@ class _SideMenuState extends State<SideMenu> {
                     shrinkWrap: true,
                     itemCount: options.length,
                     itemBuilder: (context, index) {
-                      final String option = options.elementAt(index);
+                      final CoreSheetContent option = options.elementAt(index);
                       final query = _textEditingController.text.toLowerCase();
-                      final isMatch = option.toLowerCase().contains(query);
+                      final isMatch = option.title.toLowerCase().contains(query);
                       bool showDivider = false;
                       if (index > 0 && !isMatch) {
                         final prevOption = options.elementAt(index - 1);
-                        final prevWasMatch = prevOption.toLowerCase().contains(
+                        final prevWasMatch = prevOption.title.toLowerCase().contains(
                           query,
                         );
                         if (prevWasMatch) showDivider = true;
@@ -303,7 +303,7 @@ class _SideMenuState extends State<SideMenu> {
                             ),
                           ],
                           ListTile(
-                            title: Text(option),
+                            title: Text(option.title),
                             onTap: () => onSelected(option),
                           ),
                         ],
@@ -314,8 +314,8 @@ class _SideMenuState extends State<SideMenu> {
               ),
             );
           },
-          onSelected: (String selection) {
-            coordinator.loadSheet(selection, false);
+          onSelected: (CoreSheetContent selection) {
+            coordinator.loadSheet(selection.id, false);
           },
           fieldViewBuilder:
               (context, textController, focusNode, onFieldSubmitted) {
@@ -331,7 +331,7 @@ class _SideMenuState extends State<SideMenu> {
                     suffixIcon: Icon(Icons.table_chart),
                   ),
                   onSubmitted: (String value) {
-                    coordinator.loadSheet(value.trim(), false);
+                    coordinator.loadSheetByName(value.trim(), false);
                   },
                 );
               },

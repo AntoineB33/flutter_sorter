@@ -51,6 +51,12 @@ SheetDataUpdate _$SheetDataUpdateFromJson(Map<String, dynamic> json) =>
             )
             .toList(),
         sortIndex: (json['sortIndex'] as num?)?.toInt(),
+        analysisResult: json['analysisResult'] as String?,
+        sortInProgress: json['sortInProgress'] as bool?,
+        toApplyNextBestSort: json['toApplyNextBestSort'] as bool?,
+        toAlwaysApplyCurrentBestSort:
+            json['toAlwaysApplyCurrentBestSort'] as bool?,
+        analysisDone: json['analysisDone'] as bool?,
       )
       ..prevName = json['prevName'] as String?
       ..prevColHeaderHeight = (json['prevColHeaderHeight'] as num?)?.toDouble()
@@ -89,6 +95,11 @@ Map<String, dynamic> _$SheetDataUpdateToJson(SheetDataUpdate instance) =>
       'possibleInts': instance.possibleInts,
       'validAreas': instance.validAreas,
       'sortIndex': instance.sortIndex,
+      'analysisResult': instance.analysisResult,
+      'sortInProgress': instance.sortInProgress,
+      'toApplyNextBestSort': instance.toApplyNextBestSort,
+      'toAlwaysApplyCurrentBestSort': instance.toAlwaysApplyCurrentBestSort,
+      'analysisDone': instance.analysisDone,
     };
 
 CellUpdate _$CellUpdateFromJson(Map<String, dynamic> json) => CellUpdate(

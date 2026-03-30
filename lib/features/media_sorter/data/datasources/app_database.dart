@@ -9,7 +9,19 @@ import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_tabl
 part 'app_database.g.dart';
 
 // The @DriftDatabase annotation tells the generator which tables to include
-@DriftDatabase(tables: [SheetDataTables, SheetCells, SheetColumnTypes, UpdateHistories, RowsBottomPos, ColRightPos, RowsManuallyAdjustedHeight, ColsManuallyAdjustedWidth, SelectedCells, BestSortFound, Cursors, PossibleIntsById, ValidAreasById, BestDistFound])
+@DriftDatabase(
+  tables: [
+    SheetDataTables,
+    SheetCellsTable,
+    SheetColumnTypesTable,
+    UpdateHistoriesTable,
+    RowsBottomPosTable,
+    ColRightPosTable,
+    RowsManuallyAdjustedHeightTable,
+    ColsManuallyAdjustedWidthTable,
+    SelectedCellsTable,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   // We tell the database where to store the data with this constructor
   AppDatabase() : super(_openConnection());

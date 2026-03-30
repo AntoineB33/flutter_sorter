@@ -76,6 +76,10 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   Future<void> loadSheet(int sheetId, bool init) async {
     await workbookController.loadSheet(sheetId, init);
+    afterLoadingSheet();
+  }
+
+  void afterLoadingSheet() {
     updateTreeAndRowColCount();
     gridController.scrollToLastSelection();
     notifyListeners();
@@ -96,7 +100,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void delete() {
-    final updates = sheetDataController.delete();
+    sheetDataController.delete();
     applyUpdatesAndSort(updates, currentSheetId, false, false, false);
   }
 
@@ -453,4 +457,10 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     final updates = {update.getKey(): update};
     applyUpdatesAndSort(updates, currentSheetId, false, false, false);
   }
+
+  void loadSheetByName(String name) {
+    workbookController.loadSheetByName(name);
+    afterLoadingSheet();
+  }
+
 }

@@ -7,10 +7,9 @@ part of 'sort_status.dart';
 // **************************************************************************
 
 SortStatus _$SortStatusFromJson(Map<String, dynamic> json) => SortStatus(
-  toApplyNextBestSort: json['toApplyNextBestSort'] as bool? ?? false,
-  toAlwaysApplyCurrentBestSort:
-      json['toAlwaysApplyCurrentBestSort'] as bool? ?? false,
-  analysisDone: json['analysisDone'] as bool? ?? true,
+  json['toApplyNextBestSort'] as bool,
+  json['toAlwaysApplyCurrentBestSort'] as bool,
+  json['analysisDone'] as bool,
 );
 
 Map<String, dynamic> _$SortStatusToJson(SortStatus instance) =>

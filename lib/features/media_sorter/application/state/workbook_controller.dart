@@ -30,4 +30,9 @@ class WorkbookController extends ChangeNotifier {
   Future<void> loadSheet(int sheetId, bool init) async {
     workbookUseCase.loadSheet(sheetId, init);
   }
+
+  Future<void> loadSheetByName(String name) async {
+    workbookUseCase.loadSheetByName(name);
+  }
+  
 }

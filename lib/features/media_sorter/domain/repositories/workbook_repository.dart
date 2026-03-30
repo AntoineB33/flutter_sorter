@@ -4,6 +4,7 @@ import 'package:trying_flutter/core/error/failures.dart';
 abstract class WorkbookRepository {
   int get currentSheetId;
   String get currentSheetName;
+  int getNewSheetId();
   List<int> getRecentSheetIds();
   void saveRecentSheetIds();
   bool containsSheetId(int sheetId);

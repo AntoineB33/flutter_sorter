@@ -1,5 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
@@ -11,12 +13,14 @@ class WorkbookUsecase {
   final SelectionRepository selectionRepository;
   final SortRepository sortRepository;
   final SheetDataRepository sheetDataRepository;
+  final SaveRepository saveRepository;
 
   WorkbookUsecase(
     this.workbookRepository,
     this.selectionRepository,
     this.sortRepository,
     this.sheetDataRepository,
+    this.saveRepository,
   );
 
   int get currentSheetId => workbookRepository.currentSheetId;
@@ -46,13 +50,17 @@ class WorkbookUsecase {
     }
   }
 
-  Future<void> loadSheet(int sheetId, bool init) async {
-    if (!init) {
-      selectionRepository.saveAllLastSelected();
-      workbookRepository.saveRecentSheetIds();
-    }
+  Future<void> loadSheetByName(String name) async {
+    loadSheet(workbookRepository.getNewSheetId(), false);
+  }
 
+  Future<void> loadSheet(int sheetId, bool init) async {
     if (workbookRepository.containsSheetId(sheetId)) {
+      saveRepository.saveUpdate(SheetDataUpdate(
+        sheetId,
+        true,
+        lastOpened: DateTime.now(),
+      ));
       if (!sheetDataRepository.containsSheetId(sheetId)) {
         Either<Failure, void> result = await sheetDataRepository.loadSheet(
           sheetId,
@@ -66,6 +74,7 @@ class WorkbookUsecase {
       sheetDataRepository.addNewSheet(sheetId);
       sortRepository.addNewAnalysisResult(sheetId);
       selectionRepository.clearSheetSelection(sheetId);
+      saveRepository.saveUpdate(SheetDataUpdate.initial(sheetId));
     }
     if (!init) {
       selectionRepository.saveLastSelection();

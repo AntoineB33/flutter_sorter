@@ -31,8 +31,8 @@ class SheetDataController extends ChangeNotifier {
     return sheetDataUsecase.getCellContent(row, col, currentSheetId);
   }
 
-  Map<String, UpdateUnit> delete() {
-    return sheetDataUsecase.delete();
+  void delete() {
+    sheetDataUsecase.delete();
   }
 
   void applyUpdatesNoSort(

@@ -4,7 +4,7 @@ part of 'app_database.dart';
 
 // ignore_for_file: type=lint
 class $SheetDataTablesTable extends SheetDataTables
-    with TableInfo<$SheetDataTablesTable, SheetDataTable> {
+    with TableInfo<$SheetDataTablesTable, SheetDataEntity> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -290,7 +290,7 @@ class $SheetDataTablesTable extends SheetDataTables
   static const String $name = 'sheet_data_tables';
   @override
   VerificationContext validateIntegrity(
-    Insertable<SheetDataTable> instance, {
+    Insertable<SheetDataEntity> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -449,9 +449,9 @@ class $SheetDataTablesTable extends SheetDataTables
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  SheetDataTable map(Map<String, dynamic> data, {String? tablePrefix}) {
+  SheetDataEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return SheetDataTable(
+    return SheetDataEntity(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}id'],
@@ -578,7 +578,7 @@ class $SheetDataTablesTable extends SheetDataTables
       const AnalysisResultConverter();
 }
 
-class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
+class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
   final int id;
   final String title;
   final DateTime lastOpened;
@@ -601,7 +601,7 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
   final bool toApplyNextBestSort;
   final bool toAlwaysApplyCurrentBestSort;
   final bool analysisDone;
-  const SheetDataTable({
+  const SheetDataEntity({
     required this.id,
     required this.title,
     required this.lastOpened,
@@ -710,12 +710,12 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
     );
   }
 
-  factory SheetDataTable.fromJson(
+  factory SheetDataEntity.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return SheetDataTable(
+    return SheetDataEntity(
       id: serializer.fromJson<int>(json['id']),
       title: serializer.fromJson<String>(json['title']),
       lastOpened: serializer.fromJson<DateTime>(json['lastOpened']),
@@ -785,7 +785,7 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
     };
   }
 
-  SheetDataTable copyWith({
+  SheetDataEntity copyWith({
     int? id,
     String? title,
     DateTime? lastOpened,
@@ -808,7 +808,7 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
     bool? toApplyNextBestSort,
     bool? toAlwaysApplyCurrentBestSort,
     bool? analysisDone,
-  }) => SheetDataTable(
+  }) => SheetDataEntity(
     id: id ?? this.id,
     title: title ?? this.title,
     lastOpened: lastOpened ?? this.lastOpened,
@@ -833,8 +833,8 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
         toAlwaysApplyCurrentBestSort ?? this.toAlwaysApplyCurrentBestSort,
     analysisDone: analysisDone ?? this.analysisDone,
   );
-  SheetDataTable copyWithCompanion(SheetDataTablesCompanion data) {
-    return SheetDataTable(
+  SheetDataEntity copyWithCompanion(SheetDataTablesCompanion data) {
+    return SheetDataEntity(
       id: data.id.present ? data.id.value : this.id,
       title: data.title.present ? data.title.value : this.title,
       lastOpened: data.lastOpened.present
@@ -898,7 +898,7 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
 
   @override
   String toString() {
-    return (StringBuffer('SheetDataTable(')
+    return (StringBuffer('SheetDataEntity(')
           ..write('id: $id, ')
           ..write('title: $title, ')
           ..write('lastOpened: $lastOpened, ')
@@ -955,7 +955,7 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is SheetDataTable &&
+      (other is SheetDataEntity &&
           other.id == this.id &&
           other.title == this.title &&
           other.lastOpened == this.lastOpened &&
@@ -981,7 +981,7 @@ class SheetDataTable extends DataClass implements Insertable<SheetDataTable> {
           other.analysisDone == this.analysisDone);
 }
 
-class SheetDataTablesCompanion extends UpdateCompanion<SheetDataTable> {
+class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
   final Value<int> id;
   final Value<String> title;
   final Value<DateTime> lastOpened;
@@ -1072,7 +1072,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataTable> {
        toApplyNextBestSort = Value(toApplyNextBestSort),
        toAlwaysApplyCurrentBestSort = Value(toAlwaysApplyCurrentBestSort),
        analysisDone = Value(analysisDone);
-  static Insertable<SheetDataTable> custom({
+  static Insertable<SheetDataEntity> custom({
     Expression<int>? id,
     Expression<String>? title,
     Expression<DateTime>? lastOpened,
@@ -1311,12 +1311,12 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataTable> {
   }
 }
 
-class $SheetCellsTable extends SheetCells
-    with TableInfo<$SheetCellsTable, SheetCell> {
+class $SheetCellsTableTable extends SheetCellsTable
+    with TableInfo<$SheetCellsTableTable, SheetCellEntity> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $SheetCellsTable(this.attachedDatabase, [this._alias]);
+  $SheetCellsTableTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _sheetIdMeta = const VerificationMeta(
     'sheetId',
   );
@@ -1366,10 +1366,10 @@ class $SheetCellsTable extends SheetCells
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'sheet_cells';
+  static const String $name = 'sheet_cells_table';
   @override
   VerificationContext validateIntegrity(
-    Insertable<SheetCell> instance, {
+    Insertable<SheetCellEntity> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -1412,9 +1412,9 @@ class $SheetCellsTable extends SheetCells
   @override
   Set<GeneratedColumn> get $primaryKey => {sheetId, row, col};
   @override
-  SheetCell map(Map<String, dynamic> data, {String? tablePrefix}) {
+  SheetCellEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return SheetCell(
+    return SheetCellEntity(
       sheetId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sheet_id'],
@@ -1435,17 +1435,17 @@ class $SheetCellsTable extends SheetCells
   }
 
   @override
-  $SheetCellsTable createAlias(String alias) {
-    return $SheetCellsTable(attachedDatabase, alias);
+  $SheetCellsTableTable createAlias(String alias) {
+    return $SheetCellsTableTable(attachedDatabase, alias);
   }
 }
 
-class SheetCell extends DataClass implements Insertable<SheetCell> {
+class SheetCellEntity extends DataClass implements Insertable<SheetCellEntity> {
   final int sheetId;
   final int row;
   final int col;
   final String content;
-  const SheetCell({
+  const SheetCellEntity({
     required this.sheetId,
     required this.row,
     required this.col,
@@ -1461,8 +1461,8 @@ class SheetCell extends DataClass implements Insertable<SheetCell> {
     return map;
   }
 
-  SheetCellsCompanion toCompanion(bool nullToAbsent) {
-    return SheetCellsCompanion(
+  SheetCellsTableCompanion toCompanion(bool nullToAbsent) {
+    return SheetCellsTableCompanion(
       sheetId: Value(sheetId),
       row: Value(row),
       col: Value(col),
@@ -1470,12 +1470,12 @@ class SheetCell extends DataClass implements Insertable<SheetCell> {
     );
   }
 
-  factory SheetCell.fromJson(
+  factory SheetCellEntity.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return SheetCell(
+    return SheetCellEntity(
       sheetId: serializer.fromJson<int>(json['sheetId']),
       row: serializer.fromJson<int>(json['row']),
       col: serializer.fromJson<int>(json['col']),
@@ -1493,15 +1493,19 @@ class SheetCell extends DataClass implements Insertable<SheetCell> {
     };
   }
 
-  SheetCell copyWith({int? sheetId, int? row, int? col, String? content}) =>
-      SheetCell(
-        sheetId: sheetId ?? this.sheetId,
-        row: row ?? this.row,
-        col: col ?? this.col,
-        content: content ?? this.content,
-      );
-  SheetCell copyWithCompanion(SheetCellsCompanion data) {
-    return SheetCell(
+  SheetCellEntity copyWith({
+    int? sheetId,
+    int? row,
+    int? col,
+    String? content,
+  }) => SheetCellEntity(
+    sheetId: sheetId ?? this.sheetId,
+    row: row ?? this.row,
+    col: col ?? this.col,
+    content: content ?? this.content,
+  );
+  SheetCellEntity copyWithCompanion(SheetCellsTableCompanion data) {
+    return SheetCellEntity(
       sheetId: data.sheetId.present ? data.sheetId.value : this.sheetId,
       row: data.row.present ? data.row.value : this.row,
       col: data.col.present ? data.col.value : this.col,
@@ -1511,7 +1515,7 @@ class SheetCell extends DataClass implements Insertable<SheetCell> {
 
   @override
   String toString() {
-    return (StringBuffer('SheetCell(')
+    return (StringBuffer('SheetCellEntity(')
           ..write('sheetId: $sheetId, ')
           ..write('row: $row, ')
           ..write('col: $col, ')
@@ -1525,27 +1529,27 @@ class SheetCell extends DataClass implements Insertable<SheetCell> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is SheetCell &&
+      (other is SheetCellEntity &&
           other.sheetId == this.sheetId &&
           other.row == this.row &&
           other.col == this.col &&
           other.content == this.content);
 }
 
-class SheetCellsCompanion extends UpdateCompanion<SheetCell> {
+class SheetCellsTableCompanion extends UpdateCompanion<SheetCellEntity> {
   final Value<int> sheetId;
   final Value<int> row;
   final Value<int> col;
   final Value<String> content;
   final Value<int> rowid;
-  const SheetCellsCompanion({
+  const SheetCellsTableCompanion({
     this.sheetId = const Value.absent(),
     this.row = const Value.absent(),
     this.col = const Value.absent(),
     this.content = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  SheetCellsCompanion.insert({
+  SheetCellsTableCompanion.insert({
     required int sheetId,
     required int row,
     required int col,
@@ -1555,7 +1559,7 @@ class SheetCellsCompanion extends UpdateCompanion<SheetCell> {
        row = Value(row),
        col = Value(col),
        content = Value(content);
-  static Insertable<SheetCell> custom({
+  static Insertable<SheetCellEntity> custom({
     Expression<int>? sheetId,
     Expression<int>? row,
     Expression<int>? col,
@@ -1571,14 +1575,14 @@ class SheetCellsCompanion extends UpdateCompanion<SheetCell> {
     });
   }
 
-  SheetCellsCompanion copyWith({
+  SheetCellsTableCompanion copyWith({
     Value<int>? sheetId,
     Value<int>? row,
     Value<int>? col,
     Value<String>? content,
     Value<int>? rowid,
   }) {
-    return SheetCellsCompanion(
+    return SheetCellsTableCompanion(
       sheetId: sheetId ?? this.sheetId,
       row: row ?? this.row,
       col: col ?? this.col,
@@ -1610,7 +1614,7 @@ class SheetCellsCompanion extends UpdateCompanion<SheetCell> {
 
   @override
   String toString() {
-    return (StringBuffer('SheetCellsCompanion(')
+    return (StringBuffer('SheetCellsTableCompanion(')
           ..write('sheetId: $sheetId, ')
           ..write('row: $row, ')
           ..write('col: $col, ')
@@ -1621,12 +1625,12 @@ class SheetCellsCompanion extends UpdateCompanion<SheetCell> {
   }
 }
 
-class $SheetColumnTypesTable extends SheetColumnTypes
-    with TableInfo<$SheetColumnTypesTable, SheetColumnType> {
+class $SheetColumnTypesTableTable extends SheetColumnTypesTable
+    with TableInfo<$SheetColumnTypesTableTable, SheetColumnTypeEntity> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $SheetColumnTypesTable(this.attachedDatabase, [this._alias]);
+  $SheetColumnTypesTableTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _sheetIdMeta = const VerificationMeta(
     'sheetId',
   );
@@ -1660,17 +1664,19 @@ class $SheetColumnTypesTable extends SheetColumnTypes
         false,
         type: DriftSqlType.int,
         requiredDuringInsert: true,
-      ).withConverter<ColumnType>($SheetColumnTypesTable.$convertercolumnType);
+      ).withConverter<ColumnType>(
+        $SheetColumnTypesTableTable.$convertercolumnType,
+      );
   @override
   List<GeneratedColumn> get $columns => [sheetId, columnIndex, columnType];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'sheet_column_types';
+  static const String $name = 'sheet_column_types_table';
   @override
   VerificationContext validateIntegrity(
-    Insertable<SheetColumnType> instance, {
+    Insertable<SheetColumnTypeEntity> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -1700,9 +1706,9 @@ class $SheetColumnTypesTable extends SheetColumnTypes
   @override
   Set<GeneratedColumn> get $primaryKey => {sheetId, columnIndex};
   @override
-  SheetColumnType map(Map<String, dynamic> data, {String? tablePrefix}) {
+  SheetColumnTypeEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return SheetColumnType(
+    return SheetColumnTypeEntity(
       sheetId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sheet_id'],
@@ -1711,7 +1717,7 @@ class $SheetColumnTypesTable extends SheetColumnTypes
         DriftSqlType.int,
         data['${effectivePrefix}column_index'],
       )!,
-      columnType: $SheetColumnTypesTable.$convertercolumnType.fromSql(
+      columnType: $SheetColumnTypesTableTable.$convertercolumnType.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.int,
           data['${effectivePrefix}column_type'],
@@ -1721,19 +1727,20 @@ class $SheetColumnTypesTable extends SheetColumnTypes
   }
 
   @override
-  $SheetColumnTypesTable createAlias(String alias) {
-    return $SheetColumnTypesTable(attachedDatabase, alias);
+  $SheetColumnTypesTableTable createAlias(String alias) {
+    return $SheetColumnTypesTableTable(attachedDatabase, alias);
   }
 
   static JsonTypeConverter2<ColumnType, int, int> $convertercolumnType =
       const EnumIndexConverter<ColumnType>(ColumnType.values);
 }
 
-class SheetColumnType extends DataClass implements Insertable<SheetColumnType> {
+class SheetColumnTypeEntity extends DataClass
+    implements Insertable<SheetColumnTypeEntity> {
   final int sheetId;
   final int columnIndex;
   final ColumnType columnType;
-  const SheetColumnType({
+  const SheetColumnTypeEntity({
     required this.sheetId,
     required this.columnIndex,
     required this.columnType,
@@ -1745,29 +1752,29 @@ class SheetColumnType extends DataClass implements Insertable<SheetColumnType> {
     map['column_index'] = Variable<int>(columnIndex);
     {
       map['column_type'] = Variable<int>(
-        $SheetColumnTypesTable.$convertercolumnType.toSql(columnType),
+        $SheetColumnTypesTableTable.$convertercolumnType.toSql(columnType),
       );
     }
     return map;
   }
 
-  SheetColumnTypesCompanion toCompanion(bool nullToAbsent) {
-    return SheetColumnTypesCompanion(
+  SheetColumnTypesTableCompanion toCompanion(bool nullToAbsent) {
+    return SheetColumnTypesTableCompanion(
       sheetId: Value(sheetId),
       columnIndex: Value(columnIndex),
       columnType: Value(columnType),
     );
   }
 
-  factory SheetColumnType.fromJson(
+  factory SheetColumnTypeEntity.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return SheetColumnType(
+    return SheetColumnTypeEntity(
       sheetId: serializer.fromJson<int>(json['sheetId']),
       columnIndex: serializer.fromJson<int>(json['columnIndex']),
-      columnType: $SheetColumnTypesTable.$convertercolumnType.fromJson(
+      columnType: $SheetColumnTypesTableTable.$convertercolumnType.fromJson(
         serializer.fromJson<int>(json['columnType']),
       ),
     );
@@ -1779,22 +1786,22 @@ class SheetColumnType extends DataClass implements Insertable<SheetColumnType> {
       'sheetId': serializer.toJson<int>(sheetId),
       'columnIndex': serializer.toJson<int>(columnIndex),
       'columnType': serializer.toJson<int>(
-        $SheetColumnTypesTable.$convertercolumnType.toJson(columnType),
+        $SheetColumnTypesTableTable.$convertercolumnType.toJson(columnType),
       ),
     };
   }
 
-  SheetColumnType copyWith({
+  SheetColumnTypeEntity copyWith({
     int? sheetId,
     int? columnIndex,
     ColumnType? columnType,
-  }) => SheetColumnType(
+  }) => SheetColumnTypeEntity(
     sheetId: sheetId ?? this.sheetId,
     columnIndex: columnIndex ?? this.columnIndex,
     columnType: columnType ?? this.columnType,
   );
-  SheetColumnType copyWithCompanion(SheetColumnTypesCompanion data) {
-    return SheetColumnType(
+  SheetColumnTypeEntity copyWithCompanion(SheetColumnTypesTableCompanion data) {
+    return SheetColumnTypeEntity(
       sheetId: data.sheetId.present ? data.sheetId.value : this.sheetId,
       columnIndex: data.columnIndex.present
           ? data.columnIndex.value
@@ -1807,7 +1814,7 @@ class SheetColumnType extends DataClass implements Insertable<SheetColumnType> {
 
   @override
   String toString() {
-    return (StringBuffer('SheetColumnType(')
+    return (StringBuffer('SheetColumnTypeEntity(')
           ..write('sheetId: $sheetId, ')
           ..write('columnIndex: $columnIndex, ')
           ..write('columnType: $columnType')
@@ -1820,24 +1827,25 @@ class SheetColumnType extends DataClass implements Insertable<SheetColumnType> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is SheetColumnType &&
+      (other is SheetColumnTypeEntity &&
           other.sheetId == this.sheetId &&
           other.columnIndex == this.columnIndex &&
           other.columnType == this.columnType);
 }
 
-class SheetColumnTypesCompanion extends UpdateCompanion<SheetColumnType> {
+class SheetColumnTypesTableCompanion
+    extends UpdateCompanion<SheetColumnTypeEntity> {
   final Value<int> sheetId;
   final Value<int> columnIndex;
   final Value<ColumnType> columnType;
   final Value<int> rowid;
-  const SheetColumnTypesCompanion({
+  const SheetColumnTypesTableCompanion({
     this.sheetId = const Value.absent(),
     this.columnIndex = const Value.absent(),
     this.columnType = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  SheetColumnTypesCompanion.insert({
+  SheetColumnTypesTableCompanion.insert({
     required int sheetId,
     required int columnIndex,
     required ColumnType columnType,
@@ -1845,7 +1853,7 @@ class SheetColumnTypesCompanion extends UpdateCompanion<SheetColumnType> {
   }) : sheetId = Value(sheetId),
        columnIndex = Value(columnIndex),
        columnType = Value(columnType);
-  static Insertable<SheetColumnType> custom({
+  static Insertable<SheetColumnTypeEntity> custom({
     Expression<int>? sheetId,
     Expression<int>? columnIndex,
     Expression<int>? columnType,
@@ -1859,13 +1867,13 @@ class SheetColumnTypesCompanion extends UpdateCompanion<SheetColumnType> {
     });
   }
 
-  SheetColumnTypesCompanion copyWith({
+  SheetColumnTypesTableCompanion copyWith({
     Value<int>? sheetId,
     Value<int>? columnIndex,
     Value<ColumnType>? columnType,
     Value<int>? rowid,
   }) {
-    return SheetColumnTypesCompanion(
+    return SheetColumnTypesTableCompanion(
       sheetId: sheetId ?? this.sheetId,
       columnIndex: columnIndex ?? this.columnIndex,
       columnType: columnType ?? this.columnType,
@@ -1884,7 +1892,9 @@ class SheetColumnTypesCompanion extends UpdateCompanion<SheetColumnType> {
     }
     if (columnType.present) {
       map['column_type'] = Variable<int>(
-        $SheetColumnTypesTable.$convertercolumnType.toSql(columnType.value),
+        $SheetColumnTypesTableTable.$convertercolumnType.toSql(
+          columnType.value,
+        ),
       );
     }
     if (rowid.present) {
@@ -1895,7 +1905,7 @@ class SheetColumnTypesCompanion extends UpdateCompanion<SheetColumnType> {
 
   @override
   String toString() {
-    return (StringBuffer('SheetColumnTypesCompanion(')
+    return (StringBuffer('SheetColumnTypesTableCompanion(')
           ..write('sheetId: $sheetId, ')
           ..write('columnIndex: $columnIndex, ')
           ..write('columnType: $columnType, ')
@@ -1905,12 +1915,12 @@ class SheetColumnTypesCompanion extends UpdateCompanion<SheetColumnType> {
   }
 }
 
-class $UpdateHistoriesTable extends UpdateHistories
-    with TableInfo<$UpdateHistoriesTable, UpdateHistory> {
+class $UpdateHistoriesTableTable extends UpdateHistoriesTable
+    with TableInfo<$UpdateHistoriesTableTable, UpdateHistoriesEntity> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $UpdateHistoriesTable(this.attachedDatabase, [this._alias]);
+  $UpdateHistoriesTableTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _timestampMeta = const VerificationMeta(
     'timestamp',
   );
@@ -1957,7 +1967,7 @@ class $UpdateHistoriesTable extends UpdateHistories
         type: DriftSqlType.string,
         requiredDuringInsert: true,
       ).withConverter<Map<String, UpdateUnit>>(
-        $UpdateHistoriesTable.$converterupdates,
+        $UpdateHistoriesTableTable.$converterupdates,
       );
   @override
   List<GeneratedColumn> get $columns => [timestamp, chronoId, sheetId, updates];
@@ -1965,10 +1975,10 @@ class $UpdateHistoriesTable extends UpdateHistories
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'update_histories';
+  static const String $name = 'update_histories_table';
   @override
   VerificationContext validateIntegrity(
-    Insertable<UpdateHistory> instance, {
+    Insertable<UpdateHistoriesEntity> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -2003,9 +2013,9 @@ class $UpdateHistoriesTable extends UpdateHistories
   @override
   Set<GeneratedColumn> get $primaryKey => {timestamp, chronoId};
   @override
-  UpdateHistory map(Map<String, dynamic> data, {String? tablePrefix}) {
+  UpdateHistoriesEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return UpdateHistory(
+    return UpdateHistoriesEntity(
       timestamp: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}timestamp'],
@@ -2018,7 +2028,7 @@ class $UpdateHistoriesTable extends UpdateHistories
         DriftSqlType.int,
         data['${effectivePrefix}sheet_id'],
       )!,
-      updates: $UpdateHistoriesTable.$converterupdates.fromSql(
+      updates: $UpdateHistoriesTableTable.$converterupdates.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.string,
           data['${effectivePrefix}updates'],
@@ -2028,20 +2038,21 @@ class $UpdateHistoriesTable extends UpdateHistories
   }
 
   @override
-  $UpdateHistoriesTable createAlias(String alias) {
-    return $UpdateHistoriesTable(attachedDatabase, alias);
+  $UpdateHistoriesTableTable createAlias(String alias) {
+    return $UpdateHistoriesTableTable(attachedDatabase, alias);
   }
 
   static TypeConverter<Map<String, UpdateUnit>, String> $converterupdates =
       const UpdateUnitMapConverter();
 }
 
-class UpdateHistory extends DataClass implements Insertable<UpdateHistory> {
+class UpdateHistoriesEntity extends DataClass
+    implements Insertable<UpdateHistoriesEntity> {
   final DateTime timestamp;
   final int chronoId;
   final int sheetId;
   final Map<String, UpdateUnit> updates;
-  const UpdateHistory({
+  const UpdateHistoriesEntity({
     required this.timestamp,
     required this.chronoId,
     required this.sheetId,
@@ -2055,14 +2066,14 @@ class UpdateHistory extends DataClass implements Insertable<UpdateHistory> {
     map['sheet_id'] = Variable<int>(sheetId);
     {
       map['updates'] = Variable<String>(
-        $UpdateHistoriesTable.$converterupdates.toSql(updates),
+        $UpdateHistoriesTableTable.$converterupdates.toSql(updates),
       );
     }
     return map;
   }
 
-  UpdateHistoriesCompanion toCompanion(bool nullToAbsent) {
-    return UpdateHistoriesCompanion(
+  UpdateHistoriesTableCompanion toCompanion(bool nullToAbsent) {
+    return UpdateHistoriesTableCompanion(
       timestamp: Value(timestamp),
       chronoId: Value(chronoId),
       sheetId: Value(sheetId),
@@ -2070,12 +2081,12 @@ class UpdateHistory extends DataClass implements Insertable<UpdateHistory> {
     );
   }
 
-  factory UpdateHistory.fromJson(
+  factory UpdateHistoriesEntity.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return UpdateHistory(
+    return UpdateHistoriesEntity(
       timestamp: serializer.fromJson<DateTime>(json['timestamp']),
       chronoId: serializer.fromJson<int>(json['chronoId']),
       sheetId: serializer.fromJson<int>(json['sheetId']),
@@ -2093,19 +2104,19 @@ class UpdateHistory extends DataClass implements Insertable<UpdateHistory> {
     };
   }
 
-  UpdateHistory copyWith({
+  UpdateHistoriesEntity copyWith({
     DateTime? timestamp,
     int? chronoId,
     int? sheetId,
     Map<String, UpdateUnit>? updates,
-  }) => UpdateHistory(
+  }) => UpdateHistoriesEntity(
     timestamp: timestamp ?? this.timestamp,
     chronoId: chronoId ?? this.chronoId,
     sheetId: sheetId ?? this.sheetId,
     updates: updates ?? this.updates,
   );
-  UpdateHistory copyWithCompanion(UpdateHistoriesCompanion data) {
-    return UpdateHistory(
+  UpdateHistoriesEntity copyWithCompanion(UpdateHistoriesTableCompanion data) {
+    return UpdateHistoriesEntity(
       timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
       chronoId: data.chronoId.present ? data.chronoId.value : this.chronoId,
       sheetId: data.sheetId.present ? data.sheetId.value : this.sheetId,
@@ -2115,7 +2126,7 @@ class UpdateHistory extends DataClass implements Insertable<UpdateHistory> {
 
   @override
   String toString() {
-    return (StringBuffer('UpdateHistory(')
+    return (StringBuffer('UpdateHistoriesEntity(')
           ..write('timestamp: $timestamp, ')
           ..write('chronoId: $chronoId, ')
           ..write('sheetId: $sheetId, ')
@@ -2129,27 +2140,28 @@ class UpdateHistory extends DataClass implements Insertable<UpdateHistory> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is UpdateHistory &&
+      (other is UpdateHistoriesEntity &&
           other.timestamp == this.timestamp &&
           other.chronoId == this.chronoId &&
           other.sheetId == this.sheetId &&
           other.updates == this.updates);
 }
 
-class UpdateHistoriesCompanion extends UpdateCompanion<UpdateHistory> {
+class UpdateHistoriesTableCompanion
+    extends UpdateCompanion<UpdateHistoriesEntity> {
   final Value<DateTime> timestamp;
   final Value<int> chronoId;
   final Value<int> sheetId;
   final Value<Map<String, UpdateUnit>> updates;
   final Value<int> rowid;
-  const UpdateHistoriesCompanion({
+  const UpdateHistoriesTableCompanion({
     this.timestamp = const Value.absent(),
     this.chronoId = const Value.absent(),
     this.sheetId = const Value.absent(),
     this.updates = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  UpdateHistoriesCompanion.insert({
+  UpdateHistoriesTableCompanion.insert({
     required DateTime timestamp,
     required int chronoId,
     required int sheetId,
@@ -2159,7 +2171,7 @@ class UpdateHistoriesCompanion extends UpdateCompanion<UpdateHistory> {
        chronoId = Value(chronoId),
        sheetId = Value(sheetId),
        updates = Value(updates);
-  static Insertable<UpdateHistory> custom({
+  static Insertable<UpdateHistoriesEntity> custom({
     Expression<DateTime>? timestamp,
     Expression<int>? chronoId,
     Expression<int>? sheetId,
@@ -2175,14 +2187,14 @@ class UpdateHistoriesCompanion extends UpdateCompanion<UpdateHistory> {
     });
   }
 
-  UpdateHistoriesCompanion copyWith({
+  UpdateHistoriesTableCompanion copyWith({
     Value<DateTime>? timestamp,
     Value<int>? chronoId,
     Value<int>? sheetId,
     Value<Map<String, UpdateUnit>>? updates,
     Value<int>? rowid,
   }) {
-    return UpdateHistoriesCompanion(
+    return UpdateHistoriesTableCompanion(
       timestamp: timestamp ?? this.timestamp,
       chronoId: chronoId ?? this.chronoId,
       sheetId: sheetId ?? this.sheetId,
@@ -2205,7 +2217,7 @@ class UpdateHistoriesCompanion extends UpdateCompanion<UpdateHistory> {
     }
     if (updates.present) {
       map['updates'] = Variable<String>(
-        $UpdateHistoriesTable.$converterupdates.toSql(updates.value),
+        $UpdateHistoriesTableTable.$converterupdates.toSql(updates.value),
       );
     }
     if (rowid.present) {
@@ -2216,7 +2228,7 @@ class UpdateHistoriesCompanion extends UpdateCompanion<UpdateHistory> {
 
   @override
   String toString() {
-    return (StringBuffer('UpdateHistoriesCompanion(')
+    return (StringBuffer('UpdateHistoriesTableCompanion(')
           ..write('timestamp: $timestamp, ')
           ..write('chronoId: $chronoId, ')
           ..write('sheetId: $sheetId, ')
@@ -2227,12 +2239,12 @@ class UpdateHistoriesCompanion extends UpdateCompanion<UpdateHistory> {
   }
 }
 
-class $RowsBottomPosTable extends RowsBottomPos
-    with TableInfo<$RowsBottomPosTable, RowsBottomPo> {
+class $RowsBottomPosTableTable extends RowsBottomPosTable
+    with TableInfo<$RowsBottomPosTableTable, RowsBottomPosEntity> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $RowsBottomPosTable(this.attachedDatabase, [this._alias]);
+  $RowsBottomPosTableTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _sheetIdMeta = const VerificationMeta(
     'sheetId',
   );
@@ -2275,10 +2287,10 @@ class $RowsBottomPosTable extends RowsBottomPos
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'rows_bottom_pos';
+  static const String $name = 'rows_bottom_pos_table';
   @override
   VerificationContext validateIntegrity(
-    Insertable<RowsBottomPo> instance, {
+    Insertable<RowsBottomPosEntity> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -2313,9 +2325,9 @@ class $RowsBottomPosTable extends RowsBottomPos
   @override
   Set<GeneratedColumn> get $primaryKey => {sheetId, rowIndex};
   @override
-  RowsBottomPo map(Map<String, dynamic> data, {String? tablePrefix}) {
+  RowsBottomPosEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return RowsBottomPo(
+    return RowsBottomPosEntity(
       sheetId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sheet_id'],
@@ -2332,16 +2344,17 @@ class $RowsBottomPosTable extends RowsBottomPos
   }
 
   @override
-  $RowsBottomPosTable createAlias(String alias) {
-    return $RowsBottomPosTable(attachedDatabase, alias);
+  $RowsBottomPosTableTable createAlias(String alias) {
+    return $RowsBottomPosTableTable(attachedDatabase, alias);
   }
 }
 
-class RowsBottomPo extends DataClass implements Insertable<RowsBottomPo> {
+class RowsBottomPosEntity extends DataClass
+    implements Insertable<RowsBottomPosEntity> {
   final int sheetId;
   final int rowIndex;
   final double bottomPos;
-  const RowsBottomPo({
+  const RowsBottomPosEntity({
     required this.sheetId,
     required this.rowIndex,
     required this.bottomPos,
@@ -2355,20 +2368,20 @@ class RowsBottomPo extends DataClass implements Insertable<RowsBottomPo> {
     return map;
   }
 
-  RowsBottomPosCompanion toCompanion(bool nullToAbsent) {
-    return RowsBottomPosCompanion(
+  RowsBottomPosTableCompanion toCompanion(bool nullToAbsent) {
+    return RowsBottomPosTableCompanion(
       sheetId: Value(sheetId),
       rowIndex: Value(rowIndex),
       bottomPos: Value(bottomPos),
     );
   }
 
-  factory RowsBottomPo.fromJson(
+  factory RowsBottomPosEntity.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return RowsBottomPo(
+    return RowsBottomPosEntity(
       sheetId: serializer.fromJson<int>(json['sheetId']),
       rowIndex: serializer.fromJson<int>(json['rowIndex']),
       bottomPos: serializer.fromJson<double>(json['bottomPos']),
@@ -2384,14 +2397,17 @@ class RowsBottomPo extends DataClass implements Insertable<RowsBottomPo> {
     };
   }
 
-  RowsBottomPo copyWith({int? sheetId, int? rowIndex, double? bottomPos}) =>
-      RowsBottomPo(
-        sheetId: sheetId ?? this.sheetId,
-        rowIndex: rowIndex ?? this.rowIndex,
-        bottomPos: bottomPos ?? this.bottomPos,
-      );
-  RowsBottomPo copyWithCompanion(RowsBottomPosCompanion data) {
-    return RowsBottomPo(
+  RowsBottomPosEntity copyWith({
+    int? sheetId,
+    int? rowIndex,
+    double? bottomPos,
+  }) => RowsBottomPosEntity(
+    sheetId: sheetId ?? this.sheetId,
+    rowIndex: rowIndex ?? this.rowIndex,
+    bottomPos: bottomPos ?? this.bottomPos,
+  );
+  RowsBottomPosEntity copyWithCompanion(RowsBottomPosTableCompanion data) {
+    return RowsBottomPosEntity(
       sheetId: data.sheetId.present ? data.sheetId.value : this.sheetId,
       rowIndex: data.rowIndex.present ? data.rowIndex.value : this.rowIndex,
       bottomPos: data.bottomPos.present ? data.bottomPos.value : this.bottomPos,
@@ -2400,7 +2416,7 @@ class RowsBottomPo extends DataClass implements Insertable<RowsBottomPo> {
 
   @override
   String toString() {
-    return (StringBuffer('RowsBottomPo(')
+    return (StringBuffer('RowsBottomPosEntity(')
           ..write('sheetId: $sheetId, ')
           ..write('rowIndex: $rowIndex, ')
           ..write('bottomPos: $bottomPos')
@@ -2413,24 +2429,24 @@ class RowsBottomPo extends DataClass implements Insertable<RowsBottomPo> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is RowsBottomPo &&
+      (other is RowsBottomPosEntity &&
           other.sheetId == this.sheetId &&
           other.rowIndex == this.rowIndex &&
           other.bottomPos == this.bottomPos);
 }
 
-class RowsBottomPosCompanion extends UpdateCompanion<RowsBottomPo> {
+class RowsBottomPosTableCompanion extends UpdateCompanion<RowsBottomPosEntity> {
   final Value<int> sheetId;
   final Value<int> rowIndex;
   final Value<double> bottomPos;
   final Value<int> rowid;
-  const RowsBottomPosCompanion({
+  const RowsBottomPosTableCompanion({
     this.sheetId = const Value.absent(),
     this.rowIndex = const Value.absent(),
     this.bottomPos = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  RowsBottomPosCompanion.insert({
+  RowsBottomPosTableCompanion.insert({
     required int sheetId,
     required int rowIndex,
     required double bottomPos,
@@ -2438,7 +2454,7 @@ class RowsBottomPosCompanion extends UpdateCompanion<RowsBottomPo> {
   }) : sheetId = Value(sheetId),
        rowIndex = Value(rowIndex),
        bottomPos = Value(bottomPos);
-  static Insertable<RowsBottomPo> custom({
+  static Insertable<RowsBottomPosEntity> custom({
     Expression<int>? sheetId,
     Expression<int>? rowIndex,
     Expression<double>? bottomPos,
@@ -2452,13 +2468,13 @@ class RowsBottomPosCompanion extends UpdateCompanion<RowsBottomPo> {
     });
   }
 
-  RowsBottomPosCompanion copyWith({
+  RowsBottomPosTableCompanion copyWith({
     Value<int>? sheetId,
     Value<int>? rowIndex,
     Value<double>? bottomPos,
     Value<int>? rowid,
   }) {
-    return RowsBottomPosCompanion(
+    return RowsBottomPosTableCompanion(
       sheetId: sheetId ?? this.sheetId,
       rowIndex: rowIndex ?? this.rowIndex,
       bottomPos: bottomPos ?? this.bottomPos,
@@ -2486,7 +2502,7 @@ class RowsBottomPosCompanion extends UpdateCompanion<RowsBottomPo> {
 
   @override
   String toString() {
-    return (StringBuffer('RowsBottomPosCompanion(')
+    return (StringBuffer('RowsBottomPosTableCompanion(')
           ..write('sheetId: $sheetId, ')
           ..write('rowIndex: $rowIndex, ')
           ..write('bottomPos: $bottomPos, ')
@@ -2496,12 +2512,12 @@ class RowsBottomPosCompanion extends UpdateCompanion<RowsBottomPo> {
   }
 }
 
-class $ColRightPosTable extends ColRightPos
-    with TableInfo<$ColRightPosTable, ColRightPo> {
+class $ColRightPosTableTable extends ColRightPosTable
+    with TableInfo<$ColRightPosTableTable, ColRightPosEntity> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $ColRightPosTable(this.attachedDatabase, [this._alias]);
+  $ColRightPosTableTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _sheetIdMeta = const VerificationMeta(
     'sheetId',
   );
@@ -2544,10 +2560,10 @@ class $ColRightPosTable extends ColRightPos
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'col_right_pos';
+  static const String $name = 'col_right_pos_table';
   @override
   VerificationContext validateIntegrity(
-    Insertable<ColRightPo> instance, {
+    Insertable<ColRightPosEntity> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -2582,9 +2598,9 @@ class $ColRightPosTable extends ColRightPos
   @override
   Set<GeneratedColumn> get $primaryKey => {sheetId, colIndex};
   @override
-  ColRightPo map(Map<String, dynamic> data, {String? tablePrefix}) {
+  ColRightPosEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ColRightPo(
+    return ColRightPosEntity(
       sheetId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sheet_id'],
@@ -2601,16 +2617,17 @@ class $ColRightPosTable extends ColRightPos
   }
 
   @override
-  $ColRightPosTable createAlias(String alias) {
-    return $ColRightPosTable(attachedDatabase, alias);
+  $ColRightPosTableTable createAlias(String alias) {
+    return $ColRightPosTableTable(attachedDatabase, alias);
   }
 }
 
-class ColRightPo extends DataClass implements Insertable<ColRightPo> {
+class ColRightPosEntity extends DataClass
+    implements Insertable<ColRightPosEntity> {
   final int sheetId;
   final int colIndex;
   final double rightPos;
-  const ColRightPo({
+  const ColRightPosEntity({
     required this.sheetId,
     required this.colIndex,
     required this.rightPos,
@@ -2624,20 +2641,20 @@ class ColRightPo extends DataClass implements Insertable<ColRightPo> {
     return map;
   }
 
-  ColRightPosCompanion toCompanion(bool nullToAbsent) {
-    return ColRightPosCompanion(
+  ColRightPosTableCompanion toCompanion(bool nullToAbsent) {
+    return ColRightPosTableCompanion(
       sheetId: Value(sheetId),
       colIndex: Value(colIndex),
       rightPos: Value(rightPos),
     );
   }
 
-  factory ColRightPo.fromJson(
+  factory ColRightPosEntity.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ColRightPo(
+    return ColRightPosEntity(
       sheetId: serializer.fromJson<int>(json['sheetId']),
       colIndex: serializer.fromJson<int>(json['colIndex']),
       rightPos: serializer.fromJson<double>(json['rightPos']),
@@ -2653,14 +2670,14 @@ class ColRightPo extends DataClass implements Insertable<ColRightPo> {
     };
   }
 
-  ColRightPo copyWith({int? sheetId, int? colIndex, double? rightPos}) =>
-      ColRightPo(
+  ColRightPosEntity copyWith({int? sheetId, int? colIndex, double? rightPos}) =>
+      ColRightPosEntity(
         sheetId: sheetId ?? this.sheetId,
         colIndex: colIndex ?? this.colIndex,
         rightPos: rightPos ?? this.rightPos,
       );
-  ColRightPo copyWithCompanion(ColRightPosCompanion data) {
-    return ColRightPo(
+  ColRightPosEntity copyWithCompanion(ColRightPosTableCompanion data) {
+    return ColRightPosEntity(
       sheetId: data.sheetId.present ? data.sheetId.value : this.sheetId,
       colIndex: data.colIndex.present ? data.colIndex.value : this.colIndex,
       rightPos: data.rightPos.present ? data.rightPos.value : this.rightPos,
@@ -2669,7 +2686,7 @@ class ColRightPo extends DataClass implements Insertable<ColRightPo> {
 
   @override
   String toString() {
-    return (StringBuffer('ColRightPo(')
+    return (StringBuffer('ColRightPosEntity(')
           ..write('sheetId: $sheetId, ')
           ..write('colIndex: $colIndex, ')
           ..write('rightPos: $rightPos')
@@ -2682,24 +2699,24 @@ class ColRightPo extends DataClass implements Insertable<ColRightPo> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is ColRightPo &&
+      (other is ColRightPosEntity &&
           other.sheetId == this.sheetId &&
           other.colIndex == this.colIndex &&
           other.rightPos == this.rightPos);
 }
 
-class ColRightPosCompanion extends UpdateCompanion<ColRightPo> {
+class ColRightPosTableCompanion extends UpdateCompanion<ColRightPosEntity> {
   final Value<int> sheetId;
   final Value<int> colIndex;
   final Value<double> rightPos;
   final Value<int> rowid;
-  const ColRightPosCompanion({
+  const ColRightPosTableCompanion({
     this.sheetId = const Value.absent(),
     this.colIndex = const Value.absent(),
     this.rightPos = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  ColRightPosCompanion.insert({
+  ColRightPosTableCompanion.insert({
     required int sheetId,
     required int colIndex,
     required double rightPos,
@@ -2707,7 +2724,7 @@ class ColRightPosCompanion extends UpdateCompanion<ColRightPo> {
   }) : sheetId = Value(sheetId),
        colIndex = Value(colIndex),
        rightPos = Value(rightPos);
-  static Insertable<ColRightPo> custom({
+  static Insertable<ColRightPosEntity> custom({
     Expression<int>? sheetId,
     Expression<int>? colIndex,
     Expression<double>? rightPos,
@@ -2721,13 +2738,13 @@ class ColRightPosCompanion extends UpdateCompanion<ColRightPo> {
     });
   }
 
-  ColRightPosCompanion copyWith({
+  ColRightPosTableCompanion copyWith({
     Value<int>? sheetId,
     Value<int>? colIndex,
     Value<double>? rightPos,
     Value<int>? rowid,
   }) {
-    return ColRightPosCompanion(
+    return ColRightPosTableCompanion(
       sheetId: sheetId ?? this.sheetId,
       colIndex: colIndex ?? this.colIndex,
       rightPos: rightPos ?? this.rightPos,
@@ -2755,7 +2772,7 @@ class ColRightPosCompanion extends UpdateCompanion<ColRightPo> {
 
   @override
   String toString() {
-    return (StringBuffer('ColRightPosCompanion(')
+    return (StringBuffer('ColRightPosTableCompanion(')
           ..write('sheetId: $sheetId, ')
           ..write('colIndex: $colIndex, ')
           ..write('rightPos: $rightPos, ')
@@ -2765,16 +2782,17 @@ class ColRightPosCompanion extends UpdateCompanion<ColRightPo> {
   }
 }
 
-class $RowsManuallyAdjustedHeightTable extends RowsManuallyAdjustedHeight
+class $RowsManuallyAdjustedHeightTableTable
+    extends RowsManuallyAdjustedHeightTable
     with
         TableInfo<
-          $RowsManuallyAdjustedHeightTable,
-          RowsManuallyAdjustedHeightData
+          $RowsManuallyAdjustedHeightTableTable,
+          RowsManuallyAdjustedHeightEntity
         > {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $RowsManuallyAdjustedHeightTable(this.attachedDatabase, [this._alias]);
+  $RowsManuallyAdjustedHeightTableTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _sheetIdMeta = const VerificationMeta(
     'sheetId',
   );
@@ -2820,10 +2838,10 @@ class $RowsManuallyAdjustedHeightTable extends RowsManuallyAdjustedHeight
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'rows_manually_adjusted_height';
+  static const String $name = 'rows_manually_adjusted_height_table';
   @override
   VerificationContext validateIntegrity(
-    Insertable<RowsManuallyAdjustedHeightData> instance, {
+    Insertable<RowsManuallyAdjustedHeightEntity> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -2861,12 +2879,12 @@ class $RowsManuallyAdjustedHeightTable extends RowsManuallyAdjustedHeight
   @override
   Set<GeneratedColumn> get $primaryKey => {sheetId, rowIndex};
   @override
-  RowsManuallyAdjustedHeightData map(
+  RowsManuallyAdjustedHeightEntity map(
     Map<String, dynamic> data, {
     String? tablePrefix,
   }) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return RowsManuallyAdjustedHeightData(
+    return RowsManuallyAdjustedHeightEntity(
       sheetId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sheet_id'],
@@ -2883,17 +2901,17 @@ class $RowsManuallyAdjustedHeightTable extends RowsManuallyAdjustedHeight
   }
 
   @override
-  $RowsManuallyAdjustedHeightTable createAlias(String alias) {
-    return $RowsManuallyAdjustedHeightTable(attachedDatabase, alias);
+  $RowsManuallyAdjustedHeightTableTable createAlias(String alias) {
+    return $RowsManuallyAdjustedHeightTableTable(attachedDatabase, alias);
   }
 }
 
-class RowsManuallyAdjustedHeightData extends DataClass
-    implements Insertable<RowsManuallyAdjustedHeightData> {
+class RowsManuallyAdjustedHeightEntity extends DataClass
+    implements Insertable<RowsManuallyAdjustedHeightEntity> {
   final int sheetId;
   final int rowIndex;
   final bool manuallyAdjusted;
-  const RowsManuallyAdjustedHeightData({
+  const RowsManuallyAdjustedHeightEntity({
     required this.sheetId,
     required this.rowIndex,
     required this.manuallyAdjusted,
@@ -2907,20 +2925,20 @@ class RowsManuallyAdjustedHeightData extends DataClass
     return map;
   }
 
-  RowsManuallyAdjustedHeightCompanion toCompanion(bool nullToAbsent) {
-    return RowsManuallyAdjustedHeightCompanion(
+  RowsManuallyAdjustedHeightTableCompanion toCompanion(bool nullToAbsent) {
+    return RowsManuallyAdjustedHeightTableCompanion(
       sheetId: Value(sheetId),
       rowIndex: Value(rowIndex),
       manuallyAdjusted: Value(manuallyAdjusted),
     );
   }
 
-  factory RowsManuallyAdjustedHeightData.fromJson(
+  factory RowsManuallyAdjustedHeightEntity.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return RowsManuallyAdjustedHeightData(
+    return RowsManuallyAdjustedHeightEntity(
       sheetId: serializer.fromJson<int>(json['sheetId']),
       rowIndex: serializer.fromJson<int>(json['rowIndex']),
       manuallyAdjusted: serializer.fromJson<bool>(json['manuallyAdjusted']),
@@ -2936,19 +2954,19 @@ class RowsManuallyAdjustedHeightData extends DataClass
     };
   }
 
-  RowsManuallyAdjustedHeightData copyWith({
+  RowsManuallyAdjustedHeightEntity copyWith({
     int? sheetId,
     int? rowIndex,
     bool? manuallyAdjusted,
-  }) => RowsManuallyAdjustedHeightData(
+  }) => RowsManuallyAdjustedHeightEntity(
     sheetId: sheetId ?? this.sheetId,
     rowIndex: rowIndex ?? this.rowIndex,
     manuallyAdjusted: manuallyAdjusted ?? this.manuallyAdjusted,
   );
-  RowsManuallyAdjustedHeightData copyWithCompanion(
-    RowsManuallyAdjustedHeightCompanion data,
+  RowsManuallyAdjustedHeightEntity copyWithCompanion(
+    RowsManuallyAdjustedHeightTableCompanion data,
   ) {
-    return RowsManuallyAdjustedHeightData(
+    return RowsManuallyAdjustedHeightEntity(
       sheetId: data.sheetId.present ? data.sheetId.value : this.sheetId,
       rowIndex: data.rowIndex.present ? data.rowIndex.value : this.rowIndex,
       manuallyAdjusted: data.manuallyAdjusted.present
@@ -2959,7 +2977,7 @@ class RowsManuallyAdjustedHeightData extends DataClass
 
   @override
   String toString() {
-    return (StringBuffer('RowsManuallyAdjustedHeightData(')
+    return (StringBuffer('RowsManuallyAdjustedHeightEntity(')
           ..write('sheetId: $sheetId, ')
           ..write('rowIndex: $rowIndex, ')
           ..write('manuallyAdjusted: $manuallyAdjusted')
@@ -2972,25 +2990,25 @@ class RowsManuallyAdjustedHeightData extends DataClass
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is RowsManuallyAdjustedHeightData &&
+      (other is RowsManuallyAdjustedHeightEntity &&
           other.sheetId == this.sheetId &&
           other.rowIndex == this.rowIndex &&
           other.manuallyAdjusted == this.manuallyAdjusted);
 }
 
-class RowsManuallyAdjustedHeightCompanion
-    extends UpdateCompanion<RowsManuallyAdjustedHeightData> {
+class RowsManuallyAdjustedHeightTableCompanion
+    extends UpdateCompanion<RowsManuallyAdjustedHeightEntity> {
   final Value<int> sheetId;
   final Value<int> rowIndex;
   final Value<bool> manuallyAdjusted;
   final Value<int> rowid;
-  const RowsManuallyAdjustedHeightCompanion({
+  const RowsManuallyAdjustedHeightTableCompanion({
     this.sheetId = const Value.absent(),
     this.rowIndex = const Value.absent(),
     this.manuallyAdjusted = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  RowsManuallyAdjustedHeightCompanion.insert({
+  RowsManuallyAdjustedHeightTableCompanion.insert({
     required int sheetId,
     required int rowIndex,
     required bool manuallyAdjusted,
@@ -2998,7 +3016,7 @@ class RowsManuallyAdjustedHeightCompanion
   }) : sheetId = Value(sheetId),
        rowIndex = Value(rowIndex),
        manuallyAdjusted = Value(manuallyAdjusted);
-  static Insertable<RowsManuallyAdjustedHeightData> custom({
+  static Insertable<RowsManuallyAdjustedHeightEntity> custom({
     Expression<int>? sheetId,
     Expression<int>? rowIndex,
     Expression<bool>? manuallyAdjusted,
@@ -3012,13 +3030,13 @@ class RowsManuallyAdjustedHeightCompanion
     });
   }
 
-  RowsManuallyAdjustedHeightCompanion copyWith({
+  RowsManuallyAdjustedHeightTableCompanion copyWith({
     Value<int>? sheetId,
     Value<int>? rowIndex,
     Value<bool>? manuallyAdjusted,
     Value<int>? rowid,
   }) {
-    return RowsManuallyAdjustedHeightCompanion(
+    return RowsManuallyAdjustedHeightTableCompanion(
       sheetId: sheetId ?? this.sheetId,
       rowIndex: rowIndex ?? this.rowIndex,
       manuallyAdjusted: manuallyAdjusted ?? this.manuallyAdjusted,
@@ -3046,7 +3064,7 @@ class RowsManuallyAdjustedHeightCompanion
 
   @override
   String toString() {
-    return (StringBuffer('RowsManuallyAdjustedHeightCompanion(')
+    return (StringBuffer('RowsManuallyAdjustedHeightTableCompanion(')
           ..write('sheetId: $sheetId, ')
           ..write('rowIndex: $rowIndex, ')
           ..write('manuallyAdjusted: $manuallyAdjusted, ')
@@ -3056,16 +3074,17 @@ class RowsManuallyAdjustedHeightCompanion
   }
 }
 
-class $ColsManuallyAdjustedWidthTable extends ColsManuallyAdjustedWidth
+class $ColsManuallyAdjustedWidthTableTable
+    extends ColsManuallyAdjustedWidthTable
     with
         TableInfo<
-          $ColsManuallyAdjustedWidthTable,
-          ColsManuallyAdjustedWidthData
+          $ColsManuallyAdjustedWidthTableTable,
+          ColsManuallyAdjustedWidthEntity
         > {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $ColsManuallyAdjustedWidthTable(this.attachedDatabase, [this._alias]);
+  $ColsManuallyAdjustedWidthTableTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _sheetIdMeta = const VerificationMeta(
     'sheetId',
   );
@@ -3111,10 +3130,10 @@ class $ColsManuallyAdjustedWidthTable extends ColsManuallyAdjustedWidth
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'cols_manually_adjusted_width';
+  static const String $name = 'cols_manually_adjusted_width_table';
   @override
   VerificationContext validateIntegrity(
-    Insertable<ColsManuallyAdjustedWidthData> instance, {
+    Insertable<ColsManuallyAdjustedWidthEntity> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -3152,12 +3171,12 @@ class $ColsManuallyAdjustedWidthTable extends ColsManuallyAdjustedWidth
   @override
   Set<GeneratedColumn> get $primaryKey => {sheetId, colIndex};
   @override
-  ColsManuallyAdjustedWidthData map(
+  ColsManuallyAdjustedWidthEntity map(
     Map<String, dynamic> data, {
     String? tablePrefix,
   }) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ColsManuallyAdjustedWidthData(
+    return ColsManuallyAdjustedWidthEntity(
       sheetId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sheet_id'],
@@ -3174,17 +3193,17 @@ class $ColsManuallyAdjustedWidthTable extends ColsManuallyAdjustedWidth
   }
 
   @override
-  $ColsManuallyAdjustedWidthTable createAlias(String alias) {
-    return $ColsManuallyAdjustedWidthTable(attachedDatabase, alias);
+  $ColsManuallyAdjustedWidthTableTable createAlias(String alias) {
+    return $ColsManuallyAdjustedWidthTableTable(attachedDatabase, alias);
   }
 }
 
-class ColsManuallyAdjustedWidthData extends DataClass
-    implements Insertable<ColsManuallyAdjustedWidthData> {
+class ColsManuallyAdjustedWidthEntity extends DataClass
+    implements Insertable<ColsManuallyAdjustedWidthEntity> {
   final int sheetId;
   final int colIndex;
   final bool manuallyAdjusted;
-  const ColsManuallyAdjustedWidthData({
+  const ColsManuallyAdjustedWidthEntity({
     required this.sheetId,
     required this.colIndex,
     required this.manuallyAdjusted,
@@ -3198,20 +3217,20 @@ class ColsManuallyAdjustedWidthData extends DataClass
     return map;
   }
 
-  ColsManuallyAdjustedWidthCompanion toCompanion(bool nullToAbsent) {
-    return ColsManuallyAdjustedWidthCompanion(
+  ColsManuallyAdjustedWidthTableCompanion toCompanion(bool nullToAbsent) {
+    return ColsManuallyAdjustedWidthTableCompanion(
       sheetId: Value(sheetId),
       colIndex: Value(colIndex),
       manuallyAdjusted: Value(manuallyAdjusted),
     );
   }
 
-  factory ColsManuallyAdjustedWidthData.fromJson(
+  factory ColsManuallyAdjustedWidthEntity.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ColsManuallyAdjustedWidthData(
+    return ColsManuallyAdjustedWidthEntity(
       sheetId: serializer.fromJson<int>(json['sheetId']),
       colIndex: serializer.fromJson<int>(json['colIndex']),
       manuallyAdjusted: serializer.fromJson<bool>(json['manuallyAdjusted']),
@@ -3227,19 +3246,19 @@ class ColsManuallyAdjustedWidthData extends DataClass
     };
   }
 
-  ColsManuallyAdjustedWidthData copyWith({
+  ColsManuallyAdjustedWidthEntity copyWith({
     int? sheetId,
     int? colIndex,
     bool? manuallyAdjusted,
-  }) => ColsManuallyAdjustedWidthData(
+  }) => ColsManuallyAdjustedWidthEntity(
     sheetId: sheetId ?? this.sheetId,
     colIndex: colIndex ?? this.colIndex,
     manuallyAdjusted: manuallyAdjusted ?? this.manuallyAdjusted,
   );
-  ColsManuallyAdjustedWidthData copyWithCompanion(
-    ColsManuallyAdjustedWidthCompanion data,
+  ColsManuallyAdjustedWidthEntity copyWithCompanion(
+    ColsManuallyAdjustedWidthTableCompanion data,
   ) {
-    return ColsManuallyAdjustedWidthData(
+    return ColsManuallyAdjustedWidthEntity(
       sheetId: data.sheetId.present ? data.sheetId.value : this.sheetId,
       colIndex: data.colIndex.present ? data.colIndex.value : this.colIndex,
       manuallyAdjusted: data.manuallyAdjusted.present
@@ -3250,7 +3269,7 @@ class ColsManuallyAdjustedWidthData extends DataClass
 
   @override
   String toString() {
-    return (StringBuffer('ColsManuallyAdjustedWidthData(')
+    return (StringBuffer('ColsManuallyAdjustedWidthEntity(')
           ..write('sheetId: $sheetId, ')
           ..write('colIndex: $colIndex, ')
           ..write('manuallyAdjusted: $manuallyAdjusted')
@@ -3263,25 +3282,25 @@ class ColsManuallyAdjustedWidthData extends DataClass
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is ColsManuallyAdjustedWidthData &&
+      (other is ColsManuallyAdjustedWidthEntity &&
           other.sheetId == this.sheetId &&
           other.colIndex == this.colIndex &&
           other.manuallyAdjusted == this.manuallyAdjusted);
 }
 
-class ColsManuallyAdjustedWidthCompanion
-    extends UpdateCompanion<ColsManuallyAdjustedWidthData> {
+class ColsManuallyAdjustedWidthTableCompanion
+    extends UpdateCompanion<ColsManuallyAdjustedWidthEntity> {
   final Value<int> sheetId;
   final Value<int> colIndex;
   final Value<bool> manuallyAdjusted;
   final Value<int> rowid;
-  const ColsManuallyAdjustedWidthCompanion({
+  const ColsManuallyAdjustedWidthTableCompanion({
     this.sheetId = const Value.absent(),
     this.colIndex = const Value.absent(),
     this.manuallyAdjusted = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  ColsManuallyAdjustedWidthCompanion.insert({
+  ColsManuallyAdjustedWidthTableCompanion.insert({
     required int sheetId,
     required int colIndex,
     required bool manuallyAdjusted,
@@ -3289,7 +3308,7 @@ class ColsManuallyAdjustedWidthCompanion
   }) : sheetId = Value(sheetId),
        colIndex = Value(colIndex),
        manuallyAdjusted = Value(manuallyAdjusted);
-  static Insertable<ColsManuallyAdjustedWidthData> custom({
+  static Insertable<ColsManuallyAdjustedWidthEntity> custom({
     Expression<int>? sheetId,
     Expression<int>? colIndex,
     Expression<bool>? manuallyAdjusted,
@@ -3303,13 +3322,13 @@ class ColsManuallyAdjustedWidthCompanion
     });
   }
 
-  ColsManuallyAdjustedWidthCompanion copyWith({
+  ColsManuallyAdjustedWidthTableCompanion copyWith({
     Value<int>? sheetId,
     Value<int>? colIndex,
     Value<bool>? manuallyAdjusted,
     Value<int>? rowid,
   }) {
-    return ColsManuallyAdjustedWidthCompanion(
+    return ColsManuallyAdjustedWidthTableCompanion(
       sheetId: sheetId ?? this.sheetId,
       colIndex: colIndex ?? this.colIndex,
       manuallyAdjusted: manuallyAdjusted ?? this.manuallyAdjusted,
@@ -3337,7 +3356,7 @@ class ColsManuallyAdjustedWidthCompanion
 
   @override
   String toString() {
-    return (StringBuffer('ColsManuallyAdjustedWidthCompanion(')
+    return (StringBuffer('ColsManuallyAdjustedWidthTableCompanion(')
           ..write('sheetId: $sheetId, ')
           ..write('colIndex: $colIndex, ')
           ..write('manuallyAdjusted: $manuallyAdjusted, ')
@@ -3347,12 +3366,12 @@ class ColsManuallyAdjustedWidthCompanion
   }
 }
 
-class $SelectedCellsTable extends SelectedCells
-    with TableInfo<$SelectedCellsTable, SelectedCell> {
+class $SelectedCellsTableTable extends SelectedCellsTable
+    with TableInfo<$SelectedCellsTableTable, SelectedCellsEntity> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $SelectedCellsTable(this.attachedDatabase, [this._alias]);
+  $SelectedCellsTableTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _sheetIdMeta = const VerificationMeta(
     'sheetId',
   );
@@ -3402,10 +3421,10 @@ class $SelectedCellsTable extends SelectedCells
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'selected_cells';
+  static const String $name = 'selected_cells_table';
   @override
   VerificationContext validateIntegrity(
-    Insertable<SelectedCell> instance, {
+    Insertable<SelectedCellsEntity> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -3448,9 +3467,9 @@ class $SelectedCellsTable extends SelectedCells
   @override
   Set<GeneratedColumn> get $primaryKey => {sheetId, cellIndex};
   @override
-  SelectedCell map(Map<String, dynamic> data, {String? tablePrefix}) {
+  SelectedCellsEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return SelectedCell(
+    return SelectedCellsEntity(
       sheetId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sheet_id'],
@@ -3471,17 +3490,18 @@ class $SelectedCellsTable extends SelectedCells
   }
 
   @override
-  $SelectedCellsTable createAlias(String alias) {
-    return $SelectedCellsTable(attachedDatabase, alias);
+  $SelectedCellsTableTable createAlias(String alias) {
+    return $SelectedCellsTableTable(attachedDatabase, alias);
   }
 }
 
-class SelectedCell extends DataClass implements Insertable<SelectedCell> {
+class SelectedCellsEntity extends DataClass
+    implements Insertable<SelectedCellsEntity> {
   final int sheetId;
   final int cellIndex;
   final int row;
   final int col;
-  const SelectedCell({
+  const SelectedCellsEntity({
     required this.sheetId,
     required this.cellIndex,
     required this.row,
@@ -3497,8 +3517,8 @@ class SelectedCell extends DataClass implements Insertable<SelectedCell> {
     return map;
   }
 
-  SelectedCellsCompanion toCompanion(bool nullToAbsent) {
-    return SelectedCellsCompanion(
+  SelectedCellsTableCompanion toCompanion(bool nullToAbsent) {
+    return SelectedCellsTableCompanion(
       sheetId: Value(sheetId),
       cellIndex: Value(cellIndex),
       row: Value(row),
@@ -3506,12 +3526,12 @@ class SelectedCell extends DataClass implements Insertable<SelectedCell> {
     );
   }
 
-  factory SelectedCell.fromJson(
+  factory SelectedCellsEntity.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return SelectedCell(
+    return SelectedCellsEntity(
       sheetId: serializer.fromJson<int>(json['sheetId']),
       cellIndex: serializer.fromJson<int>(json['cellIndex']),
       row: serializer.fromJson<int>(json['row']),
@@ -3529,15 +3549,19 @@ class SelectedCell extends DataClass implements Insertable<SelectedCell> {
     };
   }
 
-  SelectedCell copyWith({int? sheetId, int? cellIndex, int? row, int? col}) =>
-      SelectedCell(
-        sheetId: sheetId ?? this.sheetId,
-        cellIndex: cellIndex ?? this.cellIndex,
-        row: row ?? this.row,
-        col: col ?? this.col,
-      );
-  SelectedCell copyWithCompanion(SelectedCellsCompanion data) {
-    return SelectedCell(
+  SelectedCellsEntity copyWith({
+    int? sheetId,
+    int? cellIndex,
+    int? row,
+    int? col,
+  }) => SelectedCellsEntity(
+    sheetId: sheetId ?? this.sheetId,
+    cellIndex: cellIndex ?? this.cellIndex,
+    row: row ?? this.row,
+    col: col ?? this.col,
+  );
+  SelectedCellsEntity copyWithCompanion(SelectedCellsTableCompanion data) {
+    return SelectedCellsEntity(
       sheetId: data.sheetId.present ? data.sheetId.value : this.sheetId,
       cellIndex: data.cellIndex.present ? data.cellIndex.value : this.cellIndex,
       row: data.row.present ? data.row.value : this.row,
@@ -3547,7 +3571,7 @@ class SelectedCell extends DataClass implements Insertable<SelectedCell> {
 
   @override
   String toString() {
-    return (StringBuffer('SelectedCell(')
+    return (StringBuffer('SelectedCellsEntity(')
           ..write('sheetId: $sheetId, ')
           ..write('cellIndex: $cellIndex, ')
           ..write('row: $row, ')
@@ -3561,27 +3585,27 @@ class SelectedCell extends DataClass implements Insertable<SelectedCell> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is SelectedCell &&
+      (other is SelectedCellsEntity &&
           other.sheetId == this.sheetId &&
           other.cellIndex == this.cellIndex &&
           other.row == this.row &&
           other.col == this.col);
 }
 
-class SelectedCellsCompanion extends UpdateCompanion<SelectedCell> {
+class SelectedCellsTableCompanion extends UpdateCompanion<SelectedCellsEntity> {
   final Value<int> sheetId;
   final Value<int> cellIndex;
   final Value<int> row;
   final Value<int> col;
   final Value<int> rowid;
-  const SelectedCellsCompanion({
+  const SelectedCellsTableCompanion({
     this.sheetId = const Value.absent(),
     this.cellIndex = const Value.absent(),
     this.row = const Value.absent(),
     this.col = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  SelectedCellsCompanion.insert({
+  SelectedCellsTableCompanion.insert({
     required int sheetId,
     required int cellIndex,
     required int row,
@@ -3591,7 +3615,7 @@ class SelectedCellsCompanion extends UpdateCompanion<SelectedCell> {
        cellIndex = Value(cellIndex),
        row = Value(row),
        col = Value(col);
-  static Insertable<SelectedCell> custom({
+  static Insertable<SelectedCellsEntity> custom({
     Expression<int>? sheetId,
     Expression<int>? cellIndex,
     Expression<int>? row,
@@ -3607,14 +3631,14 @@ class SelectedCellsCompanion extends UpdateCompanion<SelectedCell> {
     });
   }
 
-  SelectedCellsCompanion copyWith({
+  SelectedCellsTableCompanion copyWith({
     Value<int>? sheetId,
     Value<int>? cellIndex,
     Value<int>? row,
     Value<int>? col,
     Value<int>? rowid,
   }) {
-    return SelectedCellsCompanion(
+    return SelectedCellsTableCompanion(
       sheetId: sheetId ?? this.sheetId,
       cellIndex: cellIndex ?? this.cellIndex,
       row: row ?? this.row,
@@ -3646,1490 +3670,11 @@ class SelectedCellsCompanion extends UpdateCompanion<SelectedCell> {
 
   @override
   String toString() {
-    return (StringBuffer('SelectedCellsCompanion(')
+    return (StringBuffer('SelectedCellsTableCompanion(')
           ..write('sheetId: $sheetId, ')
           ..write('cellIndex: $cellIndex, ')
           ..write('row: $row, ')
           ..write('col: $col, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $BestSortFoundTable extends BestSortFound
-    with TableInfo<$BestSortFoundTable, BestSortFoundData> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $BestSortFoundTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _sheetIdMeta = const VerificationMeta(
-    'sheetId',
-  );
-  @override
-  late final GeneratedColumn<int> sheetId = GeneratedColumn<int>(
-    'sheet_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES sheet_data_tables (id)',
-    ),
-  );
-  static const VerificationMeta _sortIndexMeta = const VerificationMeta(
-    'sortIndex',
-  );
-  @override
-  late final GeneratedColumn<int> sortIndex = GeneratedColumn<int>(
-    'sort_index',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _valueMeta = const VerificationMeta('value');
-  @override
-  late final GeneratedColumn<int> value = GeneratedColumn<int>(
-    'value',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [sheetId, sortIndex, value];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'best_sort_found';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<BestSortFoundData> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('sheet_id')) {
-      context.handle(
-        _sheetIdMeta,
-        sheetId.isAcceptableOrUnknown(data['sheet_id']!, _sheetIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_sheetIdMeta);
-    }
-    if (data.containsKey('sort_index')) {
-      context.handle(
-        _sortIndexMeta,
-        sortIndex.isAcceptableOrUnknown(data['sort_index']!, _sortIndexMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_sortIndexMeta);
-    }
-    if (data.containsKey('value')) {
-      context.handle(
-        _valueMeta,
-        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_valueMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {sheetId, sortIndex};
-  @override
-  BestSortFoundData map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return BestSortFoundData(
-      sheetId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}sheet_id'],
-      )!,
-      sortIndex: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}sort_index'],
-      )!,
-      value: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}value'],
-      )!,
-    );
-  }
-
-  @override
-  $BestSortFoundTable createAlias(String alias) {
-    return $BestSortFoundTable(attachedDatabase, alias);
-  }
-}
-
-class BestSortFoundData extends DataClass
-    implements Insertable<BestSortFoundData> {
-  final int sheetId;
-  final int sortIndex;
-  final int value;
-  const BestSortFoundData({
-    required this.sheetId,
-    required this.sortIndex,
-    required this.value,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['sheet_id'] = Variable<int>(sheetId);
-    map['sort_index'] = Variable<int>(sortIndex);
-    map['value'] = Variable<int>(value);
-    return map;
-  }
-
-  BestSortFoundCompanion toCompanion(bool nullToAbsent) {
-    return BestSortFoundCompanion(
-      sheetId: Value(sheetId),
-      sortIndex: Value(sortIndex),
-      value: Value(value),
-    );
-  }
-
-  factory BestSortFoundData.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return BestSortFoundData(
-      sheetId: serializer.fromJson<int>(json['sheetId']),
-      sortIndex: serializer.fromJson<int>(json['sortIndex']),
-      value: serializer.fromJson<int>(json['value']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'sheetId': serializer.toJson<int>(sheetId),
-      'sortIndex': serializer.toJson<int>(sortIndex),
-      'value': serializer.toJson<int>(value),
-    };
-  }
-
-  BestSortFoundData copyWith({int? sheetId, int? sortIndex, int? value}) =>
-      BestSortFoundData(
-        sheetId: sheetId ?? this.sheetId,
-        sortIndex: sortIndex ?? this.sortIndex,
-        value: value ?? this.value,
-      );
-  BestSortFoundData copyWithCompanion(BestSortFoundCompanion data) {
-    return BestSortFoundData(
-      sheetId: data.sheetId.present ? data.sheetId.value : this.sheetId,
-      sortIndex: data.sortIndex.present ? data.sortIndex.value : this.sortIndex,
-      value: data.value.present ? data.value.value : this.value,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('BestSortFoundData(')
-          ..write('sheetId: $sheetId, ')
-          ..write('sortIndex: $sortIndex, ')
-          ..write('value: $value')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(sheetId, sortIndex, value);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is BestSortFoundData &&
-          other.sheetId == this.sheetId &&
-          other.sortIndex == this.sortIndex &&
-          other.value == this.value);
-}
-
-class BestSortFoundCompanion extends UpdateCompanion<BestSortFoundData> {
-  final Value<int> sheetId;
-  final Value<int> sortIndex;
-  final Value<int> value;
-  final Value<int> rowid;
-  const BestSortFoundCompanion({
-    this.sheetId = const Value.absent(),
-    this.sortIndex = const Value.absent(),
-    this.value = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  BestSortFoundCompanion.insert({
-    required int sheetId,
-    required int sortIndex,
-    required int value,
-    this.rowid = const Value.absent(),
-  }) : sheetId = Value(sheetId),
-       sortIndex = Value(sortIndex),
-       value = Value(value);
-  static Insertable<BestSortFoundData> custom({
-    Expression<int>? sheetId,
-    Expression<int>? sortIndex,
-    Expression<int>? value,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (sheetId != null) 'sheet_id': sheetId,
-      if (sortIndex != null) 'sort_index': sortIndex,
-      if (value != null) 'value': value,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  BestSortFoundCompanion copyWith({
-    Value<int>? sheetId,
-    Value<int>? sortIndex,
-    Value<int>? value,
-    Value<int>? rowid,
-  }) {
-    return BestSortFoundCompanion(
-      sheetId: sheetId ?? this.sheetId,
-      sortIndex: sortIndex ?? this.sortIndex,
-      value: value ?? this.value,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (sheetId.present) {
-      map['sheet_id'] = Variable<int>(sheetId.value);
-    }
-    if (sortIndex.present) {
-      map['sort_index'] = Variable<int>(sortIndex.value);
-    }
-    if (value.present) {
-      map['value'] = Variable<int>(value.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('BestSortFoundCompanion(')
-          ..write('sheetId: $sheetId, ')
-          ..write('sortIndex: $sortIndex, ')
-          ..write('value: $value, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $CursorsTable extends Cursors with TableInfo<$CursorsTable, Cursor> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $CursorsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _sheetIdMeta = const VerificationMeta(
-    'sheetId',
-  );
-  @override
-  late final GeneratedColumn<int> sheetId = GeneratedColumn<int>(
-    'sheet_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES sheet_data_tables (id)',
-    ),
-  );
-  static const VerificationMeta _cursorIndexMeta = const VerificationMeta(
-    'cursorIndex',
-  );
-  @override
-  late final GeneratedColumn<int> cursorIndex = GeneratedColumn<int>(
-    'cursor_index',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _valueMeta = const VerificationMeta('value');
-  @override
-  late final GeneratedColumn<int> value = GeneratedColumn<int>(
-    'value',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [sheetId, cursorIndex, value];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'cursors';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<Cursor> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('sheet_id')) {
-      context.handle(
-        _sheetIdMeta,
-        sheetId.isAcceptableOrUnknown(data['sheet_id']!, _sheetIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_sheetIdMeta);
-    }
-    if (data.containsKey('cursor_index')) {
-      context.handle(
-        _cursorIndexMeta,
-        cursorIndex.isAcceptableOrUnknown(
-          data['cursor_index']!,
-          _cursorIndexMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_cursorIndexMeta);
-    }
-    if (data.containsKey('value')) {
-      context.handle(
-        _valueMeta,
-        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_valueMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {sheetId, cursorIndex};
-  @override
-  Cursor map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Cursor(
-      sheetId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}sheet_id'],
-      )!,
-      cursorIndex: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}cursor_index'],
-      )!,
-      value: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}value'],
-      )!,
-    );
-  }
-
-  @override
-  $CursorsTable createAlias(String alias) {
-    return $CursorsTable(attachedDatabase, alias);
-  }
-}
-
-class Cursor extends DataClass implements Insertable<Cursor> {
-  final int sheetId;
-  final int cursorIndex;
-  final int value;
-  const Cursor({
-    required this.sheetId,
-    required this.cursorIndex,
-    required this.value,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['sheet_id'] = Variable<int>(sheetId);
-    map['cursor_index'] = Variable<int>(cursorIndex);
-    map['value'] = Variable<int>(value);
-    return map;
-  }
-
-  CursorsCompanion toCompanion(bool nullToAbsent) {
-    return CursorsCompanion(
-      sheetId: Value(sheetId),
-      cursorIndex: Value(cursorIndex),
-      value: Value(value),
-    );
-  }
-
-  factory Cursor.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Cursor(
-      sheetId: serializer.fromJson<int>(json['sheetId']),
-      cursorIndex: serializer.fromJson<int>(json['cursorIndex']),
-      value: serializer.fromJson<int>(json['value']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'sheetId': serializer.toJson<int>(sheetId),
-      'cursorIndex': serializer.toJson<int>(cursorIndex),
-      'value': serializer.toJson<int>(value),
-    };
-  }
-
-  Cursor copyWith({int? sheetId, int? cursorIndex, int? value}) => Cursor(
-    sheetId: sheetId ?? this.sheetId,
-    cursorIndex: cursorIndex ?? this.cursorIndex,
-    value: value ?? this.value,
-  );
-  Cursor copyWithCompanion(CursorsCompanion data) {
-    return Cursor(
-      sheetId: data.sheetId.present ? data.sheetId.value : this.sheetId,
-      cursorIndex: data.cursorIndex.present
-          ? data.cursorIndex.value
-          : this.cursorIndex,
-      value: data.value.present ? data.value.value : this.value,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('Cursor(')
-          ..write('sheetId: $sheetId, ')
-          ..write('cursorIndex: $cursorIndex, ')
-          ..write('value: $value')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(sheetId, cursorIndex, value);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Cursor &&
-          other.sheetId == this.sheetId &&
-          other.cursorIndex == this.cursorIndex &&
-          other.value == this.value);
-}
-
-class CursorsCompanion extends UpdateCompanion<Cursor> {
-  final Value<int> sheetId;
-  final Value<int> cursorIndex;
-  final Value<int> value;
-  final Value<int> rowid;
-  const CursorsCompanion({
-    this.sheetId = const Value.absent(),
-    this.cursorIndex = const Value.absent(),
-    this.value = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  CursorsCompanion.insert({
-    required int sheetId,
-    required int cursorIndex,
-    required int value,
-    this.rowid = const Value.absent(),
-  }) : sheetId = Value(sheetId),
-       cursorIndex = Value(cursorIndex),
-       value = Value(value);
-  static Insertable<Cursor> custom({
-    Expression<int>? sheetId,
-    Expression<int>? cursorIndex,
-    Expression<int>? value,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (sheetId != null) 'sheet_id': sheetId,
-      if (cursorIndex != null) 'cursor_index': cursorIndex,
-      if (value != null) 'value': value,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  CursorsCompanion copyWith({
-    Value<int>? sheetId,
-    Value<int>? cursorIndex,
-    Value<int>? value,
-    Value<int>? rowid,
-  }) {
-    return CursorsCompanion(
-      sheetId: sheetId ?? this.sheetId,
-      cursorIndex: cursorIndex ?? this.cursorIndex,
-      value: value ?? this.value,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (sheetId.present) {
-      map['sheet_id'] = Variable<int>(sheetId.value);
-    }
-    if (cursorIndex.present) {
-      map['cursor_index'] = Variable<int>(cursorIndex.value);
-    }
-    if (value.present) {
-      map['value'] = Variable<int>(value.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('CursorsCompanion(')
-          ..write('sheetId: $sheetId, ')
-          ..write('cursorIndex: $cursorIndex, ')
-          ..write('value: $value, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $PossibleIntsByIdTable extends PossibleIntsById
-    with TableInfo<$PossibleIntsByIdTable, PossibleIntsByIdData> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $PossibleIntsByIdTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _sheetIdMeta = const VerificationMeta(
-    'sheetId',
-  );
-  @override
-  late final GeneratedColumn<int> sheetId = GeneratedColumn<int>(
-    'sheet_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES sheet_data_tables (id)',
-    ),
-  );
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _intIndexMeta = const VerificationMeta(
-    'intIndex',
-  );
-  @override
-  late final GeneratedColumn<int> intIndex = GeneratedColumn<int>(
-    'int_index',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _valueMeta = const VerificationMeta('value');
-  @override
-  late final GeneratedColumn<int> value = GeneratedColumn<int>(
-    'value',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [sheetId, id, intIndex, value];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'possible_ints_by_id';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<PossibleIntsByIdData> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('sheet_id')) {
-      context.handle(
-        _sheetIdMeta,
-        sheetId.isAcceptableOrUnknown(data['sheet_id']!, _sheetIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_sheetIdMeta);
-    }
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('int_index')) {
-      context.handle(
-        _intIndexMeta,
-        intIndex.isAcceptableOrUnknown(data['int_index']!, _intIndexMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_intIndexMeta);
-    }
-    if (data.containsKey('value')) {
-      context.handle(
-        _valueMeta,
-        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_valueMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {sheetId, id, intIndex};
-  @override
-  PossibleIntsByIdData map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return PossibleIntsByIdData(
-      sheetId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}sheet_id'],
-      )!,
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}id'],
-      )!,
-      intIndex: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}int_index'],
-      )!,
-      value: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}value'],
-      )!,
-    );
-  }
-
-  @override
-  $PossibleIntsByIdTable createAlias(String alias) {
-    return $PossibleIntsByIdTable(attachedDatabase, alias);
-  }
-}
-
-class PossibleIntsByIdData extends DataClass
-    implements Insertable<PossibleIntsByIdData> {
-  final int sheetId;
-  final int id;
-  final int intIndex;
-  final int value;
-  const PossibleIntsByIdData({
-    required this.sheetId,
-    required this.id,
-    required this.intIndex,
-    required this.value,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['sheet_id'] = Variable<int>(sheetId);
-    map['id'] = Variable<int>(id);
-    map['int_index'] = Variable<int>(intIndex);
-    map['value'] = Variable<int>(value);
-    return map;
-  }
-
-  PossibleIntsByIdCompanion toCompanion(bool nullToAbsent) {
-    return PossibleIntsByIdCompanion(
-      sheetId: Value(sheetId),
-      id: Value(id),
-      intIndex: Value(intIndex),
-      value: Value(value),
-    );
-  }
-
-  factory PossibleIntsByIdData.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return PossibleIntsByIdData(
-      sheetId: serializer.fromJson<int>(json['sheetId']),
-      id: serializer.fromJson<int>(json['id']),
-      intIndex: serializer.fromJson<int>(json['intIndex']),
-      value: serializer.fromJson<int>(json['value']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'sheetId': serializer.toJson<int>(sheetId),
-      'id': serializer.toJson<int>(id),
-      'intIndex': serializer.toJson<int>(intIndex),
-      'value': serializer.toJson<int>(value),
-    };
-  }
-
-  PossibleIntsByIdData copyWith({
-    int? sheetId,
-    int? id,
-    int? intIndex,
-    int? value,
-  }) => PossibleIntsByIdData(
-    sheetId: sheetId ?? this.sheetId,
-    id: id ?? this.id,
-    intIndex: intIndex ?? this.intIndex,
-    value: value ?? this.value,
-  );
-  PossibleIntsByIdData copyWithCompanion(PossibleIntsByIdCompanion data) {
-    return PossibleIntsByIdData(
-      sheetId: data.sheetId.present ? data.sheetId.value : this.sheetId,
-      id: data.id.present ? data.id.value : this.id,
-      intIndex: data.intIndex.present ? data.intIndex.value : this.intIndex,
-      value: data.value.present ? data.value.value : this.value,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('PossibleIntsByIdData(')
-          ..write('sheetId: $sheetId, ')
-          ..write('id: $id, ')
-          ..write('intIndex: $intIndex, ')
-          ..write('value: $value')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(sheetId, id, intIndex, value);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is PossibleIntsByIdData &&
-          other.sheetId == this.sheetId &&
-          other.id == this.id &&
-          other.intIndex == this.intIndex &&
-          other.value == this.value);
-}
-
-class PossibleIntsByIdCompanion extends UpdateCompanion<PossibleIntsByIdData> {
-  final Value<int> sheetId;
-  final Value<int> id;
-  final Value<int> intIndex;
-  final Value<int> value;
-  final Value<int> rowid;
-  const PossibleIntsByIdCompanion({
-    this.sheetId = const Value.absent(),
-    this.id = const Value.absent(),
-    this.intIndex = const Value.absent(),
-    this.value = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  PossibleIntsByIdCompanion.insert({
-    required int sheetId,
-    required int id,
-    required int intIndex,
-    required int value,
-    this.rowid = const Value.absent(),
-  }) : sheetId = Value(sheetId),
-       id = Value(id),
-       intIndex = Value(intIndex),
-       value = Value(value);
-  static Insertable<PossibleIntsByIdData> custom({
-    Expression<int>? sheetId,
-    Expression<int>? id,
-    Expression<int>? intIndex,
-    Expression<int>? value,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (sheetId != null) 'sheet_id': sheetId,
-      if (id != null) 'id': id,
-      if (intIndex != null) 'int_index': intIndex,
-      if (value != null) 'value': value,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  PossibleIntsByIdCompanion copyWith({
-    Value<int>? sheetId,
-    Value<int>? id,
-    Value<int>? intIndex,
-    Value<int>? value,
-    Value<int>? rowid,
-  }) {
-    return PossibleIntsByIdCompanion(
-      sheetId: sheetId ?? this.sheetId,
-      id: id ?? this.id,
-      intIndex: intIndex ?? this.intIndex,
-      value: value ?? this.value,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (sheetId.present) {
-      map['sheet_id'] = Variable<int>(sheetId.value);
-    }
-    if (id.present) {
-      map['id'] = Variable<int>(id.value);
-    }
-    if (intIndex.present) {
-      map['int_index'] = Variable<int>(intIndex.value);
-    }
-    if (value.present) {
-      map['value'] = Variable<int>(value.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('PossibleIntsByIdCompanion(')
-          ..write('sheetId: $sheetId, ')
-          ..write('id: $id, ')
-          ..write('intIndex: $intIndex, ')
-          ..write('value: $value, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $ValidAreasByIdTable extends ValidAreasById
-    with TableInfo<$ValidAreasByIdTable, ValidAreasByIdData> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $ValidAreasByIdTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _sheetIdMeta = const VerificationMeta(
-    'sheetId',
-  );
-  @override
-  late final GeneratedColumn<int> sheetId = GeneratedColumn<int>(
-    'sheet_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES sheet_data_tables (id)',
-    ),
-  );
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _intIndexMeta = const VerificationMeta(
-    'intIndex',
-  );
-  @override
-  late final GeneratedColumn<int> intIndex = GeneratedColumn<int>(
-    'int_index',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _areaIndexMeta = const VerificationMeta(
-    'areaIndex',
-  );
-  @override
-  late final GeneratedColumn<int> areaIndex = GeneratedColumn<int>(
-    'area_index',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _areaEdgeMeta = const VerificationMeta(
-    'areaEdge',
-  );
-  @override
-  late final GeneratedColumn<int> areaEdge = GeneratedColumn<int>(
-    'area_edge',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    sheetId,
-    id,
-    intIndex,
-    areaIndex,
-    areaEdge,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'valid_areas_by_id';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<ValidAreasByIdData> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('sheet_id')) {
-      context.handle(
-        _sheetIdMeta,
-        sheetId.isAcceptableOrUnknown(data['sheet_id']!, _sheetIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_sheetIdMeta);
-    }
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('int_index')) {
-      context.handle(
-        _intIndexMeta,
-        intIndex.isAcceptableOrUnknown(data['int_index']!, _intIndexMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_intIndexMeta);
-    }
-    if (data.containsKey('area_index')) {
-      context.handle(
-        _areaIndexMeta,
-        areaIndex.isAcceptableOrUnknown(data['area_index']!, _areaIndexMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_areaIndexMeta);
-    }
-    if (data.containsKey('area_edge')) {
-      context.handle(
-        _areaEdgeMeta,
-        areaEdge.isAcceptableOrUnknown(data['area_edge']!, _areaEdgeMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_areaEdgeMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {sheetId, id, intIndex, areaIndex};
-  @override
-  ValidAreasByIdData map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ValidAreasByIdData(
-      sheetId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}sheet_id'],
-      )!,
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}id'],
-      )!,
-      intIndex: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}int_index'],
-      )!,
-      areaIndex: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}area_index'],
-      )!,
-      areaEdge: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}area_edge'],
-      )!,
-    );
-  }
-
-  @override
-  $ValidAreasByIdTable createAlias(String alias) {
-    return $ValidAreasByIdTable(attachedDatabase, alias);
-  }
-}
-
-class ValidAreasByIdData extends DataClass
-    implements Insertable<ValidAreasByIdData> {
-  final int sheetId;
-  final int id;
-  final int intIndex;
-  final int areaIndex;
-  final int areaEdge;
-  const ValidAreasByIdData({
-    required this.sheetId,
-    required this.id,
-    required this.intIndex,
-    required this.areaIndex,
-    required this.areaEdge,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['sheet_id'] = Variable<int>(sheetId);
-    map['id'] = Variable<int>(id);
-    map['int_index'] = Variable<int>(intIndex);
-    map['area_index'] = Variable<int>(areaIndex);
-    map['area_edge'] = Variable<int>(areaEdge);
-    return map;
-  }
-
-  ValidAreasByIdCompanion toCompanion(bool nullToAbsent) {
-    return ValidAreasByIdCompanion(
-      sheetId: Value(sheetId),
-      id: Value(id),
-      intIndex: Value(intIndex),
-      areaIndex: Value(areaIndex),
-      areaEdge: Value(areaEdge),
-    );
-  }
-
-  factory ValidAreasByIdData.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ValidAreasByIdData(
-      sheetId: serializer.fromJson<int>(json['sheetId']),
-      id: serializer.fromJson<int>(json['id']),
-      intIndex: serializer.fromJson<int>(json['intIndex']),
-      areaIndex: serializer.fromJson<int>(json['areaIndex']),
-      areaEdge: serializer.fromJson<int>(json['areaEdge']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'sheetId': serializer.toJson<int>(sheetId),
-      'id': serializer.toJson<int>(id),
-      'intIndex': serializer.toJson<int>(intIndex),
-      'areaIndex': serializer.toJson<int>(areaIndex),
-      'areaEdge': serializer.toJson<int>(areaEdge),
-    };
-  }
-
-  ValidAreasByIdData copyWith({
-    int? sheetId,
-    int? id,
-    int? intIndex,
-    int? areaIndex,
-    int? areaEdge,
-  }) => ValidAreasByIdData(
-    sheetId: sheetId ?? this.sheetId,
-    id: id ?? this.id,
-    intIndex: intIndex ?? this.intIndex,
-    areaIndex: areaIndex ?? this.areaIndex,
-    areaEdge: areaEdge ?? this.areaEdge,
-  );
-  ValidAreasByIdData copyWithCompanion(ValidAreasByIdCompanion data) {
-    return ValidAreasByIdData(
-      sheetId: data.sheetId.present ? data.sheetId.value : this.sheetId,
-      id: data.id.present ? data.id.value : this.id,
-      intIndex: data.intIndex.present ? data.intIndex.value : this.intIndex,
-      areaIndex: data.areaIndex.present ? data.areaIndex.value : this.areaIndex,
-      areaEdge: data.areaEdge.present ? data.areaEdge.value : this.areaEdge,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ValidAreasByIdData(')
-          ..write('sheetId: $sheetId, ')
-          ..write('id: $id, ')
-          ..write('intIndex: $intIndex, ')
-          ..write('areaIndex: $areaIndex, ')
-          ..write('areaEdge: $areaEdge')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(sheetId, id, intIndex, areaIndex, areaEdge);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is ValidAreasByIdData &&
-          other.sheetId == this.sheetId &&
-          other.id == this.id &&
-          other.intIndex == this.intIndex &&
-          other.areaIndex == this.areaIndex &&
-          other.areaEdge == this.areaEdge);
-}
-
-class ValidAreasByIdCompanion extends UpdateCompanion<ValidAreasByIdData> {
-  final Value<int> sheetId;
-  final Value<int> id;
-  final Value<int> intIndex;
-  final Value<int> areaIndex;
-  final Value<int> areaEdge;
-  final Value<int> rowid;
-  const ValidAreasByIdCompanion({
-    this.sheetId = const Value.absent(),
-    this.id = const Value.absent(),
-    this.intIndex = const Value.absent(),
-    this.areaIndex = const Value.absent(),
-    this.areaEdge = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  ValidAreasByIdCompanion.insert({
-    required int sheetId,
-    required int id,
-    required int intIndex,
-    required int areaIndex,
-    required int areaEdge,
-    this.rowid = const Value.absent(),
-  }) : sheetId = Value(sheetId),
-       id = Value(id),
-       intIndex = Value(intIndex),
-       areaIndex = Value(areaIndex),
-       areaEdge = Value(areaEdge);
-  static Insertable<ValidAreasByIdData> custom({
-    Expression<int>? sheetId,
-    Expression<int>? id,
-    Expression<int>? intIndex,
-    Expression<int>? areaIndex,
-    Expression<int>? areaEdge,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (sheetId != null) 'sheet_id': sheetId,
-      if (id != null) 'id': id,
-      if (intIndex != null) 'int_index': intIndex,
-      if (areaIndex != null) 'area_index': areaIndex,
-      if (areaEdge != null) 'area_edge': areaEdge,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  ValidAreasByIdCompanion copyWith({
-    Value<int>? sheetId,
-    Value<int>? id,
-    Value<int>? intIndex,
-    Value<int>? areaIndex,
-    Value<int>? areaEdge,
-    Value<int>? rowid,
-  }) {
-    return ValidAreasByIdCompanion(
-      sheetId: sheetId ?? this.sheetId,
-      id: id ?? this.id,
-      intIndex: intIndex ?? this.intIndex,
-      areaIndex: areaIndex ?? this.areaIndex,
-      areaEdge: areaEdge ?? this.areaEdge,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (sheetId.present) {
-      map['sheet_id'] = Variable<int>(sheetId.value);
-    }
-    if (id.present) {
-      map['id'] = Variable<int>(id.value);
-    }
-    if (intIndex.present) {
-      map['int_index'] = Variable<int>(intIndex.value);
-    }
-    if (areaIndex.present) {
-      map['area_index'] = Variable<int>(areaIndex.value);
-    }
-    if (areaEdge.present) {
-      map['area_edge'] = Variable<int>(areaEdge.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ValidAreasByIdCompanion(')
-          ..write('sheetId: $sheetId, ')
-          ..write('id: $id, ')
-          ..write('intIndex: $intIndex, ')
-          ..write('areaIndex: $areaIndex, ')
-          ..write('areaEdge: $areaEdge, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $BestDistFoundTable extends BestDistFound
-    with TableInfo<$BestDistFoundTable, BestDistFoundData> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $BestDistFoundTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _sheetIdMeta = const VerificationMeta(
-    'sheetId',
-  );
-  @override
-  late final GeneratedColumn<int> sheetId = GeneratedColumn<int>(
-    'sheet_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES sheet_data_tables (id)',
-    ),
-  );
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _valueMeta = const VerificationMeta('value');
-  @override
-  late final GeneratedColumn<int> value = GeneratedColumn<int>(
-    'value',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [sheetId, id, value];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'best_dist_found';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<BestDistFoundData> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('sheet_id')) {
-      context.handle(
-        _sheetIdMeta,
-        sheetId.isAcceptableOrUnknown(data['sheet_id']!, _sheetIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_sheetIdMeta);
-    }
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('value')) {
-      context.handle(
-        _valueMeta,
-        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_valueMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {sheetId, id};
-  @override
-  BestDistFoundData map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return BestDistFoundData(
-      sheetId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}sheet_id'],
-      )!,
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}id'],
-      )!,
-      value: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}value'],
-      )!,
-    );
-  }
-
-  @override
-  $BestDistFoundTable createAlias(String alias) {
-    return $BestDistFoundTable(attachedDatabase, alias);
-  }
-}
-
-class BestDistFoundData extends DataClass
-    implements Insertable<BestDistFoundData> {
-  final int sheetId;
-  final int id;
-  final int value;
-  const BestDistFoundData({
-    required this.sheetId,
-    required this.id,
-    required this.value,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['sheet_id'] = Variable<int>(sheetId);
-    map['id'] = Variable<int>(id);
-    map['value'] = Variable<int>(value);
-    return map;
-  }
-
-  BestDistFoundCompanion toCompanion(bool nullToAbsent) {
-    return BestDistFoundCompanion(
-      sheetId: Value(sheetId),
-      id: Value(id),
-      value: Value(value),
-    );
-  }
-
-  factory BestDistFoundData.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return BestDistFoundData(
-      sheetId: serializer.fromJson<int>(json['sheetId']),
-      id: serializer.fromJson<int>(json['id']),
-      value: serializer.fromJson<int>(json['value']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'sheetId': serializer.toJson<int>(sheetId),
-      'id': serializer.toJson<int>(id),
-      'value': serializer.toJson<int>(value),
-    };
-  }
-
-  BestDistFoundData copyWith({int? sheetId, int? id, int? value}) =>
-      BestDistFoundData(
-        sheetId: sheetId ?? this.sheetId,
-        id: id ?? this.id,
-        value: value ?? this.value,
-      );
-  BestDistFoundData copyWithCompanion(BestDistFoundCompanion data) {
-    return BestDistFoundData(
-      sheetId: data.sheetId.present ? data.sheetId.value : this.sheetId,
-      id: data.id.present ? data.id.value : this.id,
-      value: data.value.present ? data.value.value : this.value,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('BestDistFoundData(')
-          ..write('sheetId: $sheetId, ')
-          ..write('id: $id, ')
-          ..write('value: $value')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(sheetId, id, value);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is BestDistFoundData &&
-          other.sheetId == this.sheetId &&
-          other.id == this.id &&
-          other.value == this.value);
-}
-
-class BestDistFoundCompanion extends UpdateCompanion<BestDistFoundData> {
-  final Value<int> sheetId;
-  final Value<int> id;
-  final Value<int> value;
-  final Value<int> rowid;
-  const BestDistFoundCompanion({
-    this.sheetId = const Value.absent(),
-    this.id = const Value.absent(),
-    this.value = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  BestDistFoundCompanion.insert({
-    required int sheetId,
-    required int id,
-    required int value,
-    this.rowid = const Value.absent(),
-  }) : sheetId = Value(sheetId),
-       id = Value(id),
-       value = Value(value);
-  static Insertable<BestDistFoundData> custom({
-    Expression<int>? sheetId,
-    Expression<int>? id,
-    Expression<int>? value,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (sheetId != null) 'sheet_id': sheetId,
-      if (id != null) 'id': id,
-      if (value != null) 'value': value,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  BestDistFoundCompanion copyWith({
-    Value<int>? sheetId,
-    Value<int>? id,
-    Value<int>? value,
-    Value<int>? rowid,
-  }) {
-    return BestDistFoundCompanion(
-      sheetId: sheetId ?? this.sheetId,
-      id: id ?? this.id,
-      value: value ?? this.value,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (sheetId.present) {
-      map['sheet_id'] = Variable<int>(sheetId.value);
-    }
-    if (id.present) {
-      map['id'] = Variable<int>(id.value);
-    }
-    if (value.present) {
-      map['value'] = Variable<int>(value.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('BestDistFoundCompanion(')
-          ..write('sheetId: $sheetId, ')
-          ..write('id: $id, ')
-          ..write('value: $value, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5142,46 +3687,38 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SheetDataTablesTable sheetDataTables = $SheetDataTablesTable(
     this,
   );
-  late final $SheetCellsTable sheetCells = $SheetCellsTable(this);
-  late final $SheetColumnTypesTable sheetColumnTypes = $SheetColumnTypesTable(
+  late final $SheetCellsTableTable sheetCellsTable = $SheetCellsTableTable(
     this,
   );
-  late final $UpdateHistoriesTable updateHistories = $UpdateHistoriesTable(
+  late final $SheetColumnTypesTableTable sheetColumnTypesTable =
+      $SheetColumnTypesTableTable(this);
+  late final $UpdateHistoriesTableTable updateHistoriesTable =
+      $UpdateHistoriesTableTable(this);
+  late final $RowsBottomPosTableTable rowsBottomPosTable =
+      $RowsBottomPosTableTable(this);
+  late final $ColRightPosTableTable colRightPosTable = $ColRightPosTableTable(
     this,
   );
-  late final $RowsBottomPosTable rowsBottomPos = $RowsBottomPosTable(this);
-  late final $ColRightPosTable colRightPos = $ColRightPosTable(this);
-  late final $RowsManuallyAdjustedHeightTable rowsManuallyAdjustedHeight =
-      $RowsManuallyAdjustedHeightTable(this);
-  late final $ColsManuallyAdjustedWidthTable colsManuallyAdjustedWidth =
-      $ColsManuallyAdjustedWidthTable(this);
-  late final $SelectedCellsTable selectedCells = $SelectedCellsTable(this);
-  late final $BestSortFoundTable bestSortFound = $BestSortFoundTable(this);
-  late final $CursorsTable cursors = $CursorsTable(this);
-  late final $PossibleIntsByIdTable possibleIntsById = $PossibleIntsByIdTable(
-    this,
-  );
-  late final $ValidAreasByIdTable validAreasById = $ValidAreasByIdTable(this);
-  late final $BestDistFoundTable bestDistFound = $BestDistFoundTable(this);
+  late final $RowsManuallyAdjustedHeightTableTable
+  rowsManuallyAdjustedHeightTable = $RowsManuallyAdjustedHeightTableTable(this);
+  late final $ColsManuallyAdjustedWidthTableTable
+  colsManuallyAdjustedWidthTable = $ColsManuallyAdjustedWidthTableTable(this);
+  late final $SelectedCellsTableTable selectedCellsTable =
+      $SelectedCellsTableTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     sheetDataTables,
-    sheetCells,
-    sheetColumnTypes,
-    updateHistories,
-    rowsBottomPos,
-    colRightPos,
-    rowsManuallyAdjustedHeight,
-    colsManuallyAdjustedWidth,
-    selectedCells,
-    bestSortFound,
-    cursors,
-    possibleIntsById,
-    validAreasById,
-    bestDistFound,
+    sheetCellsTable,
+    sheetColumnTypesTable,
+    updateHistoriesTable,
+    rowsBottomPosTable,
+    colRightPosTable,
+    rowsManuallyAdjustedHeightTable,
+    colsManuallyAdjustedWidthTable,
+    selectedCellsTable,
   ];
 }
 
@@ -5238,144 +3775,30 @@ typedef $$SheetDataTablesTableUpdateCompanionBuilder =
 
 final class $$SheetDataTablesTableReferences
     extends
-        BaseReferences<_$AppDatabase, $SheetDataTablesTable, SheetDataTable> {
+        BaseReferences<_$AppDatabase, $SheetDataTablesTable, SheetDataEntity> {
   $$SheetDataTablesTableReferences(
     super.$_db,
     super.$_table,
     super.$_typedResult,
   );
 
-  static MultiTypedResultKey<$SheetCellsTable, List<SheetCell>>
-  _sheetCellsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.sheetCells,
+  static MultiTypedResultKey<$SheetCellsTableTable, List<SheetCellEntity>>
+  _sheetCellsTableRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.sheetCellsTable,
     aliasName: $_aliasNameGenerator(
       db.sheetDataTables.id,
-      db.sheetCells.sheetId,
+      db.sheetCellsTable.sheetId,
     ),
   );
 
-  $$SheetCellsTableProcessedTableManager get sheetCellsRefs {
-    final manager = $$SheetCellsTableTableManager(
+  $$SheetCellsTableTableProcessedTableManager get sheetCellsTableRefs {
+    final manager = $$SheetCellsTableTableTableManager(
       $_db,
-      $_db.sheetCells,
-    ).filter((f) => f.sheetId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_sheetCellsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$SheetColumnTypesTable, List<SheetColumnType>>
-  _sheetColumnTypesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.sheetColumnTypes,
-    aliasName: $_aliasNameGenerator(
-      db.sheetDataTables.id,
-      db.sheetColumnTypes.sheetId,
-    ),
-  );
-
-  $$SheetColumnTypesTableProcessedTableManager get sheetColumnTypesRefs {
-    final manager = $$SheetColumnTypesTableTableManager(
-      $_db,
-      $_db.sheetColumnTypes,
+      $_db.sheetCellsTable,
     ).filter((f) => f.sheetId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(
-      _sheetColumnTypesRefsTable($_db),
-    );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$UpdateHistoriesTable, List<UpdateHistory>>
-  _updateHistoriesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.updateHistories,
-    aliasName: $_aliasNameGenerator(
-      db.sheetDataTables.id,
-      db.updateHistories.sheetId,
-    ),
-  );
-
-  $$UpdateHistoriesTableProcessedTableManager get updateHistoriesRefs {
-    final manager = $$UpdateHistoriesTableTableManager(
-      $_db,
-      $_db.updateHistories,
-    ).filter((f) => f.sheetId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(
-      _updateHistoriesRefsTable($_db),
-    );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$RowsBottomPosTable, List<RowsBottomPo>>
-  _rowsBottomPosRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.rowsBottomPos,
-    aliasName: $_aliasNameGenerator(
-      db.sheetDataTables.id,
-      db.rowsBottomPos.sheetId,
-    ),
-  );
-
-  $$RowsBottomPosTableProcessedTableManager get rowsBottomPosRefs {
-    final manager = $$RowsBottomPosTableTableManager(
-      $_db,
-      $_db.rowsBottomPos,
-    ).filter((f) => f.sheetId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_rowsBottomPosRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$ColRightPosTable, List<ColRightPo>>
-  _colRightPosRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.colRightPos,
-    aliasName: $_aliasNameGenerator(
-      db.sheetDataTables.id,
-      db.colRightPos.sheetId,
-    ),
-  );
-
-  $$ColRightPosTableProcessedTableManager get colRightPosRefs {
-    final manager = $$ColRightPosTableTableManager(
-      $_db,
-      $_db.colRightPos,
-    ).filter((f) => f.sheetId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_colRightPosRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<
-    $RowsManuallyAdjustedHeightTable,
-    List<RowsManuallyAdjustedHeightData>
-  >
-  _rowsManuallyAdjustedHeightRefsTable(_$AppDatabase db) =>
-      MultiTypedResultKey.fromTable(
-        db.rowsManuallyAdjustedHeight,
-        aliasName: $_aliasNameGenerator(
-          db.sheetDataTables.id,
-          db.rowsManuallyAdjustedHeight.sheetId,
-        ),
-      );
-
-  $$RowsManuallyAdjustedHeightTableProcessedTableManager
-  get rowsManuallyAdjustedHeightRefs {
-    final manager = $$RowsManuallyAdjustedHeightTableTableManager(
-      $_db,
-      $_db.rowsManuallyAdjustedHeight,
-    ).filter((f) => f.sheetId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(
-      _rowsManuallyAdjustedHeightRefsTable($_db),
+      _sheetCellsTableRefsTable($_db),
     );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
@@ -5383,154 +3806,189 @@ final class $$SheetDataTablesTableReferences
   }
 
   static MultiTypedResultKey<
-    $ColsManuallyAdjustedWidthTable,
-    List<ColsManuallyAdjustedWidthData>
+    $SheetColumnTypesTableTable,
+    List<SheetColumnTypeEntity>
   >
-  _colsManuallyAdjustedWidthRefsTable(_$AppDatabase db) =>
+  _sheetColumnTypesTableRefsTable(_$AppDatabase db) =>
       MultiTypedResultKey.fromTable(
-        db.colsManuallyAdjustedWidth,
+        db.sheetColumnTypesTable,
         aliasName: $_aliasNameGenerator(
           db.sheetDataTables.id,
-          db.colsManuallyAdjustedWidth.sheetId,
+          db.sheetColumnTypesTable.sheetId,
         ),
       );
 
-  $$ColsManuallyAdjustedWidthTableProcessedTableManager
-  get colsManuallyAdjustedWidthRefs {
-    final manager = $$ColsManuallyAdjustedWidthTableTableManager(
+  $$SheetColumnTypesTableTableProcessedTableManager
+  get sheetColumnTypesTableRefs {
+    final manager = $$SheetColumnTypesTableTableTableManager(
       $_db,
-      $_db.colsManuallyAdjustedWidth,
+      $_db.sheetColumnTypesTable,
     ).filter((f) => f.sheetId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(
-      _colsManuallyAdjustedWidthRefsTable($_db),
+      _sheetColumnTypesTableRefsTable($_db),
     );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
 
-  static MultiTypedResultKey<$SelectedCellsTable, List<SelectedCell>>
-  _selectedCellsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.selectedCells,
-    aliasName: $_aliasNameGenerator(
-      db.sheetDataTables.id,
-      db.selectedCells.sheetId,
-    ),
-  );
+  static MultiTypedResultKey<
+    $UpdateHistoriesTableTable,
+    List<UpdateHistoriesEntity>
+  >
+  _updateHistoriesTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.updateHistoriesTable,
+        aliasName: $_aliasNameGenerator(
+          db.sheetDataTables.id,
+          db.updateHistoriesTable.sheetId,
+        ),
+      );
 
-  $$SelectedCellsTableProcessedTableManager get selectedCellsRefs {
-    final manager = $$SelectedCellsTableTableManager(
+  $$UpdateHistoriesTableTableProcessedTableManager
+  get updateHistoriesTableRefs {
+    final manager = $$UpdateHistoriesTableTableTableManager(
       $_db,
-      $_db.selectedCells,
-    ).filter((f) => f.sheetId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_selectedCellsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$BestSortFoundTable, List<BestSortFoundData>>
-  _bestSortFoundRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.bestSortFound,
-    aliasName: $_aliasNameGenerator(
-      db.sheetDataTables.id,
-      db.bestSortFound.sheetId,
-    ),
-  );
-
-  $$BestSortFoundTableProcessedTableManager get bestSortFoundRefs {
-    final manager = $$BestSortFoundTableTableManager(
-      $_db,
-      $_db.bestSortFound,
-    ).filter((f) => f.sheetId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_bestSortFoundRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$CursorsTable, List<Cursor>> _cursorsRefsTable(
-    _$AppDatabase db,
-  ) => MultiTypedResultKey.fromTable(
-    db.cursors,
-    aliasName: $_aliasNameGenerator(db.sheetDataTables.id, db.cursors.sheetId),
-  );
-
-  $$CursorsTableProcessedTableManager get cursorsRefs {
-    final manager = $$CursorsTableTableManager(
-      $_db,
-      $_db.cursors,
-    ).filter((f) => f.sheetId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_cursorsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$PossibleIntsByIdTable, List<PossibleIntsByIdData>>
-  _possibleIntsByIdRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.possibleIntsById,
-    aliasName: $_aliasNameGenerator(
-      db.sheetDataTables.id,
-      db.possibleIntsById.sheetId,
-    ),
-  );
-
-  $$PossibleIntsByIdTableProcessedTableManager get possibleIntsByIdRefs {
-    final manager = $$PossibleIntsByIdTableTableManager(
-      $_db,
-      $_db.possibleIntsById,
+      $_db.updateHistoriesTable,
     ).filter((f) => f.sheetId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(
-      _possibleIntsByIdRefsTable($_db),
+      _updateHistoriesTableRefsTable($_db),
     );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
 
-  static MultiTypedResultKey<$ValidAreasByIdTable, List<ValidAreasByIdData>>
-  _validAreasByIdRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.validAreasById,
-    aliasName: $_aliasNameGenerator(
-      db.sheetDataTables.id,
-      db.validAreasById.sheetId,
-    ),
-  );
+  static MultiTypedResultKey<
+    $RowsBottomPosTableTable,
+    List<RowsBottomPosEntity>
+  >
+  _rowsBottomPosTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.rowsBottomPosTable,
+        aliasName: $_aliasNameGenerator(
+          db.sheetDataTables.id,
+          db.rowsBottomPosTable.sheetId,
+        ),
+      );
 
-  $$ValidAreasByIdTableProcessedTableManager get validAreasByIdRefs {
-    final manager = $$ValidAreasByIdTableTableManager(
+  $$RowsBottomPosTableTableProcessedTableManager get rowsBottomPosTableRefs {
+    final manager = $$RowsBottomPosTableTableTableManager(
       $_db,
-      $_db.validAreasById,
+      $_db.rowsBottomPosTable,
     ).filter((f) => f.sheetId.id.sqlEquals($_itemColumn<int>('id')!));
 
-    final cache = $_typedResult.readTableOrNull(_validAreasByIdRefsTable($_db));
+    final cache = $_typedResult.readTableOrNull(
+      _rowsBottomPosTableRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
 
-  static MultiTypedResultKey<$BestDistFoundTable, List<BestDistFoundData>>
-  _bestDistFoundRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.bestDistFound,
+  static MultiTypedResultKey<$ColRightPosTableTable, List<ColRightPosEntity>>
+  _colRightPosTableRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.colRightPosTable,
     aliasName: $_aliasNameGenerator(
       db.sheetDataTables.id,
-      db.bestDistFound.sheetId,
+      db.colRightPosTable.sheetId,
     ),
   );
 
-  $$BestDistFoundTableProcessedTableManager get bestDistFoundRefs {
-    final manager = $$BestDistFoundTableTableManager(
+  $$ColRightPosTableTableProcessedTableManager get colRightPosTableRefs {
+    final manager = $$ColRightPosTableTableTableManager(
       $_db,
-      $_db.bestDistFound,
+      $_db.colRightPosTable,
     ).filter((f) => f.sheetId.id.sqlEquals($_itemColumn<int>('id')!));
 
-    final cache = $_typedResult.readTableOrNull(_bestDistFoundRefsTable($_db));
+    final cache = $_typedResult.readTableOrNull(
+      _colRightPosTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $RowsManuallyAdjustedHeightTableTable,
+    List<RowsManuallyAdjustedHeightEntity>
+  >
+  _rowsManuallyAdjustedHeightTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.rowsManuallyAdjustedHeightTable,
+        aliasName: $_aliasNameGenerator(
+          db.sheetDataTables.id,
+          db.rowsManuallyAdjustedHeightTable.sheetId,
+        ),
+      );
+
+  $$RowsManuallyAdjustedHeightTableTableProcessedTableManager
+  get rowsManuallyAdjustedHeightTableRefs {
+    final manager = $$RowsManuallyAdjustedHeightTableTableTableManager(
+      $_db,
+      $_db.rowsManuallyAdjustedHeightTable,
+    ).filter((f) => f.sheetId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _rowsManuallyAdjustedHeightTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ColsManuallyAdjustedWidthTableTable,
+    List<ColsManuallyAdjustedWidthEntity>
+  >
+  _colsManuallyAdjustedWidthTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.colsManuallyAdjustedWidthTable,
+        aliasName: $_aliasNameGenerator(
+          db.sheetDataTables.id,
+          db.colsManuallyAdjustedWidthTable.sheetId,
+        ),
+      );
+
+  $$ColsManuallyAdjustedWidthTableTableProcessedTableManager
+  get colsManuallyAdjustedWidthTableRefs {
+    final manager = $$ColsManuallyAdjustedWidthTableTableTableManager(
+      $_db,
+      $_db.colsManuallyAdjustedWidthTable,
+    ).filter((f) => f.sheetId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _colsManuallyAdjustedWidthTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $SelectedCellsTableTable,
+    List<SelectedCellsEntity>
+  >
+  _selectedCellsTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.selectedCellsTable,
+        aliasName: $_aliasNameGenerator(
+          db.sheetDataTables.id,
+          db.selectedCellsTable.sheetId,
+        ),
+      );
+
+  $$SelectedCellsTableTableProcessedTableManager get selectedCellsTableRefs {
+    final manager = $$SelectedCellsTableTableTableManager(
+      $_db,
+      $_db.selectedCellsTable,
+    ).filter((f) => f.sheetId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _selectedCellsTableRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -5667,22 +4125,22 @@ class $$SheetDataTablesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  Expression<bool> sheetCellsRefs(
-    Expression<bool> Function($$SheetCellsTableFilterComposer f) f,
+  Expression<bool> sheetCellsTableRefs(
+    Expression<bool> Function($$SheetCellsTableTableFilterComposer f) f,
   ) {
-    final $$SheetCellsTableFilterComposer composer = $composerBuilder(
+    final $$SheetCellsTableTableFilterComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.sheetCells,
+      referencedTable: $db.sheetCellsTable,
       getReferencedColumn: (t) => t.sheetId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$SheetCellsTableFilterComposer(
+          }) => $$SheetCellsTableTableFilterComposer(
             $db: $db,
-            $table: $db.sheetCells,
+            $table: $db.sheetCellsTable,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5692,124 +4150,23 @@ class $$SheetDataTablesTableFilterComposer
     return f(composer);
   }
 
-  Expression<bool> sheetColumnTypesRefs(
-    Expression<bool> Function($$SheetColumnTypesTableFilterComposer f) f,
+  Expression<bool> sheetColumnTypesTableRefs(
+    Expression<bool> Function($$SheetColumnTypesTableTableFilterComposer f) f,
   ) {
-    final $$SheetColumnTypesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.sheetColumnTypes,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SheetColumnTypesTableFilterComposer(
-            $db: $db,
-            $table: $db.sheetColumnTypes,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> updateHistoriesRefs(
-    Expression<bool> Function($$UpdateHistoriesTableFilterComposer f) f,
-  ) {
-    final $$UpdateHistoriesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.updateHistories,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$UpdateHistoriesTableFilterComposer(
-            $db: $db,
-            $table: $db.updateHistories,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> rowsBottomPosRefs(
-    Expression<bool> Function($$RowsBottomPosTableFilterComposer f) f,
-  ) {
-    final $$RowsBottomPosTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.rowsBottomPos,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RowsBottomPosTableFilterComposer(
-            $db: $db,
-            $table: $db.rowsBottomPos,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> colRightPosRefs(
-    Expression<bool> Function($$ColRightPosTableFilterComposer f) f,
-  ) {
-    final $$ColRightPosTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.colRightPos,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ColRightPosTableFilterComposer(
-            $db: $db,
-            $table: $db.colRightPos,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> rowsManuallyAdjustedHeightRefs(
-    Expression<bool> Function($$RowsManuallyAdjustedHeightTableFilterComposer f)
-    f,
-  ) {
-    final $$RowsManuallyAdjustedHeightTableFilterComposer composer =
+    final $$SheetColumnTypesTableTableFilterComposer composer =
         $composerBuilder(
           composer: this,
           getCurrentColumn: (t) => t.id,
-          referencedTable: $db.rowsManuallyAdjustedHeight,
+          referencedTable: $db.sheetColumnTypesTable,
           getReferencedColumn: (t) => t.sheetId,
           builder:
               (
                 joinBuilder, {
                 $addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer,
-              }) => $$RowsManuallyAdjustedHeightTableFilterComposer(
+              }) => $$SheetColumnTypesTableTableFilterComposer(
                 $db: $db,
-                $table: $db.rowsManuallyAdjustedHeight,
+                $table: $db.sheetColumnTypesTable,
                 $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                 joinBuilder: joinBuilder,
                 $removeJoinBuilderFromRootComposer:
@@ -5819,24 +4176,101 @@ class $$SheetDataTablesTableFilterComposer
     return f(composer);
   }
 
-  Expression<bool> colsManuallyAdjustedWidthRefs(
-    Expression<bool> Function($$ColsManuallyAdjustedWidthTableFilterComposer f)
+  Expression<bool> updateHistoriesTableRefs(
+    Expression<bool> Function($$UpdateHistoriesTableTableFilterComposer f) f,
+  ) {
+    final $$UpdateHistoriesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.updateHistoriesTable,
+      getReferencedColumn: (t) => t.sheetId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UpdateHistoriesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.updateHistoriesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> rowsBottomPosTableRefs(
+    Expression<bool> Function($$RowsBottomPosTableTableFilterComposer f) f,
+  ) {
+    final $$RowsBottomPosTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.rowsBottomPosTable,
+      getReferencedColumn: (t) => t.sheetId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RowsBottomPosTableTableFilterComposer(
+            $db: $db,
+            $table: $db.rowsBottomPosTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> colRightPosTableRefs(
+    Expression<bool> Function($$ColRightPosTableTableFilterComposer f) f,
+  ) {
+    final $$ColRightPosTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.colRightPosTable,
+      getReferencedColumn: (t) => t.sheetId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ColRightPosTableTableFilterComposer(
+            $db: $db,
+            $table: $db.colRightPosTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> rowsManuallyAdjustedHeightTableRefs(
+    Expression<bool> Function(
+      $$RowsManuallyAdjustedHeightTableTableFilterComposer f,
+    )
     f,
   ) {
-    final $$ColsManuallyAdjustedWidthTableFilterComposer composer =
+    final $$RowsManuallyAdjustedHeightTableTableFilterComposer composer =
         $composerBuilder(
           composer: this,
           getCurrentColumn: (t) => t.id,
-          referencedTable: $db.colsManuallyAdjustedWidth,
+          referencedTable: $db.rowsManuallyAdjustedHeightTable,
           getReferencedColumn: (t) => t.sheetId,
           builder:
               (
                 joinBuilder, {
                 $addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer,
-              }) => $$ColsManuallyAdjustedWidthTableFilterComposer(
+              }) => $$RowsManuallyAdjustedHeightTableTableFilterComposer(
                 $db: $db,
-                $table: $db.colsManuallyAdjustedWidth,
+                $table: $db.rowsManuallyAdjustedHeightTable,
                 $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                 joinBuilder: joinBuilder,
                 $removeJoinBuilderFromRootComposer:
@@ -5846,147 +4280,51 @@ class $$SheetDataTablesTableFilterComposer
     return f(composer);
   }
 
-  Expression<bool> selectedCellsRefs(
-    Expression<bool> Function($$SelectedCellsTableFilterComposer f) f,
+  Expression<bool> colsManuallyAdjustedWidthTableRefs(
+    Expression<bool> Function(
+      $$ColsManuallyAdjustedWidthTableTableFilterComposer f,
+    )
+    f,
   ) {
-    final $$SelectedCellsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.selectedCells,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SelectedCellsTableFilterComposer(
-            $db: $db,
-            $table: $db.selectedCells,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
+    final $$ColsManuallyAdjustedWidthTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.colsManuallyAdjustedWidthTable,
+          getReferencedColumn: (t) => t.sheetId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer,
-          ),
-    );
+              }) => $$ColsManuallyAdjustedWidthTableTableFilterComposer(
+                $db: $db,
+                $table: $db.colsManuallyAdjustedWidthTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 
-  Expression<bool> bestSortFoundRefs(
-    Expression<bool> Function($$BestSortFoundTableFilterComposer f) f,
+  Expression<bool> selectedCellsTableRefs(
+    Expression<bool> Function($$SelectedCellsTableTableFilterComposer f) f,
   ) {
-    final $$BestSortFoundTableFilterComposer composer = $composerBuilder(
+    final $$SelectedCellsTableTableFilterComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.bestSortFound,
+      referencedTable: $db.selectedCellsTable,
       getReferencedColumn: (t) => t.sheetId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$BestSortFoundTableFilterComposer(
+          }) => $$SelectedCellsTableTableFilterComposer(
             $db: $db,
-            $table: $db.bestSortFound,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> cursorsRefs(
-    Expression<bool> Function($$CursorsTableFilterComposer f) f,
-  ) {
-    final $$CursorsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.cursors,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$CursorsTableFilterComposer(
-            $db: $db,
-            $table: $db.cursors,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> possibleIntsByIdRefs(
-    Expression<bool> Function($$PossibleIntsByIdTableFilterComposer f) f,
-  ) {
-    final $$PossibleIntsByIdTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.possibleIntsById,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PossibleIntsByIdTableFilterComposer(
-            $db: $db,
-            $table: $db.possibleIntsById,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> validAreasByIdRefs(
-    Expression<bool> Function($$ValidAreasByIdTableFilterComposer f) f,
-  ) {
-    final $$ValidAreasByIdTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.validAreasById,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ValidAreasByIdTableFilterComposer(
-            $db: $db,
-            $table: $db.validAreasById,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> bestDistFoundRefs(
-    Expression<bool> Function($$BestDistFoundTableFilterComposer f) f,
-  ) {
-    final $$BestDistFoundTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.bestDistFound,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BestDistFoundTableFilterComposer(
-            $db: $db,
-            $table: $db.bestDistFound,
+            $table: $db.selectedCellsTable,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -6234,22 +4572,22 @@ class $$SheetDataTablesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  Expression<T> sheetCellsRefs<T extends Object>(
-    Expression<T> Function($$SheetCellsTableAnnotationComposer a) f,
+  Expression<T> sheetCellsTableRefs<T extends Object>(
+    Expression<T> Function($$SheetCellsTableTableAnnotationComposer a) f,
   ) {
-    final $$SheetCellsTableAnnotationComposer composer = $composerBuilder(
+    final $$SheetCellsTableTableAnnotationComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.sheetCells,
+      referencedTable: $db.sheetCellsTable,
       getReferencedColumn: (t) => t.sheetId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$SheetCellsTableAnnotationComposer(
+          }) => $$SheetCellsTableTableAnnotationComposer(
             $db: $db,
-            $table: $db.sheetCells,
+            $table: $db.sheetCellsTable,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -6259,22 +4597,100 @@ class $$SheetDataTablesTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> sheetColumnTypesRefs<T extends Object>(
-    Expression<T> Function($$SheetColumnTypesTableAnnotationComposer a) f,
+  Expression<T> sheetColumnTypesTableRefs<T extends Object>(
+    Expression<T> Function($$SheetColumnTypesTableTableAnnotationComposer a) f,
   ) {
-    final $$SheetColumnTypesTableAnnotationComposer composer = $composerBuilder(
+    final $$SheetColumnTypesTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.sheetColumnTypesTable,
+          getReferencedColumn: (t) => t.sheetId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$SheetColumnTypesTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.sheetColumnTypesTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> updateHistoriesTableRefs<T extends Object>(
+    Expression<T> Function($$UpdateHistoriesTableTableAnnotationComposer a) f,
+  ) {
+    final $$UpdateHistoriesTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.updateHistoriesTable,
+          getReferencedColumn: (t) => t.sheetId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$UpdateHistoriesTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.updateHistoriesTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> rowsBottomPosTableRefs<T extends Object>(
+    Expression<T> Function($$RowsBottomPosTableTableAnnotationComposer a) f,
+  ) {
+    final $$RowsBottomPosTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.rowsBottomPosTable,
+          getReferencedColumn: (t) => t.sheetId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$RowsBottomPosTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.rowsBottomPosTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> colRightPosTableRefs<T extends Object>(
+    Expression<T> Function($$ColRightPosTableTableAnnotationComposer a) f,
+  ) {
+    final $$ColRightPosTableTableAnnotationComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.sheetColumnTypes,
+      referencedTable: $db.colRightPosTable,
       getReferencedColumn: (t) => t.sheetId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$SheetColumnTypesTableAnnotationComposer(
+          }) => $$ColRightPosTableTableAnnotationComposer(
             $db: $db,
-            $table: $db.sheetColumnTypes,
+            $table: $db.colRightPosTable,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -6284,101 +4700,26 @@ class $$SheetDataTablesTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> updateHistoriesRefs<T extends Object>(
-    Expression<T> Function($$UpdateHistoriesTableAnnotationComposer a) f,
-  ) {
-    final $$UpdateHistoriesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.updateHistories,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$UpdateHistoriesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.updateHistories,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> rowsBottomPosRefs<T extends Object>(
-    Expression<T> Function($$RowsBottomPosTableAnnotationComposer a) f,
-  ) {
-    final $$RowsBottomPosTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.rowsBottomPos,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RowsBottomPosTableAnnotationComposer(
-            $db: $db,
-            $table: $db.rowsBottomPos,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> colRightPosRefs<T extends Object>(
-    Expression<T> Function($$ColRightPosTableAnnotationComposer a) f,
-  ) {
-    final $$ColRightPosTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.colRightPos,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ColRightPosTableAnnotationComposer(
-            $db: $db,
-            $table: $db.colRightPos,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> rowsManuallyAdjustedHeightRefs<T extends Object>(
+  Expression<T> rowsManuallyAdjustedHeightTableRefs<T extends Object>(
     Expression<T> Function(
-      $$RowsManuallyAdjustedHeightTableAnnotationComposer a,
+      $$RowsManuallyAdjustedHeightTableTableAnnotationComposer a,
     )
     f,
   ) {
-    final $$RowsManuallyAdjustedHeightTableAnnotationComposer composer =
+    final $$RowsManuallyAdjustedHeightTableTableAnnotationComposer composer =
         $composerBuilder(
           composer: this,
           getCurrentColumn: (t) => t.id,
-          referencedTable: $db.rowsManuallyAdjustedHeight,
+          referencedTable: $db.rowsManuallyAdjustedHeightTable,
           getReferencedColumn: (t) => t.sheetId,
           builder:
               (
                 joinBuilder, {
                 $addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer,
-              }) => $$RowsManuallyAdjustedHeightTableAnnotationComposer(
+              }) => $$RowsManuallyAdjustedHeightTableTableAnnotationComposer(
                 $db: $db,
-                $table: $db.rowsManuallyAdjustedHeight,
+                $table: $db.rowsManuallyAdjustedHeightTable,
                 $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                 joinBuilder: joinBuilder,
                 $removeJoinBuilderFromRootComposer:
@@ -6388,24 +4729,26 @@ class $$SheetDataTablesTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> colsManuallyAdjustedWidthRefs<T extends Object>(
-    Expression<T> Function($$ColsManuallyAdjustedWidthTableAnnotationComposer a)
+  Expression<T> colsManuallyAdjustedWidthTableRefs<T extends Object>(
+    Expression<T> Function(
+      $$ColsManuallyAdjustedWidthTableTableAnnotationComposer a,
+    )
     f,
   ) {
-    final $$ColsManuallyAdjustedWidthTableAnnotationComposer composer =
+    final $$ColsManuallyAdjustedWidthTableTableAnnotationComposer composer =
         $composerBuilder(
           composer: this,
           getCurrentColumn: (t) => t.id,
-          referencedTable: $db.colsManuallyAdjustedWidth,
+          referencedTable: $db.colsManuallyAdjustedWidthTable,
           getReferencedColumn: (t) => t.sheetId,
           builder:
               (
                 joinBuilder, {
                 $addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer,
-              }) => $$ColsManuallyAdjustedWidthTableAnnotationComposer(
+              }) => $$ColsManuallyAdjustedWidthTableTableAnnotationComposer(
                 $db: $db,
-                $table: $db.colsManuallyAdjustedWidth,
+                $table: $db.colsManuallyAdjustedWidthTable,
                 $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                 joinBuilder: joinBuilder,
                 $removeJoinBuilderFromRootComposer:
@@ -6415,153 +4758,29 @@ class $$SheetDataTablesTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> selectedCellsRefs<T extends Object>(
-    Expression<T> Function($$SelectedCellsTableAnnotationComposer a) f,
+  Expression<T> selectedCellsTableRefs<T extends Object>(
+    Expression<T> Function($$SelectedCellsTableTableAnnotationComposer a) f,
   ) {
-    final $$SelectedCellsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.selectedCells,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SelectedCellsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.selectedCells,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
+    final $$SelectedCellsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.selectedCellsTable,
+          getReferencedColumn: (t) => t.sheetId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> bestSortFoundRefs<T extends Object>(
-    Expression<T> Function($$BestSortFoundTableAnnotationComposer a) f,
-  ) {
-    final $$BestSortFoundTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.bestSortFound,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BestSortFoundTableAnnotationComposer(
-            $db: $db,
-            $table: $db.bestSortFound,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> cursorsRefs<T extends Object>(
-    Expression<T> Function($$CursorsTableAnnotationComposer a) f,
-  ) {
-    final $$CursorsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.cursors,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$CursorsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.cursors,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> possibleIntsByIdRefs<T extends Object>(
-    Expression<T> Function($$PossibleIntsByIdTableAnnotationComposer a) f,
-  ) {
-    final $$PossibleIntsByIdTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.possibleIntsById,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$PossibleIntsByIdTableAnnotationComposer(
-            $db: $db,
-            $table: $db.possibleIntsById,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> validAreasByIdRefs<T extends Object>(
-    Expression<T> Function($$ValidAreasByIdTableAnnotationComposer a) f,
-  ) {
-    final $$ValidAreasByIdTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.validAreasById,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ValidAreasByIdTableAnnotationComposer(
-            $db: $db,
-            $table: $db.validAreasById,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> bestDistFoundRefs<T extends Object>(
-    Expression<T> Function($$BestDistFoundTableAnnotationComposer a) f,
-  ) {
-    final $$BestDistFoundTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.bestDistFound,
-      getReferencedColumn: (t) => t.sheetId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$BestDistFoundTableAnnotationComposer(
-            $db: $db,
-            $table: $db.bestDistFound,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
+              }) => $$SelectedCellsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.selectedCellsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -6571,28 +4790,23 @@ class $$SheetDataTablesTableTableManager
         RootTableManager<
           _$AppDatabase,
           $SheetDataTablesTable,
-          SheetDataTable,
+          SheetDataEntity,
           $$SheetDataTablesTableFilterComposer,
           $$SheetDataTablesTableOrderingComposer,
           $$SheetDataTablesTableAnnotationComposer,
           $$SheetDataTablesTableCreateCompanionBuilder,
           $$SheetDataTablesTableUpdateCompanionBuilder,
-          (SheetDataTable, $$SheetDataTablesTableReferences),
-          SheetDataTable,
+          (SheetDataEntity, $$SheetDataTablesTableReferences),
+          SheetDataEntity,
           PrefetchHooks Function({
-            bool sheetCellsRefs,
-            bool sheetColumnTypesRefs,
-            bool updateHistoriesRefs,
-            bool rowsBottomPosRefs,
-            bool colRightPosRefs,
-            bool rowsManuallyAdjustedHeightRefs,
-            bool colsManuallyAdjustedWidthRefs,
-            bool selectedCellsRefs,
-            bool bestSortFoundRefs,
-            bool cursorsRefs,
-            bool possibleIntsByIdRefs,
-            bool validAreasByIdRefs,
-            bool bestDistFoundRefs,
+            bool sheetCellsTableRefs,
+            bool sheetColumnTypesTableRefs,
+            bool updateHistoriesTableRefs,
+            bool rowsBottomPosTableRefs,
+            bool colRightPosTableRefs,
+            bool rowsManuallyAdjustedHeightTableRefs,
+            bool colsManuallyAdjustedWidthTableRefs,
+            bool selectedCellsTableRefs,
           })
         > {
   $$SheetDataTablesTableTableManager(
@@ -6714,309 +4928,194 @@ class $$SheetDataTablesTableTableManager
               .toList(),
           prefetchHooksCallback:
               ({
-                sheetCellsRefs = false,
-                sheetColumnTypesRefs = false,
-                updateHistoriesRefs = false,
-                rowsBottomPosRefs = false,
-                colRightPosRefs = false,
-                rowsManuallyAdjustedHeightRefs = false,
-                colsManuallyAdjustedWidthRefs = false,
-                selectedCellsRefs = false,
-                bestSortFoundRefs = false,
-                cursorsRefs = false,
-                possibleIntsByIdRefs = false,
-                validAreasByIdRefs = false,
-                bestDistFoundRefs = false,
+                sheetCellsTableRefs = false,
+                sheetColumnTypesTableRefs = false,
+                updateHistoriesTableRefs = false,
+                rowsBottomPosTableRefs = false,
+                colRightPosTableRefs = false,
+                rowsManuallyAdjustedHeightTableRefs = false,
+                colsManuallyAdjustedWidthTableRefs = false,
+                selectedCellsTableRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
-                    if (sheetCellsRefs) db.sheetCells,
-                    if (sheetColumnTypesRefs) db.sheetColumnTypes,
-                    if (updateHistoriesRefs) db.updateHistories,
-                    if (rowsBottomPosRefs) db.rowsBottomPos,
-                    if (colRightPosRefs) db.colRightPos,
-                    if (rowsManuallyAdjustedHeightRefs)
-                      db.rowsManuallyAdjustedHeight,
-                    if (colsManuallyAdjustedWidthRefs)
-                      db.colsManuallyAdjustedWidth,
-                    if (selectedCellsRefs) db.selectedCells,
-                    if (bestSortFoundRefs) db.bestSortFound,
-                    if (cursorsRefs) db.cursors,
-                    if (possibleIntsByIdRefs) db.possibleIntsById,
-                    if (validAreasByIdRefs) db.validAreasById,
-                    if (bestDistFoundRefs) db.bestDistFound,
+                    if (sheetCellsTableRefs) db.sheetCellsTable,
+                    if (sheetColumnTypesTableRefs) db.sheetColumnTypesTable,
+                    if (updateHistoriesTableRefs) db.updateHistoriesTable,
+                    if (rowsBottomPosTableRefs) db.rowsBottomPosTable,
+                    if (colRightPosTableRefs) db.colRightPosTable,
+                    if (rowsManuallyAdjustedHeightTableRefs)
+                      db.rowsManuallyAdjustedHeightTable,
+                    if (colsManuallyAdjustedWidthTableRefs)
+                      db.colsManuallyAdjustedWidthTable,
+                    if (selectedCellsTableRefs) db.selectedCellsTable,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
                     return [
-                      if (sheetCellsRefs)
+                      if (sheetCellsTableRefs)
                         await $_getPrefetchedData<
-                          SheetDataTable,
+                          SheetDataEntity,
                           $SheetDataTablesTable,
-                          SheetCell
+                          SheetCellEntity
                         >(
                           currentTable: table,
                           referencedTable: $$SheetDataTablesTableReferences
-                              ._sheetCellsRefsTable(db),
+                              ._sheetCellsTableRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$SheetDataTablesTableReferences(
                                 db,
                                 table,
                                 p0,
-                              ).sheetCellsRefs,
+                              ).sheetCellsTableRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.sheetId == item.id,
                               ),
                           typedResults: items,
                         ),
-                      if (sheetColumnTypesRefs)
+                      if (sheetColumnTypesTableRefs)
                         await $_getPrefetchedData<
-                          SheetDataTable,
+                          SheetDataEntity,
                           $SheetDataTablesTable,
-                          SheetColumnType
+                          SheetColumnTypeEntity
                         >(
                           currentTable: table,
                           referencedTable: $$SheetDataTablesTableReferences
-                              ._sheetColumnTypesRefsTable(db),
+                              ._sheetColumnTypesTableRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$SheetDataTablesTableReferences(
                                 db,
                                 table,
                                 p0,
-                              ).sheetColumnTypesRefs,
+                              ).sheetColumnTypesTableRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.sheetId == item.id,
                               ),
                           typedResults: items,
                         ),
-                      if (updateHistoriesRefs)
+                      if (updateHistoriesTableRefs)
                         await $_getPrefetchedData<
-                          SheetDataTable,
+                          SheetDataEntity,
                           $SheetDataTablesTable,
-                          UpdateHistory
+                          UpdateHistoriesEntity
                         >(
                           currentTable: table,
                           referencedTable: $$SheetDataTablesTableReferences
-                              ._updateHistoriesRefsTable(db),
+                              ._updateHistoriesTableRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$SheetDataTablesTableReferences(
                                 db,
                                 table,
                                 p0,
-                              ).updateHistoriesRefs,
+                              ).updateHistoriesTableRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.sheetId == item.id,
                               ),
                           typedResults: items,
                         ),
-                      if (rowsBottomPosRefs)
+                      if (rowsBottomPosTableRefs)
                         await $_getPrefetchedData<
-                          SheetDataTable,
+                          SheetDataEntity,
                           $SheetDataTablesTable,
-                          RowsBottomPo
+                          RowsBottomPosEntity
                         >(
                           currentTable: table,
                           referencedTable: $$SheetDataTablesTableReferences
-                              ._rowsBottomPosRefsTable(db),
+                              ._rowsBottomPosTableRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$SheetDataTablesTableReferences(
                                 db,
                                 table,
                                 p0,
-                              ).rowsBottomPosRefs,
+                              ).rowsBottomPosTableRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.sheetId == item.id,
                               ),
                           typedResults: items,
                         ),
-                      if (colRightPosRefs)
+                      if (colRightPosTableRefs)
                         await $_getPrefetchedData<
-                          SheetDataTable,
+                          SheetDataEntity,
                           $SheetDataTablesTable,
-                          ColRightPo
+                          ColRightPosEntity
                         >(
                           currentTable: table,
                           referencedTable: $$SheetDataTablesTableReferences
-                              ._colRightPosRefsTable(db),
+                              ._colRightPosTableRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$SheetDataTablesTableReferences(
                                 db,
                                 table,
                                 p0,
-                              ).colRightPosRefs,
+                              ).colRightPosTableRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.sheetId == item.id,
                               ),
                           typedResults: items,
                         ),
-                      if (rowsManuallyAdjustedHeightRefs)
+                      if (rowsManuallyAdjustedHeightTableRefs)
                         await $_getPrefetchedData<
-                          SheetDataTable,
+                          SheetDataEntity,
                           $SheetDataTablesTable,
-                          RowsManuallyAdjustedHeightData
+                          RowsManuallyAdjustedHeightEntity
                         >(
                           currentTable: table,
                           referencedTable: $$SheetDataTablesTableReferences
-                              ._rowsManuallyAdjustedHeightRefsTable(db),
+                              ._rowsManuallyAdjustedHeightTableRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$SheetDataTablesTableReferences(
                                 db,
                                 table,
                                 p0,
-                              ).rowsManuallyAdjustedHeightRefs,
+                              ).rowsManuallyAdjustedHeightTableRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.sheetId == item.id,
                               ),
                           typedResults: items,
                         ),
-                      if (colsManuallyAdjustedWidthRefs)
+                      if (colsManuallyAdjustedWidthTableRefs)
                         await $_getPrefetchedData<
-                          SheetDataTable,
+                          SheetDataEntity,
                           $SheetDataTablesTable,
-                          ColsManuallyAdjustedWidthData
+                          ColsManuallyAdjustedWidthEntity
                         >(
                           currentTable: table,
                           referencedTable: $$SheetDataTablesTableReferences
-                              ._colsManuallyAdjustedWidthRefsTable(db),
+                              ._colsManuallyAdjustedWidthTableRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$SheetDataTablesTableReferences(
                                 db,
                                 table,
                                 p0,
-                              ).colsManuallyAdjustedWidthRefs,
+                              ).colsManuallyAdjustedWidthTableRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.sheetId == item.id,
                               ),
                           typedResults: items,
                         ),
-                      if (selectedCellsRefs)
+                      if (selectedCellsTableRefs)
                         await $_getPrefetchedData<
-                          SheetDataTable,
+                          SheetDataEntity,
                           $SheetDataTablesTable,
-                          SelectedCell
+                          SelectedCellsEntity
                         >(
                           currentTable: table,
                           referencedTable: $$SheetDataTablesTableReferences
-                              ._selectedCellsRefsTable(db),
+                              ._selectedCellsTableRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$SheetDataTablesTableReferences(
                                 db,
                                 table,
                                 p0,
-                              ).selectedCellsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.sheetId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (bestSortFoundRefs)
-                        await $_getPrefetchedData<
-                          SheetDataTable,
-                          $SheetDataTablesTable,
-                          BestSortFoundData
-                        >(
-                          currentTable: table,
-                          referencedTable: $$SheetDataTablesTableReferences
-                              ._bestSortFoundRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$SheetDataTablesTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).bestSortFoundRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.sheetId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (cursorsRefs)
-                        await $_getPrefetchedData<
-                          SheetDataTable,
-                          $SheetDataTablesTable,
-                          Cursor
-                        >(
-                          currentTable: table,
-                          referencedTable: $$SheetDataTablesTableReferences
-                              ._cursorsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$SheetDataTablesTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).cursorsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.sheetId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (possibleIntsByIdRefs)
-                        await $_getPrefetchedData<
-                          SheetDataTable,
-                          $SheetDataTablesTable,
-                          PossibleIntsByIdData
-                        >(
-                          currentTable: table,
-                          referencedTable: $$SheetDataTablesTableReferences
-                              ._possibleIntsByIdRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$SheetDataTablesTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).possibleIntsByIdRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.sheetId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (validAreasByIdRefs)
-                        await $_getPrefetchedData<
-                          SheetDataTable,
-                          $SheetDataTablesTable,
-                          ValidAreasByIdData
-                        >(
-                          currentTable: table,
-                          referencedTable: $$SheetDataTablesTableReferences
-                              ._validAreasByIdRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$SheetDataTablesTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).validAreasByIdRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.sheetId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (bestDistFoundRefs)
-                        await $_getPrefetchedData<
-                          SheetDataTable,
-                          $SheetDataTablesTable,
-                          BestDistFoundData
-                        >(
-                          currentTable: table,
-                          referencedTable: $$SheetDataTablesTableReferences
-                              ._bestDistFoundRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$SheetDataTablesTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).bestDistFoundRefs,
+                              ).selectedCellsTableRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.sheetId == item.id,
@@ -7035,40 +5134,35 @@ typedef $$SheetDataTablesTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $SheetDataTablesTable,
-      SheetDataTable,
+      SheetDataEntity,
       $$SheetDataTablesTableFilterComposer,
       $$SheetDataTablesTableOrderingComposer,
       $$SheetDataTablesTableAnnotationComposer,
       $$SheetDataTablesTableCreateCompanionBuilder,
       $$SheetDataTablesTableUpdateCompanionBuilder,
-      (SheetDataTable, $$SheetDataTablesTableReferences),
-      SheetDataTable,
+      (SheetDataEntity, $$SheetDataTablesTableReferences),
+      SheetDataEntity,
       PrefetchHooks Function({
-        bool sheetCellsRefs,
-        bool sheetColumnTypesRefs,
-        bool updateHistoriesRefs,
-        bool rowsBottomPosRefs,
-        bool colRightPosRefs,
-        bool rowsManuallyAdjustedHeightRefs,
-        bool colsManuallyAdjustedWidthRefs,
-        bool selectedCellsRefs,
-        bool bestSortFoundRefs,
-        bool cursorsRefs,
-        bool possibleIntsByIdRefs,
-        bool validAreasByIdRefs,
-        bool bestDistFoundRefs,
+        bool sheetCellsTableRefs,
+        bool sheetColumnTypesTableRefs,
+        bool updateHistoriesTableRefs,
+        bool rowsBottomPosTableRefs,
+        bool colRightPosTableRefs,
+        bool rowsManuallyAdjustedHeightTableRefs,
+        bool colsManuallyAdjustedWidthTableRefs,
+        bool selectedCellsTableRefs,
       })
     >;
-typedef $$SheetCellsTableCreateCompanionBuilder =
-    SheetCellsCompanion Function({
+typedef $$SheetCellsTableTableCreateCompanionBuilder =
+    SheetCellsTableCompanion Function({
       required int sheetId,
       required int row,
       required int col,
       required String content,
       Value<int> rowid,
     });
-typedef $$SheetCellsTableUpdateCompanionBuilder =
-    SheetCellsCompanion Function({
+typedef $$SheetCellsTableTableUpdateCompanionBuilder =
+    SheetCellsTableCompanion Function({
       Value<int> sheetId,
       Value<int> row,
       Value<int> col,
@@ -7076,13 +5170,18 @@ typedef $$SheetCellsTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
-final class $$SheetCellsTableReferences
-    extends BaseReferences<_$AppDatabase, $SheetCellsTable, SheetCell> {
-  $$SheetCellsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+final class $$SheetCellsTableTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $SheetCellsTableTable, SheetCellEntity> {
+  $$SheetCellsTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
 
   static $SheetDataTablesTable _sheetIdTable(_$AppDatabase db) =>
       db.sheetDataTables.createAlias(
-        $_aliasNameGenerator(db.sheetCells.sheetId, db.sheetDataTables.id),
+        $_aliasNameGenerator(db.sheetCellsTable.sheetId, db.sheetDataTables.id),
       );
 
   $$SheetDataTablesTableProcessedTableManager get sheetId {
@@ -7100,9 +5199,9 @@ final class $$SheetCellsTableReferences
   }
 }
 
-class $$SheetCellsTableFilterComposer
-    extends Composer<_$AppDatabase, $SheetCellsTable> {
-  $$SheetCellsTableFilterComposer({
+class $$SheetCellsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $SheetCellsTableTable> {
+  $$SheetCellsTableTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -7148,9 +5247,9 @@ class $$SheetCellsTableFilterComposer
   }
 }
 
-class $$SheetCellsTableOrderingComposer
-    extends Composer<_$AppDatabase, $SheetCellsTable> {
-  $$SheetCellsTableOrderingComposer({
+class $$SheetCellsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $SheetCellsTableTable> {
+  $$SheetCellsTableTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -7196,9 +5295,9 @@ class $$SheetCellsTableOrderingComposer
   }
 }
 
-class $$SheetCellsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $SheetCellsTable> {
-  $$SheetCellsTableAnnotationComposer({
+class $$SheetCellsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SheetCellsTableTable> {
+  $$SheetCellsTableTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -7238,32 +5337,34 @@ class $$SheetCellsTableAnnotationComposer
   }
 }
 
-class $$SheetCellsTableTableManager
+class $$SheetCellsTableTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $SheetCellsTable,
-          SheetCell,
-          $$SheetCellsTableFilterComposer,
-          $$SheetCellsTableOrderingComposer,
-          $$SheetCellsTableAnnotationComposer,
-          $$SheetCellsTableCreateCompanionBuilder,
-          $$SheetCellsTableUpdateCompanionBuilder,
-          (SheetCell, $$SheetCellsTableReferences),
-          SheetCell,
+          $SheetCellsTableTable,
+          SheetCellEntity,
+          $$SheetCellsTableTableFilterComposer,
+          $$SheetCellsTableTableOrderingComposer,
+          $$SheetCellsTableTableAnnotationComposer,
+          $$SheetCellsTableTableCreateCompanionBuilder,
+          $$SheetCellsTableTableUpdateCompanionBuilder,
+          (SheetCellEntity, $$SheetCellsTableTableReferences),
+          SheetCellEntity,
           PrefetchHooks Function({bool sheetId})
         > {
-  $$SheetCellsTableTableManager(_$AppDatabase db, $SheetCellsTable table)
-    : super(
+  $$SheetCellsTableTableTableManager(
+    _$AppDatabase db,
+    $SheetCellsTableTable table,
+  ) : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$SheetCellsTableFilterComposer($db: db, $table: table),
+              $$SheetCellsTableTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$SheetCellsTableOrderingComposer($db: db, $table: table),
+              $$SheetCellsTableTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$SheetCellsTableAnnotationComposer($db: db, $table: table),
+              $$SheetCellsTableTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<int> sheetId = const Value.absent(),
@@ -7271,7 +5372,7 @@ class $$SheetCellsTableTableManager
                 Value<int> col = const Value.absent(),
                 Value<String> content = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => SheetCellsCompanion(
+              }) => SheetCellsTableCompanion(
                 sheetId: sheetId,
                 row: row,
                 col: col,
@@ -7285,7 +5386,7 @@ class $$SheetCellsTableTableManager
                 required int col,
                 required String content,
                 Value<int> rowid = const Value.absent(),
-              }) => SheetCellsCompanion.insert(
+              }) => SheetCellsTableCompanion.insert(
                 sheetId: sheetId,
                 row: row,
                 col: col,
@@ -7296,7 +5397,7 @@ class $$SheetCellsTableTableManager
               .map(
                 (e) => (
                   e.readTable(table),
-                  $$SheetCellsTableReferences(db, table, e),
+                  $$SheetCellsTableTableReferences(db, table, e),
                 ),
               )
               .toList(),
@@ -7325,11 +5426,13 @@ class $$SheetCellsTableTableManager
                           state.withJoin(
                                 currentTable: table,
                                 currentColumn: table.sheetId,
-                                referencedTable: $$SheetCellsTableReferences
-                                    ._sheetIdTable(db),
-                                referencedColumn: $$SheetCellsTableReferences
-                                    ._sheetIdTable(db)
-                                    .id,
+                                referencedTable:
+                                    $$SheetCellsTableTableReferences
+                                        ._sheetIdTable(db),
+                                referencedColumn:
+                                    $$SheetCellsTableTableReferences
+                                        ._sheetIdTable(db)
+                                        .id,
                               )
                               as T;
                     }
@@ -7345,39 +5448,43 @@ class $$SheetCellsTableTableManager
       );
 }
 
-typedef $$SheetCellsTableProcessedTableManager =
+typedef $$SheetCellsTableTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $SheetCellsTable,
-      SheetCell,
-      $$SheetCellsTableFilterComposer,
-      $$SheetCellsTableOrderingComposer,
-      $$SheetCellsTableAnnotationComposer,
-      $$SheetCellsTableCreateCompanionBuilder,
-      $$SheetCellsTableUpdateCompanionBuilder,
-      (SheetCell, $$SheetCellsTableReferences),
-      SheetCell,
+      $SheetCellsTableTable,
+      SheetCellEntity,
+      $$SheetCellsTableTableFilterComposer,
+      $$SheetCellsTableTableOrderingComposer,
+      $$SheetCellsTableTableAnnotationComposer,
+      $$SheetCellsTableTableCreateCompanionBuilder,
+      $$SheetCellsTableTableUpdateCompanionBuilder,
+      (SheetCellEntity, $$SheetCellsTableTableReferences),
+      SheetCellEntity,
       PrefetchHooks Function({bool sheetId})
     >;
-typedef $$SheetColumnTypesTableCreateCompanionBuilder =
-    SheetColumnTypesCompanion Function({
+typedef $$SheetColumnTypesTableTableCreateCompanionBuilder =
+    SheetColumnTypesTableCompanion Function({
       required int sheetId,
       required int columnIndex,
       required ColumnType columnType,
       Value<int> rowid,
     });
-typedef $$SheetColumnTypesTableUpdateCompanionBuilder =
-    SheetColumnTypesCompanion Function({
+typedef $$SheetColumnTypesTableTableUpdateCompanionBuilder =
+    SheetColumnTypesTableCompanion Function({
       Value<int> sheetId,
       Value<int> columnIndex,
       Value<ColumnType> columnType,
       Value<int> rowid,
     });
 
-final class $$SheetColumnTypesTableReferences
+final class $$SheetColumnTypesTableTableReferences
     extends
-        BaseReferences<_$AppDatabase, $SheetColumnTypesTable, SheetColumnType> {
-  $$SheetColumnTypesTableReferences(
+        BaseReferences<
+          _$AppDatabase,
+          $SheetColumnTypesTableTable,
+          SheetColumnTypeEntity
+        > {
+  $$SheetColumnTypesTableTableReferences(
     super.$_db,
     super.$_table,
     super.$_typedResult,
@@ -7386,7 +5493,7 @@ final class $$SheetColumnTypesTableReferences
   static $SheetDataTablesTable _sheetIdTable(_$AppDatabase db) =>
       db.sheetDataTables.createAlias(
         $_aliasNameGenerator(
-          db.sheetColumnTypes.sheetId,
+          db.sheetColumnTypesTable.sheetId,
           db.sheetDataTables.id,
         ),
       );
@@ -7406,9 +5513,9 @@ final class $$SheetColumnTypesTableReferences
   }
 }
 
-class $$SheetColumnTypesTableFilterComposer
-    extends Composer<_$AppDatabase, $SheetColumnTypesTable> {
-  $$SheetColumnTypesTableFilterComposer({
+class $$SheetColumnTypesTableTableFilterComposer
+    extends Composer<_$AppDatabase, $SheetColumnTypesTableTable> {
+  $$SheetColumnTypesTableTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -7450,9 +5557,9 @@ class $$SheetColumnTypesTableFilterComposer
   }
 }
 
-class $$SheetColumnTypesTableOrderingComposer
-    extends Composer<_$AppDatabase, $SheetColumnTypesTable> {
-  $$SheetColumnTypesTableOrderingComposer({
+class $$SheetColumnTypesTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $SheetColumnTypesTableTable> {
+  $$SheetColumnTypesTableTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -7493,9 +5600,9 @@ class $$SheetColumnTypesTableOrderingComposer
   }
 }
 
-class $$SheetColumnTypesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $SheetColumnTypesTable> {
-  $$SheetColumnTypesTableAnnotationComposer({
+class $$SheetColumnTypesTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SheetColumnTypesTableTable> {
+  $$SheetColumnTypesTableTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -7537,41 +5644,50 @@ class $$SheetColumnTypesTableAnnotationComposer
   }
 }
 
-class $$SheetColumnTypesTableTableManager
+class $$SheetColumnTypesTableTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $SheetColumnTypesTable,
-          SheetColumnType,
-          $$SheetColumnTypesTableFilterComposer,
-          $$SheetColumnTypesTableOrderingComposer,
-          $$SheetColumnTypesTableAnnotationComposer,
-          $$SheetColumnTypesTableCreateCompanionBuilder,
-          $$SheetColumnTypesTableUpdateCompanionBuilder,
-          (SheetColumnType, $$SheetColumnTypesTableReferences),
-          SheetColumnType,
+          $SheetColumnTypesTableTable,
+          SheetColumnTypeEntity,
+          $$SheetColumnTypesTableTableFilterComposer,
+          $$SheetColumnTypesTableTableOrderingComposer,
+          $$SheetColumnTypesTableTableAnnotationComposer,
+          $$SheetColumnTypesTableTableCreateCompanionBuilder,
+          $$SheetColumnTypesTableTableUpdateCompanionBuilder,
+          (SheetColumnTypeEntity, $$SheetColumnTypesTableTableReferences),
+          SheetColumnTypeEntity,
           PrefetchHooks Function({bool sheetId})
         > {
-  $$SheetColumnTypesTableTableManager(
+  $$SheetColumnTypesTableTableTableManager(
     _$AppDatabase db,
-    $SheetColumnTypesTable table,
+    $SheetColumnTypesTableTable table,
   ) : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$SheetColumnTypesTableFilterComposer($db: db, $table: table),
+              $$SheetColumnTypesTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
           createOrderingComposer: () =>
-              $$SheetColumnTypesTableOrderingComposer($db: db, $table: table),
+              $$SheetColumnTypesTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
           createComputedFieldComposer: () =>
-              $$SheetColumnTypesTableAnnotationComposer($db: db, $table: table),
+              $$SheetColumnTypesTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
           updateCompanionCallback:
               ({
                 Value<int> sheetId = const Value.absent(),
                 Value<int> columnIndex = const Value.absent(),
                 Value<ColumnType> columnType = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => SheetColumnTypesCompanion(
+              }) => SheetColumnTypesTableCompanion(
                 sheetId: sheetId,
                 columnIndex: columnIndex,
                 columnType: columnType,
@@ -7583,7 +5699,7 @@ class $$SheetColumnTypesTableTableManager
                 required int columnIndex,
                 required ColumnType columnType,
                 Value<int> rowid = const Value.absent(),
-              }) => SheetColumnTypesCompanion.insert(
+              }) => SheetColumnTypesTableCompanion.insert(
                 sheetId: sheetId,
                 columnIndex: columnIndex,
                 columnType: columnType,
@@ -7593,7 +5709,7 @@ class $$SheetColumnTypesTableTableManager
               .map(
                 (e) => (
                   e.readTable(table),
-                  $$SheetColumnTypesTableReferences(db, table, e),
+                  $$SheetColumnTypesTableTableReferences(db, table, e),
                 ),
               )
               .toList(),
@@ -7623,10 +5739,10 @@ class $$SheetColumnTypesTableTableManager
                                 currentTable: table,
                                 currentColumn: table.sheetId,
                                 referencedTable:
-                                    $$SheetColumnTypesTableReferences
+                                    $$SheetColumnTypesTableTableReferences
                                         ._sheetIdTable(db),
                                 referencedColumn:
-                                    $$SheetColumnTypesTableReferences
+                                    $$SheetColumnTypesTableTableReferences
                                         ._sheetIdTable(db)
                                         .id,
                               )
@@ -7644,30 +5760,30 @@ class $$SheetColumnTypesTableTableManager
       );
 }
 
-typedef $$SheetColumnTypesTableProcessedTableManager =
+typedef $$SheetColumnTypesTableTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $SheetColumnTypesTable,
-      SheetColumnType,
-      $$SheetColumnTypesTableFilterComposer,
-      $$SheetColumnTypesTableOrderingComposer,
-      $$SheetColumnTypesTableAnnotationComposer,
-      $$SheetColumnTypesTableCreateCompanionBuilder,
-      $$SheetColumnTypesTableUpdateCompanionBuilder,
-      (SheetColumnType, $$SheetColumnTypesTableReferences),
-      SheetColumnType,
+      $SheetColumnTypesTableTable,
+      SheetColumnTypeEntity,
+      $$SheetColumnTypesTableTableFilterComposer,
+      $$SheetColumnTypesTableTableOrderingComposer,
+      $$SheetColumnTypesTableTableAnnotationComposer,
+      $$SheetColumnTypesTableTableCreateCompanionBuilder,
+      $$SheetColumnTypesTableTableUpdateCompanionBuilder,
+      (SheetColumnTypeEntity, $$SheetColumnTypesTableTableReferences),
+      SheetColumnTypeEntity,
       PrefetchHooks Function({bool sheetId})
     >;
-typedef $$UpdateHistoriesTableCreateCompanionBuilder =
-    UpdateHistoriesCompanion Function({
+typedef $$UpdateHistoriesTableTableCreateCompanionBuilder =
+    UpdateHistoriesTableCompanion Function({
       required DateTime timestamp,
       required int chronoId,
       required int sheetId,
       required Map<String, UpdateUnit> updates,
       Value<int> rowid,
     });
-typedef $$UpdateHistoriesTableUpdateCompanionBuilder =
-    UpdateHistoriesCompanion Function({
+typedef $$UpdateHistoriesTableTableUpdateCompanionBuilder =
+    UpdateHistoriesTableCompanion Function({
       Value<DateTime> timestamp,
       Value<int> chronoId,
       Value<int> sheetId,
@@ -7675,10 +5791,14 @@ typedef $$UpdateHistoriesTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
-final class $$UpdateHistoriesTableReferences
+final class $$UpdateHistoriesTableTableReferences
     extends
-        BaseReferences<_$AppDatabase, $UpdateHistoriesTable, UpdateHistory> {
-  $$UpdateHistoriesTableReferences(
+        BaseReferences<
+          _$AppDatabase,
+          $UpdateHistoriesTableTable,
+          UpdateHistoriesEntity
+        > {
+  $$UpdateHistoriesTableTableReferences(
     super.$_db,
     super.$_table,
     super.$_typedResult,
@@ -7686,7 +5806,10 @@ final class $$UpdateHistoriesTableReferences
 
   static $SheetDataTablesTable _sheetIdTable(_$AppDatabase db) =>
       db.sheetDataTables.createAlias(
-        $_aliasNameGenerator(db.updateHistories.sheetId, db.sheetDataTables.id),
+        $_aliasNameGenerator(
+          db.updateHistoriesTable.sheetId,
+          db.sheetDataTables.id,
+        ),
       );
 
   $$SheetDataTablesTableProcessedTableManager get sheetId {
@@ -7704,9 +5827,9 @@ final class $$UpdateHistoriesTableReferences
   }
 }
 
-class $$UpdateHistoriesTableFilterComposer
-    extends Composer<_$AppDatabase, $UpdateHistoriesTable> {
-  $$UpdateHistoriesTableFilterComposer({
+class $$UpdateHistoriesTableTableFilterComposer
+    extends Composer<_$AppDatabase, $UpdateHistoriesTableTable> {
+  $$UpdateHistoriesTableTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -7757,9 +5880,9 @@ class $$UpdateHistoriesTableFilterComposer
   }
 }
 
-class $$UpdateHistoriesTableOrderingComposer
-    extends Composer<_$AppDatabase, $UpdateHistoriesTable> {
-  $$UpdateHistoriesTableOrderingComposer({
+class $$UpdateHistoriesTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $UpdateHistoriesTableTable> {
+  $$UpdateHistoriesTableTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -7805,9 +5928,9 @@ class $$UpdateHistoriesTableOrderingComposer
   }
 }
 
-class $$UpdateHistoriesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $UpdateHistoriesTable> {
-  $$UpdateHistoriesTableAnnotationComposer({
+class $$UpdateHistoriesTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $UpdateHistoriesTableTable> {
+  $$UpdateHistoriesTableTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -7848,34 +5971,40 @@ class $$UpdateHistoriesTableAnnotationComposer
   }
 }
 
-class $$UpdateHistoriesTableTableManager
+class $$UpdateHistoriesTableTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $UpdateHistoriesTable,
-          UpdateHistory,
-          $$UpdateHistoriesTableFilterComposer,
-          $$UpdateHistoriesTableOrderingComposer,
-          $$UpdateHistoriesTableAnnotationComposer,
-          $$UpdateHistoriesTableCreateCompanionBuilder,
-          $$UpdateHistoriesTableUpdateCompanionBuilder,
-          (UpdateHistory, $$UpdateHistoriesTableReferences),
-          UpdateHistory,
+          $UpdateHistoriesTableTable,
+          UpdateHistoriesEntity,
+          $$UpdateHistoriesTableTableFilterComposer,
+          $$UpdateHistoriesTableTableOrderingComposer,
+          $$UpdateHistoriesTableTableAnnotationComposer,
+          $$UpdateHistoriesTableTableCreateCompanionBuilder,
+          $$UpdateHistoriesTableTableUpdateCompanionBuilder,
+          (UpdateHistoriesEntity, $$UpdateHistoriesTableTableReferences),
+          UpdateHistoriesEntity,
           PrefetchHooks Function({bool sheetId})
         > {
-  $$UpdateHistoriesTableTableManager(
+  $$UpdateHistoriesTableTableTableManager(
     _$AppDatabase db,
-    $UpdateHistoriesTable table,
+    $UpdateHistoriesTableTable table,
   ) : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$UpdateHistoriesTableFilterComposer($db: db, $table: table),
+              $$UpdateHistoriesTableTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$UpdateHistoriesTableOrderingComposer($db: db, $table: table),
+              $$UpdateHistoriesTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
           createComputedFieldComposer: () =>
-              $$UpdateHistoriesTableAnnotationComposer($db: db, $table: table),
+              $$UpdateHistoriesTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
           updateCompanionCallback:
               ({
                 Value<DateTime> timestamp = const Value.absent(),
@@ -7883,7 +6012,7 @@ class $$UpdateHistoriesTableTableManager
                 Value<int> sheetId = const Value.absent(),
                 Value<Map<String, UpdateUnit>> updates = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => UpdateHistoriesCompanion(
+              }) => UpdateHistoriesTableCompanion(
                 timestamp: timestamp,
                 chronoId: chronoId,
                 sheetId: sheetId,
@@ -7897,7 +6026,7 @@ class $$UpdateHistoriesTableTableManager
                 required int sheetId,
                 required Map<String, UpdateUnit> updates,
                 Value<int> rowid = const Value.absent(),
-              }) => UpdateHistoriesCompanion.insert(
+              }) => UpdateHistoriesTableCompanion.insert(
                 timestamp: timestamp,
                 chronoId: chronoId,
                 sheetId: sheetId,
@@ -7908,7 +6037,7 @@ class $$UpdateHistoriesTableTableManager
               .map(
                 (e) => (
                   e.readTable(table),
-                  $$UpdateHistoriesTableReferences(db, table, e),
+                  $$UpdateHistoriesTableTableReferences(db, table, e),
                 ),
               )
               .toList(),
@@ -7938,10 +6067,10 @@ class $$UpdateHistoriesTableTableManager
                                 currentTable: table,
                                 currentColumn: table.sheetId,
                                 referencedTable:
-                                    $$UpdateHistoriesTableReferences
+                                    $$UpdateHistoriesTableTableReferences
                                         ._sheetIdTable(db),
                                 referencedColumn:
-                                    $$UpdateHistoriesTableReferences
+                                    $$UpdateHistoriesTableTableReferences
                                         ._sheetIdTable(db)
                                         .id,
                               )
@@ -7959,38 +6088,43 @@ class $$UpdateHistoriesTableTableManager
       );
 }
 
-typedef $$UpdateHistoriesTableProcessedTableManager =
+typedef $$UpdateHistoriesTableTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $UpdateHistoriesTable,
-      UpdateHistory,
-      $$UpdateHistoriesTableFilterComposer,
-      $$UpdateHistoriesTableOrderingComposer,
-      $$UpdateHistoriesTableAnnotationComposer,
-      $$UpdateHistoriesTableCreateCompanionBuilder,
-      $$UpdateHistoriesTableUpdateCompanionBuilder,
-      (UpdateHistory, $$UpdateHistoriesTableReferences),
-      UpdateHistory,
+      $UpdateHistoriesTableTable,
+      UpdateHistoriesEntity,
+      $$UpdateHistoriesTableTableFilterComposer,
+      $$UpdateHistoriesTableTableOrderingComposer,
+      $$UpdateHistoriesTableTableAnnotationComposer,
+      $$UpdateHistoriesTableTableCreateCompanionBuilder,
+      $$UpdateHistoriesTableTableUpdateCompanionBuilder,
+      (UpdateHistoriesEntity, $$UpdateHistoriesTableTableReferences),
+      UpdateHistoriesEntity,
       PrefetchHooks Function({bool sheetId})
     >;
-typedef $$RowsBottomPosTableCreateCompanionBuilder =
-    RowsBottomPosCompanion Function({
+typedef $$RowsBottomPosTableTableCreateCompanionBuilder =
+    RowsBottomPosTableCompanion Function({
       required int sheetId,
       required int rowIndex,
       required double bottomPos,
       Value<int> rowid,
     });
-typedef $$RowsBottomPosTableUpdateCompanionBuilder =
-    RowsBottomPosCompanion Function({
+typedef $$RowsBottomPosTableTableUpdateCompanionBuilder =
+    RowsBottomPosTableCompanion Function({
       Value<int> sheetId,
       Value<int> rowIndex,
       Value<double> bottomPos,
       Value<int> rowid,
     });
 
-final class $$RowsBottomPosTableReferences
-    extends BaseReferences<_$AppDatabase, $RowsBottomPosTable, RowsBottomPo> {
-  $$RowsBottomPosTableReferences(
+final class $$RowsBottomPosTableTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $RowsBottomPosTableTable,
+          RowsBottomPosEntity
+        > {
+  $$RowsBottomPosTableTableReferences(
     super.$_db,
     super.$_table,
     super.$_typedResult,
@@ -7998,7 +6132,10 @@ final class $$RowsBottomPosTableReferences
 
   static $SheetDataTablesTable _sheetIdTable(_$AppDatabase db) =>
       db.sheetDataTables.createAlias(
-        $_aliasNameGenerator(db.rowsBottomPos.sheetId, db.sheetDataTables.id),
+        $_aliasNameGenerator(
+          db.rowsBottomPosTable.sheetId,
+          db.sheetDataTables.id,
+        ),
       );
 
   $$SheetDataTablesTableProcessedTableManager get sheetId {
@@ -8016,9 +6153,9 @@ final class $$RowsBottomPosTableReferences
   }
 }
 
-class $$RowsBottomPosTableFilterComposer
-    extends Composer<_$AppDatabase, $RowsBottomPosTable> {
-  $$RowsBottomPosTableFilterComposer({
+class $$RowsBottomPosTableTableFilterComposer
+    extends Composer<_$AppDatabase, $RowsBottomPosTableTable> {
+  $$RowsBottomPosTableTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8059,9 +6196,9 @@ class $$RowsBottomPosTableFilterComposer
   }
 }
 
-class $$RowsBottomPosTableOrderingComposer
-    extends Composer<_$AppDatabase, $RowsBottomPosTable> {
-  $$RowsBottomPosTableOrderingComposer({
+class $$RowsBottomPosTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $RowsBottomPosTableTable> {
+  $$RowsBottomPosTableTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8102,9 +6239,9 @@ class $$RowsBottomPosTableOrderingComposer
   }
 }
 
-class $$RowsBottomPosTableAnnotationComposer
-    extends Composer<_$AppDatabase, $RowsBottomPosTable> {
-  $$RowsBottomPosTableAnnotationComposer({
+class $$RowsBottomPosTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RowsBottomPosTableTable> {
+  $$RowsBottomPosTableTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8141,39 +6278,44 @@ class $$RowsBottomPosTableAnnotationComposer
   }
 }
 
-class $$RowsBottomPosTableTableManager
+class $$RowsBottomPosTableTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $RowsBottomPosTable,
-          RowsBottomPo,
-          $$RowsBottomPosTableFilterComposer,
-          $$RowsBottomPosTableOrderingComposer,
-          $$RowsBottomPosTableAnnotationComposer,
-          $$RowsBottomPosTableCreateCompanionBuilder,
-          $$RowsBottomPosTableUpdateCompanionBuilder,
-          (RowsBottomPo, $$RowsBottomPosTableReferences),
-          RowsBottomPo,
+          $RowsBottomPosTableTable,
+          RowsBottomPosEntity,
+          $$RowsBottomPosTableTableFilterComposer,
+          $$RowsBottomPosTableTableOrderingComposer,
+          $$RowsBottomPosTableTableAnnotationComposer,
+          $$RowsBottomPosTableTableCreateCompanionBuilder,
+          $$RowsBottomPosTableTableUpdateCompanionBuilder,
+          (RowsBottomPosEntity, $$RowsBottomPosTableTableReferences),
+          RowsBottomPosEntity,
           PrefetchHooks Function({bool sheetId})
         > {
-  $$RowsBottomPosTableTableManager(_$AppDatabase db, $RowsBottomPosTable table)
-    : super(
+  $$RowsBottomPosTableTableTableManager(
+    _$AppDatabase db,
+    $RowsBottomPosTableTable table,
+  ) : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$RowsBottomPosTableFilterComposer($db: db, $table: table),
+              $$RowsBottomPosTableTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$RowsBottomPosTableOrderingComposer($db: db, $table: table),
+              $$RowsBottomPosTableTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$RowsBottomPosTableAnnotationComposer($db: db, $table: table),
+              $$RowsBottomPosTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
           updateCompanionCallback:
               ({
                 Value<int> sheetId = const Value.absent(),
                 Value<int> rowIndex = const Value.absent(),
                 Value<double> bottomPos = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => RowsBottomPosCompanion(
+              }) => RowsBottomPosTableCompanion(
                 sheetId: sheetId,
                 rowIndex: rowIndex,
                 bottomPos: bottomPos,
@@ -8185,7 +6327,7 @@ class $$RowsBottomPosTableTableManager
                 required int rowIndex,
                 required double bottomPos,
                 Value<int> rowid = const Value.absent(),
-              }) => RowsBottomPosCompanion.insert(
+              }) => RowsBottomPosTableCompanion.insert(
                 sheetId: sheetId,
                 rowIndex: rowIndex,
                 bottomPos: bottomPos,
@@ -8195,7 +6337,7 @@ class $$RowsBottomPosTableTableManager
               .map(
                 (e) => (
                   e.readTable(table),
-                  $$RowsBottomPosTableReferences(db, table, e),
+                  $$RowsBottomPosTableTableReferences(db, table, e),
                 ),
               )
               .toList(),
@@ -8224,11 +6366,13 @@ class $$RowsBottomPosTableTableManager
                           state.withJoin(
                                 currentTable: table,
                                 currentColumn: table.sheetId,
-                                referencedTable: $$RowsBottomPosTableReferences
-                                    ._sheetIdTable(db),
-                                referencedColumn: $$RowsBottomPosTableReferences
-                                    ._sheetIdTable(db)
-                                    .id,
+                                referencedTable:
+                                    $$RowsBottomPosTableTableReferences
+                                        ._sheetIdTable(db),
+                                referencedColumn:
+                                    $$RowsBottomPosTableTableReferences
+                                        ._sheetIdTable(db)
+                                        .id,
                               )
                               as T;
                     }
@@ -8244,42 +6388,54 @@ class $$RowsBottomPosTableTableManager
       );
 }
 
-typedef $$RowsBottomPosTableProcessedTableManager =
+typedef $$RowsBottomPosTableTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $RowsBottomPosTable,
-      RowsBottomPo,
-      $$RowsBottomPosTableFilterComposer,
-      $$RowsBottomPosTableOrderingComposer,
-      $$RowsBottomPosTableAnnotationComposer,
-      $$RowsBottomPosTableCreateCompanionBuilder,
-      $$RowsBottomPosTableUpdateCompanionBuilder,
-      (RowsBottomPo, $$RowsBottomPosTableReferences),
-      RowsBottomPo,
+      $RowsBottomPosTableTable,
+      RowsBottomPosEntity,
+      $$RowsBottomPosTableTableFilterComposer,
+      $$RowsBottomPosTableTableOrderingComposer,
+      $$RowsBottomPosTableTableAnnotationComposer,
+      $$RowsBottomPosTableTableCreateCompanionBuilder,
+      $$RowsBottomPosTableTableUpdateCompanionBuilder,
+      (RowsBottomPosEntity, $$RowsBottomPosTableTableReferences),
+      RowsBottomPosEntity,
       PrefetchHooks Function({bool sheetId})
     >;
-typedef $$ColRightPosTableCreateCompanionBuilder =
-    ColRightPosCompanion Function({
+typedef $$ColRightPosTableTableCreateCompanionBuilder =
+    ColRightPosTableCompanion Function({
       required int sheetId,
       required int colIndex,
       required double rightPos,
       Value<int> rowid,
     });
-typedef $$ColRightPosTableUpdateCompanionBuilder =
-    ColRightPosCompanion Function({
+typedef $$ColRightPosTableTableUpdateCompanionBuilder =
+    ColRightPosTableCompanion Function({
       Value<int> sheetId,
       Value<int> colIndex,
       Value<double> rightPos,
       Value<int> rowid,
     });
 
-final class $$ColRightPosTableReferences
-    extends BaseReferences<_$AppDatabase, $ColRightPosTable, ColRightPo> {
-  $$ColRightPosTableReferences(super.$_db, super.$_table, super.$_typedResult);
+final class $$ColRightPosTableTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ColRightPosTableTable,
+          ColRightPosEntity
+        > {
+  $$ColRightPosTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
 
   static $SheetDataTablesTable _sheetIdTable(_$AppDatabase db) =>
       db.sheetDataTables.createAlias(
-        $_aliasNameGenerator(db.colRightPos.sheetId, db.sheetDataTables.id),
+        $_aliasNameGenerator(
+          db.colRightPosTable.sheetId,
+          db.sheetDataTables.id,
+        ),
       );
 
   $$SheetDataTablesTableProcessedTableManager get sheetId {
@@ -8297,9 +6453,9 @@ final class $$ColRightPosTableReferences
   }
 }
 
-class $$ColRightPosTableFilterComposer
-    extends Composer<_$AppDatabase, $ColRightPosTable> {
-  $$ColRightPosTableFilterComposer({
+class $$ColRightPosTableTableFilterComposer
+    extends Composer<_$AppDatabase, $ColRightPosTableTable> {
+  $$ColRightPosTableTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8340,9 +6496,9 @@ class $$ColRightPosTableFilterComposer
   }
 }
 
-class $$ColRightPosTableOrderingComposer
-    extends Composer<_$AppDatabase, $ColRightPosTable> {
-  $$ColRightPosTableOrderingComposer({
+class $$ColRightPosTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $ColRightPosTableTable> {
+  $$ColRightPosTableTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8383,9 +6539,9 @@ class $$ColRightPosTableOrderingComposer
   }
 }
 
-class $$ColRightPosTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ColRightPosTable> {
-  $$ColRightPosTableAnnotationComposer({
+class $$ColRightPosTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ColRightPosTableTable> {
+  $$ColRightPosTableTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8422,39 +6578,41 @@ class $$ColRightPosTableAnnotationComposer
   }
 }
 
-class $$ColRightPosTableTableManager
+class $$ColRightPosTableTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $ColRightPosTable,
-          ColRightPo,
-          $$ColRightPosTableFilterComposer,
-          $$ColRightPosTableOrderingComposer,
-          $$ColRightPosTableAnnotationComposer,
-          $$ColRightPosTableCreateCompanionBuilder,
-          $$ColRightPosTableUpdateCompanionBuilder,
-          (ColRightPo, $$ColRightPosTableReferences),
-          ColRightPo,
+          $ColRightPosTableTable,
+          ColRightPosEntity,
+          $$ColRightPosTableTableFilterComposer,
+          $$ColRightPosTableTableOrderingComposer,
+          $$ColRightPosTableTableAnnotationComposer,
+          $$ColRightPosTableTableCreateCompanionBuilder,
+          $$ColRightPosTableTableUpdateCompanionBuilder,
+          (ColRightPosEntity, $$ColRightPosTableTableReferences),
+          ColRightPosEntity,
           PrefetchHooks Function({bool sheetId})
         > {
-  $$ColRightPosTableTableManager(_$AppDatabase db, $ColRightPosTable table)
-    : super(
+  $$ColRightPosTableTableTableManager(
+    _$AppDatabase db,
+    $ColRightPosTableTable table,
+  ) : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$ColRightPosTableFilterComposer($db: db, $table: table),
+              $$ColRightPosTableTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$ColRightPosTableOrderingComposer($db: db, $table: table),
+              $$ColRightPosTableTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$ColRightPosTableAnnotationComposer($db: db, $table: table),
+              $$ColRightPosTableTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<int> sheetId = const Value.absent(),
                 Value<int> colIndex = const Value.absent(),
                 Value<double> rightPos = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => ColRightPosCompanion(
+              }) => ColRightPosTableCompanion(
                 sheetId: sheetId,
                 colIndex: colIndex,
                 rightPos: rightPos,
@@ -8466,7 +6624,7 @@ class $$ColRightPosTableTableManager
                 required int colIndex,
                 required double rightPos,
                 Value<int> rowid = const Value.absent(),
-              }) => ColRightPosCompanion.insert(
+              }) => ColRightPosTableCompanion.insert(
                 sheetId: sheetId,
                 colIndex: colIndex,
                 rightPos: rightPos,
@@ -8476,7 +6634,7 @@ class $$ColRightPosTableTableManager
               .map(
                 (e) => (
                   e.readTable(table),
-                  $$ColRightPosTableReferences(db, table, e),
+                  $$ColRightPosTableTableReferences(db, table, e),
                 ),
               )
               .toList(),
@@ -8505,11 +6663,13 @@ class $$ColRightPosTableTableManager
                           state.withJoin(
                                 currentTable: table,
                                 currentColumn: table.sheetId,
-                                referencedTable: $$ColRightPosTableReferences
-                                    ._sheetIdTable(db),
-                                referencedColumn: $$ColRightPosTableReferences
-                                    ._sheetIdTable(db)
-                                    .id,
+                                referencedTable:
+                                    $$ColRightPosTableTableReferences
+                                        ._sheetIdTable(db),
+                                referencedColumn:
+                                    $$ColRightPosTableTableReferences
+                                        ._sheetIdTable(db)
+                                        .id,
                               )
                               as T;
                     }
@@ -8525,43 +6685,43 @@ class $$ColRightPosTableTableManager
       );
 }
 
-typedef $$ColRightPosTableProcessedTableManager =
+typedef $$ColRightPosTableTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $ColRightPosTable,
-      ColRightPo,
-      $$ColRightPosTableFilterComposer,
-      $$ColRightPosTableOrderingComposer,
-      $$ColRightPosTableAnnotationComposer,
-      $$ColRightPosTableCreateCompanionBuilder,
-      $$ColRightPosTableUpdateCompanionBuilder,
-      (ColRightPo, $$ColRightPosTableReferences),
-      ColRightPo,
+      $ColRightPosTableTable,
+      ColRightPosEntity,
+      $$ColRightPosTableTableFilterComposer,
+      $$ColRightPosTableTableOrderingComposer,
+      $$ColRightPosTableTableAnnotationComposer,
+      $$ColRightPosTableTableCreateCompanionBuilder,
+      $$ColRightPosTableTableUpdateCompanionBuilder,
+      (ColRightPosEntity, $$ColRightPosTableTableReferences),
+      ColRightPosEntity,
       PrefetchHooks Function({bool sheetId})
     >;
-typedef $$RowsManuallyAdjustedHeightTableCreateCompanionBuilder =
-    RowsManuallyAdjustedHeightCompanion Function({
+typedef $$RowsManuallyAdjustedHeightTableTableCreateCompanionBuilder =
+    RowsManuallyAdjustedHeightTableCompanion Function({
       required int sheetId,
       required int rowIndex,
       required bool manuallyAdjusted,
       Value<int> rowid,
     });
-typedef $$RowsManuallyAdjustedHeightTableUpdateCompanionBuilder =
-    RowsManuallyAdjustedHeightCompanion Function({
+typedef $$RowsManuallyAdjustedHeightTableTableUpdateCompanionBuilder =
+    RowsManuallyAdjustedHeightTableCompanion Function({
       Value<int> sheetId,
       Value<int> rowIndex,
       Value<bool> manuallyAdjusted,
       Value<int> rowid,
     });
 
-final class $$RowsManuallyAdjustedHeightTableReferences
+final class $$RowsManuallyAdjustedHeightTableTableReferences
     extends
         BaseReferences<
           _$AppDatabase,
-          $RowsManuallyAdjustedHeightTable,
-          RowsManuallyAdjustedHeightData
+          $RowsManuallyAdjustedHeightTableTable,
+          RowsManuallyAdjustedHeightEntity
         > {
-  $$RowsManuallyAdjustedHeightTableReferences(
+  $$RowsManuallyAdjustedHeightTableTableReferences(
     super.$_db,
     super.$_table,
     super.$_typedResult,
@@ -8570,7 +6730,7 @@ final class $$RowsManuallyAdjustedHeightTableReferences
   static $SheetDataTablesTable _sheetIdTable(_$AppDatabase db) =>
       db.sheetDataTables.createAlias(
         $_aliasNameGenerator(
-          db.rowsManuallyAdjustedHeight.sheetId,
+          db.rowsManuallyAdjustedHeightTable.sheetId,
           db.sheetDataTables.id,
         ),
       );
@@ -8590,9 +6750,9 @@ final class $$RowsManuallyAdjustedHeightTableReferences
   }
 }
 
-class $$RowsManuallyAdjustedHeightTableFilterComposer
-    extends Composer<_$AppDatabase, $RowsManuallyAdjustedHeightTable> {
-  $$RowsManuallyAdjustedHeightTableFilterComposer({
+class $$RowsManuallyAdjustedHeightTableTableFilterComposer
+    extends Composer<_$AppDatabase, $RowsManuallyAdjustedHeightTableTable> {
+  $$RowsManuallyAdjustedHeightTableTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8633,9 +6793,9 @@ class $$RowsManuallyAdjustedHeightTableFilterComposer
   }
 }
 
-class $$RowsManuallyAdjustedHeightTableOrderingComposer
-    extends Composer<_$AppDatabase, $RowsManuallyAdjustedHeightTable> {
-  $$RowsManuallyAdjustedHeightTableOrderingComposer({
+class $$RowsManuallyAdjustedHeightTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $RowsManuallyAdjustedHeightTableTable> {
+  $$RowsManuallyAdjustedHeightTableTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8676,9 +6836,9 @@ class $$RowsManuallyAdjustedHeightTableOrderingComposer
   }
 }
 
-class $$RowsManuallyAdjustedHeightTableAnnotationComposer
-    extends Composer<_$AppDatabase, $RowsManuallyAdjustedHeightTable> {
-  $$RowsManuallyAdjustedHeightTableAnnotationComposer({
+class $$RowsManuallyAdjustedHeightTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RowsManuallyAdjustedHeightTableTable> {
+  $$RowsManuallyAdjustedHeightTableTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8717,43 +6877,43 @@ class $$RowsManuallyAdjustedHeightTableAnnotationComposer
   }
 }
 
-class $$RowsManuallyAdjustedHeightTableTableManager
+class $$RowsManuallyAdjustedHeightTableTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $RowsManuallyAdjustedHeightTable,
-          RowsManuallyAdjustedHeightData,
-          $$RowsManuallyAdjustedHeightTableFilterComposer,
-          $$RowsManuallyAdjustedHeightTableOrderingComposer,
-          $$RowsManuallyAdjustedHeightTableAnnotationComposer,
-          $$RowsManuallyAdjustedHeightTableCreateCompanionBuilder,
-          $$RowsManuallyAdjustedHeightTableUpdateCompanionBuilder,
+          $RowsManuallyAdjustedHeightTableTable,
+          RowsManuallyAdjustedHeightEntity,
+          $$RowsManuallyAdjustedHeightTableTableFilterComposer,
+          $$RowsManuallyAdjustedHeightTableTableOrderingComposer,
+          $$RowsManuallyAdjustedHeightTableTableAnnotationComposer,
+          $$RowsManuallyAdjustedHeightTableTableCreateCompanionBuilder,
+          $$RowsManuallyAdjustedHeightTableTableUpdateCompanionBuilder,
           (
-            RowsManuallyAdjustedHeightData,
-            $$RowsManuallyAdjustedHeightTableReferences,
+            RowsManuallyAdjustedHeightEntity,
+            $$RowsManuallyAdjustedHeightTableTableReferences,
           ),
-          RowsManuallyAdjustedHeightData,
+          RowsManuallyAdjustedHeightEntity,
           PrefetchHooks Function({bool sheetId})
         > {
-  $$RowsManuallyAdjustedHeightTableTableManager(
+  $$RowsManuallyAdjustedHeightTableTableTableManager(
     _$AppDatabase db,
-    $RowsManuallyAdjustedHeightTable table,
+    $RowsManuallyAdjustedHeightTableTable table,
   ) : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$RowsManuallyAdjustedHeightTableFilterComposer(
+              $$RowsManuallyAdjustedHeightTableTableFilterComposer(
                 $db: db,
                 $table: table,
               ),
           createOrderingComposer: () =>
-              $$RowsManuallyAdjustedHeightTableOrderingComposer(
+              $$RowsManuallyAdjustedHeightTableTableOrderingComposer(
                 $db: db,
                 $table: table,
               ),
           createComputedFieldComposer: () =>
-              $$RowsManuallyAdjustedHeightTableAnnotationComposer(
+              $$RowsManuallyAdjustedHeightTableTableAnnotationComposer(
                 $db: db,
                 $table: table,
               ),
@@ -8763,7 +6923,7 @@ class $$RowsManuallyAdjustedHeightTableTableManager
                 Value<int> rowIndex = const Value.absent(),
                 Value<bool> manuallyAdjusted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => RowsManuallyAdjustedHeightCompanion(
+              }) => RowsManuallyAdjustedHeightTableCompanion(
                 sheetId: sheetId,
                 rowIndex: rowIndex,
                 manuallyAdjusted: manuallyAdjusted,
@@ -8775,7 +6935,7 @@ class $$RowsManuallyAdjustedHeightTableTableManager
                 required int rowIndex,
                 required bool manuallyAdjusted,
                 Value<int> rowid = const Value.absent(),
-              }) => RowsManuallyAdjustedHeightCompanion.insert(
+              }) => RowsManuallyAdjustedHeightTableCompanion.insert(
                 sheetId: sheetId,
                 rowIndex: rowIndex,
                 manuallyAdjusted: manuallyAdjusted,
@@ -8785,7 +6945,11 @@ class $$RowsManuallyAdjustedHeightTableTableManager
               .map(
                 (e) => (
                   e.readTable(table),
-                  $$RowsManuallyAdjustedHeightTableReferences(db, table, e),
+                  $$RowsManuallyAdjustedHeightTableTableReferences(
+                    db,
+                    table,
+                    e,
+                  ),
                 ),
               )
               .toList(),
@@ -8815,10 +6979,10 @@ class $$RowsManuallyAdjustedHeightTableTableManager
                                 currentTable: table,
                                 currentColumn: table.sheetId,
                                 referencedTable:
-                                    $$RowsManuallyAdjustedHeightTableReferences
+                                    $$RowsManuallyAdjustedHeightTableTableReferences
                                         ._sheetIdTable(db),
                                 referencedColumn:
-                                    $$RowsManuallyAdjustedHeightTableReferences
+                                    $$RowsManuallyAdjustedHeightTableTableReferences
                                         ._sheetIdTable(db)
                                         .id,
                               )
@@ -8836,46 +7000,46 @@ class $$RowsManuallyAdjustedHeightTableTableManager
       );
 }
 
-typedef $$RowsManuallyAdjustedHeightTableProcessedTableManager =
+typedef $$RowsManuallyAdjustedHeightTableTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $RowsManuallyAdjustedHeightTable,
-      RowsManuallyAdjustedHeightData,
-      $$RowsManuallyAdjustedHeightTableFilterComposer,
-      $$RowsManuallyAdjustedHeightTableOrderingComposer,
-      $$RowsManuallyAdjustedHeightTableAnnotationComposer,
-      $$RowsManuallyAdjustedHeightTableCreateCompanionBuilder,
-      $$RowsManuallyAdjustedHeightTableUpdateCompanionBuilder,
+      $RowsManuallyAdjustedHeightTableTable,
+      RowsManuallyAdjustedHeightEntity,
+      $$RowsManuallyAdjustedHeightTableTableFilterComposer,
+      $$RowsManuallyAdjustedHeightTableTableOrderingComposer,
+      $$RowsManuallyAdjustedHeightTableTableAnnotationComposer,
+      $$RowsManuallyAdjustedHeightTableTableCreateCompanionBuilder,
+      $$RowsManuallyAdjustedHeightTableTableUpdateCompanionBuilder,
       (
-        RowsManuallyAdjustedHeightData,
-        $$RowsManuallyAdjustedHeightTableReferences,
+        RowsManuallyAdjustedHeightEntity,
+        $$RowsManuallyAdjustedHeightTableTableReferences,
       ),
-      RowsManuallyAdjustedHeightData,
+      RowsManuallyAdjustedHeightEntity,
       PrefetchHooks Function({bool sheetId})
     >;
-typedef $$ColsManuallyAdjustedWidthTableCreateCompanionBuilder =
-    ColsManuallyAdjustedWidthCompanion Function({
+typedef $$ColsManuallyAdjustedWidthTableTableCreateCompanionBuilder =
+    ColsManuallyAdjustedWidthTableCompanion Function({
       required int sheetId,
       required int colIndex,
       required bool manuallyAdjusted,
       Value<int> rowid,
     });
-typedef $$ColsManuallyAdjustedWidthTableUpdateCompanionBuilder =
-    ColsManuallyAdjustedWidthCompanion Function({
+typedef $$ColsManuallyAdjustedWidthTableTableUpdateCompanionBuilder =
+    ColsManuallyAdjustedWidthTableCompanion Function({
       Value<int> sheetId,
       Value<int> colIndex,
       Value<bool> manuallyAdjusted,
       Value<int> rowid,
     });
 
-final class $$ColsManuallyAdjustedWidthTableReferences
+final class $$ColsManuallyAdjustedWidthTableTableReferences
     extends
         BaseReferences<
           _$AppDatabase,
-          $ColsManuallyAdjustedWidthTable,
-          ColsManuallyAdjustedWidthData
+          $ColsManuallyAdjustedWidthTableTable,
+          ColsManuallyAdjustedWidthEntity
         > {
-  $$ColsManuallyAdjustedWidthTableReferences(
+  $$ColsManuallyAdjustedWidthTableTableReferences(
     super.$_db,
     super.$_table,
     super.$_typedResult,
@@ -8884,7 +7048,7 @@ final class $$ColsManuallyAdjustedWidthTableReferences
   static $SheetDataTablesTable _sheetIdTable(_$AppDatabase db) =>
       db.sheetDataTables.createAlias(
         $_aliasNameGenerator(
-          db.colsManuallyAdjustedWidth.sheetId,
+          db.colsManuallyAdjustedWidthTable.sheetId,
           db.sheetDataTables.id,
         ),
       );
@@ -8904,9 +7068,9 @@ final class $$ColsManuallyAdjustedWidthTableReferences
   }
 }
 
-class $$ColsManuallyAdjustedWidthTableFilterComposer
-    extends Composer<_$AppDatabase, $ColsManuallyAdjustedWidthTable> {
-  $$ColsManuallyAdjustedWidthTableFilterComposer({
+class $$ColsManuallyAdjustedWidthTableTableFilterComposer
+    extends Composer<_$AppDatabase, $ColsManuallyAdjustedWidthTableTable> {
+  $$ColsManuallyAdjustedWidthTableTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8947,9 +7111,9 @@ class $$ColsManuallyAdjustedWidthTableFilterComposer
   }
 }
 
-class $$ColsManuallyAdjustedWidthTableOrderingComposer
-    extends Composer<_$AppDatabase, $ColsManuallyAdjustedWidthTable> {
-  $$ColsManuallyAdjustedWidthTableOrderingComposer({
+class $$ColsManuallyAdjustedWidthTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $ColsManuallyAdjustedWidthTableTable> {
+  $$ColsManuallyAdjustedWidthTableTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -8990,9 +7154,9 @@ class $$ColsManuallyAdjustedWidthTableOrderingComposer
   }
 }
 
-class $$ColsManuallyAdjustedWidthTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ColsManuallyAdjustedWidthTable> {
-  $$ColsManuallyAdjustedWidthTableAnnotationComposer({
+class $$ColsManuallyAdjustedWidthTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ColsManuallyAdjustedWidthTableTable> {
+  $$ColsManuallyAdjustedWidthTableTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -9031,43 +7195,43 @@ class $$ColsManuallyAdjustedWidthTableAnnotationComposer
   }
 }
 
-class $$ColsManuallyAdjustedWidthTableTableManager
+class $$ColsManuallyAdjustedWidthTableTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $ColsManuallyAdjustedWidthTable,
-          ColsManuallyAdjustedWidthData,
-          $$ColsManuallyAdjustedWidthTableFilterComposer,
-          $$ColsManuallyAdjustedWidthTableOrderingComposer,
-          $$ColsManuallyAdjustedWidthTableAnnotationComposer,
-          $$ColsManuallyAdjustedWidthTableCreateCompanionBuilder,
-          $$ColsManuallyAdjustedWidthTableUpdateCompanionBuilder,
+          $ColsManuallyAdjustedWidthTableTable,
+          ColsManuallyAdjustedWidthEntity,
+          $$ColsManuallyAdjustedWidthTableTableFilterComposer,
+          $$ColsManuallyAdjustedWidthTableTableOrderingComposer,
+          $$ColsManuallyAdjustedWidthTableTableAnnotationComposer,
+          $$ColsManuallyAdjustedWidthTableTableCreateCompanionBuilder,
+          $$ColsManuallyAdjustedWidthTableTableUpdateCompanionBuilder,
           (
-            ColsManuallyAdjustedWidthData,
-            $$ColsManuallyAdjustedWidthTableReferences,
+            ColsManuallyAdjustedWidthEntity,
+            $$ColsManuallyAdjustedWidthTableTableReferences,
           ),
-          ColsManuallyAdjustedWidthData,
+          ColsManuallyAdjustedWidthEntity,
           PrefetchHooks Function({bool sheetId})
         > {
-  $$ColsManuallyAdjustedWidthTableTableManager(
+  $$ColsManuallyAdjustedWidthTableTableTableManager(
     _$AppDatabase db,
-    $ColsManuallyAdjustedWidthTable table,
+    $ColsManuallyAdjustedWidthTableTable table,
   ) : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$ColsManuallyAdjustedWidthTableFilterComposer(
+              $$ColsManuallyAdjustedWidthTableTableFilterComposer(
                 $db: db,
                 $table: table,
               ),
           createOrderingComposer: () =>
-              $$ColsManuallyAdjustedWidthTableOrderingComposer(
+              $$ColsManuallyAdjustedWidthTableTableOrderingComposer(
                 $db: db,
                 $table: table,
               ),
           createComputedFieldComposer: () =>
-              $$ColsManuallyAdjustedWidthTableAnnotationComposer(
+              $$ColsManuallyAdjustedWidthTableTableAnnotationComposer(
                 $db: db,
                 $table: table,
               ),
@@ -9077,7 +7241,7 @@ class $$ColsManuallyAdjustedWidthTableTableManager
                 Value<int> colIndex = const Value.absent(),
                 Value<bool> manuallyAdjusted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => ColsManuallyAdjustedWidthCompanion(
+              }) => ColsManuallyAdjustedWidthTableCompanion(
                 sheetId: sheetId,
                 colIndex: colIndex,
                 manuallyAdjusted: manuallyAdjusted,
@@ -9089,7 +7253,7 @@ class $$ColsManuallyAdjustedWidthTableTableManager
                 required int colIndex,
                 required bool manuallyAdjusted,
                 Value<int> rowid = const Value.absent(),
-              }) => ColsManuallyAdjustedWidthCompanion.insert(
+              }) => ColsManuallyAdjustedWidthTableCompanion.insert(
                 sheetId: sheetId,
                 colIndex: colIndex,
                 manuallyAdjusted: manuallyAdjusted,
@@ -9099,7 +7263,7 @@ class $$ColsManuallyAdjustedWidthTableTableManager
               .map(
                 (e) => (
                   e.readTable(table),
-                  $$ColsManuallyAdjustedWidthTableReferences(db, table, e),
+                  $$ColsManuallyAdjustedWidthTableTableReferences(db, table, e),
                 ),
               )
               .toList(),
@@ -9129,10 +7293,10 @@ class $$ColsManuallyAdjustedWidthTableTableManager
                                 currentTable: table,
                                 currentColumn: table.sheetId,
                                 referencedTable:
-                                    $$ColsManuallyAdjustedWidthTableReferences
+                                    $$ColsManuallyAdjustedWidthTableTableReferences
                                         ._sheetIdTable(db),
                                 referencedColumn:
-                                    $$ColsManuallyAdjustedWidthTableReferences
+                                    $$ColsManuallyAdjustedWidthTableTableReferences
                                         ._sheetIdTable(db)
                                         .id,
                               )
@@ -9150,33 +7314,33 @@ class $$ColsManuallyAdjustedWidthTableTableManager
       );
 }
 
-typedef $$ColsManuallyAdjustedWidthTableProcessedTableManager =
+typedef $$ColsManuallyAdjustedWidthTableTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $ColsManuallyAdjustedWidthTable,
-      ColsManuallyAdjustedWidthData,
-      $$ColsManuallyAdjustedWidthTableFilterComposer,
-      $$ColsManuallyAdjustedWidthTableOrderingComposer,
-      $$ColsManuallyAdjustedWidthTableAnnotationComposer,
-      $$ColsManuallyAdjustedWidthTableCreateCompanionBuilder,
-      $$ColsManuallyAdjustedWidthTableUpdateCompanionBuilder,
+      $ColsManuallyAdjustedWidthTableTable,
+      ColsManuallyAdjustedWidthEntity,
+      $$ColsManuallyAdjustedWidthTableTableFilterComposer,
+      $$ColsManuallyAdjustedWidthTableTableOrderingComposer,
+      $$ColsManuallyAdjustedWidthTableTableAnnotationComposer,
+      $$ColsManuallyAdjustedWidthTableTableCreateCompanionBuilder,
+      $$ColsManuallyAdjustedWidthTableTableUpdateCompanionBuilder,
       (
-        ColsManuallyAdjustedWidthData,
-        $$ColsManuallyAdjustedWidthTableReferences,
+        ColsManuallyAdjustedWidthEntity,
+        $$ColsManuallyAdjustedWidthTableTableReferences,
       ),
-      ColsManuallyAdjustedWidthData,
+      ColsManuallyAdjustedWidthEntity,
       PrefetchHooks Function({bool sheetId})
     >;
-typedef $$SelectedCellsTableCreateCompanionBuilder =
-    SelectedCellsCompanion Function({
+typedef $$SelectedCellsTableTableCreateCompanionBuilder =
+    SelectedCellsTableCompanion Function({
       required int sheetId,
       required int cellIndex,
       required int row,
       required int col,
       Value<int> rowid,
     });
-typedef $$SelectedCellsTableUpdateCompanionBuilder =
-    SelectedCellsCompanion Function({
+typedef $$SelectedCellsTableTableUpdateCompanionBuilder =
+    SelectedCellsTableCompanion Function({
       Value<int> sheetId,
       Value<int> cellIndex,
       Value<int> row,
@@ -9184,9 +7348,14 @@ typedef $$SelectedCellsTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
-final class $$SelectedCellsTableReferences
-    extends BaseReferences<_$AppDatabase, $SelectedCellsTable, SelectedCell> {
-  $$SelectedCellsTableReferences(
+final class $$SelectedCellsTableTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $SelectedCellsTableTable,
+          SelectedCellsEntity
+        > {
+  $$SelectedCellsTableTableReferences(
     super.$_db,
     super.$_table,
     super.$_typedResult,
@@ -9194,7 +7363,10 @@ final class $$SelectedCellsTableReferences
 
   static $SheetDataTablesTable _sheetIdTable(_$AppDatabase db) =>
       db.sheetDataTables.createAlias(
-        $_aliasNameGenerator(db.selectedCells.sheetId, db.sheetDataTables.id),
+        $_aliasNameGenerator(
+          db.selectedCellsTable.sheetId,
+          db.sheetDataTables.id,
+        ),
       );
 
   $$SheetDataTablesTableProcessedTableManager get sheetId {
@@ -9212,9 +7384,9 @@ final class $$SelectedCellsTableReferences
   }
 }
 
-class $$SelectedCellsTableFilterComposer
-    extends Composer<_$AppDatabase, $SelectedCellsTable> {
-  $$SelectedCellsTableFilterComposer({
+class $$SelectedCellsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $SelectedCellsTableTable> {
+  $$SelectedCellsTableTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -9260,9 +7432,9 @@ class $$SelectedCellsTableFilterComposer
   }
 }
 
-class $$SelectedCellsTableOrderingComposer
-    extends Composer<_$AppDatabase, $SelectedCellsTable> {
-  $$SelectedCellsTableOrderingComposer({
+class $$SelectedCellsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $SelectedCellsTableTable> {
+  $$SelectedCellsTableTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -9308,9 +7480,9 @@ class $$SelectedCellsTableOrderingComposer
   }
 }
 
-class $$SelectedCellsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $SelectedCellsTable> {
-  $$SelectedCellsTableAnnotationComposer({
+class $$SelectedCellsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SelectedCellsTableTable> {
+  $$SelectedCellsTableTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -9350,32 +7522,37 @@ class $$SelectedCellsTableAnnotationComposer
   }
 }
 
-class $$SelectedCellsTableTableManager
+class $$SelectedCellsTableTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $SelectedCellsTable,
-          SelectedCell,
-          $$SelectedCellsTableFilterComposer,
-          $$SelectedCellsTableOrderingComposer,
-          $$SelectedCellsTableAnnotationComposer,
-          $$SelectedCellsTableCreateCompanionBuilder,
-          $$SelectedCellsTableUpdateCompanionBuilder,
-          (SelectedCell, $$SelectedCellsTableReferences),
-          SelectedCell,
+          $SelectedCellsTableTable,
+          SelectedCellsEntity,
+          $$SelectedCellsTableTableFilterComposer,
+          $$SelectedCellsTableTableOrderingComposer,
+          $$SelectedCellsTableTableAnnotationComposer,
+          $$SelectedCellsTableTableCreateCompanionBuilder,
+          $$SelectedCellsTableTableUpdateCompanionBuilder,
+          (SelectedCellsEntity, $$SelectedCellsTableTableReferences),
+          SelectedCellsEntity,
           PrefetchHooks Function({bool sheetId})
         > {
-  $$SelectedCellsTableTableManager(_$AppDatabase db, $SelectedCellsTable table)
-    : super(
+  $$SelectedCellsTableTableTableManager(
+    _$AppDatabase db,
+    $SelectedCellsTableTable table,
+  ) : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$SelectedCellsTableFilterComposer($db: db, $table: table),
+              $$SelectedCellsTableTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$SelectedCellsTableOrderingComposer($db: db, $table: table),
+              $$SelectedCellsTableTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$SelectedCellsTableAnnotationComposer($db: db, $table: table),
+              $$SelectedCellsTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
           updateCompanionCallback:
               ({
                 Value<int> sheetId = const Value.absent(),
@@ -9383,7 +7560,7 @@ class $$SelectedCellsTableTableManager
                 Value<int> row = const Value.absent(),
                 Value<int> col = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => SelectedCellsCompanion(
+              }) => SelectedCellsTableCompanion(
                 sheetId: sheetId,
                 cellIndex: cellIndex,
                 row: row,
@@ -9397,7 +7574,7 @@ class $$SelectedCellsTableTableManager
                 required int row,
                 required int col,
                 Value<int> rowid = const Value.absent(),
-              }) => SelectedCellsCompanion.insert(
+              }) => SelectedCellsTableCompanion.insert(
                 sheetId: sheetId,
                 cellIndex: cellIndex,
                 row: row,
@@ -9408,890 +7585,7 @@ class $$SelectedCellsTableTableManager
               .map(
                 (e) => (
                   e.readTable(table),
-                  $$SelectedCellsTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({sheetId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (sheetId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.sheetId,
-                                referencedTable: $$SelectedCellsTableReferences
-                                    ._sheetIdTable(db),
-                                referencedColumn: $$SelectedCellsTableReferences
-                                    ._sheetIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$SelectedCellsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $SelectedCellsTable,
-      SelectedCell,
-      $$SelectedCellsTableFilterComposer,
-      $$SelectedCellsTableOrderingComposer,
-      $$SelectedCellsTableAnnotationComposer,
-      $$SelectedCellsTableCreateCompanionBuilder,
-      $$SelectedCellsTableUpdateCompanionBuilder,
-      (SelectedCell, $$SelectedCellsTableReferences),
-      SelectedCell,
-      PrefetchHooks Function({bool sheetId})
-    >;
-typedef $$BestSortFoundTableCreateCompanionBuilder =
-    BestSortFoundCompanion Function({
-      required int sheetId,
-      required int sortIndex,
-      required int value,
-      Value<int> rowid,
-    });
-typedef $$BestSortFoundTableUpdateCompanionBuilder =
-    BestSortFoundCompanion Function({
-      Value<int> sheetId,
-      Value<int> sortIndex,
-      Value<int> value,
-      Value<int> rowid,
-    });
-
-final class $$BestSortFoundTableReferences
-    extends
-        BaseReferences<_$AppDatabase, $BestSortFoundTable, BestSortFoundData> {
-  $$BestSortFoundTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $SheetDataTablesTable _sheetIdTable(_$AppDatabase db) =>
-      db.sheetDataTables.createAlias(
-        $_aliasNameGenerator(db.bestSortFound.sheetId, db.sheetDataTables.id),
-      );
-
-  $$SheetDataTablesTableProcessedTableManager get sheetId {
-    final $_column = $_itemColumn<int>('sheet_id')!;
-
-    final manager = $$SheetDataTablesTableTableManager(
-      $_db,
-      $_db.sheetDataTables,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_sheetIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$BestSortFoundTableFilterComposer
-    extends Composer<_$AppDatabase, $BestSortFoundTable> {
-  $$BestSortFoundTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<int> get sortIndex => $composableBuilder(
-    column: $table.sortIndex,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get value => $composableBuilder(
-    column: $table.value,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$SheetDataTablesTableFilterComposer get sheetId {
-    final $$SheetDataTablesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sheetId,
-      referencedTable: $db.sheetDataTables,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SheetDataTablesTableFilterComposer(
-            $db: $db,
-            $table: $db.sheetDataTables,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$BestSortFoundTableOrderingComposer
-    extends Composer<_$AppDatabase, $BestSortFoundTable> {
-  $$BestSortFoundTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<int> get sortIndex => $composableBuilder(
-    column: $table.sortIndex,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get value => $composableBuilder(
-    column: $table.value,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$SheetDataTablesTableOrderingComposer get sheetId {
-    final $$SheetDataTablesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sheetId,
-      referencedTable: $db.sheetDataTables,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SheetDataTablesTableOrderingComposer(
-            $db: $db,
-            $table: $db.sheetDataTables,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$BestSortFoundTableAnnotationComposer
-    extends Composer<_$AppDatabase, $BestSortFoundTable> {
-  $$BestSortFoundTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<int> get sortIndex =>
-      $composableBuilder(column: $table.sortIndex, builder: (column) => column);
-
-  GeneratedColumn<int> get value =>
-      $composableBuilder(column: $table.value, builder: (column) => column);
-
-  $$SheetDataTablesTableAnnotationComposer get sheetId {
-    final $$SheetDataTablesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sheetId,
-      referencedTable: $db.sheetDataTables,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SheetDataTablesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.sheetDataTables,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$BestSortFoundTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $BestSortFoundTable,
-          BestSortFoundData,
-          $$BestSortFoundTableFilterComposer,
-          $$BestSortFoundTableOrderingComposer,
-          $$BestSortFoundTableAnnotationComposer,
-          $$BestSortFoundTableCreateCompanionBuilder,
-          $$BestSortFoundTableUpdateCompanionBuilder,
-          (BestSortFoundData, $$BestSortFoundTableReferences),
-          BestSortFoundData,
-          PrefetchHooks Function({bool sheetId})
-        > {
-  $$BestSortFoundTableTableManager(_$AppDatabase db, $BestSortFoundTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$BestSortFoundTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$BestSortFoundTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$BestSortFoundTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<int> sheetId = const Value.absent(),
-                Value<int> sortIndex = const Value.absent(),
-                Value<int> value = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => BestSortFoundCompanion(
-                sheetId: sheetId,
-                sortIndex: sortIndex,
-                value: value,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required int sheetId,
-                required int sortIndex,
-                required int value,
-                Value<int> rowid = const Value.absent(),
-              }) => BestSortFoundCompanion.insert(
-                sheetId: sheetId,
-                sortIndex: sortIndex,
-                value: value,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$BestSortFoundTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({sheetId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (sheetId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.sheetId,
-                                referencedTable: $$BestSortFoundTableReferences
-                                    ._sheetIdTable(db),
-                                referencedColumn: $$BestSortFoundTableReferences
-                                    ._sheetIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$BestSortFoundTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $BestSortFoundTable,
-      BestSortFoundData,
-      $$BestSortFoundTableFilterComposer,
-      $$BestSortFoundTableOrderingComposer,
-      $$BestSortFoundTableAnnotationComposer,
-      $$BestSortFoundTableCreateCompanionBuilder,
-      $$BestSortFoundTableUpdateCompanionBuilder,
-      (BestSortFoundData, $$BestSortFoundTableReferences),
-      BestSortFoundData,
-      PrefetchHooks Function({bool sheetId})
-    >;
-typedef $$CursorsTableCreateCompanionBuilder =
-    CursorsCompanion Function({
-      required int sheetId,
-      required int cursorIndex,
-      required int value,
-      Value<int> rowid,
-    });
-typedef $$CursorsTableUpdateCompanionBuilder =
-    CursorsCompanion Function({
-      Value<int> sheetId,
-      Value<int> cursorIndex,
-      Value<int> value,
-      Value<int> rowid,
-    });
-
-final class $$CursorsTableReferences
-    extends BaseReferences<_$AppDatabase, $CursorsTable, Cursor> {
-  $$CursorsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $SheetDataTablesTable _sheetIdTable(_$AppDatabase db) =>
-      db.sheetDataTables.createAlias(
-        $_aliasNameGenerator(db.cursors.sheetId, db.sheetDataTables.id),
-      );
-
-  $$SheetDataTablesTableProcessedTableManager get sheetId {
-    final $_column = $_itemColumn<int>('sheet_id')!;
-
-    final manager = $$SheetDataTablesTableTableManager(
-      $_db,
-      $_db.sheetDataTables,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_sheetIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$CursorsTableFilterComposer
-    extends Composer<_$AppDatabase, $CursorsTable> {
-  $$CursorsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<int> get cursorIndex => $composableBuilder(
-    column: $table.cursorIndex,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get value => $composableBuilder(
-    column: $table.value,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$SheetDataTablesTableFilterComposer get sheetId {
-    final $$SheetDataTablesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sheetId,
-      referencedTable: $db.sheetDataTables,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SheetDataTablesTableFilterComposer(
-            $db: $db,
-            $table: $db.sheetDataTables,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$CursorsTableOrderingComposer
-    extends Composer<_$AppDatabase, $CursorsTable> {
-  $$CursorsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<int> get cursorIndex => $composableBuilder(
-    column: $table.cursorIndex,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get value => $composableBuilder(
-    column: $table.value,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$SheetDataTablesTableOrderingComposer get sheetId {
-    final $$SheetDataTablesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sheetId,
-      referencedTable: $db.sheetDataTables,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SheetDataTablesTableOrderingComposer(
-            $db: $db,
-            $table: $db.sheetDataTables,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$CursorsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $CursorsTable> {
-  $$CursorsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<int> get cursorIndex => $composableBuilder(
-    column: $table.cursorIndex,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get value =>
-      $composableBuilder(column: $table.value, builder: (column) => column);
-
-  $$SheetDataTablesTableAnnotationComposer get sheetId {
-    final $$SheetDataTablesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sheetId,
-      referencedTable: $db.sheetDataTables,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SheetDataTablesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.sheetDataTables,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$CursorsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $CursorsTable,
-          Cursor,
-          $$CursorsTableFilterComposer,
-          $$CursorsTableOrderingComposer,
-          $$CursorsTableAnnotationComposer,
-          $$CursorsTableCreateCompanionBuilder,
-          $$CursorsTableUpdateCompanionBuilder,
-          (Cursor, $$CursorsTableReferences),
-          Cursor,
-          PrefetchHooks Function({bool sheetId})
-        > {
-  $$CursorsTableTableManager(_$AppDatabase db, $CursorsTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$CursorsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$CursorsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$CursorsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<int> sheetId = const Value.absent(),
-                Value<int> cursorIndex = const Value.absent(),
-                Value<int> value = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => CursorsCompanion(
-                sheetId: sheetId,
-                cursorIndex: cursorIndex,
-                value: value,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required int sheetId,
-                required int cursorIndex,
-                required int value,
-                Value<int> rowid = const Value.absent(),
-              }) => CursorsCompanion.insert(
-                sheetId: sheetId,
-                cursorIndex: cursorIndex,
-                value: value,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$CursorsTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({sheetId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (sheetId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.sheetId,
-                                referencedTable: $$CursorsTableReferences
-                                    ._sheetIdTable(db),
-                                referencedColumn: $$CursorsTableReferences
-                                    ._sheetIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$CursorsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $CursorsTable,
-      Cursor,
-      $$CursorsTableFilterComposer,
-      $$CursorsTableOrderingComposer,
-      $$CursorsTableAnnotationComposer,
-      $$CursorsTableCreateCompanionBuilder,
-      $$CursorsTableUpdateCompanionBuilder,
-      (Cursor, $$CursorsTableReferences),
-      Cursor,
-      PrefetchHooks Function({bool sheetId})
-    >;
-typedef $$PossibleIntsByIdTableCreateCompanionBuilder =
-    PossibleIntsByIdCompanion Function({
-      required int sheetId,
-      required int id,
-      required int intIndex,
-      required int value,
-      Value<int> rowid,
-    });
-typedef $$PossibleIntsByIdTableUpdateCompanionBuilder =
-    PossibleIntsByIdCompanion Function({
-      Value<int> sheetId,
-      Value<int> id,
-      Value<int> intIndex,
-      Value<int> value,
-      Value<int> rowid,
-    });
-
-final class $$PossibleIntsByIdTableReferences
-    extends
-        BaseReferences<
-          _$AppDatabase,
-          $PossibleIntsByIdTable,
-          PossibleIntsByIdData
-        > {
-  $$PossibleIntsByIdTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $SheetDataTablesTable _sheetIdTable(_$AppDatabase db) =>
-      db.sheetDataTables.createAlias(
-        $_aliasNameGenerator(
-          db.possibleIntsById.sheetId,
-          db.sheetDataTables.id,
-        ),
-      );
-
-  $$SheetDataTablesTableProcessedTableManager get sheetId {
-    final $_column = $_itemColumn<int>('sheet_id')!;
-
-    final manager = $$SheetDataTablesTableTableManager(
-      $_db,
-      $_db.sheetDataTables,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_sheetIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$PossibleIntsByIdTableFilterComposer
-    extends Composer<_$AppDatabase, $PossibleIntsByIdTable> {
-  $$PossibleIntsByIdTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get intIndex => $composableBuilder(
-    column: $table.intIndex,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get value => $composableBuilder(
-    column: $table.value,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$SheetDataTablesTableFilterComposer get sheetId {
-    final $$SheetDataTablesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sheetId,
-      referencedTable: $db.sheetDataTables,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SheetDataTablesTableFilterComposer(
-            $db: $db,
-            $table: $db.sheetDataTables,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$PossibleIntsByIdTableOrderingComposer
-    extends Composer<_$AppDatabase, $PossibleIntsByIdTable> {
-  $$PossibleIntsByIdTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get intIndex => $composableBuilder(
-    column: $table.intIndex,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get value => $composableBuilder(
-    column: $table.value,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$SheetDataTablesTableOrderingComposer get sheetId {
-    final $$SheetDataTablesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sheetId,
-      referencedTable: $db.sheetDataTables,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SheetDataTablesTableOrderingComposer(
-            $db: $db,
-            $table: $db.sheetDataTables,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$PossibleIntsByIdTableAnnotationComposer
-    extends Composer<_$AppDatabase, $PossibleIntsByIdTable> {
-  $$PossibleIntsByIdTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<int> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<int> get intIndex =>
-      $composableBuilder(column: $table.intIndex, builder: (column) => column);
-
-  GeneratedColumn<int> get value =>
-      $composableBuilder(column: $table.value, builder: (column) => column);
-
-  $$SheetDataTablesTableAnnotationComposer get sheetId {
-    final $$SheetDataTablesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sheetId,
-      referencedTable: $db.sheetDataTables,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SheetDataTablesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.sheetDataTables,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$PossibleIntsByIdTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $PossibleIntsByIdTable,
-          PossibleIntsByIdData,
-          $$PossibleIntsByIdTableFilterComposer,
-          $$PossibleIntsByIdTableOrderingComposer,
-          $$PossibleIntsByIdTableAnnotationComposer,
-          $$PossibleIntsByIdTableCreateCompanionBuilder,
-          $$PossibleIntsByIdTableUpdateCompanionBuilder,
-          (PossibleIntsByIdData, $$PossibleIntsByIdTableReferences),
-          PossibleIntsByIdData,
-          PrefetchHooks Function({bool sheetId})
-        > {
-  $$PossibleIntsByIdTableTableManager(
-    _$AppDatabase db,
-    $PossibleIntsByIdTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$PossibleIntsByIdTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$PossibleIntsByIdTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$PossibleIntsByIdTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<int> sheetId = const Value.absent(),
-                Value<int> id = const Value.absent(),
-                Value<int> intIndex = const Value.absent(),
-                Value<int> value = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => PossibleIntsByIdCompanion(
-                sheetId: sheetId,
-                id: id,
-                intIndex: intIndex,
-                value: value,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required int sheetId,
-                required int id,
-                required int intIndex,
-                required int value,
-                Value<int> rowid = const Value.absent(),
-              }) => PossibleIntsByIdCompanion.insert(
-                sheetId: sheetId,
-                id: id,
-                intIndex: intIndex,
-                value: value,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$PossibleIntsByIdTableReferences(db, table, e),
+                  $$SelectedCellsTableTableReferences(db, table, e),
                 ),
               )
               .toList(),
@@ -10321,10 +7615,10 @@ class $$PossibleIntsByIdTableTableManager
                                 currentTable: table,
                                 currentColumn: table.sheetId,
                                 referencedTable:
-                                    $$PossibleIntsByIdTableReferences
+                                    $$SelectedCellsTableTableReferences
                                         ._sheetIdTable(db),
                                 referencedColumn:
-                                    $$PossibleIntsByIdTableReferences
+                                    $$SelectedCellsTableTableReferences
                                         ._sheetIdTable(db)
                                         .id,
                               )
@@ -10342,635 +7636,18 @@ class $$PossibleIntsByIdTableTableManager
       );
 }
 
-typedef $$PossibleIntsByIdTableProcessedTableManager =
+typedef $$SelectedCellsTableTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $PossibleIntsByIdTable,
-      PossibleIntsByIdData,
-      $$PossibleIntsByIdTableFilterComposer,
-      $$PossibleIntsByIdTableOrderingComposer,
-      $$PossibleIntsByIdTableAnnotationComposer,
-      $$PossibleIntsByIdTableCreateCompanionBuilder,
-      $$PossibleIntsByIdTableUpdateCompanionBuilder,
-      (PossibleIntsByIdData, $$PossibleIntsByIdTableReferences),
-      PossibleIntsByIdData,
-      PrefetchHooks Function({bool sheetId})
-    >;
-typedef $$ValidAreasByIdTableCreateCompanionBuilder =
-    ValidAreasByIdCompanion Function({
-      required int sheetId,
-      required int id,
-      required int intIndex,
-      required int areaIndex,
-      required int areaEdge,
-      Value<int> rowid,
-    });
-typedef $$ValidAreasByIdTableUpdateCompanionBuilder =
-    ValidAreasByIdCompanion Function({
-      Value<int> sheetId,
-      Value<int> id,
-      Value<int> intIndex,
-      Value<int> areaIndex,
-      Value<int> areaEdge,
-      Value<int> rowid,
-    });
-
-final class $$ValidAreasByIdTableReferences
-    extends
-        BaseReferences<
-          _$AppDatabase,
-          $ValidAreasByIdTable,
-          ValidAreasByIdData
-        > {
-  $$ValidAreasByIdTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $SheetDataTablesTable _sheetIdTable(_$AppDatabase db) =>
-      db.sheetDataTables.createAlias(
-        $_aliasNameGenerator(db.validAreasById.sheetId, db.sheetDataTables.id),
-      );
-
-  $$SheetDataTablesTableProcessedTableManager get sheetId {
-    final $_column = $_itemColumn<int>('sheet_id')!;
-
-    final manager = $$SheetDataTablesTableTableManager(
-      $_db,
-      $_db.sheetDataTables,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_sheetIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$ValidAreasByIdTableFilterComposer
-    extends Composer<_$AppDatabase, $ValidAreasByIdTable> {
-  $$ValidAreasByIdTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get intIndex => $composableBuilder(
-    column: $table.intIndex,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get areaIndex => $composableBuilder(
-    column: $table.areaIndex,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get areaEdge => $composableBuilder(
-    column: $table.areaEdge,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$SheetDataTablesTableFilterComposer get sheetId {
-    final $$SheetDataTablesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sheetId,
-      referencedTable: $db.sheetDataTables,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SheetDataTablesTableFilterComposer(
-            $db: $db,
-            $table: $db.sheetDataTables,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ValidAreasByIdTableOrderingComposer
-    extends Composer<_$AppDatabase, $ValidAreasByIdTable> {
-  $$ValidAreasByIdTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get intIndex => $composableBuilder(
-    column: $table.intIndex,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get areaIndex => $composableBuilder(
-    column: $table.areaIndex,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get areaEdge => $composableBuilder(
-    column: $table.areaEdge,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$SheetDataTablesTableOrderingComposer get sheetId {
-    final $$SheetDataTablesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sheetId,
-      referencedTable: $db.sheetDataTables,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SheetDataTablesTableOrderingComposer(
-            $db: $db,
-            $table: $db.sheetDataTables,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ValidAreasByIdTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ValidAreasByIdTable> {
-  $$ValidAreasByIdTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<int> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<int> get intIndex =>
-      $composableBuilder(column: $table.intIndex, builder: (column) => column);
-
-  GeneratedColumn<int> get areaIndex =>
-      $composableBuilder(column: $table.areaIndex, builder: (column) => column);
-
-  GeneratedColumn<int> get areaEdge =>
-      $composableBuilder(column: $table.areaEdge, builder: (column) => column);
-
-  $$SheetDataTablesTableAnnotationComposer get sheetId {
-    final $$SheetDataTablesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sheetId,
-      referencedTable: $db.sheetDataTables,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SheetDataTablesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.sheetDataTables,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ValidAreasByIdTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $ValidAreasByIdTable,
-          ValidAreasByIdData,
-          $$ValidAreasByIdTableFilterComposer,
-          $$ValidAreasByIdTableOrderingComposer,
-          $$ValidAreasByIdTableAnnotationComposer,
-          $$ValidAreasByIdTableCreateCompanionBuilder,
-          $$ValidAreasByIdTableUpdateCompanionBuilder,
-          (ValidAreasByIdData, $$ValidAreasByIdTableReferences),
-          ValidAreasByIdData,
-          PrefetchHooks Function({bool sheetId})
-        > {
-  $$ValidAreasByIdTableTableManager(
-    _$AppDatabase db,
-    $ValidAreasByIdTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$ValidAreasByIdTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$ValidAreasByIdTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$ValidAreasByIdTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<int> sheetId = const Value.absent(),
-                Value<int> id = const Value.absent(),
-                Value<int> intIndex = const Value.absent(),
-                Value<int> areaIndex = const Value.absent(),
-                Value<int> areaEdge = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ValidAreasByIdCompanion(
-                sheetId: sheetId,
-                id: id,
-                intIndex: intIndex,
-                areaIndex: areaIndex,
-                areaEdge: areaEdge,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required int sheetId,
-                required int id,
-                required int intIndex,
-                required int areaIndex,
-                required int areaEdge,
-                Value<int> rowid = const Value.absent(),
-              }) => ValidAreasByIdCompanion.insert(
-                sheetId: sheetId,
-                id: id,
-                intIndex: intIndex,
-                areaIndex: areaIndex,
-                areaEdge: areaEdge,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$ValidAreasByIdTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({sheetId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (sheetId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.sheetId,
-                                referencedTable: $$ValidAreasByIdTableReferences
-                                    ._sheetIdTable(db),
-                                referencedColumn:
-                                    $$ValidAreasByIdTableReferences
-                                        ._sheetIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$ValidAreasByIdTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $ValidAreasByIdTable,
-      ValidAreasByIdData,
-      $$ValidAreasByIdTableFilterComposer,
-      $$ValidAreasByIdTableOrderingComposer,
-      $$ValidAreasByIdTableAnnotationComposer,
-      $$ValidAreasByIdTableCreateCompanionBuilder,
-      $$ValidAreasByIdTableUpdateCompanionBuilder,
-      (ValidAreasByIdData, $$ValidAreasByIdTableReferences),
-      ValidAreasByIdData,
-      PrefetchHooks Function({bool sheetId})
-    >;
-typedef $$BestDistFoundTableCreateCompanionBuilder =
-    BestDistFoundCompanion Function({
-      required int sheetId,
-      required int id,
-      required int value,
-      Value<int> rowid,
-    });
-typedef $$BestDistFoundTableUpdateCompanionBuilder =
-    BestDistFoundCompanion Function({
-      Value<int> sheetId,
-      Value<int> id,
-      Value<int> value,
-      Value<int> rowid,
-    });
-
-final class $$BestDistFoundTableReferences
-    extends
-        BaseReferences<_$AppDatabase, $BestDistFoundTable, BestDistFoundData> {
-  $$BestDistFoundTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $SheetDataTablesTable _sheetIdTable(_$AppDatabase db) =>
-      db.sheetDataTables.createAlias(
-        $_aliasNameGenerator(db.bestDistFound.sheetId, db.sheetDataTables.id),
-      );
-
-  $$SheetDataTablesTableProcessedTableManager get sheetId {
-    final $_column = $_itemColumn<int>('sheet_id')!;
-
-    final manager = $$SheetDataTablesTableTableManager(
-      $_db,
-      $_db.sheetDataTables,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_sheetIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$BestDistFoundTableFilterComposer
-    extends Composer<_$AppDatabase, $BestDistFoundTable> {
-  $$BestDistFoundTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get value => $composableBuilder(
-    column: $table.value,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$SheetDataTablesTableFilterComposer get sheetId {
-    final $$SheetDataTablesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sheetId,
-      referencedTable: $db.sheetDataTables,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SheetDataTablesTableFilterComposer(
-            $db: $db,
-            $table: $db.sheetDataTables,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$BestDistFoundTableOrderingComposer
-    extends Composer<_$AppDatabase, $BestDistFoundTable> {
-  $$BestDistFoundTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get value => $composableBuilder(
-    column: $table.value,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$SheetDataTablesTableOrderingComposer get sheetId {
-    final $$SheetDataTablesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sheetId,
-      referencedTable: $db.sheetDataTables,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SheetDataTablesTableOrderingComposer(
-            $db: $db,
-            $table: $db.sheetDataTables,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$BestDistFoundTableAnnotationComposer
-    extends Composer<_$AppDatabase, $BestDistFoundTable> {
-  $$BestDistFoundTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<int> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<int> get value =>
-      $composableBuilder(column: $table.value, builder: (column) => column);
-
-  $$SheetDataTablesTableAnnotationComposer get sheetId {
-    final $$SheetDataTablesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.sheetId,
-      referencedTable: $db.sheetDataTables,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SheetDataTablesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.sheetDataTables,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$BestDistFoundTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $BestDistFoundTable,
-          BestDistFoundData,
-          $$BestDistFoundTableFilterComposer,
-          $$BestDistFoundTableOrderingComposer,
-          $$BestDistFoundTableAnnotationComposer,
-          $$BestDistFoundTableCreateCompanionBuilder,
-          $$BestDistFoundTableUpdateCompanionBuilder,
-          (BestDistFoundData, $$BestDistFoundTableReferences),
-          BestDistFoundData,
-          PrefetchHooks Function({bool sheetId})
-        > {
-  $$BestDistFoundTableTableManager(_$AppDatabase db, $BestDistFoundTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$BestDistFoundTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$BestDistFoundTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$BestDistFoundTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<int> sheetId = const Value.absent(),
-                Value<int> id = const Value.absent(),
-                Value<int> value = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => BestDistFoundCompanion(
-                sheetId: sheetId,
-                id: id,
-                value: value,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required int sheetId,
-                required int id,
-                required int value,
-                Value<int> rowid = const Value.absent(),
-              }) => BestDistFoundCompanion.insert(
-                sheetId: sheetId,
-                id: id,
-                value: value,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$BestDistFoundTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({sheetId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (sheetId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.sheetId,
-                                referencedTable: $$BestDistFoundTableReferences
-                                    ._sheetIdTable(db),
-                                referencedColumn: $$BestDistFoundTableReferences
-                                    ._sheetIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$BestDistFoundTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $BestDistFoundTable,
-      BestDistFoundData,
-      $$BestDistFoundTableFilterComposer,
-      $$BestDistFoundTableOrderingComposer,
-      $$BestDistFoundTableAnnotationComposer,
-      $$BestDistFoundTableCreateCompanionBuilder,
-      $$BestDistFoundTableUpdateCompanionBuilder,
-      (BestDistFoundData, $$BestDistFoundTableReferences),
-      BestDistFoundData,
+      $SelectedCellsTableTable,
+      SelectedCellsEntity,
+      $$SelectedCellsTableTableFilterComposer,
+      $$SelectedCellsTableTableOrderingComposer,
+      $$SelectedCellsTableTableAnnotationComposer,
+      $$SelectedCellsTableTableCreateCompanionBuilder,
+      $$SelectedCellsTableTableUpdateCompanionBuilder,
+      (SelectedCellsEntity, $$SelectedCellsTableTableReferences),
+      SelectedCellsEntity,
       PrefetchHooks Function({bool sheetId})
     >;
 
@@ -10979,37 +7656,28 @@ class $AppDatabaseManager {
   $AppDatabaseManager(this._db);
   $$SheetDataTablesTableTableManager get sheetDataTables =>
       $$SheetDataTablesTableTableManager(_db, _db.sheetDataTables);
-  $$SheetCellsTableTableManager get sheetCells =>
-      $$SheetCellsTableTableManager(_db, _db.sheetCells);
-  $$SheetColumnTypesTableTableManager get sheetColumnTypes =>
-      $$SheetColumnTypesTableTableManager(_db, _db.sheetColumnTypes);
-  $$UpdateHistoriesTableTableManager get updateHistories =>
-      $$UpdateHistoriesTableTableManager(_db, _db.updateHistories);
-  $$RowsBottomPosTableTableManager get rowsBottomPos =>
-      $$RowsBottomPosTableTableManager(_db, _db.rowsBottomPos);
-  $$ColRightPosTableTableManager get colRightPos =>
-      $$ColRightPosTableTableManager(_db, _db.colRightPos);
-  $$RowsManuallyAdjustedHeightTableTableManager
-  get rowsManuallyAdjustedHeight =>
-      $$RowsManuallyAdjustedHeightTableTableManager(
+  $$SheetCellsTableTableTableManager get sheetCellsTable =>
+      $$SheetCellsTableTableTableManager(_db, _db.sheetCellsTable);
+  $$SheetColumnTypesTableTableTableManager get sheetColumnTypesTable =>
+      $$SheetColumnTypesTableTableTableManager(_db, _db.sheetColumnTypesTable);
+  $$UpdateHistoriesTableTableTableManager get updateHistoriesTable =>
+      $$UpdateHistoriesTableTableTableManager(_db, _db.updateHistoriesTable);
+  $$RowsBottomPosTableTableTableManager get rowsBottomPosTable =>
+      $$RowsBottomPosTableTableTableManager(_db, _db.rowsBottomPosTable);
+  $$ColRightPosTableTableTableManager get colRightPosTable =>
+      $$ColRightPosTableTableTableManager(_db, _db.colRightPosTable);
+  $$RowsManuallyAdjustedHeightTableTableTableManager
+  get rowsManuallyAdjustedHeightTable =>
+      $$RowsManuallyAdjustedHeightTableTableTableManager(
         _db,
-        _db.rowsManuallyAdjustedHeight,
+        _db.rowsManuallyAdjustedHeightTable,
       );
-  $$ColsManuallyAdjustedWidthTableTableManager get colsManuallyAdjustedWidth =>
-      $$ColsManuallyAdjustedWidthTableTableManager(
+  $$ColsManuallyAdjustedWidthTableTableTableManager
+  get colsManuallyAdjustedWidthTable =>
+      $$ColsManuallyAdjustedWidthTableTableTableManager(
         _db,
-        _db.colsManuallyAdjustedWidth,
+        _db.colsManuallyAdjustedWidthTable,
       );
-  $$SelectedCellsTableTableManager get selectedCells =>
-      $$SelectedCellsTableTableManager(_db, _db.selectedCells);
-  $$BestSortFoundTableTableManager get bestSortFound =>
-      $$BestSortFoundTableTableManager(_db, _db.bestSortFound);
-  $$CursorsTableTableManager get cursors =>
-      $$CursorsTableTableManager(_db, _db.cursors);
-  $$PossibleIntsByIdTableTableManager get possibleIntsById =>
-      $$PossibleIntsByIdTableTableManager(_db, _db.possibleIntsById);
-  $$ValidAreasByIdTableTableManager get validAreasById =>
-      $$ValidAreasByIdTableTableManager(_db, _db.validAreasById);
-  $$BestDistFoundTableTableManager get bestDistFound =>
-      $$BestDistFoundTableTableManager(_db, _db.bestDistFound);
+  $$SelectedCellsTableTableTableManager get selectedCellsTable =>
+      $$SelectedCellsTableTableTableManager(_db, _db.selectedCellsTable);
 }

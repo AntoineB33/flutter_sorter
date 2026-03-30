@@ -91,7 +91,10 @@ class SheetDataUpdate extends UpdateUnit {
   final List<List<List<int>>>? validAreas;
   final int? sortIndex;
   final String? analysisResult;
-  final 
+  final bool? sortInProgress;
+  final bool? toApplyNextBestSort;
+  final bool? toAlwaysApplyCurrentBestSort;
+  final bool? analysisDone;
 
   SheetDataUpdate(
     this.sheetId,
@@ -113,7 +116,19 @@ class SheetDataUpdate extends UpdateUnit {
     this.validAreas,
     this.sortIndex,
     this.analysisResult,
+    this.sortInProgress,
+    this.toApplyNextBestSort,
+    this.toAlwaysApplyCurrentBestSort,
+    this.analysisDone,
   });
+
+  factory SheetDataUpdate.initial(int sheetId) {
+    return SheetDataUpdate(
+      sheetId,
+      true,
+      lastOpened: DateTime.now(),
+    );
+  }
 
   @override
   String getKey() {

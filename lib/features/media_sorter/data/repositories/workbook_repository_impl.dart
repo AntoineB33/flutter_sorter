@@ -2,9 +2,7 @@ import 'dart:async';
 
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
-import 'package:trying_flutter/features/media_sorter/core/utility/utils_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
@@ -13,38 +11,22 @@ import 'package:trying_flutter/features/media_sorter/domain/repositories/workboo
 import 'package:uuid/uuid.dart';
 
 class WorkbookRepositoryImpl implements WorkbookRepository {
-  final IFileSheetLocalDataSource fileSheetLocalDataSource;
-
   final LoadedSheetsCache loadedSheetsCache;
   final SelectionCache selectionCache;
   final SortStatusCache sortStatusCache;
   final WorkbookCache workbookCache;
 
-  late ManageWaitingTasks<void> _saveRecentSheetIdsExecutor;
-  late StreamController<Failure> _failureStreamController;
   @override
   int get currentSheetId => workbookCache.currentSheetId;
   @override
   String get currentSheetName => loadedSheetsCache.getTitle(currentSheetId);
 
   WorkbookRepositoryImpl(
-    this.fileSheetLocalDataSource,
     this.loadedSheetsCache,
     this.selectionCache,
     this.sortStatusCache,
     this.workbookCache,
-  ) {
-    _failureStreamController = StreamController<Failure>.broadcast();
-    _saveRecentSheetIdsExecutor = ManageWaitingTasks<void>(
-      Duration(seconds: 2),
-      _failureStreamController,
-    );
-  }
-
-  void dispose() {
-    _saveRecentSheetIdsExecutor.dispose();
-    _failureStreamController.close();
-  }
+  );
 
   @override
   bool containsSheetId(int sheetId) {
@@ -52,7 +34,16 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   }
 
   @override
-  List<String> getRecentSheetIds() {
+  int getNewSheetId() {
+    int newId = DateTime.now().millisecondsSinceEpoch;
+    while (workbookCache.containsSheetId(newId)) {
+      newId += 1; // Increment until we find a unique ID
+    }
+    return newId;
+  }
+
+  @override
+  List<int> getRecentSheetIds() {
     return workbookCache.getRecentSheetIds();
   }
 
@@ -67,11 +58,6 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   @override
   void addNewSheetId(int sheetId, int index) {
     workbookCache.addSheetId(sheetId, index);
-    _saveRecentSheetIdsExecutor.execute(() async {
-      await fileSheetLocalDataSource.saveRecentSheetIds(
-        workbookCache.getRecentSheetIds(),
-      );
-    });
   }
 
   @override

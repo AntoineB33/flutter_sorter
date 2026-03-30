@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
+import 'package:trying_flutter/features/media_sorter/data/services/add_update.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/utils/logger.dart';
@@ -28,20 +29,21 @@ class LocalDataRepositoryImpl
     // Set up the debounce listener
     _saveSubscription = _saveTrigger
         .debounceTime(
-          const Duration(milliseconds: 800),
+          const Duration(milliseconds: 500),
         ) // Adjust time as needed
         .listen((_) => _flushToDatabase());
   }
 
-  /// Called by your Use Cases
   @override
   void save(Map<String, UpdateUnit> updates) {
-    for (var entry in updates.entries) {
-      _pendingSaves.update(entry.key, (existing) => existing.merge(entry.value));
+    for (var update in updates.values) {
+      saveUpdate(update);
     }
+  }
 
-    // 2. Send a signal. RxDart will absorb rapid signals and only emit
-    // to the listener once 800ms has passed with no new signals.
+  @override
+  void saveUpdate(UpdateUnit update) {
+    AddUpdate.addUpdate(_pendingSaves, update);
     if (!_isMicrotaskScheduled) {
       _isMicrotaskScheduled = true;
       scheduleMicrotask(() {
@@ -49,11 +51,6 @@ class LocalDataRepositoryImpl
         _saveTrigger.add(null); // Trigger the debounce stream
       });
     }
-  }
-
-  @override
-  void saveUpdate(UpdateUnit update) {
-    save({update.getKey(): update});
   }
 
   /// Takes the current cache, clears it, and writes to Drift

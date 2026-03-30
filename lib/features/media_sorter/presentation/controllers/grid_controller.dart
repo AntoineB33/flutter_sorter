@@ -39,7 +39,7 @@ class GridController extends ChangeNotifier {
 
   double colHeaderHeight() {
     try {
-      return sheetDataUsecase.getSheet(currentSheetId).colHeaderHeight;
+      return gridUsecase.getLayout(currentSheetId).colHeaderHeight;
     } catch (e) {
       return PageConstants.defaultColHeaderHeight;
     }
@@ -150,11 +150,11 @@ class GridController extends ChangeNotifier {
     required double maxHeight,
     required double maxWidth,
   }) {
-    double colHeaderHeight = sheetDataUsecase
-        .getSheet(currentSheetId)
+    double colHeaderHeight = gridUsecase
+        .getLayout(currentSheetId)
         .colHeaderHeight;
-    double rowHeaderWidth = sheetDataUsecase
-        .getSheet(currentSheetId)
+    double rowHeaderWidth = gridUsecase
+        .getLayout(currentSheetId)
         .rowHeaderWidth;
     updateRowColCountCurrentSheet(
       heightViewport: maxHeight - colHeaderHeight,
@@ -168,7 +168,6 @@ class GridController extends ChangeNotifier {
     double? widthPixels,
     double? widthViewport,
   }) {
-    final selection = selectionUsecase.getSelectionData(currentSheetId);
     final layout = gridUsecase.getLayout(currentSheetId);
     if (heightPixels != null) {
       layout.scrollOffsetX = heightPixels;

@@ -105,8 +105,8 @@ class SheetDataUsecase {
     saveRepository.save(updates);
   }
 
-  Map<String, UpdateUnit> delete() {
-    return sheetDataRepository.delete();
+  void delete() {
+    saveRepository.save(sheetDataRepository.delete());
   }
 
   Future<Either<Failure, Map<String, UpdateUnit>>> paste() {

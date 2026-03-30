@@ -57,11 +57,14 @@ Future<void> initMediaSorterDependencies() async {
   HistoryCache historyCache = HistoryCache();
 
   SheetDataRepositoryImpl sheetDataRepository = SheetDataRepositoryImpl(
+    saveDataSource,
     loadedSheetsCache,
     selectionCache,
+    sortProgressCache,
     workbookCache,
   );
   SortRepositoryImpl sortRepository = SortRepositoryImpl(
+    saveDataSource,
     analysisResultCache,
     loadedSheetsCache,
     sortProgressCache,
@@ -126,12 +129,14 @@ Future<void> initMediaSorterDependencies() async {
     gridRepository,
     historyRepository,
     workbookRepository,
+    saveRepository,
   );
   TreeUsecase treeUsecase = TreeUsecase(treeRepository);
   SheetDataUsecase sheetDataUsecase = SheetDataUsecase(
     sheetDataRepository,
     sortRepository,
     gridRepository,
+    selectionRepository,
     historyRepository,
     saveRepository,
   );
