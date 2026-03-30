@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/widgets.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
@@ -7,6 +8,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
 
@@ -14,6 +16,7 @@ class SheetDataUsecase {
   final SheetDataRepository sheetDataRepository;
   final SortRepository sortRepository;
   final GridRepository gridRepository;
+  final SelectionRepository selectionRepository;
   final HistoryRepository historyRepository;
   final SaveRepository saveRepository;
 
@@ -21,6 +24,7 @@ class SheetDataUsecase {
     this.sheetDataRepository,
     this.sortRepository,
     this.gridRepository,
+    this.selectionRepository,
     this.historyRepository,
     this.saveRepository,
   );
@@ -62,22 +66,22 @@ class SheetDataUsecase {
           update.prevName = sheetDataRepository.getSheetTitle(sheetId);
         }
         if (update.colHeaderHeight != null) {
-          update.prevColHeaderHeight = sheetDataRepository.getColHeaderHeight(sheetId);
+          update.prevColHeaderHeight = gridRepository.getLayout(sheetId).colHeaderHeight;
         }
         if (update.rowHeaderWidth != null) {
-          update.prevRowHeaderWidth = sheetDataRepository.getRowHeaderWidth(sheetId);
+          update.prevRowHeaderWidth = gridRepository.getLayout(sheetId).rowHeaderWidth;
         }
         if (update.primarySelectedCellX != null) {
-          update.prevPrimarySelectedCellX = sheetDataRepository.getPrimarySelectedCellX(sheetId);
+          update.prevPrimarySelectedCellX = selectionRepository.getSelectionData(sheetId).primarySelectedCellX;
         }
         if (update.primarySelectedCellY != null) {
-          update.prevPrimarySelectedCellY = sheetDataRepository.getPrimarySelectedCellY(sheetId);
+          update.prevPrimarySelectedCellY = selectionRepository.getSelectionData(sheetId).primarySelectedCellY;
         }
         if (update.scrollOffsetX != null) {
-          update.prevScrollOffsetX = sheetDataRepository.getScrollOffsetX(sheetId);
+          update.prevScrollOffsetX = gridRepository.getLayout(sheetId).scrollOffsetX;
         }
         if (update.scrollOffsetY != null) {
-          update.prevScrollOffsetY = sheetDataRepository.getScrollOffsetY(sheetId);
+          update.prevScrollOffsetY = gridRepository.getLayout(sheetId).scrollOffsetY;
         }
       }
     }

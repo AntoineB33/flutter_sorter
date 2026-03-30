@@ -18,12 +18,6 @@ abstract class SheetDataRepository {
   String getCellContent(Point<int> cell, int sheetId);
   ColumnType getColumnType(int colId, int sheetId);
   String getSheetTitle(int sheetId);
-  double getColHeaderHeight(int sheetId);
-  double getRowHeaderWidth(int sheetId);
-  int getPrimarySelectedCellX(int sheetId);
-  int getPrimarySelectedCellY(int sheetId); 
-  double getScrollOffsetX(int sheetId);
-  double getScrollOffsetY(int sheetId);
   Future<Either<Failure, void>> loadSheet(int sheetId);
   Future<void> addNewSheet(int sheetId);
   void update(Map<String, UpdateUnit> updates, int sheetId);

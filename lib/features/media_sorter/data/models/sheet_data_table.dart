@@ -6,7 +6,6 @@ import 'package:drift/drift.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 
-
 class SheetDataTables extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get title => text()();
@@ -208,18 +207,18 @@ class NodeStructListConverter extends TypeConverter<List<NodeStruct>, String> {
   }
 }
 
-class ListPointConverter extends TypeConverter<List<(int rowId, int colId)>, String> {
+class ListPointConverter extends TypeConverter<List<CellPosition>, String> {
   const ListPointConverter();
 
   @override
-  List<(int rowId, int colId)> fromSql(String fromDb) {
+  List<CellPosition> fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as List<dynamic>;
-    return decoded.map((e) => (e[0] as int, e[1] as int)).toList();
+    return decoded.map((e) => CellPosition(e[0] as int, e[1] as int)).toList();
   }
 
   @override
-  String toSql(List<(int rowId, int colId)> value) {
-    final encoded = value.map((e) => [e.$1, e.$2]).toList();
+  String toSql(List<CellPosition> value) {
+    final encoded = value.map((e) => [e.rowId, e.colId]).toList();
     return jsonEncode(encoded);
   }
 }

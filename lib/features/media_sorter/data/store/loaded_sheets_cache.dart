@@ -19,7 +19,7 @@ class LoadedSheetsCache {
     return _loadedSheetsData[sheetId]!;
   }
 
-  Map<(int, int), String> getCells(int sheetId) {
+  Map<CellPosition, String> getCells(int sheetId) {
     return _loadedSheetsData[sheetId]!.cells;
   }
 

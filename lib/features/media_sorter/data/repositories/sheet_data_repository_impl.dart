@@ -5,14 +5,17 @@ import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/sorting_progress_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 
@@ -21,6 +24,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   
   final LoadedSheetsCache loadedSheetsCache;
   final SelectionCache selectionCache;
+  final SortProgressCache sortProgressCache;
   final WorkbookCache workbookCache;
 
   final StreamController<Failure> _errorController =
@@ -40,6 +44,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     this.dataSource,
     this.loadedSheetsCache,
     this.selectionCache,
+    this.sortProgressCache,
     this.workbookCache,
   );
   SelectionData get selection =>
@@ -178,30 +183,51 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     return loadedSheetsCache.getSheetName(sheetId);
   }
 
-  void setSheet(int sheetId, CoreSheetContent sheetData) {
-    loadedSheetsCache.setSheet(sheetId, sheetData);
-    scheduleSheetSave(sheetId);
-  }
-
   @override
-  Future<Either<Failure, void>> loadSheet(int sheetId) async {
+  Future<Either<Failure, Unit>> loadSheet(int sheetId) async {
     if (!loadedSheetsCache.containsSheetId(sheetId)) {
       try {
-        CoreSheetContent sheet = await dataSource.getSheet(sheetId);
-        for () {
-        }
-        setSheet(sheetId, sheet);
+        final sheetData = await dataSource.getSheet(sheetId);
+        final cells = await dataSource.getCells(sheetId);
+        final cellMap = {for (var cell in cells) CellPosition(cell.row, cell.col): cell.content};
+        final columnTypes = await dataSource.getColumnTypes(sheetId);
+        final columnTypeMap = {for (var colType in columnTypes) colType.columnIndex: colType.columnType};
+        final sheetDataTable = CoreSheetContent(
+          id: sheetId,
+          title: sheetData.title,
+          lastOpened: sheetData.lastOpened,
+          cells: cellMap,
+          columnTypes: columnTypeMap,
+        );
+        loadedSheetsCache.setSheet(sheetId, sheetDataTable);
+        final selectionData = SelectionData(
+          primarySelectedCellX: sheetData.primarySelectedCellX,
+          primarySelectedCellY: sheetData.primarySelectedCellY,
+          selectedCells: sheetData.selectedCells,
+        );
+        selectionCache.setSelectionData(sheetId, selectionData);
+        final sortProgression = SortProgressData(
+          bestDistFound: sheetData.bestDistFound,
+          bestSortFound: sheetData.bestSortFound,
+          possibleIntsById: sheetData.possibleInts,
+          cursors: sheetData.cursors,
+          validAreasById: sheetData.validAreas,
+          sortIndex: sheetData.sortIndex,
+        );
+        sortProgressCache.update(sheetId, sortProgression);
+        return const Right(unit);
       } on CacheException catch (e) {
-        setSheet(sheetId, CoreSheetContent.empty());
-        return Left(CacheFailure(e));
+        // The UI will receive this clean Failure object
+        return Left(DatabaseFailure(e.message)); 
       }
     }
-    return Right(null);
+    return Right(unit);
   }
 
   @override
   Future<void> addNewSheet(int sheetId) async {
-    setSheet(sheetId, SheetData.empty());
+    loadedSheetsCache.setSheet(sheetId, CoreSheetContent.empty());
+    scheduleSheetSave(sheetId);
   }
 
   @override

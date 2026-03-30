@@ -4,7 +4,6 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progre
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 
 abstract class SortRepository {
-  Stream<Failure> get failureStream;
   bool isReordering(int sheetId);
   bool getAnalysisDone(int sheetId);
   Future<void> analyze(int sheetId);

@@ -40,7 +40,7 @@ class SortUsecase {
     sortRepository.lightCalculations(sheetId);
   }
 
-  List<String> getSheetIds() {
+  List<int> getSheetIds() {
     return sortRepository.getSheetIds();
   }
 

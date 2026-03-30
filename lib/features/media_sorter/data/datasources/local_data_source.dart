@@ -1,5 +1,8 @@
+import 'package:drift/native.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
@@ -8,9 +11,13 @@ import 'package:drift/drift.dart';
 
 abstract class ILocalDataSource {
   Future<void> batchInsertOrUpdate(List<UpdateUnit> items);
-  Future<Either<Exception, CoreSheetContent>> getSheet(int sheetId);
-  Future<Either<Exception, Map<int, SortStatus>>> getSortStatus();
+  Future<SheetDataTable> getSheet(int sheetId);
+  Future<List<SheetCell>> getCells(int sheetId);
+  Future<List<SheetColumnType>> getColumnTypes(int sheetId);
+  Future<List<SheetDataTable>> getSortStatus();
 }
+
+
 
 class DriftLocalDataSource implements ILocalDataSource {
   final AppDatabase db;
@@ -25,7 +32,7 @@ class DriftLocalDataSource implements ILocalDataSource {
         case SheetDataUpdate():
           final companion = SheetDataTablesCompanion(
             id: Value(item.sheetId),
-            name: item.newName != null ? Value(item.newName!) : Value.absent(),
+            title: item.newName != null ? Value(item.newName!) : Value.absent(),
             historyIndex: item.historyIndex != null ? Value(item.historyIndex!) : Value.absent(),
             colHeaderHeight: item.colHeaderHeight != null ? Value(item.colHeaderHeight!) : Value.absent(),
             rowHeaderWidth: item.rowHeaderWidth != null ? Value(item.rowHeaderWidth!) : Value.absent(),
@@ -39,6 +46,11 @@ class DriftLocalDataSource implements ILocalDataSource {
             possibleInts: item.possibleInts != null ? Value(item.possibleInts!) : Value.absent(),
             validAreas: item.validAreas != null ? Value(item.validAreas!) : Value.absent(),
             sortIndex: item.sortIndex != null ? Value(item.sortIndex!) : Value.absent(),
+            analysisResult : item.analysisResult != null ? Value(item.analysisResult!) : Value.absent(),
+            sortInProgress: item.sortInProgress != null ? Value(item.sortInProgress!) : Value.absent(),
+            toApplyNextBestSort: item.toApplyNextBestSort != null ? Value(item.toApplyNextBestSort!) : Value.absent(),
+            toAlwaysApplyCurrentBestSort: item.toAlwaysApplyCurrentBestSort != null ? Value(item.toAlwaysApplyCurrentBestSort!) : Value.absent(),
+            analysisDone: item.analysisDone != null ? Value(item.analysisDone!) : Value.absent(),
           );
           if (item.addOtherwiseRemove) {
             batch.insert(
@@ -172,82 +184,58 @@ class DriftLocalDataSource implements ILocalDataSource {
   }
 
   @override
-  Future<Either<Exception, CoreSheetContent>> getSheet(int sheetId) async {
+  Future<SheetDataTable> getSheet(int sheetId) async {
     try {
-      // 1. Start a selectOnly query
-      final query = db.selectOnly(db.sheetDataTables)..where(db.sheetDataTables.id.equals(sheetId));
-
-      // 4. Execute the query
-      final coreSheetContents = await query.get();
-
-      final cellQuery = db.select(db.sheetCells)..where((tbl) => tbl.sheetId.equals(sheetId));
-
-      final sheetCells = await cellQuery.get();
-      final cells = {
-        for (var cell in sheetCells) CellPosition(cell.row, cell.col): cell.content,
-      };
-
-      final columnTypeQuery = db.select(db.sheetColumnTypes)..where((tbl) => tbl.sheetId.equals(sheetId));
-
-      final columnTypes = {
-        for (var colType in await columnTypeQuery.get()) colType.columnIndex: ColumnType.values.firstWhere((v) => v.name == colType.columnType),
-      };
-      
-      final coreSheetContent = CoreSheetContent(
-        id: sheetId,
-        title: coreSheetContents.first.read(db.sheetDataTables.title)!,
-        lastOpened: coreSheetContents.first.read(db.sheetDataTables.lastOpened)!,
-        cells: cells,
-        columnTypes: columnTypes,
-      );
-
-      return Right(coreSheetContent);
-    } on Exception catch (e) {
-      return Left(e);
+      final query = db.select(db.sheetDataTables)..where((table) => table.id.equals(sheetId));
+      final coreSheetContents = await query.getSingleOrNull();
+      if (coreSheetContents == null) {
+        throw CacheException("Sheet with id $sheetId not found");
+      }
+      return coreSheetContents;
+    } on SqliteException catch (e) {
+      throw CacheException('Failed to insert user: ${e.message}');
     } catch (e) {
-      return Left(Exception(e.toString()));
+      throw CacheException('An unknown database error occurred.');
     }
   }
 
   @override
-  Future<Either<Exception, Map<int, SortStatus>>> getSortStatus() async {
+  Future<List<SheetCell>> getCells(int sheetId) async {
     try {
-      // 1. Start a selectOnly query
-      final query = db.selectOnly(db.sheetDataTables)
-        // 2. Specify ALL the columns you need for the Map key and the SortStatus object
-        ..addColumns([
-          db.sheetDataTables.id,
-          db.sheetDataTables.toApplyNextBestSort,
-          db.sheetDataTables.toAlwaysApplyCurrentBestSort,
-          db.sheetDataTables.analysisDone,
-        ])
-        // 3. Add your condition
-        ..where(db.sheetDataTables.sortInProgress.equals(true));
-
-      // 4. Execute the query
-      final rows = await query.get();
-
-      // 5. Map the raw rows into MapEntry objects, reading each column
-      final entries = rows.map((row) {
-        final id = row.read(db.sheetDataTables.id)!;
-        
-        final sortStatus = SortStatus(
-          toApplyNextBestSort: row.read(db.sheetDataTables.toApplyNextBestSort) ?? false,
-          toAlwaysApplyCurrentBestSort: row.read(db.sheetDataTables.toAlwaysApplyCurrentBestSort) ?? false,
-          analysisDone: row.read(db.sheetDataTables.analysisDone) ?? true,
-        );
-
-        return MapEntry(id, sortStatus);
-      });
-
-      // 6. Convert the Iterable of MapEntries into the final Map
-      final resultMap = Map.fromEntries(entries);
-
-      return Right(resultMap);
-    } on Exception catch (e) {
-      return Left(e);
+      final query = db.select(db.sheetCells)..where((table) => table.sheetId.equals(sheetId));
+      final cells = await query.get();
+      return cells;
+    } on SqliteException catch (e) {
+      throw CacheException('Failed to retrieve cells: ${e.message}');
     } catch (e) {
-      return Left(Exception(e.toString()));
+      throw CacheException('An unknown database error occurred.');
     }
+  }
+
+  @override
+  Future<List<SheetColumnType>> getColumnTypes(int sheetId) async {
+    try {
+      final query = db.select(db.sheetColumnTypes)..where((table) => table.sheetId.equals(sheetId));
+      final columnTypes = await query.get();
+      return columnTypes;
+    } on SqliteException catch (e) {
+      throw CacheException('Failed to retrieve column types: ${e.message}');
+    } catch (e) {
+      throw CacheException('An unknown database error occurred.');
+    }
+  }
+
+  @override
+  Future<List<SheetDataTable>> getSortStatus() async {
+    try {
+      final query = db.select(db.sheetDataTables);
+      final rows = await query.get();
+      return rows;
+    } on SqliteException catch (e) {
+      throw CacheException('Failed to retrieve sort status: ${e.message}');
+    } catch (e) {
+      throw CacheException('An unknown database error occurred.');
+    }
+
   }
 }

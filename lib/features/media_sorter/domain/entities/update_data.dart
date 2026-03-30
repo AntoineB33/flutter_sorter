@@ -90,6 +90,8 @@ class SheetDataUpdate extends UpdateUnit {
   final List<List<int>>? possibleInts;
   final List<List<List<int>>>? validAreas;
   final int? sortIndex;
+  final String? analysisResult;
+  final 
 
   SheetDataUpdate(
     this.sheetId,
@@ -110,6 +112,7 @@ class SheetDataUpdate extends UpdateUnit {
     this.possibleInts,
     this.validAreas,
     this.sortIndex,
+    this.analysisResult,
   });
 
   @override

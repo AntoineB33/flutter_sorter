@@ -8,11 +8,15 @@ class SortStatus {
   bool toAlwaysApplyCurrentBestSort;
   bool analysisDone;
 
-  SortStatus({
-    this.toApplyNextBestSort = false,
-    this.toAlwaysApplyCurrentBestSort = false,
-    this.analysisDone = true,
-  });
+  SortStatus(
+    this.toApplyNextBestSort,
+    this.toAlwaysApplyCurrentBestSort,
+    this.analysisDone,
+  );
+
+  factory SortStatus.initial() {
+    return SortStatus(false, false, false);
+  }
 
   factory SortStatus.fromJson(Map<String, dynamic> json) =>
       _$SortStatusFromJson(json);
