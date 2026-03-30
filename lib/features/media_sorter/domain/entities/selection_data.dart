@@ -14,7 +14,8 @@ class SelectionData {
   });
 
   SelectionData.empty()
-      : selectedCells = HashSet(),
+      :
+      selectedCells = HashSet(),
         primarySelectedCellX = 0,
         primarySelectedCellY = 0;
 }

@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:fpdart/fpdart.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
@@ -29,18 +30,6 @@ class SelectionRepositoryImpl implements SelectionRepository {
     this._loadedSheetsCache,
     this._workbookCache,
   );
-
-  @override
-  void setSelectionData(int sheetId, SelectionData selectionData) {
-    _selectionCache.setSelectionData(sheetId, selectionData);
-    saveAllLastSelected();
-  }
-
-  @override
-  void removeSelectionData(int sheetId) {
-    _selectionCache.removeSelectionData(sheetId);
-    saveAllLastSelected();
-  }
 
   @override
   @useResult
@@ -90,15 +79,5 @@ class SelectionRepositoryImpl implements SelectionRepository {
     }
     selection.primarySelectedCell = Point(row, col);
     saveLastSelection();
-  }
-
-  @override
-  void clearLastSelection() {
-    setSelectionData(currentSheetId, SelectionData.empty());
-  }
-
-  @override
-  void clearSheetSelection(int sheetId) {
-    setSelectionData(sheetId, SelectionData.empty());
   }
 }

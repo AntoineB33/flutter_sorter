@@ -113,6 +113,45 @@ class HistoryRepositoryImpl implements HistoryRepository {
   }
 
   @override
+  UpdateUnit newPrimarySelection() {
+    final updateUnit = SheetDataUpdate(
+      currentSheetId,
+      true,
+      primSelHistory: historyData.primSelHistory,
+    );
+    final primSelHistory = historyData.primSelHistory;
+    if (historyData.historyIndex < historyData.updateHistories.length - 1) {
+      for (
+        int i = historyData.historyIndex + 1;
+        i < historyData.updateHistories.length;
+        i++
+      ) {
+        historyData.updateHistories[i].addOtherwiseRemove = false;
+        AddUpdate.addUpdate(updates, historyData.updateHistories[i]);
+      }
+      historyData.updateHistories = historyData.updateHistories.sublist(
+        0,
+        historyData.historyIndex + 1,
+      );
+    }
+    historyData.updateHistories.add(updateData);
+    AddUpdate.addUpdate(updates, updateData);
+    historyData.historyIndex++;
+    if (historyData.historyIndex == 100) {
+      historyData.updateHistories.first.addOtherwiseRemove = false;
+      AddUpdate.addUpdate(updates, historyData.updateHistories.first);
+      historyData.updateHistories.removeAt(0);
+      historyData.historyIndex--;
+    }
+    final historyChg = SheetDataUpdate(
+      currentSheetId,
+      true,
+      historyIndex: historyData.historyIndex,
+    );
+    AddUpdate.addUpdate(updates, historyChg);
+  }
+
+  @override
   void stopEditing(bool escape, {Map<String, UpdateUnit>? updates}) {
     if (escape && isLastChangeInSameEditingMode) {
       _removeLastHistoryEditingMode(updates!);

@@ -40,8 +40,4 @@ class SelectionCache {
   void setSelectionData(int sheetId, SelectionData selectionData) {
     _lastSelections[sheetId] = selectionData;
   }
-
-  void removeSelectionData(int sheetId) {
-    _lastSelections.remove(sheetId);
-  }
 }

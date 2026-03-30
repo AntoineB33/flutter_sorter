@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path/path.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
@@ -95,7 +96,11 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     if (scrollTo) {
       gridController.scrollToCell();
     }
-    selectionController.saveLastSelection();
+    sheetDataController.saveUpdate(SheetDataUpdate(
+      currentSheetId,
+      false,
+      primSelHistory: ,
+    ));
     treeController.updateMentionsContext();
   }
 

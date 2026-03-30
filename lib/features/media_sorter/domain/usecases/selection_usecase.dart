@@ -36,10 +36,6 @@ class SelectionUsecase {
     return selectionRepository.getScrollOffsetY(sheetId);
   }
 
-  void clearLastSelection() {
-    selectionRepository.clearLastSelection();
-  }
-
   void selectAll() {
     final update = selectionRepository.selectAll();
     saveRepository.saveUpdate(update);
