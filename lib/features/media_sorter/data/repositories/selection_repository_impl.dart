@@ -64,26 +64,6 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
-  void saveLastSelection() {
-    _saveLastSelectionExecutor.execute(() async {
-      await _saveDataSource.saveLastSelection(selection);
-    });
-  }
-
-  void dispose() {
-    _saveLastSelectionExecutor.dispose();
-    _saveAllLastSelectedExecutor.dispose();
-    _errorController.close();
-  }
-
-  @override
-  void saveAllLastSelected() {
-    _saveAllLastSelectedExecutor.execute(() async {
-      await _saveDataSource.saveAllLastSelected(_selectionCache.lastSelections);
-    });
-  }
-
-  @override
   bool containsSheetId(int sheetId) {
     return _selectionCache.containsSheetId(sheetId);
   }

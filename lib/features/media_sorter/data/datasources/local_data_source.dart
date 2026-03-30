@@ -1,16 +1,20 @@
 import 'package:drift/native.dart';
-import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:drift/drift.dart';
 
+class SheetIdAndLastOpened {
+  final int sheetId;
+  final DateTime lastOpened;
+
+  SheetIdAndLastOpened(this.sheetId, this.lastOpened);
+}
+
 abstract class ILocalDataSource {
   Future<void> batchInsertOrUpdate(List<UpdateUnit> items);
+  Future<List<SheetIdAndLastOpened>> getSheetIdAndLastOpened();
   Future<SheetDataEntity> getSheetDataEntity(int sheetId);
   Future<List<SheetCellEntity>> getSheetCellEntities(int sheetId);
   Future<List<SheetColumnTypeEntity>> getSheetColumnTypeEntities(int sheetId);
@@ -52,6 +56,9 @@ class DriftLocalDataSource implements ILocalDataSource {
                   : Value.absent(),
               primarySelectedCellY: item.primarySelectedCellY != null
                   ? Value(item.primarySelectedCellY!)
+                  : Value.absent(),
+              primSelHistory: item.primSelHistory != null
+                  ? Value(item.primSelHistory!)
                   : Value.absent(),
               scrollOffsetX: item.scrollOffsetX != null
                   ? Value(item.scrollOffsetX!)
@@ -227,6 +234,25 @@ class DriftLocalDataSource implements ILocalDataSource {
         }
       }
     });
+  }
+
+  @override
+  Future<List<SheetIdAndLastOpened>> getSheetIdAndLastOpened() async {
+    try {
+      final query = db.selectOnly(db.sheetDataTables)
+        ..addColumns([db.sheetDataTables.id, db.sheetDataTables.lastOpened]);
+      final result = await query.get();
+      if (result.isEmpty) {
+        throw CacheException("No sheets found");
+      }
+      return result
+          .map((row) => SheetIdAndLastOpened(row.read(db.sheetDataTables.id)!, row.read(db.sheetDataTables.lastOpened)!))
+          .toList();
+    } on SqliteException catch (e) {
+      throw CacheException('Failed to retrieve sheet ID and last opened: ${e.message}');
+    } catch (e) {
+      throw CacheException('An unknown database error occurred.');
+    }
   }
 
   @override

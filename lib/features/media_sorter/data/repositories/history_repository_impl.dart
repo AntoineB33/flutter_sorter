@@ -1,3 +1,4 @@
+import 'package:trying_flutter/features/media_sorter/data/services/add_update.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/history_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
@@ -44,13 +45,13 @@ class HistoryRepositoryImpl implements HistoryRepository {
     lastUpdateData.addOtherwiseRemove = false;
     historyData.updateHistories.removeAt(historyData.historyIndex);
     historyData.historyIndex--;
-    updates[lastUpdateData.getKey()] = lastUpdateData;
+    AddUpdate.addUpdate(updates, lastUpdateData);
     final historyChg = SheetDataUpdate(
       currentSheetId,
       true,
       historyIndex: historyData.historyIndex,
     );
-    updates[historyChg.getKey()] = historyChg;
+    AddUpdate.addUpdate(updates, historyChg);
   }
 
   @override
@@ -74,8 +75,8 @@ class HistoryRepositoryImpl implements HistoryRepository {
         cellUpdate.prevValue = prevCellUpdate.prevValue;
         historyData.updateHistories[historyData.historyIndex] = updateData;
         lastUpdateData.addOtherwiseRemove = false;
-        updates[lastUpdateData.getKey()] = lastUpdateData;
-        updates[updateData.getKey()] = updateData;
+        AddUpdate.addUpdate(updates, lastUpdateData);
+        AddUpdate.addUpdate(updates, updateData);
         return;
       }
       isLastChangeInSameEditingMode = true;
@@ -87,8 +88,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
         i++
       ) {
         historyData.updateHistories[i].addOtherwiseRemove = false;
-        updates[historyData.updateHistories[i].getKey()] =
-            historyData.updateHistories[i];
+        AddUpdate.addUpdate(updates, historyData.updateHistories[i]);
       }
       historyData.updateHistories = historyData.updateHistories.sublist(
         0,
@@ -96,12 +96,11 @@ class HistoryRepositoryImpl implements HistoryRepository {
       );
     }
     historyData.updateHistories.add(updateData);
-    updates[updateData.getKey()] = updateData;
+    AddUpdate.addUpdate(updates, updateData);
     historyData.historyIndex++;
     if (historyData.historyIndex == 100) {
       historyData.updateHistories.first.addOtherwiseRemove = false;
-      updates[historyData.updateHistories.first.getKey()] =
-          historyData.updateHistories.first;
+      AddUpdate.addUpdate(updates, historyData.updateHistories.first);
       historyData.updateHistories.removeAt(0);
       historyData.historyIndex--;
     }
@@ -110,7 +109,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
       true,
       historyIndex: historyData.historyIndex,
     );
-    updates[historyChg.getKey()] = historyChg;
+    AddUpdate.addUpdate(updates, historyChg);
   }
 
   @override

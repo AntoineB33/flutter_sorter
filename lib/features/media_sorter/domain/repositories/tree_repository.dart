@@ -7,13 +7,8 @@ abstract class TreeRepository {
   NodeStruct get warningRoot;
   NodeStruct get categoriesRoot;
   NodeStruct get distPairsRoot;
-  bool isRowValid(
-    int rowId,
-  );
-  void populateAllTrees(
-    NodeStruct mentionsRoot,
-    NodeStruct searchRoot,
-  );
+  bool isRowValid(int rowId);
+  void populateAllTrees(NodeStruct mentionsRoot, NodeStruct searchRoot);
   void populateTree(List<NodeStruct> roots);
-  Point<int> onTapCellSelect(NodeStruct node);
+  CellPosition onTapCellSelect(NodeStruct node);
 }

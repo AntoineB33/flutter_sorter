@@ -3,6 +3,9 @@ import 'package:flutter/widgets.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/add_update.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/utils/logger.dart';
@@ -12,17 +15,19 @@ class LocalDataRepositoryImpl
     implements SaveRepository {
   final ILocalDataSource _localDataSource;
 
+  final LoadedSheetsCache sheetDataCache;
+  final LayoutCache layoutCache;
+  final SelectionCache selectionCache;
+
   // The Map acts as our cache. Using the entity's ID as the key
   // guarantees the "latest wins" behavior automatically.
   final Map<String, UpdateUnit> _pendingSaves = {};
-
-  bool _isMicrotaskScheduled = false;
 
   // The trigger for our debounce logic
   final PublishSubject<void> _saveTrigger = PublishSubject<void>();
   StreamSubscription? _saveSubscription;
 
-  LocalDataRepositoryImpl(this._localDataSource) {
+  LocalDataRepositoryImpl(this._localDataSource, this.sheetDataCache, this.layoutCache, this.selectionCache) {
     // Listen to app lifecycle changes (pause, background, etc.)
     WidgetsBinding.instance.addObserver(this);
 
@@ -35,21 +40,10 @@ class LocalDataRepositoryImpl
   }
 
   @override
-  void save(Map<String, UpdateUnit> updates) {
+  void save(Map<String, UpdateUnit> updates, int sheetId) {
     for (var update in updates.values) {
-      saveUpdate(update);
-    }
-  }
-
-  @override
-  void saveUpdate(UpdateUnit update) {
-    AddUpdate.addUpdate(_pendingSaves, update);
-    if (!_isMicrotaskScheduled) {
-      _isMicrotaskScheduled = true;
-      scheduleMicrotask(() {
-        _isMicrotaskScheduled = false;
-        _saveTrigger.add(null); // Trigger the debounce stream
-      });
+      AddUpdate.addUpdate(_pendingSaves, update);
+      _saveTrigger.add(null);
     }
   }
 

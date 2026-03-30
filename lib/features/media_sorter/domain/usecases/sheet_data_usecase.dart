@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:flutter/widgets.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
@@ -42,7 +41,7 @@ class SheetDataUsecase {
   }
 
   String getCellContent(int row, int col, int sheetId) {
-    return sheetDataRepository.getCellContent(Point<int>(row, col), sheetId);
+    return sheetDataRepository.getCellContent(CellPosition(row, col), sheetId);
   }
 
   CoreSheetContent getSheet(int sheetId) {
@@ -53,7 +52,7 @@ class SheetDataUsecase {
     for (var update in updates.values) {
       if (update is CellUpdate) {
         update.prevValue = sheetDataRepository.getCellContent(
-          Point<int>(update.rowId, update.colId),
+          CellPosition(update.rowId, update.colId),
           sheetId,
         );
       } else if (update is ColumnTypeUpdate) {
@@ -66,22 +65,34 @@ class SheetDataUsecase {
           update.prevName = sheetDataRepository.getSheetTitle(sheetId);
         }
         if (update.colHeaderHeight != null) {
-          update.prevColHeaderHeight = gridRepository.getLayout(sheetId).colHeaderHeight;
+          update.prevColHeaderHeight = gridRepository
+              .getLayout(sheetId)
+              .colHeaderHeight;
         }
         if (update.rowHeaderWidth != null) {
-          update.prevRowHeaderWidth = gridRepository.getLayout(sheetId).rowHeaderWidth;
+          update.prevRowHeaderWidth = gridRepository
+              .getLayout(sheetId)
+              .rowHeaderWidth;
         }
         if (update.primarySelectedCellX != null) {
-          update.prevPrimarySelectedCellX = selectionRepository.getSelectionData(sheetId).primarySelectedCellX;
+          update.prevPrimarySelectedCellX = selectionRepository
+              .getSelectionData(sheetId)
+              .primarySelectedCellX;
         }
         if (update.primarySelectedCellY != null) {
-          update.prevPrimarySelectedCellY = selectionRepository.getSelectionData(sheetId).primarySelectedCellY;
+          update.prevPrimarySelectedCellY = selectionRepository
+              .getSelectionData(sheetId)
+              .primarySelectedCellY;
         }
         if (update.scrollOffsetX != null) {
-          update.prevScrollOffsetX = gridRepository.getLayout(sheetId).scrollOffsetX;
+          update.prevScrollOffsetX = gridRepository
+              .getLayout(sheetId)
+              .scrollOffsetX;
         }
         if (update.scrollOffsetY != null) {
-          update.prevScrollOffsetY = gridRepository.getLayout(sheetId).scrollOffsetY;
+          update.prevScrollOffsetY = gridRepository
+              .getLayout(sheetId)
+              .scrollOffsetY;
         }
       }
     }
@@ -94,19 +105,14 @@ class SheetDataUsecase {
     bool isFromEditing,
   ) {
     if (!isFromHistory) {
-      addPrevValue(updates, sheetId);
       historyRepository.commitHistory(updates, sheetId, isFromEditing);
     }
+    saveRepository.save(updates, sheetId);
     sheetDataRepository.update(updates, sheetId);
-    saveRepository.save(updates);
   }
 
-  void save(Map<String, UpdateUnit> updates) {
-    saveRepository.save(updates);
-  }
-
-  void delete() {
-    saveRepository.save(sheetDataRepository.delete());
+  Map<String, UpdateUnit> delete() {
+    return sheetDataRepository.delete();
   }
 
   Future<Either<Failure, Map<String, UpdateUnit>>> paste() {

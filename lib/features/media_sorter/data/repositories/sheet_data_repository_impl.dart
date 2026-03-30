@@ -6,7 +6,6 @@ import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/add_update.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
@@ -79,7 +78,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     int endRow = selection.primarySelectedCellX;
     int startCol = selection.primarySelectedCellY;
     int endCol = selection.primarySelectedCellY;
-    for (Point<int> cell in selection.selectedCells) {
+    for (CellPosition cell in selection.selectedCells) {
       if (cell.x < startRow) startRow = cell.x;
       if (cell.y < startCol) startCol = cell.y;
       if (cell.x > endRow) endRow = cell.x;
@@ -89,7 +88,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       endRow - startRow + 1,
       (_) => List.generate(endCol - startCol + 1, (_) => false),
     );
-    for (Point<int> cell in selection.selectedCells) {
+    for (CellPosition cell in selection.selectedCells) {
       selectedCellsTable[cell.x - startRow][cell.y - startCol] = true;
     }
     if (!selectedCellsTable.every((row) => row.every((cell) => !cell))) {
@@ -166,7 +165,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  String getCellContent(Point<int> cell, int sheetId) {
+  String getCellContent(CellPosition cell, int sheetId) {
     return loadedSheetsCache.getCellContent(sheetId, cell.x, cell.y);
   }
 

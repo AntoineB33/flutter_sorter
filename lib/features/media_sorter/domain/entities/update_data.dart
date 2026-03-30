@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'dart:core';
 import 'package:json_annotation/json_annotation.dart';
@@ -75,15 +77,13 @@ class SheetDataUpdate extends UpdateUnit {
   double? prevColHeaderHeight;
   final double? rowHeaderWidth;
   double? prevRowHeaderWidth;
-  final int? primarySelectedCellX;
-  int? prevPrimarySelectedCellX;
-  final int? primarySelectedCellY;
-  int? prevPrimarySelectedCellY;
+  final List<CellPosition>? primSelHistory;
+  final int? selectionIndex;
   final double? scrollOffsetX;
   double? prevScrollOffsetX;
   final double? scrollOffsetY;
   double? prevScrollOffsetY;
-  final List<CellPosition>? selectedCells;
+  final HashSet<CellPosition>? selectedCells;
   final List<int>? bestSortFound;
   final List<int>? bestDistFound;
   final List<int>? cursors;
@@ -104,8 +104,8 @@ class SheetDataUpdate extends UpdateUnit {
     this.historyIndex,
     this.colHeaderHeight,
     this.rowHeaderWidth,
-    this.primarySelectedCellX,
-    this.primarySelectedCellY,
+    this.primSelHistory,
+    this.selectionIndex,
     this.scrollOffsetX,
     this.scrollOffsetY,
     this.selectedCells,
@@ -142,13 +142,13 @@ class SheetDataUpdate extends UpdateUnit {
     // 1. Merge constructor parameters
     final merged = SheetDataUpdate(
       newSheetDataUpdate.sheetId,
-      newSheetDataUpdate.addOtherwiseRemove, // Typically you'd want the newest boolean state
+      newSheetDataUpdate.addOtherwiseRemove,
       newName: newSheetDataUpdate.newName ?? newName,
       historyIndex: newSheetDataUpdate.historyIndex ?? historyIndex,
       colHeaderHeight: newSheetDataUpdate.colHeaderHeight ?? colHeaderHeight,
       rowHeaderWidth: newSheetDataUpdate.rowHeaderWidth ?? rowHeaderWidth,
-      primarySelectedCellX: newSheetDataUpdate.primarySelectedCellX ?? primarySelectedCellX,
-      primarySelectedCellY: newSheetDataUpdate.primarySelectedCellY ?? primarySelectedCellY,
+      primSelHistory: newSheetDataUpdate.primSelHistory ?? primSelHistory,
+      selectionIndex: newSheetDataUpdate.selectionIndex ?? selectionIndex,
       scrollOffsetX: newSheetDataUpdate.scrollOffsetX ?? scrollOffsetX,
       scrollOffsetY: newSheetDataUpdate.scrollOffsetY ?? scrollOffsetY,
       selectedCells: newSheetDataUpdate.selectedCells ?? selectedCells,
@@ -164,8 +164,6 @@ class SheetDataUpdate extends UpdateUnit {
     merged.prevName = newSheetDataUpdate.prevName ?? prevName;
     merged.prevColHeaderHeight = newSheetDataUpdate.prevColHeaderHeight ?? prevColHeaderHeight;
     merged.prevRowHeaderWidth = newSheetDataUpdate.prevRowHeaderWidth ?? prevRowHeaderWidth;
-    merged.prevPrimarySelectedCellX = newSheetDataUpdate.prevPrimarySelectedCellX ?? prevPrimarySelectedCellX;
-    merged.prevPrimarySelectedCellY = newSheetDataUpdate.prevPrimarySelectedCellY ?? prevPrimarySelectedCellY;
     merged.prevScrollOffsetX = newSheetDataUpdate.prevScrollOffsetX ?? prevScrollOffsetX;
     merged.prevScrollOffsetY = newSheetDataUpdate.prevScrollOffsetY ?? prevScrollOffsetY;
 

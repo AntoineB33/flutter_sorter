@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
-import 'package:trying_flutter/features/media_sorter/data/datasources/i_file_sheet_local_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
@@ -17,7 +15,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/tree_repository.dart';
 import 'package:trying_flutter/utils/logger.dart';
 
@@ -34,7 +32,8 @@ class TreeRepositoryImpl implements TreeRepository {
 
   int get currentSheetId => workbookCache.currentSheetId;
   AnalysisResult get result => analysisCache.getAnalysisResult(currentSheetId);
-  CoreSheetContent get sheetContent => loadedSheetsCache.getSheet(currentSheetId);
+  CoreSheetContent get sheetContent =>
+      loadedSheetsCache.getSheet(currentSheetId);
   @override
   NodeStruct get errorRoot =>
       analysisCache.getAnalysisResult(currentSheetId).errorRoot;
@@ -54,7 +53,6 @@ class TreeRepositoryImpl implements TreeRepository {
     this.selectionDataStore,
     this.sortStatusCache,
     this.workbookCache,
-    this.saveDataSource,
   );
 
   void dispose() {
@@ -96,7 +94,7 @@ class TreeRepositoryImpl implements TreeRepository {
     }
     for (int srcColId = 0; srcColId < colCount(currentSheetId); srcColId++) {
       if (GetNames.isSourceColumn(
-            loadedSheetsCache.getCells(currentSheetId).columnTypes[srcColId],
+            loadedSheetsCache.getColumnType(currentSheetId, srcColId),
           ) &&
           loadedSheetsCache
               .getCellContent(currentSheetId, rowId, srcColId)
@@ -108,7 +106,7 @@ class TreeRepositoryImpl implements TreeRepository {
   }
 
   @override
-  Point<int> onTapCellSelect(NodeStruct node) {
+  CellPosition onTapCellSelect(NodeStruct node) {
     List<Cell> cells = [];
     List<MapEntry> entries = [];
 
@@ -138,19 +136,17 @@ class TreeRepositoryImpl implements TreeRepository {
     return _handleSelectionCycling(node, cells);
   }
 
-  Point<int> _handleSelectionCycling(NodeStruct node, List<Cell> cells) {
+  CellPosition _handleSelectionCycling(NodeStruct node, List<Cell> cells) {
     int found = -1;
     for (int i = 0; i < cells.length; i++) {
       final child = cells[i];
       if (selectionDataStore
                   .getSelectionData(currentSheetId)
-                  .primarySelectedCell
-                  .x ==
+                  .primarySelectedCellX ==
               child.rowId &&
           selectionDataStore
                   .getSelectionData(currentSheetId)
-                  .primarySelectedCell
-                  .y ==
+                  .primarySelectedCellY ==
               child.colId) {
         found = i;
         break;
@@ -158,7 +154,7 @@ class TreeRepositoryImpl implements TreeRepository {
     }
 
     int index = (found == -1) ? 0 : (found + 1) % cells.length;
-    return Point(cells[index].rowId, cells[index].colId);
+    return CellPosition(cells[index].rowId, cells[index].colId);
   }
 
   @override
@@ -345,10 +341,10 @@ class TreeRepositoryImpl implements TreeRepository {
     if (node.message == null) {
       if (node.instruction == SpreadsheetConstants.selectionMsg) {
         node.message =
-            '${GetNames.getColumnLabel(colId)}$rowId selected: ${sheetContent.table[rowId][colId]}';
+            '${GetNames.getColumnLabel(colId)}$rowId selected: ${loadedSheetsCache.getCellContent(currentSheetId, rowId, colId)}';
       } else {
         node.message =
-            '${GetNames.getColumnLabel(colId)}$rowId: ${sheetContent.table[rowId][colId]}';
+            '${GetNames.getColumnLabel(colId)}$rowId: ${loadedSheetsCache.getCellContent(currentSheetId, rowId, colId)}';
       }
     }
     if (node.defaultOnTap) {
@@ -367,7 +363,7 @@ class TreeRepositoryImpl implements TreeRepository {
         colType == ColumnType.urls) {
       node.newChildren!.add(
         NodeStruct(
-          message: sheetContent.table[rowId][colId],
+          message: loadedSheetsCache.getCellContent(currentSheetId, rowId, colId),
           att: Attribute.row(rowId),
         ),
       );
@@ -417,7 +413,7 @@ class TreeRepositoryImpl implements TreeRepository {
   void _populateColumnNode(NodeStruct node, bool populateChildren) {
     node.message ??= node.colId == -1
         ? "Rows"
-        : 'Column ${GetNames.getColumnLabel(node.colId!)} "${sheetContent.table[0][node.colId!]}"';
+        : 'Column ${GetNames.getColumnLabel(node.colId!)} "${loadedSheetsCache.getCellContent(currentSheetId, 0, node.colId!)}"';
     if (!populateChildren) return;
 
     if (result.colToAtt.containsKey(node.colId)) {
@@ -463,18 +459,5 @@ class TreeRepositoryImpl implements TreeRepository {
     for (final rowId in result.attToRefFromDepColToCol[attribute]!.keys) {
       node.newChildren!.add(NodeStruct(rowId: rowId));
     }
-  }
-
-  Future<void> saveAnalysisResult(
-    String sheetName,
-    AnalysisResult result,
-  ) async {
-    _saveResultExecutors[sheetName] ??= ManageWaitingTasks<void>(
-      Duration(seconds: 2),
-      _failureStreamController,
-    );
-    _saveResultExecutors[sheetName]!.execute(() async {
-      await saveDataSource.saveAnalysisResult(sheetName, result);
-    });
   }
 }

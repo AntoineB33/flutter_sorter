@@ -15,7 +15,7 @@ abstract class SheetDataRepository {
   Map<String, UpdateUnit> delete();
   Future<void> copySelectionToClipboard();
   Future<Either<Failure, Map<String, UpdateUnit>>> pasteSelection();
-  String getCellContent(Point<int> cell, int sheetId);
+  String getCellContent(CellPosition cell, int sheetId);
   ColumnType getColumnType(int colId, int sheetId);
   String getSheetTitle(int sheetId);
   Future<Either<Failure, void>> loadSheet(int sheetId);

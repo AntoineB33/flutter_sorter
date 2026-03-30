@@ -16,7 +16,7 @@ class SelectionCache {
     return _lastSelections.keys.toList();
   }
 
-  List<Point<int>> getSelectedCells(int sheetId) {
+  List<CellPosition> getSelectedCells(int sheetId) {
     return _lastSelections[sheetId]?.selectedCells ?? [];
   }
 

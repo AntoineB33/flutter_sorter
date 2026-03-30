@@ -96,11 +96,11 @@ class SpreadsheetCoordinator extends ChangeNotifier {
       gridController.scrollToCell();
     }
     selectionController.saveLastSelection();
-    treeController.updateMentionsContext(row, col);
+    treeController.updateMentionsContext();
   }
 
   void delete() {
-    sheetDataController.delete();
+    final updates = sheetDataController.delete();
     applyUpdatesAndSort(updates, currentSheetId, false, false, false);
   }
 
@@ -127,8 +127,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     );
   }
 
-  void applyUpdatesAndSort(
-    Map<String, UpdateUnit> updates,
+  void applyUpdatesAndSort(Map<String, UpdateUnit> updates, 
     int sheetId,
     bool isFromHistory,
     bool isFromSort,
@@ -191,8 +190,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     }
   }
 
-  void applyUpdatesNoSort(
-    Map<String, UpdateUnit> updates,
+  void applyUpdatesNoSort(Map<String, UpdateUnit> updates, 
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,
@@ -224,7 +222,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
           setPrimarySelection(node.rowId!, 0, false);
           break;
         }
-        Point<int> selectedCell = treeController.onTapCellSelect(node);
+        CellPosition selectedCell = treeController.onTapCellSelect(node);
         setPrimarySelection(selectedCell.x, selectedCell.y, false);
         break;
       case OnTapAction.selectCell:

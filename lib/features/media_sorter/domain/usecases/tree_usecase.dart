@@ -13,7 +13,7 @@ class TreeUsecase {
 
   TreeUsecase(this.treeRepository);
 
-  Point<int> onTapCellSelect(NodeStruct node) {
+  CellPosition onTapCellSelect(NodeStruct node) {
     return treeRepository.onTapCellSelect(node);
   }
 
@@ -21,13 +21,7 @@ class TreeUsecase {
     treeRepository.populateTree(roots);
   }
 
-  void populateAllTrees(
-    NodeStruct mentionsRoot,
-    NodeStruct searchRoot,
-  ) {
-    treeRepository.populateAllTrees(
-      mentionsRoot,
-      searchRoot,
-    );
+  void populateAllTrees(NodeStruct mentionsRoot, NodeStruct searchRoot) {
+    treeRepository.populateAllTrees(mentionsRoot, searchRoot);
   }
 }

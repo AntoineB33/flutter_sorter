@@ -1,3 +1,6 @@
+can edit when sorting
+click on stop sorting when editing disables sorting
+
 check each cache methods if all data changes are saved
 
 table of cells to map of cells

@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:fpdart/fpdart.dart';
+import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
@@ -11,6 +13,8 @@ import 'package:trying_flutter/features/media_sorter/domain/repositories/workboo
 import 'package:uuid/uuid.dart';
 
 class WorkbookRepositoryImpl implements WorkbookRepository {
+  final ILocalDataSource fileSheetLocalDataSource;
+
   final LoadedSheetsCache loadedSheetsCache;
   final SelectionCache selectionCache;
   final SortStatusCache sortStatusCache;
@@ -22,6 +26,7 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   String get currentSheetName => loadedSheetsCache.getTitle(currentSheetId);
 
   WorkbookRepositoryImpl(
+    this.fileSheetLocalDataSource,
     this.loadedSheetsCache,
     this.selectionCache,
     this.sortStatusCache,
@@ -61,45 +66,17 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   }
 
   @override
-  Future<Either<Failure, void>> loadRecentSheetIds() async {
-    final result = await UtilsService.handleDataSourceCall(
-      () => fileSheetLocalDataSource.recentSheetIds(),
-    );
-
-    return result.fold(
-      (failure) {
-        // generate sheet id :
-        workbookCache.setRecentIds([Uuid().v4()]);
-        return Left(failure);
-      },
-      (ids) {
-        workbookCache.setRecentIds(ids);
-        bool changed = false;
-        int offset = 0;
-        for (int i = 0; i < workbookCache.getRecentSheetIds().length; i++) {
-          if (!UtilsService.isValidSheetName(
-            workbookCache.getRecentSheetIds()[i - offset],
-          )) {
-            workbookCache.removeSheet(i - offset);
-            offset++;
-            changed = true;
-          }
-        }
-        if (changed) {
-          saveRecentSheetIds();
-          return Left(CacheRepairedFailure(workbookCacheChanged: true));
-        }
-        return Right(null);
-      },
-    );
-  }
-
-  @override
-  void saveRecentSheetIds() {
-    _saveRecentSheetIdsExecutor.execute(() async {
-      await fileSheetLocalDataSource.saveRecentSheetIds(
-        workbookCache.getRecentSheetIds(),
-      );
-    });
+  Future<Either<Failure, Unit>> loadRecentSheetIds() async {
+    try {
+      final recentSheetIds = await fileSheetLocalDataSource.getSheetIdAndLastOpened();
+      final sortedSheetIds = (recentSheetIds.toList()
+        ..sort((a, b) => b.lastOpened.compareTo(a.lastOpened)))
+        .map((e) => e.sheetId)
+        .toList();
+      workbookCache.setRecentIds(sortedSheetIds);
+      return Right(unit);
+    } on CacheException catch (e) {
+      return Left(DatabaseFailure(e.message));
+    }
   }
 }

@@ -31,12 +31,11 @@ class SheetDataController extends ChangeNotifier {
     return sheetDataUsecase.getCellContent(row, col, currentSheetId);
   }
 
-  void delete() {
-    sheetDataUsecase.delete();
+  Map<String, UpdateUnit> delete() {
+    return sheetDataUsecase.delete();
   }
 
-  void applyUpdatesNoSort(
-    Map<String, UpdateUnit> updates,
+  void applyUpdatesNoSort(Map<String, UpdateUnit> updates, 
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,
