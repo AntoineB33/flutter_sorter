@@ -51,14 +51,11 @@ class DriftLocalDataSource implements ILocalDataSource {
               rowHeaderWidth: item.rowHeaderWidth != null
                   ? Value(item.rowHeaderWidth!)
                   : Value.absent(),
-              primarySelectedCellX: item.primarySelectedCellX != null
-                  ? Value(item.primarySelectedCellX!)
-                  : Value.absent(),
-              primarySelectedCellY: item.primarySelectedCellY != null
-                  ? Value(item.primarySelectedCellY!)
-                  : Value.absent(),
               primSelHistory: item.primSelHistory != null
                   ? Value(item.primSelHistory!)
+                  : Value.absent(),
+              primSelHistoryIndex: item.primSelHistoryId != null
+                  ? Value(item.primSelHistoryId!)
                   : Value.absent(),
               scrollOffsetX: item.scrollOffsetX != null
                   ? Value(item.scrollOffsetX!)

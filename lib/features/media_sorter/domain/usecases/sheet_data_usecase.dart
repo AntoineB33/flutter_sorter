@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
@@ -49,7 +48,8 @@ class SheetDataUsecase {
   }
 
   void addPrevValue(Map<String, UpdateUnit> updates, int sheetId) {
-    for (var update in updates.values) {
+    for (var entry in updates.entries) {
+      var update = entry.value;
       if (update is CellUpdate) {
         update.prevValue = sheetDataRepository.getCellContent(
           CellPosition(update.rowId, update.colId),
@@ -62,7 +62,13 @@ class SheetDataUsecase {
         );
       } else if (update is SheetDataUpdate) {
         if (update.newName != null) {
-          update.prevName = sheetDataRepository.getSheetTitle(sheetId);
+          updates[entry.key] = update.merge(
+            SheetDataUpdate(
+              update.sheetId,
+              update.addOtherwiseRemove,
+              prevName: sheetDataRepository.getSheetTitle(sheetId),
+            ),
+          );
         }
         if (update.colHeaderHeight != null) {
           update.prevColHeaderHeight = gridRepository

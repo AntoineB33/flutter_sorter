@@ -28,14 +28,6 @@ class SelectionUsecase {
     this.saveRepository,
   );
 
-  double getScrollOffsetX(int sheetId) {
-    return selectionRepository.getScrollOffsetX(sheetId);
-  }
-
-  double getScrollOffsetY(int sheetId) {
-    return selectionRepository.getScrollOffsetY(sheetId);
-  }
-
   void selectAll() {
     final update = selectionRepository.selectAll();
     saveRepository.saveUpdate(update);

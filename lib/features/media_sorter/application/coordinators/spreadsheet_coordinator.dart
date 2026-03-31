@@ -96,11 +96,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     if (scrollTo) {
       gridController.scrollToCell();
     }
-    sheetDataController.saveUpdate(SheetDataUpdate(
-      currentSheetId,
-      false,
-      primSelHistory: ,
-    ));
+    historyController.newPrimarySelection(row, col);
     treeController.updateMentionsContext();
   }
 

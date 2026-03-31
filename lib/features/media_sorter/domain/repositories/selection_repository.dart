@@ -5,11 +5,8 @@ abstract class SelectionRepository {
   int get primarySelectedCellX;
   int get primarySelectedCellY;
   bool containsSheetId(int sheetId);
-  double getScrollOffsetX(int sheetId);
-  double getScrollOffsetY(int sheetId);
   List<int> getSheetIds();
   void setPrimarySelection(int row, int col, bool keepSelection);
-  void clearSheetSelection(int sheetId);
   SelectionData getSelectionData(int sheetId);
   UpdateUnit selectAll();
   void setSelectionData(int sheetId, SelectionData selectionData);

@@ -11,4 +11,8 @@ class HistoryController extends ChangeNotifier {
   UpdateData? moveInUpdateHistory(int direction) {
     return historyUsecase.moveInUpdateHistory(direction);
   }
+
+  void newPrimarySelection(int row, int col) {
+    historyUsecase.newPrimarySelection(row, col);
+  }
 }

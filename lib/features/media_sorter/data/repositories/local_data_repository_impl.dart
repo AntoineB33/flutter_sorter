@@ -40,7 +40,12 @@ class LocalDataRepositoryImpl
   }
 
   @override
-  void save(Map<String, UpdateUnit> updates, int sheetId) {
+  void saveUpdate(UpdateUnit update) {
+    save({update.getKey(): update});
+  }
+
+  @override
+  void save(Map<String, UpdateUnit> updates) {
     for (var update in updates.values) {
       AddUpdate.addUpdate(_pendingSaves, update);
       _saveTrigger.add(null);

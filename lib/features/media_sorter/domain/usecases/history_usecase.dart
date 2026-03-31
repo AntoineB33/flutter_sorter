@@ -1,10 +1,12 @@
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 
 class HistoryUsecase {
   final HistoryRepository historyRepository;
+  final SaveRepository saveRepository;
 
-  HistoryUsecase(this.historyRepository);
+  HistoryUsecase(this.historyRepository, this.saveRepository);
 
   UpdateData? moveInUpdateHistory(int direction) {
     return historyRepository.moveInUpdateHistory(direction);
@@ -12,5 +14,10 @@ class HistoryUsecase {
   
   void stopEditing(bool escape, {Map<String, UpdateUnit>? updates}) {
     historyRepository.stopEditing(escape, updates: updates);
+  }
+
+  void newPrimarySelection(int row, int col) {
+    final update = historyRepository.newPrimarySelection(row, col);
+    saveRepository.saveUpdate(update);
   }
 }

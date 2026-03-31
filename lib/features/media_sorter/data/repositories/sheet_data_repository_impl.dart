@@ -229,7 +229,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         final selectionData = SelectionData(
           primarySelectedCellX: sheetData.primarySelectedCellX ?? 0,
           primarySelectedCellY: sheetData.primarySelectedCellY ?? 0,
-          selectedCells: sheetData.selectedCells ?? HashSet<CellPosition>(),
+          selectedCells: sheetData.selectedCells ?? Set<CellPosition>(),
         );
         selectionCache.setSelectionData(sheetId, selectionData);
         final sortProgression = SortProgressData(

@@ -6,6 +6,7 @@ import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/history_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
@@ -17,18 +18,20 @@ class SelectionRepositoryImpl implements SelectionRepository {
   final SelectionCache _selectionCache;
   final LoadedSheetsCache _loadedSheetsCache;
   final WorkbookCache _workbookCache;
+  final HistoryCache _historyCache;
 
   int get currentSheetId => _workbookCache.currentSheetId;
   SelectionData get selection => _selectionCache.getSelectionData(currentSheetId);
   @override
-  int get primarySelectedCellX => selection.primarySelectedCellX;
+  int get primarySelectedCellX => _historyCache.getPrimarySelectedCellX(currentSheetId);
   @override
-  int get primarySelectedCellY => selection.primarySelectedCellY;
+  int get primarySelectedCellY => _historyCache.getPrimarySelectedCellY(currentSheetId);
 
   SelectionRepositoryImpl(
     this._selectionCache,
     this._loadedSheetsCache,
     this._workbookCache,
+    this._historyCache,
   );
 
   @override
@@ -58,16 +61,6 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
-  double getScrollOffsetX(int sheetId) {
-    return _selectionCache.getScrollOffsetX(sheetId);
-  }
-
-  @override
-  double getScrollOffsetY(int sheetId) {
-    return _selectionCache.getScrollOffsetY(sheetId);
-  }
-
-  @override
   List<String> getSheetIds() {
     return _selectionCache.getSheetIds();
   }
@@ -80,4 +73,10 @@ class SelectionRepositoryImpl implements SelectionRepository {
     selection.primarySelectedCell = Point(row, col);
     saveLastSelection();
   }
+
+  @override
+  void setSelectionData(int sheetId, SelectionData selectionData) {
+    _selectionCache.setSelectionData(sheetId, selectionData);
+  }
+
 }

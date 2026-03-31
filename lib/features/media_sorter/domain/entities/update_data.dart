@@ -62,6 +62,17 @@ class CellPosition {
         'row': rowId,
         'col': colId,
       };
+  
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CellPosition &&
+          runtimeType == other.runtimeType &&
+          rowId == other.rowId &&
+          colId == other.colId;
+
+  @override
+  int get hashCode => rowId.hashCode ^ colId.hashCode;
 }
 
 @JsonSerializable()
@@ -70,27 +81,31 @@ class SheetDataUpdate extends UpdateUnit {
   final int sheetId;
   final bool addOtherwiseRemove;
   final String? newName;
-  String? prevName;
+  final String? prevName;
   final DateTime? lastOpened;
-  final int? historyIndex;
+
   final double? colHeaderHeight;
-  double? prevColHeaderHeight;
+  final double? prevColHeaderHeight;
   final double? rowHeaderWidth;
-  double? prevRowHeaderWidth;
-  final List<CellPosition>? primSelHistory;
-  final int? selectionIndex;
+  final double? prevRowHeaderWidth;
   final double? scrollOffsetX;
-  double? prevScrollOffsetX;
   final double? scrollOffsetY;
-  double? prevScrollOffsetY;
-  final HashSet<CellPosition>? selectedCells;
+
+  final List<CellPosition>? primSelHistory;
+  final int? primSelHistoryId;
+  final int? historyIndex;
+
+  final Set<CellPosition>? selectedCells;
+
   final List<int>? bestSortFound;
   final List<int>? bestDistFound;
   final List<int>? cursors;
   final List<List<int>>? possibleInts;
   final List<List<List<int>>>? validAreas;
   final int? sortIndex;
+
   final String? analysisResult;
+
   final bool? sortInProgress;
   final bool? toApplyNextBestSort;
   final bool? toAlwaysApplyCurrentBestSort;
@@ -100,12 +115,15 @@ class SheetDataUpdate extends UpdateUnit {
     this.sheetId,
     this.addOtherwiseRemove, {
     this.newName,
+    this.prevName,
     this.lastOpened,
     this.historyIndex,
     this.colHeaderHeight,
+    this.prevColHeaderHeight,
     this.rowHeaderWidth,
+    this.prevRowHeaderWidth,
     this.primSelHistory,
-    this.selectionIndex,
+    this.primSelHistoryId,
     this.scrollOffsetX,
     this.scrollOffsetY,
     this.selectedCells,
@@ -129,7 +147,7 @@ class SheetDataUpdate extends UpdateUnit {
       lastOpened: DateTime.now(),
     );
   }
-
+  
   @override
   String getKey() {
     return 'sheetDataUpdate:$sheetId';
@@ -137,18 +155,25 @@ class SheetDataUpdate extends UpdateUnit {
 
   @override
   UpdateUnit merge(UpdateUnit newUpdate) {
-    final newSheetDataUpdate = newUpdate as SheetDataUpdate;
+    var newSheetDataUpdate = newUpdate as SheetDataUpdate;
+
+    if (!newSheetDataUpdate.addOtherwiseRemove) {
+      newSheetDataUpdate = SheetDataUpdate.initial(sheetId);
+    }
 
     // 1. Merge constructor parameters
     final merged = SheetDataUpdate(
       newSheetDataUpdate.sheetId,
       newSheetDataUpdate.addOtherwiseRemove,
       newName: newSheetDataUpdate.newName ?? newName,
+      prevName: newSheetDataUpdate.prevName ?? prevName,
       historyIndex: newSheetDataUpdate.historyIndex ?? historyIndex,
       colHeaderHeight: newSheetDataUpdate.colHeaderHeight ?? colHeaderHeight,
+      prevColHeaderHeight: newSheetDataUpdate.prevColHeaderHeight ?? prevColHeaderHeight,
       rowHeaderWidth: newSheetDataUpdate.rowHeaderWidth ?? rowHeaderWidth,
+      prevRowHeaderWidth: newSheetDataUpdate.prevRowHeaderWidth ?? prevRowHeaderWidth,
       primSelHistory: newSheetDataUpdate.primSelHistory ?? primSelHistory,
-      selectionIndex: newSheetDataUpdate.selectionIndex ?? selectionIndex,
+      primSelHistoryId: newSheetDataUpdate.primSelHistoryId ?? primSelHistoryId,
       scrollOffsetX: newSheetDataUpdate.scrollOffsetX ?? scrollOffsetX,
       scrollOffsetY: newSheetDataUpdate.scrollOffsetY ?? scrollOffsetY,
       selectedCells: newSheetDataUpdate.selectedCells ?? selectedCells,
@@ -159,13 +184,6 @@ class SheetDataUpdate extends UpdateUnit {
       validAreas: newSheetDataUpdate.validAreas ?? validAreas,
       sortIndex: newSheetDataUpdate.sortIndex ?? sortIndex,
     );
-
-    // 2. Merge the mutable 'prev' properties (since they aren't in the constructor)
-    merged.prevName = newSheetDataUpdate.prevName ?? prevName;
-    merged.prevColHeaderHeight = newSheetDataUpdate.prevColHeaderHeight ?? prevColHeaderHeight;
-    merged.prevRowHeaderWidth = newSheetDataUpdate.prevRowHeaderWidth ?? prevRowHeaderWidth;
-    merged.prevScrollOffsetX = newSheetDataUpdate.prevScrollOffsetX ?? prevScrollOffsetX;
-    merged.prevScrollOffsetY = newSheetDataUpdate.prevScrollOffsetY ?? prevScrollOffsetY;
 
     return merged;
   }

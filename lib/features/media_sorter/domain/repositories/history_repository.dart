@@ -8,4 +8,5 @@ abstract class HistoryRepository {
     bool isFromEditing,
   );
   void stopEditing(bool escape, {Map<String, UpdateUnit>? updates});
+  UpdateUnit newPrimarySelection(int rowId, int colId);
 }

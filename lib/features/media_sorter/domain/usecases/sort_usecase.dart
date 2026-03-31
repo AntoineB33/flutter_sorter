@@ -14,7 +14,6 @@ class SortUsecase {
   final WorkbookRepository workbookRepository;
   final SelectionRepository selectionRepository;
 
-  Stream<Failure> get failureStream => sortRepository.failureStream;
   int get currentSheetId => workbookRepository.currentSheetId;
 
   SortUsecase(

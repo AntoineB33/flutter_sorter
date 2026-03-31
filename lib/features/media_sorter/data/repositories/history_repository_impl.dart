@@ -1,3 +1,4 @@
+import 'package:meta/meta.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/add_update.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/history_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
@@ -113,42 +114,27 @@ class HistoryRepositoryImpl implements HistoryRepository {
   }
 
   @override
-  UpdateUnit newPrimarySelection() {
-    final updateUnit = SheetDataUpdate(
+  @useResult
+  UpdateUnit newPrimarySelection(int rowId, int colId) {
+    if (historyData.primSelHistoryId < historyData.primSelHistory.length - 1) {
+      historyData.primSelHistory = historyData.primSelHistory.sublist(
+        0,
+        historyData.primSelHistoryId + 1,
+      );
+    }
+    historyData.primSelHistory.add(CellPosition(rowId, colId));
+    historyData.primSelHistoryId++;
+    const int primSelHistoryLimit = 30;
+    if (historyData.primSelHistoryId == primSelHistoryLimit) {
+      historyData.primSelHistory.removeAt(0);
+      historyData.primSelHistoryId--;
+    }
+    return SheetDataUpdate(
       currentSheetId,
       true,
       primSelHistory: historyData.primSelHistory,
+      primSelHistoryId: historyData.primSelHistoryId == primSelHistoryLimit - 1 ? null : historyData.primSelHistoryId,
     );
-    final primSelHistory = historyData.primSelHistory;
-    if (historyData.historyIndex < historyData.updateHistories.length - 1) {
-      for (
-        int i = historyData.historyIndex + 1;
-        i < historyData.updateHistories.length;
-        i++
-      ) {
-        historyData.updateHistories[i].addOtherwiseRemove = false;
-        AddUpdate.addUpdate(updates, historyData.updateHistories[i]);
-      }
-      historyData.updateHistories = historyData.updateHistories.sublist(
-        0,
-        historyData.historyIndex + 1,
-      );
-    }
-    historyData.updateHistories.add(updateData);
-    AddUpdate.addUpdate(updates, updateData);
-    historyData.historyIndex++;
-    if (historyData.historyIndex == 100) {
-      historyData.updateHistories.first.addOtherwiseRemove = false;
-      AddUpdate.addUpdate(updates, historyData.updateHistories.first);
-      historyData.updateHistories.removeAt(0);
-      historyData.historyIndex--;
-    }
-    final historyChg = SheetDataUpdate(
-      currentSheetId,
-      true,
-      historyIndex: historyData.historyIndex,
-    );
-    AddUpdate.addUpdate(updates, historyChg);
   }
 
   @override
