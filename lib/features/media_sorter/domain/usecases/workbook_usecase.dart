@@ -59,7 +59,7 @@ class WorkbookUsecase {
   Future<Either<Failure, Unit>> loadSheet(int sheetId, bool init) async {
     if (workbookRepository.containsSheetId(sheetId)) {
       if (!sheetDataRepository.containsSheetId(sheetId)) {
-        Either<Failure, Unit> result = await sheetDataRepository.loadSheet(
+        final result = await sheetDataRepository.loadSheet(
           sheetId,
         );
         if (result.isLeft()) {

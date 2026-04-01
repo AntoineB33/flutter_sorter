@@ -24,7 +24,6 @@ class SelectionRepositoryImpl implements SelectionRepository {
     this._selectionCache,
     this._loadedSheetsCache,
     this._workbookCache,
-    this._historyCache,
   );
 
   @override

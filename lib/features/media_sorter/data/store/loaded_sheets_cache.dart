@@ -78,8 +78,30 @@ class LoadedSheetsCache {
         AddUpdate.addUpdate(updates, SheetDataUpdate(
           sheetId,
           true,
-          
+          lastCol: _loadedSheetsData[sheetId]!.lastCol,
         ));
+      }
+      if (update.newValue.isNotEmpty) {
+        final usedRows = _loadedSheetsData[sheetId]!.usedRows;
+        final usedCols = _loadedSheetsData[sheetId]!.usedCols;
+        AddUpdate.addUpdate(updates, SheetDataUpdate(
+          sheetId,
+          true,
+          usedRows: !usedRows.contains(update.rowId) ? (usedRows..add(update.rowId)) : null,
+          usedCols: !usedCols.contains(update.colId) ? (usedCols..add(update.colId)) : null,
+        ));
+      } else {
+        final usedRows = _loadedSheetsData[sheetId]!.usedRows;
+        final usedCols = _loadedSheetsData[sheetId]!.usedCols;
+        sfqsfq
+        if (usedRows.contains(update.rowId) || usedCols.contains(update.colId)) {
+          AddUpdate.addUpdate(updates, SheetDataUpdate(
+            sheetId,
+            true,
+            usedRows: usedRows.contains(update.rowId) ? (usedRows..remove(update.rowId)) : null,
+            usedCols: usedCols.contains(update.colId) ? (usedCols..remove(update.colId)) : null,
+          ));
+        }
       }
     }
   }
