@@ -42,6 +42,46 @@ class $SheetDataTablesTable extends SheetDataTables
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _lastRowMeta = const VerificationMeta(
+    'lastRow',
+  );
+  @override
+  late final GeneratedColumn<int> lastRow = GeneratedColumn<int>(
+    'last_row',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastColMeta = const VerificationMeta(
+    'lastCol',
+  );
+  @override
+  late final GeneratedColumn<int> lastCol = GeneratedColumn<int>(
+    'last_col',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<Set<int>, String> usedRows =
+      GeneratedColumn<String>(
+        'used_rows',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<Set<int>>($SheetDataTablesTable.$converterusedRows);
+  @override
+  late final GeneratedColumnWithTypeConverter<Set<int>, String> usedCols =
+      GeneratedColumn<String>(
+        'used_cols',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<Set<int>>($SheetDataTablesTable.$converterusedCols);
   static const VerificationMeta _historyIndexMeta = const VerificationMeta(
     'historyIndex',
   );
@@ -335,6 +375,10 @@ class $SheetDataTablesTable extends SheetDataTables
     id,
     title,
     lastOpened,
+    lastRow,
+    lastCol,
+    usedRows,
+    usedCols,
     historyIndex,
     colHeaderHeight,
     rowHeaderWidth,
@@ -390,6 +434,22 @@ class $SheetDataTablesTable extends SheetDataTables
       );
     } else if (isInserting) {
       context.missing(_lastOpenedMeta);
+    }
+    if (data.containsKey('last_row')) {
+      context.handle(
+        _lastRowMeta,
+        lastRow.isAcceptableOrUnknown(data['last_row']!, _lastRowMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lastRowMeta);
+    }
+    if (data.containsKey('last_col')) {
+      context.handle(
+        _lastColMeta,
+        lastCol.isAcceptableOrUnknown(data['last_col']!, _lastColMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lastColMeta);
     }
     if (data.containsKey('history_index')) {
       context.handle(
@@ -585,6 +645,26 @@ class $SheetDataTablesTable extends SheetDataTables
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_opened'],
       )!,
+      lastRow: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_row'],
+      )!,
+      lastCol: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_col'],
+      )!,
+      usedRows: $SheetDataTablesTable.$converterusedRows.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}used_rows'],
+        )!,
+      ),
+      usedCols: $SheetDataTablesTable.$converterusedCols.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}used_cols'],
+        )!,
+      ),
       historyIndex: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}history_index'],
@@ -705,6 +785,10 @@ class $SheetDataTablesTable extends SheetDataTables
     return $SheetDataTablesTable(attachedDatabase, alias);
   }
 
+  static TypeConverter<Set<int>, String> $converterusedRows =
+      const SetIntConverter();
+  static TypeConverter<Set<int>, String> $converterusedCols =
+      const SetIntConverter();
   static TypeConverter<List<CellPosition>, String> $converterprimSelHistory =
       const ListPointConverter();
   static TypeConverter<Set<CellPosition>, String> $converterselectedCells =
@@ -727,6 +811,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
   final int id;
   final String title;
   final DateTime lastOpened;
+  final int lastRow;
+  final int lastCol;
+  final Set<int> usedRows;
+  final Set<int> usedCols;
   final int historyIndex;
   final double colHeaderHeight;
   final double rowHeaderWidth;
@@ -755,6 +843,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     required this.id,
     required this.title,
     required this.lastOpened,
+    required this.lastRow,
+    required this.lastCol,
+    required this.usedRows,
+    required this.usedCols,
     required this.historyIndex,
     required this.colHeaderHeight,
     required this.rowHeaderWidth,
@@ -786,6 +878,18 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     map['id'] = Variable<int>(id);
     map['title'] = Variable<String>(title);
     map['last_opened'] = Variable<DateTime>(lastOpened);
+    map['last_row'] = Variable<int>(lastRow);
+    map['last_col'] = Variable<int>(lastCol);
+    {
+      map['used_rows'] = Variable<String>(
+        $SheetDataTablesTable.$converterusedRows.toSql(usedRows),
+      );
+    }
+    {
+      map['used_cols'] = Variable<String>(
+        $SheetDataTablesTable.$converterusedCols.toSql(usedCols),
+      );
+    }
     map['history_index'] = Variable<int>(historyIndex);
     map['col_header_height'] = Variable<double>(colHeaderHeight);
     map['row_header_width'] = Variable<double>(rowHeaderWidth);
@@ -854,6 +958,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       id: Value(id),
       title: Value(title),
       lastOpened: Value(lastOpened),
+      lastRow: Value(lastRow),
+      lastCol: Value(lastCol),
+      usedRows: Value(usedRows),
+      usedCols: Value(usedCols),
       historyIndex: Value(historyIndex),
       colHeaderHeight: Value(colHeaderHeight),
       rowHeaderWidth: Value(rowHeaderWidth),
@@ -890,6 +998,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       id: serializer.fromJson<int>(json['id']),
       title: serializer.fromJson<String>(json['title']),
       lastOpened: serializer.fromJson<DateTime>(json['lastOpened']),
+      lastRow: serializer.fromJson<int>(json['lastRow']),
+      lastCol: serializer.fromJson<int>(json['lastCol']),
+      usedRows: serializer.fromJson<Set<int>>(json['usedRows']),
+      usedCols: serializer.fromJson<Set<int>>(json['usedCols']),
       historyIndex: serializer.fromJson<int>(json['historyIndex']),
       colHeaderHeight: serializer.fromJson<double>(json['colHeaderHeight']),
       rowHeaderWidth: serializer.fromJson<double>(json['rowHeaderWidth']),
@@ -943,6 +1055,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       'id': serializer.toJson<int>(id),
       'title': serializer.toJson<String>(title),
       'lastOpened': serializer.toJson<DateTime>(lastOpened),
+      'lastRow': serializer.toJson<int>(lastRow),
+      'lastCol': serializer.toJson<int>(lastCol),
+      'usedRows': serializer.toJson<Set<int>>(usedRows),
+      'usedCols': serializer.toJson<Set<int>>(usedCols),
       'historyIndex': serializer.toJson<int>(historyIndex),
       'colHeaderHeight': serializer.toJson<double>(colHeaderHeight),
       'rowHeaderWidth': serializer.toJson<double>(rowHeaderWidth),
@@ -978,6 +1094,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     int? id,
     String? title,
     DateTime? lastOpened,
+    int? lastRow,
+    int? lastCol,
+    Set<int>? usedRows,
+    Set<int>? usedCols,
     int? historyIndex,
     double? colHeaderHeight,
     double? rowHeaderWidth,
@@ -1006,6 +1126,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     id: id ?? this.id,
     title: title ?? this.title,
     lastOpened: lastOpened ?? this.lastOpened,
+    lastRow: lastRow ?? this.lastRow,
+    lastCol: lastCol ?? this.lastCol,
+    usedRows: usedRows ?? this.usedRows,
+    usedCols: usedCols ?? this.usedCols,
     historyIndex: historyIndex ?? this.historyIndex,
     colHeaderHeight: colHeaderHeight ?? this.colHeaderHeight,
     rowHeaderWidth: rowHeaderWidth ?? this.rowHeaderWidth,
@@ -1040,6 +1164,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       lastOpened: data.lastOpened.present
           ? data.lastOpened.value
           : this.lastOpened,
+      lastRow: data.lastRow.present ? data.lastRow.value : this.lastRow,
+      lastCol: data.lastCol.present ? data.lastCol.value : this.lastCol,
+      usedRows: data.usedRows.present ? data.usedRows.value : this.usedRows,
+      usedCols: data.usedCols.present ? data.usedCols.value : this.usedCols,
       historyIndex: data.historyIndex.present
           ? data.historyIndex.value
           : this.historyIndex,
@@ -1117,6 +1245,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           ..write('id: $id, ')
           ..write('title: $title, ')
           ..write('lastOpened: $lastOpened, ')
+          ..write('lastRow: $lastRow, ')
+          ..write('lastCol: $lastCol, ')
+          ..write('usedRows: $usedRows, ')
+          ..write('usedCols: $usedCols, ')
           ..write('historyIndex: $historyIndex, ')
           ..write('colHeaderHeight: $colHeaderHeight, ')
           ..write('rowHeaderWidth: $rowHeaderWidth, ')
@@ -1152,6 +1284,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     id,
     title,
     lastOpened,
+    lastRow,
+    lastCol,
+    usedRows,
+    usedCols,
     historyIndex,
     colHeaderHeight,
     rowHeaderWidth,
@@ -1184,6 +1320,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           other.id == this.id &&
           other.title == this.title &&
           other.lastOpened == this.lastOpened &&
+          other.lastRow == this.lastRow &&
+          other.lastCol == this.lastCol &&
+          other.usedRows == this.usedRows &&
+          other.usedCols == this.usedCols &&
           other.historyIndex == this.historyIndex &&
           other.colHeaderHeight == this.colHeaderHeight &&
           other.rowHeaderWidth == this.rowHeaderWidth &&
@@ -1215,6 +1355,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
   final Value<int> id;
   final Value<String> title;
   final Value<DateTime> lastOpened;
+  final Value<int> lastRow;
+  final Value<int> lastCol;
+  final Value<Set<int>> usedRows;
+  final Value<Set<int>> usedCols;
   final Value<int> historyIndex;
   final Value<double> colHeaderHeight;
   final Value<double> rowHeaderWidth;
@@ -1243,6 +1387,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     this.id = const Value.absent(),
     this.title = const Value.absent(),
     this.lastOpened = const Value.absent(),
+    this.lastRow = const Value.absent(),
+    this.lastCol = const Value.absent(),
+    this.usedRows = const Value.absent(),
+    this.usedCols = const Value.absent(),
     this.historyIndex = const Value.absent(),
     this.colHeaderHeight = const Value.absent(),
     this.rowHeaderWidth = const Value.absent(),
@@ -1272,6 +1420,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     this.id = const Value.absent(),
     required String title,
     required DateTime lastOpened,
+    required int lastRow,
+    required int lastCol,
+    required Set<int> usedRows,
+    required Set<int> usedCols,
     required int historyIndex,
     required double colHeaderHeight,
     required double rowHeaderWidth,
@@ -1298,6 +1450,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     required bool analysisDone,
   }) : title = Value(title),
        lastOpened = Value(lastOpened),
+       lastRow = Value(lastRow),
+       lastCol = Value(lastCol),
+       usedRows = Value(usedRows),
+       usedCols = Value(usedCols),
        historyIndex = Value(historyIndex),
        colHeaderHeight = Value(colHeaderHeight),
        rowHeaderWidth = Value(rowHeaderWidth),
@@ -1326,6 +1482,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Expression<int>? id,
     Expression<String>? title,
     Expression<DateTime>? lastOpened,
+    Expression<int>? lastRow,
+    Expression<int>? lastCol,
+    Expression<String>? usedRows,
+    Expression<String>? usedCols,
     Expression<int>? historyIndex,
     Expression<double>? colHeaderHeight,
     Expression<double>? rowHeaderWidth,
@@ -1355,6 +1515,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       if (id != null) 'id': id,
       if (title != null) 'title': title,
       if (lastOpened != null) 'last_opened': lastOpened,
+      if (lastRow != null) 'last_row': lastRow,
+      if (lastCol != null) 'last_col': lastCol,
+      if (usedRows != null) 'used_rows': usedRows,
+      if (usedCols != null) 'used_cols': usedCols,
       if (historyIndex != null) 'history_index': historyIndex,
       if (colHeaderHeight != null) 'col_header_height': colHeaderHeight,
       if (rowHeaderWidth != null) 'row_header_width': rowHeaderWidth,
@@ -1392,6 +1556,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Value<int>? id,
     Value<String>? title,
     Value<DateTime>? lastOpened,
+    Value<int>? lastRow,
+    Value<int>? lastCol,
+    Value<Set<int>>? usedRows,
+    Value<Set<int>>? usedCols,
     Value<int>? historyIndex,
     Value<double>? colHeaderHeight,
     Value<double>? rowHeaderWidth,
@@ -1421,6 +1589,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       id: id ?? this.id,
       title: title ?? this.title,
       lastOpened: lastOpened ?? this.lastOpened,
+      lastRow: lastRow ?? this.lastRow,
+      lastCol: lastCol ?? this.lastCol,
+      usedRows: usedRows ?? this.usedRows,
+      usedCols: usedCols ?? this.usedCols,
       historyIndex: historyIndex ?? this.historyIndex,
       colHeaderHeight: colHeaderHeight ?? this.colHeaderHeight,
       rowHeaderWidth: rowHeaderWidth ?? this.rowHeaderWidth,
@@ -1463,6 +1635,22 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     }
     if (lastOpened.present) {
       map['last_opened'] = Variable<DateTime>(lastOpened.value);
+    }
+    if (lastRow.present) {
+      map['last_row'] = Variable<int>(lastRow.value);
+    }
+    if (lastCol.present) {
+      map['last_col'] = Variable<int>(lastCol.value);
+    }
+    if (usedRows.present) {
+      map['used_rows'] = Variable<String>(
+        $SheetDataTablesTable.$converterusedRows.toSql(usedRows.value),
+      );
+    }
+    if (usedCols.present) {
+      map['used_cols'] = Variable<String>(
+        $SheetDataTablesTable.$converterusedCols.toSql(usedCols.value),
+      );
     }
     if (historyIndex.present) {
       map['history_index'] = Variable<int>(historyIndex.value);
@@ -1581,6 +1769,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
           ..write('id: $id, ')
           ..write('title: $title, ')
           ..write('lastOpened: $lastOpened, ')
+          ..write('lastRow: $lastRow, ')
+          ..write('lastCol: $lastCol, ')
+          ..write('usedRows: $usedRows, ')
+          ..write('usedCols: $usedCols, ')
           ..write('historyIndex: $historyIndex, ')
           ..write('colHeaderHeight: $colHeaderHeight, ')
           ..write('rowHeaderWidth: $rowHeaderWidth, ')
@@ -4028,6 +4220,10 @@ typedef $$SheetDataTablesTableCreateCompanionBuilder =
       Value<int> id,
       required String title,
       required DateTime lastOpened,
+      required int lastRow,
+      required int lastCol,
+      required Set<int> usedRows,
+      required Set<int> usedCols,
       required int historyIndex,
       required double colHeaderHeight,
       required double rowHeaderWidth,
@@ -4058,6 +4254,10 @@ typedef $$SheetDataTablesTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> title,
       Value<DateTime> lastOpened,
+      Value<int> lastRow,
+      Value<int> lastCol,
+      Value<Set<int>> usedRows,
+      Value<Set<int>> usedCols,
       Value<int> historyIndex,
       Value<double> colHeaderHeight,
       Value<double> rowHeaderWidth,
@@ -4329,6 +4529,28 @@ class $$SheetDataTablesTableFilterComposer
     column: $table.lastOpened,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<int> get lastRow => $composableBuilder(
+    column: $table.lastRow,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastCol => $composableBuilder(
+    column: $table.lastCol,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<Set<int>, Set<int>, String> get usedRows =>
+      $composableBuilder(
+        column: $table.usedRows,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnWithTypeConverterFilters<Set<int>, Set<int>, String> get usedCols =>
+      $composableBuilder(
+        column: $table.usedCols,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
 
   ColumnFilters<int> get historyIndex => $composableBuilder(
     column: $table.historyIndex,
@@ -4696,6 +4918,26 @@ class $$SheetDataTablesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get lastRow => $composableBuilder(
+    column: $table.lastRow,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastCol => $composableBuilder(
+    column: $table.lastCol,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get usedRows => $composableBuilder(
+    column: $table.usedRows,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get usedCols => $composableBuilder(
+    column: $table.usedCols,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get historyIndex => $composableBuilder(
     column: $table.historyIndex,
     builder: (column) => ColumnOrderings(column),
@@ -4836,6 +5078,18 @@ class $$SheetDataTablesTableAnnotationComposer
     column: $table.lastOpened,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get lastRow =>
+      $composableBuilder(column: $table.lastRow, builder: (column) => column);
+
+  GeneratedColumn<int> get lastCol =>
+      $composableBuilder(column: $table.lastCol, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Set<int>, String> get usedRows =>
+      $composableBuilder(column: $table.usedRows, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<Set<int>, String> get usedCols =>
+      $composableBuilder(column: $table.usedCols, builder: (column) => column);
 
   GeneratedColumn<int> get historyIndex => $composableBuilder(
     column: $table.historyIndex,
@@ -5215,6 +5469,10 @@ class $$SheetDataTablesTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<DateTime> lastOpened = const Value.absent(),
+                Value<int> lastRow = const Value.absent(),
+                Value<int> lastCol = const Value.absent(),
+                Value<Set<int>> usedRows = const Value.absent(),
+                Value<Set<int>> usedCols = const Value.absent(),
                 Value<int> historyIndex = const Value.absent(),
                 Value<double> colHeaderHeight = const Value.absent(),
                 Value<double> rowHeaderWidth = const Value.absent(),
@@ -5243,6 +5501,10 @@ class $$SheetDataTablesTableTableManager
                 id: id,
                 title: title,
                 lastOpened: lastOpened,
+                lastRow: lastRow,
+                lastCol: lastCol,
+                usedRows: usedRows,
+                usedCols: usedCols,
                 historyIndex: historyIndex,
                 colHeaderHeight: colHeaderHeight,
                 rowHeaderWidth: rowHeaderWidth,
@@ -5273,6 +5535,10 @@ class $$SheetDataTablesTableTableManager
                 Value<int> id = const Value.absent(),
                 required String title,
                 required DateTime lastOpened,
+                required int lastRow,
+                required int lastCol,
+                required Set<int> usedRows,
+                required Set<int> usedCols,
                 required int historyIndex,
                 required double colHeaderHeight,
                 required double rowHeaderWidth,
@@ -5301,6 +5567,10 @@ class $$SheetDataTablesTableTableManager
                 id: id,
                 title: title,
                 lastOpened: lastOpened,
+                lastRow: lastRow,
+                lastCol: lastCol,
+                usedRows: usedRows,
+                usedCols: usedCols,
                 historyIndex: historyIndex,
                 colHeaderHeight: colHeaderHeight,
                 rowHeaderWidth: rowHeaderWidth,

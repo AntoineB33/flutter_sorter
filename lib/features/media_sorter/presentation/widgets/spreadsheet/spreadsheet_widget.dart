@@ -293,7 +293,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         label: GetNames.getColumnLabel(c - 1),
         colIndex: c - 1,
         backgroundColor: GetNames.getColumnType(
-          widget.sheetDataController.getCurrentSheet(),
+          widget.sheetDataController.getCurrentSheet().columnTypes,
           c - 1,
         ).color,
         onContextMenu: (details) => _showColumnContextMenu(
@@ -359,7 +359,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     int col,
   ) async {
     final currentType = GetNames.getColumnType(
-      sheetDataController.getCurrentSheet(),
+      sheetDataController.getCurrentSheet().columnTypes,
       col,
     );
     final List<PopupMenuEntry<dynamic>> items = ColumnType.values

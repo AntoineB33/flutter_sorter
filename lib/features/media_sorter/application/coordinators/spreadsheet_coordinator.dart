@@ -3,13 +3,11 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:path/path.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
@@ -93,12 +91,11 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     bool keepSelection, {
     bool scrollTo = true,
   }) {
-    selectionController.setPrimarySelection(row, col, keepSelection);
+    historyController.newPrimarySelection(row, col);
+    treeController.updateMentionsContext();
     if (scrollTo) {
       gridController.scrollToCell();
     }
-    historyController.newPrimarySelection(row, col);
-    treeController.updateMentionsContext();
   }
 
   void delete() {
@@ -138,7 +135,6 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   ) {
     applyUpdatesNoSort(updates, sheetId, isFromHistory, isFromEditing);
     if (!isFromSort) {
-      sortController.lightCalculations(sheetId);
       launchCalculation(sheetId);
     }
   }
@@ -226,7 +222,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
           break;
         }
         CellPosition selectedCell = treeController.onTapCellSelect(node);
-        setPrimarySelection(primarySelectedCellX, primarySelectedCellY, false);
+        setPrimarySelection(selectedCell.rowId, selectedCell.colId, false);
         break;
       case OnTapAction.selectCell:
         if (node.rowId != null && node.colId != null) {
@@ -350,28 +346,28 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     }
 
     if (logicalKey == LogicalKeyboardKey.arrowUp) {
-      selectionController.setPrimarySelection(
+      setPrimarySelection(
         max(primarySelectedCellX - 1, 0),
         primarySelectedCellY,
         false,
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowDown) {
-      selectionController.setPrimarySelection(
+      setPrimarySelection(
         primarySelectedCellX + 1,
         primarySelectedCellY,
         false,
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowLeft) {
-      selectionController.setPrimarySelection(
+      setPrimarySelection(
         primarySelectedCellX,
         max(0, primarySelectedCellY - 1),
         false,
       );
       return KeyEventResult.handled;
     } else if (logicalKey == LogicalKeyboardKey.arrowRight) {
-      selectionController.setPrimarySelection(
+      setPrimarySelection(
         primarySelectedCellX,
         primarySelectedCellY + 1,
         false,

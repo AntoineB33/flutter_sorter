@@ -74,9 +74,14 @@ class CalculateService {
   int get colCount => coreSheetContent.lastCol + 1;
   Map<CellPosition, String> get table => coreSheetContent.cells;
   Map<int, ColumnType> get columnTypes => coreSheetContent.columnTypes;
+  late Map<int, String> headers;
+  Set<int> get usedRows => coreSheetContent.usedRows;
+  Set<int> get usedCols => coreSheetContent.usedCols;
 
-  CalculateService(this.coreSheetContent);
-    
+  CalculateService(this.coreSheetContent) {
+    headers = {for (int colId = 0; colId <= coreSheetContent.lastCol; colId++) colId: getCellContent(0, colId)};
+  }
+
   String getCellContent(int row, int col) {
     return table[CellPosition(row, col)] ?? "";
   }
@@ -362,7 +367,9 @@ class CalculateService {
     if (splitStr.length == 2) {
       name = splitStr[1];
       startStrRowId += splitStr[0].length;
-      attColId = table[0].indexOf(splitStr[0]);
+      attColId = headers.entries.firstWhere(
+        (e) => e.value == splitStr[0],
+      ).key;
       if (attColId == -1) {
         attColId = getIndexFromString(splitStr[0]);
       }
@@ -548,8 +555,8 @@ class CalculateService {
       ..addAll(List<bool>.filled(rowCount, false));
     for (int rowId = 1; rowId < rowCount; rowId++) {
       for (int colId = 0; colId < colCount; colId++) {
-        if (GetNames.isSourceColumn(columnTypes[colId])) {
-          isMedium[rowId] = isMedium[rowId] || table[rowId][colId].isNotEmpty;
+        if (GetNames.isSourceColumn(columnTypes[colId]!)) {
+          isMedium[rowId] = isMedium[rowId] || getCellContent(rowId, colId).isNotEmpty;
         }
       }
     }
@@ -580,12 +587,12 @@ class CalculateService {
         ),
       );
     for (int colId = 0; colId < colCount; colId++) {
-      int index = getIndexFromString(table[0][colId]);
+      int index = getIndexFromString(getCellContent(0, colId));
       if (index > 0 && index < colCount) {
         errorRoot.newChildren!.add(
           NodeStruct(
             message:
-                "Column header ${GetNames.getColumnLabel(colId)} \"${table[0][colId]}\" conflicts with Column header ${GetNames.getColumnLabel(index)} \"${table[0][index]}\"",
+                "Column header ${GetNames.getColumnLabel(colId)} \"${getCellContent(0, colId)}\" conflicts with Column header ${GetNames.getColumnLabel(index)} \"${getCellContent(0, index)}\"",
             cell: Cell(rowId: 0, colId: colId),
           ),
         );
@@ -593,14 +600,13 @@ class CalculateService {
       }
     }
     for (int rowId = 1; rowId < rowCount; rowId++) {
-      final row = table[rowId];
       for (int colId = 0; colId < colCount; colId++) {
         final isSprawl = columnTypes[colId] == ColumnType.sprawl;
         if (columnTypes[colId] == ColumnType.attributes || isSprawl) {
-          if (row[colId].isEmpty) {
+          if (getCellContent(rowId, colId).isEmpty) {
             continue;
           }
-          final cellList = row[colId].split(";");
+          final cellList = getCellContent(rowId, colId).split(";");
           for (String attWrittenNotTrimed in cellList) {
             String attWritten = attWrittenNotTrimed.trim();
             if (attWritten.isEmpty) {
@@ -1332,10 +1338,9 @@ class CalculateService {
         continue;
       }
 
-      final row = table[rowId];
-      for (int colId = 0; colId < row.length; colId++) {
+      for (int colId = 0; colId < colCount; colId++) {
         if (columnTypes[colId] == ColumnType.dependencies &&
-            row[colId].isNotEmpty) {
+            getCellContent(rowId, colId).isNotEmpty) {
           var att = depCache[rowId]![colId]!.$1;
           var isConstraint = depCache[rowId]![colId]!.$2;
           var match = depCache[rowId]![colId]!.$3;

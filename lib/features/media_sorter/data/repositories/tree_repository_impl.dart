@@ -1,8 +1,4 @@
-import 'dart:async';
-
-import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
@@ -25,10 +21,6 @@ class TreeRepositoryImpl implements TreeRepository {
   final SelectionCache selectionDataStore;
   final SortStatusCache sortStatusCache;
   final WorkbookCache workbookCache;
-
-  final Map<String, ManageWaitingTasks<void>> _saveResultExecutors = {};
-  final StreamController<Failure> _failureStreamController =
-      StreamController.broadcast();
 
   int get currentSheetId => workbookCache.currentSheetId;
   AnalysisResult get result => analysisCache.getAnalysisResult(currentSheetId);
@@ -54,13 +46,6 @@ class TreeRepositoryImpl implements TreeRepository {
     this.sortStatusCache,
     this.workbookCache,
   );
-
-  void dispose() {
-    for (final executor in _saveResultExecutors.values) {
-      executor.dispose();
-    }
-    _failureStreamController.close();
-  }
 
   int rowCount(int sheetId) {
     return loadedSheetsCache.rowCount(sheetId);
@@ -141,12 +126,10 @@ class TreeRepositoryImpl implements TreeRepository {
     for (int i = 0; i < cells.length; i++) {
       final child = cells[i];
       if (selectionDataStore
-                  .getSelectionData(currentSheetId)
-                  .primarySelectedCellX ==
+                  .primarySelectedCellX(currentSheetId) ==
               child.rowId &&
           selectionDataStore
-                  .getSelectionData(currentSheetId)
-                  .primarySelectedCellY ==
+                  .primarySelectedCellY(currentSheetId) ==
               child.colId) {
         found = i;
         break;

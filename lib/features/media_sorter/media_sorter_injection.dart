@@ -208,6 +208,5 @@ Future<void> initMediaSorterDependencies() async {
   );
   sl.registerLazySingleton<SortRepositoryImpl>(
     () => sortRepository,
-    dispose: (repo) => repo.dispose(),
   );
 }

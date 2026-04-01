@@ -20,15 +20,12 @@ class CalculationService {
     SendPort sendPort = args[0];
     CoreSheetContent sheetContent = args[1];
     // AnalysisResult prevResult = args[2];
-    AnalysisResult result = _isolateHandler(getMessage(sheetContent));
+    
+    final worker = CalculateService(sheetContent);
+    AnalysisResult result = worker.run();
     Isolate.exit(
       sendPort,
       AnalysisReturn(result, true, result.errorChildren.isEmpty),
     );
-  }
-
-  static AnalysisResult _isolateHandler(IsolateMessage message) {
-    final worker = CalculateService(message);
-    return worker.run();
   }
 }

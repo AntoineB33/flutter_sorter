@@ -1,4 +1,3 @@
-import 'dart:collection';
 
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'dart:core';
@@ -83,6 +82,10 @@ class SheetDataUpdate extends UpdateUnit {
   final String? newName;
   final String? prevName;
   final DateTime? lastOpened;
+  final int? lastRow;
+  final int? lastCol;
+  final Set<int>? usedRows;
+  final Set<int>? usedCols;
 
   final double? colHeaderHeight;
   final double? prevColHeaderHeight;
@@ -123,6 +126,10 @@ class SheetDataUpdate extends UpdateUnit {
     this.newName,
     this.prevName,
     this.lastOpened,
+    this.lastRow,
+    this.lastCol,
+    this.usedRows,
+    this.usedCols,
     this.historyIndex,
     this.colHeaderHeight,
     this.prevColHeaderHeight,
@@ -178,6 +185,11 @@ class SheetDataUpdate extends UpdateUnit {
       newSheetDataUpdate.addOtherwiseRemove,
       newName: newSheetDataUpdate.newName ?? newName,
       prevName: newSheetDataUpdate.prevName ?? prevName,
+      lastOpened: newSheetDataUpdate.lastOpened ?? lastOpened,
+      lastRow: newSheetDataUpdate.lastRow ?? lastRow,
+      lastCol: newSheetDataUpdate.lastCol ?? lastCol,
+      usedRows: newSheetDataUpdate.usedRows ?? usedRows,
+      usedCols: newSheetDataUpdate.usedCols ?? usedCols,
       historyIndex: newSheetDataUpdate.historyIndex ?? historyIndex,
       colHeaderHeight: newSheetDataUpdate.colHeaderHeight ?? colHeaderHeight,
       prevColHeaderHeight: newSheetDataUpdate.prevColHeaderHeight ?? prevColHeaderHeight,

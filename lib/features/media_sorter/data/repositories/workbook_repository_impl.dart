@@ -4,13 +4,11 @@ import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
-import 'package:uuid/uuid.dart';
 
 class WorkbookRepositoryImpl implements WorkbookRepository {
   final ILocalDataSource fileSheetLocalDataSource;
@@ -53,11 +51,13 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   }
 
   @override
-  Future<Either<Failure, void>> clearAllData() async {
-    final result = await UtilsService.handleDataSourceCall(
-      () => fileSheetLocalDataSource.clearAllData(),
-    );
-    return result.fold((failure) => Left(failure), (_) => Right(null));
+  Future<Either<Failure, Unit>> clearAllData() async {
+    try{
+      await fileSheetLocalDataSource.clearAllData();
+      return Right(unit);
+    } on CacheException catch (e) {
+      return Left(DatabaseFailure(e.message));
+    }
   }
 
   @override

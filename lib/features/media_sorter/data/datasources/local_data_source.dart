@@ -3,7 +3,6 @@ import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:drift/drift.dart';
 
@@ -27,6 +26,7 @@ abstract class ILocalDataSource {
   Future<List<ColsManuallyAdjustedWidthEntity>> getColsManuallyAdjustedWidthEntities(int sheetId);
   Future<List<SelectedCellsEntity>> getSelectedCellsEntities(int sheetId);
   Future<List<SortStatusData>> getSortStatus();
+  Future<void> clearAllData();
 }
 
 class DriftLocalDataSource implements ILocalDataSource {
@@ -408,5 +408,26 @@ class DriftLocalDataSource implements ILocalDataSource {
       throw CacheException('An unknown database error occurred.');
     }
   }
+
+  @override
+  Future<void> clearAllData() async {
+    try {
+      await db.transaction(() async {
+        await db.delete(db.sheetDataTables).go();
+        await db.delete(db.sheetCellsTable).go();
+        await db.delete(db.sheetColumnTypesTable).go();
+        await db.delete(db.updateHistoriesTable).go();
+        await db.delete(db.rowsBottomPosTable).go();
+        await db.delete(db.colRightPosTable).go();
+        await db.delete(db.rowsManuallyAdjustedHeightTable).go();
+        await db.delete(db.colsManuallyAdjustedWidthTable).go();
+        await db.delete(db.selectedCellsTable).go();
+      });
+    } on SqliteException catch (e) {
+      throw CacheException('Failed to clear all data: ${e.message}');
+    } catch (e) {
+      throw CacheException('An unknown database error occurred.');
+    }
+  } 
 
 }

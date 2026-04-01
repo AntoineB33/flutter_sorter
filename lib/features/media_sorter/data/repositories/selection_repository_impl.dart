@@ -1,11 +1,5 @@
-import 'dart:async';
-import 'dart:math';
 
-import 'package:fpdart/fpdart.dart';
 import 'package:meta/meta.dart';
-import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/history_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
@@ -18,7 +12,6 @@ class SelectionRepositoryImpl implements SelectionRepository {
   final SelectionCache _selectionCache;
   final LoadedSheetsCache _loadedSheetsCache;
   final WorkbookCache _workbookCache;
-  final HistoryCache _historyCache;
 
   int get currentSheetId => _workbookCache.currentSheetId;
   @override
@@ -53,11 +46,6 @@ class SelectionRepositoryImpl implements SelectionRepository {
   @override
   SelectionData getSelectionData(int sheetId) {
     return _selectionCache.getSelectionData(sheetId);
-  }
-
-  @override
-  bool containsSheetId(int sheetId) {
-    return _selectionCache.containsSheetId(sheetId);
   }
 
   @override

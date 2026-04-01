@@ -9,10 +9,10 @@ class CoreSheetContent {
   DateTime lastOpened;
   final Map<CellPosition, String> cells;
   Map<int, ColumnType> columnTypes;
-  int lastRow = 0;
-  int lastCol = 0;
-  final List<int> usedRows = [];
-  final List<int> usedCols = [];
+  int lastRow;
+  int lastCol;
+  final Set<int> usedRows;
+  final Set<int> usedCols;
 
   static int _idCounter = 0;
 
@@ -22,7 +22,10 @@ class CoreSheetContent {
     required this.lastOpened,
     required this.cells,
     required this.columnTypes,
-
+    required this.lastRow,
+    required this.lastCol,
+    required this.usedRows,
+    required this.usedCols,
   });
 
   factory CoreSheetContent.empty() {
@@ -32,6 +35,10 @@ class CoreSheetContent {
       lastOpened: DateTime.now(),
       cells: {},
       columnTypes: {},
+      lastRow: 0,
+      lastCol: 0,
+      usedRows: {},
+      usedCols: {},
     );
   }
 }

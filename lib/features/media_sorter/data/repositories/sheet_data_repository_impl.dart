@@ -1,14 +1,12 @@
 import 'dart:async';
-import 'dart:collection';
-import 'dart:math';
 
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/add_update.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/manage_waiting_tasks.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sorting_progress_cache.dart';
@@ -28,19 +26,12 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   final SelectionCache selectionCache;
   final SortProgressCache sortProgressCache;
   final WorkbookCache workbookCache;
-
-  final StreamController<Failure> _errorController =
-      StreamController<Failure>.broadcast();
-
-  @override
-  Stream<Failure> get failureStream => _errorController.stream;
+  final LayoutCache layoutCache;
 
   int get currentSheetId => workbookCache.currentSheetId;
 
   late final SpreadsheetClipboardService _clipboardService =
       SpreadsheetClipboardService();
-
-  final Map<int, ManageWaitingTasks<void>> _saveSheetDataExecutor = {};
 
   SheetDataRepositoryImpl(
     this.dataSource,
@@ -48,6 +39,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     this.selectionCache,
     this.sortProgressCache,
     this.workbookCache,
+    this.layoutCache,
   );
   SelectionData get selection =>
       selectionCache.getSelectionData(currentSheetId);
@@ -141,13 +133,6 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     return Right(updates);
   }
 
-  void dispose() {
-    for (var executor in _saveSheetDataExecutor.values) {
-      executor.dispose();
-    }
-    _errorController.close();
-  }
-
   @override
   String getCellContent(CellPosition cell, int sheetId) {
     return loadedSheetsCache.getCellContent(sheetId, cell.rowId, cell.colId);
@@ -186,7 +171,12 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
           lastOpened: sheetData.lastOpened,
           cells: cellMap,
           columnTypes: columnTypeMap,
+          lastRow: sheetData.lastRow,
+          lastCol: sheetData.lastCol,
+          usedRows: sheetData.usedRows,
+          usedCols: sheetData.usedCols,
         );
+        loadedSheetsCache.setSheet(sheetId, sheetDataTable);
         final rowsBottomPos = await dataSource.getRowsBottomPosEntities(
           sheetId,
         );
@@ -209,7 +199,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
           scrollOffsetX: sheetData.scrollOffsetX,
           scrollOffsetY: sheetData.scrollOffsetY,
         );
-        loadedSheetsCache.setSheet(sheetId, sheetDataTable);
+        layoutCache.setLayout(sheetId, layoutDataTable);
         final selectionData = SelectionData(
           selectedCells: sheetData.selectedCells,
           primSelHistory: sheetData.primSelHistory,

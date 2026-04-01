@@ -11,6 +11,12 @@ class SheetDataTables extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get title => text()();
   DateTimeColumn get lastOpened => dateTime()();
+  IntColumn get lastRow => integer()();
+  IntColumn get lastCol => integer()();
+    TextColumn get usedRows =>
+      text().map(const SetIntConverter())();
+  TextColumn get usedCols =>
+      text().map(const SetIntConverter())();
   IntColumn get historyIndex => integer()();
   RealColumn get colHeaderHeight => real()();
   RealColumn get rowHeaderWidth => real()();
@@ -209,6 +215,21 @@ class ListPointConverter extends TypeConverter<List<CellPosition>, String> {
   String toSql(List<CellPosition> value) {
     final encoded = value.map((e) => [e.rowId, e.colId]).toList();
     return jsonEncode(encoded);
+  }
+}
+
+class SetIntConverter extends TypeConverter<Set<int>, String> {
+  const SetIntConverter();
+
+  @override
+  Set<int> fromSql(String fromDb) {
+    final decoded = jsonDecode(fromDb) as List<dynamic>;
+    return decoded.map((e) => e as int).toSet();
+  }
+
+  @override
+  String toSql(Set<int> value) {
+    return jsonEncode(value.toList());
   }
 }
 

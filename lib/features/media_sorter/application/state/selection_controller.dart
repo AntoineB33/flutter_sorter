@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
@@ -33,10 +32,6 @@ class SelectionController extends ChangeNotifier {
     return selectionUsecase.getSelectionData(sheetId);
   }
 
-  Future<void> saveLastSelection() async {
-    selectionUsecase.saveLastSelection();
-  }
-
   bool isCellSelected(int row, int col) {
     return selectionUsecase
         .getSelectionData(currentSheetId)
@@ -50,16 +45,6 @@ class SelectionController extends ChangeNotifier {
 
   bool isCellEditing(int row, int col) =>
       editingMode && primarySelectedCellX == row && primarySelectedCellY == col;
-
-  void setPrimarySelection(
-    int row,
-    int col,
-    bool keepSelection, {
-    bool scrollTo = true,
-  }) {
-    selectionUsecase.setPrimarySelection(row, col, keepSelection);
-    notifyListeners();
-  }
 
   void stopEditing(bool escape, {Map<String, UpdateUnit>? updates}) {
     historyUsecase.stopEditing(escape, updates: updates);
@@ -76,7 +61,6 @@ class SelectionController extends ChangeNotifier {
       return false;
     }
     editingMode = true;
-    saveLastSelection();
     notifyListeners();
     return true;
   }

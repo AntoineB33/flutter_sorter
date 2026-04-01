@@ -30,10 +30,6 @@ class SortController extends ChangeNotifier {
     return workbookUsecase.getRecentSheetIds();
   }
 
-  void _onFailure(Failure failure) {
-    logger.e('A failure occurred during saving.');
-  }
-
   @override
   void dispose() {
     _subscription.cancel();
@@ -46,10 +42,6 @@ class SortController extends ChangeNotifier {
 
   Future<void> analyze(int sheetId) {
     return sortUseCase.analyze(sheetId);
-  }
-
-  void lightCalculations(int sheetId) {
-    sortUseCase.lightCalculations(sheetId);
   }
 
   Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId) {

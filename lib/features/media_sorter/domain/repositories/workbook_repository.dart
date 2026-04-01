@@ -6,7 +6,6 @@ abstract class WorkbookRepository {
   String get currentSheetName;
   int getNewSheetId();
   List<int> getRecentSheetIds();
-  void saveRecentSheetIds();
   bool containsSheetId(int sheetId);
   Future<Either<Failure, void>> clearAllData();
   Future<Either<Failure, void>> loadRecentSheetIds();

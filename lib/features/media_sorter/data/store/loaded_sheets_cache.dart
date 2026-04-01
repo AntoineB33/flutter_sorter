@@ -1,7 +1,7 @@
+import 'package:trying_flutter/features/media_sorter/data/services/add_update.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
-import 'package:trying_flutter/utils/logger.dart';
 
 class LoadedSheetsCache {
   final Map<int, CoreSheetContent> _loadedSheetsData = {};
@@ -46,7 +46,7 @@ class LoadedSheetsCache {
     _loadedSheetsData[sheetId] = sheetData;
   }
 
-  void _updateCell(int sheetId, CellUpdate update) {
+  void _updateCell(Map<String, UpdateUnit> updates, int sheetId, CellUpdate update) {
     _loadedSheetsData[sheetId]!.cells[CellPosition(update.rowId, update.colId)] =
         update.newValue;
     if (update.rowId > _loadedSheetsData[sheetId]!.lastRow) {
@@ -75,6 +75,11 @@ class LoadedSheetsCache {
           }
         }
         _loadedSheetsData[sheetId]!.lastCol--;
+        AddUpdate.addUpdate(updates, SheetDataUpdate(
+          sheetId,
+          true,
+          
+        ));
       }
     }
   }
@@ -83,7 +88,7 @@ class LoadedSheetsCache {
     for (var update in updates.values) {
       switch (update) {
         case CellUpdate():
-          _updateCell(sheetId, update);
+          _updateCell(updates, sheetId, update);
           break;
         case ColumnTypeUpdate():
           _setColumnType(sheetId, update);
