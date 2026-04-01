@@ -4,9 +4,9 @@ part 'sort_status.g.dart';
 
 @JsonSerializable()
 class SortStatus {
-  bool toApplyNextBestSort;
-  bool toAlwaysApplyCurrentBestSort;
-  bool analysisDone;
+  final bool toApplyNextBestSort;
+  final bool toAlwaysApplyCurrentBestSort;
+  final bool analysisDone;
 
   SortStatus(
     this.toApplyNextBestSort,
@@ -16,6 +16,18 @@ class SortStatus {
 
   factory SortStatus.initial() {
     return SortStatus(false, false, false);
+  }
+
+  SortStatus copyWith({
+    bool? toApplyNextBestSort,
+    bool? toAlwaysApplyCurrentBestSort,
+    bool? analysisDone,
+  }) {
+    return SortStatus(
+      toApplyNextBestSort ?? this.toApplyNextBestSort,
+      toAlwaysApplyCurrentBestSort ?? this.toAlwaysApplyCurrentBestSort,
+      analysisDone ?? this.analysisDone,
+    );
   }
 
   factory SortStatus.fromJson(Map<String, dynamic> json) =>

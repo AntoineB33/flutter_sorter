@@ -1,7 +1,6 @@
-import 'dart:convert';
-import 'dart:isolate';
-import 'package:flutter/foundation.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_message.dart';
+import 'package:flutter/material.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'dart:collection';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
@@ -10,10 +9,9 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struc
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
-import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 
 class Cols {
   final List<int> colIndexes = [];
@@ -37,12 +35,14 @@ class Cols {
 }
 
 class CalculateService {
-  final Either<TransferableTypedData, List<List<String>>> dataPackage;
+  static const int maxInt = -1 >>> 1;
+  static const patternDistance = SpreadsheetConstants.patternDistance;
+  static const patternAreas = SpreadsheetConstants.patternAreas;
+  static const all = SpreadsheetConstants.all;
+  static const notUsedCst = SpreadsheetConstants.notUsedCst;
+  static Cols added = Cols();
+  
   final AnalysisResult result = AnalysisResult.empty();
-
-  SheetContent? _sheetContent;
-  List<List<String>> get table => _sheetContent!.table;
-  List<ColumnType> get columnTypes => _sheetContent!.columnTypes;
 
   NodeStruct get errorRoot => result.errorRoot;
   NodeStruct get warningRoot => result.warningRoot;
@@ -67,24 +67,21 @@ class CalculateService {
   Map<int, Set<Attribute>> get colToAtt => result.colToAtt;
   List<bool> get isMedium => result.isMedium;
 
-  static const int maxInt = -1 >>> 1;
-  static const patternDistance = SpreadsheetConstants.patternDistance;
-  static const patternAreas = SpreadsheetConstants.patternAreas;
-  static const all = SpreadsheetConstants.all;
-  static const notUsedCst = SpreadsheetConstants.notUsedCst;
-  static Cols added = Cols();
+  final CoreSheetContent coreSheetContent;
+  
 
-  int get rowCount => _sheetContent!.table.length;
-  int get colCount => rowCount > 0 ? _sheetContent!.table[0].length : 0;
+  int get rowCount => coreSheetContent.lastRow + 1;
+  int get colCount => coreSheetContent.lastCol + 1;
+  Map<CellPosition, String> get table => coreSheetContent.cells;
+  Map<int, ColumnType> get columnTypes => coreSheetContent.columnTypes;
 
-  final List<ColumnType> columnTypes0;
-
-  CalculateService(IsolateMessage message)
-    : dataPackage = message.table,
-      columnTypes0 = message.columnTypes;
+  CalculateService(this.coreSheetContent);
+    
+  String getCellContent(int row, int col) {
+    return table[CellPosition(row, col)] ?? "";
+  }
 
   AnalysisResult run() {
-    _decodeData(dataPackage);
     List<Map<InstrStruct, Cell>> instrTable = List.generate(
       rowCount,
       (_) => {},
@@ -92,29 +89,6 @@ class CalculateService {
     _getEverything(instrTable);
     getRules(result, instrTable);
     return result;
-  }
-
-  void _decodeData(
-    Either<TransferableTypedData, List<List<String>>> dataPackage,
-  ) {
-    List<List<String>> table = [];
-    dataPackage.fold(
-      (transferable) {
-        final Uint8List receivedBytes = transferable
-            .materialize()
-            .asUint8List();
-        final List<dynamic> decodedTable = jsonDecode(
-          utf8.decode(receivedBytes),
-        );
-        table = decodedTable
-            .map((row) => (row as List).cast<String>())
-            .toList();
-      },
-      (rawTable) {
-        table = rawTable;
-      },
-    );
-    _sheetContent = SheetContent(table: table, columnTypes: columnTypes0);
   }
 
   List<String> generateUniqueStrings(int n) {
@@ -1159,7 +1133,8 @@ class CalculateService {
     //   }
     // }
 
-    final depPattern = table[0].map((cell) => cell.split("#")).toList();
+    final depPattern = {for (int colId = 0; colId < colCount; colId++)
+      colId: getCellContent(colId, 0).split("#")};
 
     final Map<int, Map<int, (Attribute, bool, RegExpMatch, List<List<int>>)>>
     depCache = {};
@@ -1169,17 +1144,16 @@ class CalculateService {
         continue;
       }
 
-      final row = table[rowId];
-      for (int colId = 0; colId < row.length; colId++) {
+      for (int colId = 0; colId < rowCount; colId++) {
         if (columnTypes[colId] == ColumnType.dependencies &&
-            row[colId].isNotEmpty) {
+            getCellContent(rowId, colId).isNotEmpty) {
           bool firstInstr = true;
-          for (String instr in row[colId].split(";")) {
+          for (String instr in getCellContent(rowId, colId).split(";")) {
             instr = instr.trim();
             if (instr.isEmpty) continue;
             final instrSplit = instr.split("#");
-            if (instrSplit.length != depPattern[colId].length - 1 &&
-                depPattern[colId].length > 1) {
+            if (instrSplit.length != depPattern[colId]!.length - 1 &&
+                depPattern[colId]!.length > 1) {
               errorRoot.newChildren!.add(
                 NodeStruct(
                   message:
@@ -1190,13 +1164,13 @@ class CalculateService {
               return;
             }
             List<int> separations = [];
-            if (depPattern[colId].length > 1) {
-              instr = depPattern[colId][0];
+            if (depPattern[colId]!.length > 1) {
+              instr = depPattern[colId]![0];
               separations.add(instr.length);
-              for (int i = 1; i < depPattern[colId].length; i++) {
-                instr += instrSplit[i - 1] + depPattern[colId][i];
+              for (int i = 1; i < depPattern[colId]!.length; i++) {
+                instr += instrSplit[i - 1] + depPattern[colId]![i];
                 separations.add(separations.last + instrSplit[i - 1].length);
-                separations.add(separations.last + depPattern[colId][i].length);
+                separations.add(separations.last + depPattern[colId]![i].length);
               }
             }
 

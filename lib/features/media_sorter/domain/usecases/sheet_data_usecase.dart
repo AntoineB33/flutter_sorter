@@ -71,37 +71,33 @@ class SheetDataUsecase {
           );
         }
         if (update.colHeaderHeight != null) {
-          update.prevColHeaderHeight = gridRepository
-              .getLayout(sheetId)
-              .colHeaderHeight;
+          updates[entry.key] = update.merge(
+            SheetDataUpdate(
+              update.sheetId,
+              update.addOtherwiseRemove,
+              prevColHeaderHeight: gridRepository
+                  .getLayout(sheetId)
+                  .colHeaderHeight,
+            ),
+          );
         }
         if (update.rowHeaderWidth != null) {
-          update.prevRowHeaderWidth = gridRepository
-              .getLayout(sheetId)
-              .rowHeaderWidth;
-        }
-        if (update.primarySelectedCellX != null) {
-          update.prevPrimarySelectedCellX = selectionRepository
-              .getSelectionData(sheetId)
-              .primarySelectedCellX;
-        }
-        if (update.primarySelectedCellY != null) {
-          update.prevPrimarySelectedCellY = selectionRepository
-              .getSelectionData(sheetId)
-              .primarySelectedCellY;
-        }
-        if (update.scrollOffsetX != null) {
-          update.prevScrollOffsetX = gridRepository
-              .getLayout(sheetId)
-              .scrollOffsetX;
-        }
-        if (update.scrollOffsetY != null) {
-          update.prevScrollOffsetY = gridRepository
-              .getLayout(sheetId)
-              .scrollOffsetY;
+          updates[entry.key] = update.merge(
+            SheetDataUpdate(
+              update.sheetId,
+              update.addOtherwiseRemove,
+              prevRowHeaderWidth: gridRepository
+                  .getLayout(sheetId)
+                  .rowHeaderWidth,
+            ),
+          );
         }
       }
     }
+  }
+
+  void save(Map<String, UpdateUnit> updates) {
+    saveRepository.save(updates);
   }
 
   void applyUpdatesNoSort(
@@ -113,7 +109,7 @@ class SheetDataUsecase {
     if (!isFromHistory) {
       historyRepository.commitHistory(updates, sheetId, isFromEditing);
     }
-    saveRepository.save(updates, sheetId);
+    save(updates);
     sheetDataRepository.update(updates, sheetId);
   }
 

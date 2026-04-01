@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:path/path.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
@@ -18,6 +20,7 @@ class SelectionUsecase {
 
   int get primarySelectedCellX => selectionRepository.primarySelectedCellX;
   int get primarySelectedCellY => selectionRepository.primarySelectedCellY;
+  int get currentSheetId => workbookRepository.currentSheetId;
 
   SelectionUsecase(
     this.selectionRepository,
@@ -33,16 +36,8 @@ class SelectionUsecase {
     saveRepository.saveUpdate(update);
   }
 
-  void setPrimarySelection(int row, int col, bool keepSelection) {
-    selectionRepository.setPrimarySelection(row, col, keepSelection);
-  }
-
   SelectionData getSelectionData(int sheetId) {
     return selectionRepository.getSelectionData(sheetId);
-  }
-
-  void saveLastSelection() {
-    selectionRepository.saveLastSelection();
   }
 
   Future<SelectionData> getLastSelection() async {

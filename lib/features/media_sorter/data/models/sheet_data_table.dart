@@ -16,11 +16,11 @@ class SheetDataTables extends Table {
   RealColumn get rowHeaderWidth => real()();
   TextColumn get primSelHistory =>
       text().map(const ListPointConverter())();
-  IntColumn get selectionIndex => integer()();
+  IntColumn get primSelHistoryId => integer()();
   RealColumn get scrollOffsetX => real()();
   RealColumn get scrollOffsetY => real()();
   TextColumn get selectedCells =>
-      text().map(const ListPointConverter())();
+      text().map(const SetPointConverter())();
 
   TextColumn get bestSortFound =>
       text().map(const ListIntConverter())();
@@ -35,6 +35,12 @@ class SheetDataTables extends Table {
 
   TextColumn get analysisResult =>
       text().map(const AnalysisResultConverter())();
+      
+  BoolColumn get validSortIsImpossible => boolean()();
+  BoolColumn get isFindingBestSort => boolean()();
+  BoolColumn get sortedWithValidSort => boolean()();
+  BoolColumn get sortedWithCurrentBestSort => boolean()();
+  BoolColumn get bestSortPossibleFound => boolean()();
 
   BoolColumn get sortInProgress => boolean()();
   BoolColumn get toApplyNextBestSort => boolean()();
@@ -174,6 +180,22 @@ class NodeStructListConverter extends TypeConverter<List<NodeStruct>, String> {
   }
 }
 
+class SetPointConverter extends TypeConverter<Set<CellPosition>, String> {
+  const SetPointConverter();
+
+  @override
+  Set<CellPosition> fromSql(String fromDb) {
+    final decoded = jsonDecode(fromDb) as List<dynamic>;
+    return decoded.map((e) => CellPosition(e[0] as int, e[1] as int)).toSet();
+  }
+
+  @override
+  String toSql(Set<CellPosition> value) {
+    final encoded = value.map((e) => [e.rowId, e.colId]).toList();
+    return jsonEncode(encoded);
+  }
+}
+
 class ListPointConverter extends TypeConverter<List<CellPosition>, String> {
   const ListPointConverter();
 
@@ -258,4 +280,19 @@ class AnalysisResultConverter extends TypeConverter<AnalysisResult, String> {
     final encoded = value.toJson();
     return jsonEncode(encoded);
   }
+}
+
+
+class SortStatusData {
+  final int sheetId;
+  final bool toApplyNextBestSort;
+  final bool toAlwaysApplyCurrentBestSort;
+  final bool analysisDone;
+
+  SortStatusData({
+    required this.sheetId,
+    required this.toApplyNextBestSort,
+    required this.toAlwaysApplyCurrentBestSort,
+    required this.analysisDone,
+  });
 }

@@ -20,9 +20,9 @@ abstract class SortRepository {
   bool handleSortProgressDataMsg(
     SortProgressDataMsg sortProgressDataMsg,
     int sheetId,
+    Map<String, UpdateUnit> updates,
   );
   Map<String, UpdateUnit> sortTableWithCurrentBestSort(int sheetId);
-  void lightCalculations(int sheetId);
   Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId);
   bool canFindBetterSort(int sheetId);
   bool isApplyBetterSortButtonLocked();

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 
 abstract class TreeRepository {
   NodeStruct get errorRoot;

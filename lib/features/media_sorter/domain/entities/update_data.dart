@@ -106,6 +106,12 @@ class SheetDataUpdate extends UpdateUnit {
 
   final String? analysisResult;
 
+  final bool? validSortIsImpossible;
+  final bool? isFindingBestSort;
+  final bool? sortedWithValidSort;
+  final bool? sortedWithCurrentBestSort;
+  final bool? bestSortPossibleFound;
+
   final bool? sortInProgress;
   final bool? toApplyNextBestSort;
   final bool? toAlwaysApplyCurrentBestSort;
@@ -134,6 +140,11 @@ class SheetDataUpdate extends UpdateUnit {
     this.validAreas,
     this.sortIndex,
     this.analysisResult,
+    this.validSortIsImpossible,
+    this.isFindingBestSort,
+    this.sortedWithValidSort,
+    this.sortedWithCurrentBestSort,
+    this.bestSortPossibleFound,
     this.sortInProgress,
     this.toApplyNextBestSort,
     this.toAlwaysApplyCurrentBestSort,

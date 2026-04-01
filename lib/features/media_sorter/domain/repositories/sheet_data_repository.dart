@@ -18,7 +18,7 @@ abstract class SheetDataRepository {
   String getCellContent(CellPosition cell, int sheetId);
   ColumnType getColumnType(int colId, int sheetId);
   String getSheetTitle(int sheetId);
-  Future<Either<Failure, void>> loadSheet(int sheetId);
+  Future<Either<Failure, Unit>> loadSheet(int sheetId);
   Future<void> addNewSheet(int sheetId);
   void update(Map<String, UpdateUnit> updates, int sheetId);
 }

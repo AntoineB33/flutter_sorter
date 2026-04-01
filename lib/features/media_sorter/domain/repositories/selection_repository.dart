@@ -4,8 +4,6 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/update_data
 abstract class SelectionRepository {
   int get primarySelectedCellX;
   int get primarySelectedCellY;
-  bool containsSheetId(int sheetId);
-  List<int> getSheetIds();
   void setPrimarySelection(int row, int col, bool keepSelection);
   SelectionData getSelectionData(int sheetId);
   UpdateUnit selectAll();

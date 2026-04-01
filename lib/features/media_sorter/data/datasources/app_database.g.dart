@@ -87,12 +87,12 @@ class $SheetDataTablesTable extends SheetDataTables
       ).withConverter<List<CellPosition>>(
         $SheetDataTablesTable.$converterprimSelHistory,
       );
-  static const VerificationMeta _selectionIndexMeta = const VerificationMeta(
-    'selectionIndex',
+  static const VerificationMeta _primSelHistoryIdMeta = const VerificationMeta(
+    'primSelHistoryId',
   );
   @override
-  late final GeneratedColumn<int> selectionIndex = GeneratedColumn<int>(
-    'selection_index',
+  late final GeneratedColumn<int> primSelHistoryId = GeneratedColumn<int>(
+    'prim_sel_history_id',
     aliasedName,
     false,
     type: DriftSqlType.int,
@@ -121,7 +121,7 @@ class $SheetDataTablesTable extends SheetDataTables
     requiredDuringInsert: true,
   );
   @override
-  late final GeneratedColumnWithTypeConverter<List<CellPosition>, String>
+  late final GeneratedColumnWithTypeConverter<Set<CellPosition>, String>
   selectedCells =
       GeneratedColumn<String>(
         'selected_cells',
@@ -129,7 +129,7 @@ class $SheetDataTablesTable extends SheetDataTables
         false,
         type: DriftSqlType.string,
         requiredDuringInsert: true,
-      ).withConverter<List<CellPosition>>(
+      ).withConverter<Set<CellPosition>>(
         $SheetDataTablesTable.$converterselectedCells,
       );
   @override
@@ -206,6 +206,75 @@ class $SheetDataTablesTable extends SheetDataTables
       ).withConverter<AnalysisResult>(
         $SheetDataTablesTable.$converteranalysisResult,
       );
+  static const VerificationMeta _validSortIsImpossibleMeta =
+      const VerificationMeta('validSortIsImpossible');
+  @override
+  late final GeneratedColumn<bool> validSortIsImpossible =
+      GeneratedColumn<bool>(
+        'valid_sort_is_impossible',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("valid_sort_is_impossible" IN (0, 1))',
+        ),
+      );
+  static const VerificationMeta _isFindingBestSortMeta = const VerificationMeta(
+    'isFindingBestSort',
+  );
+  @override
+  late final GeneratedColumn<bool> isFindingBestSort = GeneratedColumn<bool>(
+    'is_finding_best_sort',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_finding_best_sort" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _sortedWithValidSortMeta =
+      const VerificationMeta('sortedWithValidSort');
+  @override
+  late final GeneratedColumn<bool> sortedWithValidSort = GeneratedColumn<bool>(
+    'sorted_with_valid_sort',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sorted_with_valid_sort" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _sortedWithCurrentBestSortMeta =
+      const VerificationMeta('sortedWithCurrentBestSort');
+  @override
+  late final GeneratedColumn<bool> sortedWithCurrentBestSort =
+      GeneratedColumn<bool>(
+        'sorted_with_current_best_sort',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("sorted_with_current_best_sort" IN (0, 1))',
+        ),
+      );
+  static const VerificationMeta _bestSortPossibleFoundMeta =
+      const VerificationMeta('bestSortPossibleFound');
+  @override
+  late final GeneratedColumn<bool> bestSortPossibleFound =
+      GeneratedColumn<bool>(
+        'best_sort_possible_found',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("best_sort_possible_found" IN (0, 1))',
+        ),
+      );
   static const VerificationMeta _sortInProgressMeta = const VerificationMeta(
     'sortInProgress',
   );
@@ -270,7 +339,7 @@ class $SheetDataTablesTable extends SheetDataTables
     colHeaderHeight,
     rowHeaderWidth,
     primSelHistory,
-    selectionIndex,
+    primSelHistoryId,
     scrollOffsetX,
     scrollOffsetY,
     selectedCells,
@@ -281,6 +350,11 @@ class $SheetDataTablesTable extends SheetDataTables
     validAreas,
     sortIndex,
     analysisResult,
+    validSortIsImpossible,
+    isFindingBestSort,
+    sortedWithValidSort,
+    sortedWithCurrentBestSort,
+    bestSortPossibleFound,
     sortInProgress,
     toApplyNextBestSort,
     toAlwaysApplyCurrentBestSort,
@@ -350,16 +424,16 @@ class $SheetDataTablesTable extends SheetDataTables
     } else if (isInserting) {
       context.missing(_rowHeaderWidthMeta);
     }
-    if (data.containsKey('selection_index')) {
+    if (data.containsKey('prim_sel_history_id')) {
       context.handle(
-        _selectionIndexMeta,
-        selectionIndex.isAcceptableOrUnknown(
-          data['selection_index']!,
-          _selectionIndexMeta,
+        _primSelHistoryIdMeta,
+        primSelHistoryId.isAcceptableOrUnknown(
+          data['prim_sel_history_id']!,
+          _primSelHistoryIdMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_selectionIndexMeta);
+      context.missing(_primSelHistoryIdMeta);
     }
     if (data.containsKey('scroll_offset_x')) {
       context.handle(
@@ -390,6 +464,61 @@ class $SheetDataTablesTable extends SheetDataTables
       );
     } else if (isInserting) {
       context.missing(_sortIndexMeta);
+    }
+    if (data.containsKey('valid_sort_is_impossible')) {
+      context.handle(
+        _validSortIsImpossibleMeta,
+        validSortIsImpossible.isAcceptableOrUnknown(
+          data['valid_sort_is_impossible']!,
+          _validSortIsImpossibleMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_validSortIsImpossibleMeta);
+    }
+    if (data.containsKey('is_finding_best_sort')) {
+      context.handle(
+        _isFindingBestSortMeta,
+        isFindingBestSort.isAcceptableOrUnknown(
+          data['is_finding_best_sort']!,
+          _isFindingBestSortMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_isFindingBestSortMeta);
+    }
+    if (data.containsKey('sorted_with_valid_sort')) {
+      context.handle(
+        _sortedWithValidSortMeta,
+        sortedWithValidSort.isAcceptableOrUnknown(
+          data['sorted_with_valid_sort']!,
+          _sortedWithValidSortMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sortedWithValidSortMeta);
+    }
+    if (data.containsKey('sorted_with_current_best_sort')) {
+      context.handle(
+        _sortedWithCurrentBestSortMeta,
+        sortedWithCurrentBestSort.isAcceptableOrUnknown(
+          data['sorted_with_current_best_sort']!,
+          _sortedWithCurrentBestSortMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sortedWithCurrentBestSortMeta);
+    }
+    if (data.containsKey('best_sort_possible_found')) {
+      context.handle(
+        _bestSortPossibleFoundMeta,
+        bestSortPossibleFound.isAcceptableOrUnknown(
+          data['best_sort_possible_found']!,
+          _bestSortPossibleFoundMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_bestSortPossibleFoundMeta);
     }
     if (data.containsKey('sort_in_progress')) {
       context.handle(
@@ -474,9 +603,9 @@ class $SheetDataTablesTable extends SheetDataTables
           data['${effectivePrefix}prim_sel_history'],
         )!,
       ),
-      selectionIndex: attachedDatabase.typeMapping.read(
+      primSelHistoryId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}selection_index'],
+        data['${effectivePrefix}prim_sel_history_id'],
       )!,
       scrollOffsetX: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
@@ -532,6 +661,26 @@ class $SheetDataTablesTable extends SheetDataTables
           data['${effectivePrefix}analysis_result'],
         )!,
       ),
+      validSortIsImpossible: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}valid_sort_is_impossible'],
+      )!,
+      isFindingBestSort: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_finding_best_sort'],
+      )!,
+      sortedWithValidSort: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sorted_with_valid_sort'],
+      )!,
+      sortedWithCurrentBestSort: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sorted_with_current_best_sort'],
+      )!,
+      bestSortPossibleFound: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}best_sort_possible_found'],
+      )!,
       sortInProgress: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}sort_in_progress'],
@@ -558,8 +707,8 @@ class $SheetDataTablesTable extends SheetDataTables
 
   static TypeConverter<List<CellPosition>, String> $converterprimSelHistory =
       const ListPointConverter();
-  static TypeConverter<List<CellPosition>, String> $converterselectedCells =
-      const ListPointConverter();
+  static TypeConverter<Set<CellPosition>, String> $converterselectedCells =
+      const SetPointConverter();
   static TypeConverter<List<int>, String> $converterbestSortFound =
       const ListIntConverter();
   static TypeConverter<List<int>, String> $converterbestDistFound =
@@ -582,10 +731,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
   final double colHeaderHeight;
   final double rowHeaderWidth;
   final List<CellPosition> primSelHistory;
-  final int selectionIndex;
+  final int primSelHistoryId;
   final double scrollOffsetX;
   final double scrollOffsetY;
-  final List<CellPosition> selectedCells;
+  final Set<CellPosition> selectedCells;
   final List<int> bestSortFound;
   final List<int> bestDistFound;
   final List<int> cursors;
@@ -593,6 +742,11 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
   final List<List<List<int>>> validAreas;
   final int sortIndex;
   final AnalysisResult analysisResult;
+  final bool validSortIsImpossible;
+  final bool isFindingBestSort;
+  final bool sortedWithValidSort;
+  final bool sortedWithCurrentBestSort;
+  final bool bestSortPossibleFound;
   final bool sortInProgress;
   final bool toApplyNextBestSort;
   final bool toAlwaysApplyCurrentBestSort;
@@ -605,7 +759,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     required this.colHeaderHeight,
     required this.rowHeaderWidth,
     required this.primSelHistory,
-    required this.selectionIndex,
+    required this.primSelHistoryId,
     required this.scrollOffsetX,
     required this.scrollOffsetY,
     required this.selectedCells,
@@ -616,6 +770,11 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     required this.validAreas,
     required this.sortIndex,
     required this.analysisResult,
+    required this.validSortIsImpossible,
+    required this.isFindingBestSort,
+    required this.sortedWithValidSort,
+    required this.sortedWithCurrentBestSort,
+    required this.bestSortPossibleFound,
     required this.sortInProgress,
     required this.toApplyNextBestSort,
     required this.toAlwaysApplyCurrentBestSort,
@@ -635,7 +794,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
         $SheetDataTablesTable.$converterprimSelHistory.toSql(primSelHistory),
       );
     }
-    map['selection_index'] = Variable<int>(selectionIndex);
+    map['prim_sel_history_id'] = Variable<int>(primSelHistoryId);
     map['scroll_offset_x'] = Variable<double>(scrollOffsetX);
     map['scroll_offset_y'] = Variable<double>(scrollOffsetY);
     {
@@ -674,6 +833,13 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
         $SheetDataTablesTable.$converteranalysisResult.toSql(analysisResult),
       );
     }
+    map['valid_sort_is_impossible'] = Variable<bool>(validSortIsImpossible);
+    map['is_finding_best_sort'] = Variable<bool>(isFindingBestSort);
+    map['sorted_with_valid_sort'] = Variable<bool>(sortedWithValidSort);
+    map['sorted_with_current_best_sort'] = Variable<bool>(
+      sortedWithCurrentBestSort,
+    );
+    map['best_sort_possible_found'] = Variable<bool>(bestSortPossibleFound);
     map['sort_in_progress'] = Variable<bool>(sortInProgress);
     map['to_apply_next_best_sort'] = Variable<bool>(toApplyNextBestSort);
     map['to_always_apply_current_best_sort'] = Variable<bool>(
@@ -692,7 +858,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       colHeaderHeight: Value(colHeaderHeight),
       rowHeaderWidth: Value(rowHeaderWidth),
       primSelHistory: Value(primSelHistory),
-      selectionIndex: Value(selectionIndex),
+      primSelHistoryId: Value(primSelHistoryId),
       scrollOffsetX: Value(scrollOffsetX),
       scrollOffsetY: Value(scrollOffsetY),
       selectedCells: Value(selectedCells),
@@ -703,6 +869,11 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       validAreas: Value(validAreas),
       sortIndex: Value(sortIndex),
       analysisResult: Value(analysisResult),
+      validSortIsImpossible: Value(validSortIsImpossible),
+      isFindingBestSort: Value(isFindingBestSort),
+      sortedWithValidSort: Value(sortedWithValidSort),
+      sortedWithCurrentBestSort: Value(sortedWithCurrentBestSort),
+      bestSortPossibleFound: Value(bestSortPossibleFound),
       sortInProgress: Value(sortInProgress),
       toApplyNextBestSort: Value(toApplyNextBestSort),
       toAlwaysApplyCurrentBestSort: Value(toAlwaysApplyCurrentBestSort),
@@ -725,10 +896,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       primSelHistory: serializer.fromJson<List<CellPosition>>(
         json['primSelHistory'],
       ),
-      selectionIndex: serializer.fromJson<int>(json['selectionIndex']),
+      primSelHistoryId: serializer.fromJson<int>(json['primSelHistoryId']),
       scrollOffsetX: serializer.fromJson<double>(json['scrollOffsetX']),
       scrollOffsetY: serializer.fromJson<double>(json['scrollOffsetY']),
-      selectedCells: serializer.fromJson<List<CellPosition>>(
+      selectedCells: serializer.fromJson<Set<CellPosition>>(
         json['selectedCells'],
       ),
       bestSortFound: serializer.fromJson<List<int>>(json['bestSortFound']),
@@ -741,6 +912,19 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       sortIndex: serializer.fromJson<int>(json['sortIndex']),
       analysisResult: serializer.fromJson<AnalysisResult>(
         json['analysisResult'],
+      ),
+      validSortIsImpossible: serializer.fromJson<bool>(
+        json['validSortIsImpossible'],
+      ),
+      isFindingBestSort: serializer.fromJson<bool>(json['isFindingBestSort']),
+      sortedWithValidSort: serializer.fromJson<bool>(
+        json['sortedWithValidSort'],
+      ),
+      sortedWithCurrentBestSort: serializer.fromJson<bool>(
+        json['sortedWithCurrentBestSort'],
+      ),
+      bestSortPossibleFound: serializer.fromJson<bool>(
+        json['bestSortPossibleFound'],
       ),
       sortInProgress: serializer.fromJson<bool>(json['sortInProgress']),
       toApplyNextBestSort: serializer.fromJson<bool>(
@@ -763,10 +947,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       'colHeaderHeight': serializer.toJson<double>(colHeaderHeight),
       'rowHeaderWidth': serializer.toJson<double>(rowHeaderWidth),
       'primSelHistory': serializer.toJson<List<CellPosition>>(primSelHistory),
-      'selectionIndex': serializer.toJson<int>(selectionIndex),
+      'primSelHistoryId': serializer.toJson<int>(primSelHistoryId),
       'scrollOffsetX': serializer.toJson<double>(scrollOffsetX),
       'scrollOffsetY': serializer.toJson<double>(scrollOffsetY),
-      'selectedCells': serializer.toJson<List<CellPosition>>(selectedCells),
+      'selectedCells': serializer.toJson<Set<CellPosition>>(selectedCells),
       'bestSortFound': serializer.toJson<List<int>>(bestSortFound),
       'bestDistFound': serializer.toJson<List<int>>(bestDistFound),
       'cursors': serializer.toJson<List<int>>(cursors),
@@ -774,6 +958,13 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       'validAreas': serializer.toJson<List<List<List<int>>>>(validAreas),
       'sortIndex': serializer.toJson<int>(sortIndex),
       'analysisResult': serializer.toJson<AnalysisResult>(analysisResult),
+      'validSortIsImpossible': serializer.toJson<bool>(validSortIsImpossible),
+      'isFindingBestSort': serializer.toJson<bool>(isFindingBestSort),
+      'sortedWithValidSort': serializer.toJson<bool>(sortedWithValidSort),
+      'sortedWithCurrentBestSort': serializer.toJson<bool>(
+        sortedWithCurrentBestSort,
+      ),
+      'bestSortPossibleFound': serializer.toJson<bool>(bestSortPossibleFound),
       'sortInProgress': serializer.toJson<bool>(sortInProgress),
       'toApplyNextBestSort': serializer.toJson<bool>(toApplyNextBestSort),
       'toAlwaysApplyCurrentBestSort': serializer.toJson<bool>(
@@ -791,10 +982,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     double? colHeaderHeight,
     double? rowHeaderWidth,
     List<CellPosition>? primSelHistory,
-    int? selectionIndex,
+    int? primSelHistoryId,
     double? scrollOffsetX,
     double? scrollOffsetY,
-    List<CellPosition>? selectedCells,
+    Set<CellPosition>? selectedCells,
     List<int>? bestSortFound,
     List<int>? bestDistFound,
     List<int>? cursors,
@@ -802,6 +993,11 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     List<List<List<int>>>? validAreas,
     int? sortIndex,
     AnalysisResult? analysisResult,
+    bool? validSortIsImpossible,
+    bool? isFindingBestSort,
+    bool? sortedWithValidSort,
+    bool? sortedWithCurrentBestSort,
+    bool? bestSortPossibleFound,
     bool? sortInProgress,
     bool? toApplyNextBestSort,
     bool? toAlwaysApplyCurrentBestSort,
@@ -814,7 +1010,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     colHeaderHeight: colHeaderHeight ?? this.colHeaderHeight,
     rowHeaderWidth: rowHeaderWidth ?? this.rowHeaderWidth,
     primSelHistory: primSelHistory ?? this.primSelHistory,
-    selectionIndex: selectionIndex ?? this.selectionIndex,
+    primSelHistoryId: primSelHistoryId ?? this.primSelHistoryId,
     scrollOffsetX: scrollOffsetX ?? this.scrollOffsetX,
     scrollOffsetY: scrollOffsetY ?? this.scrollOffsetY,
     selectedCells: selectedCells ?? this.selectedCells,
@@ -825,6 +1021,12 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     validAreas: validAreas ?? this.validAreas,
     sortIndex: sortIndex ?? this.sortIndex,
     analysisResult: analysisResult ?? this.analysisResult,
+    validSortIsImpossible: validSortIsImpossible ?? this.validSortIsImpossible,
+    isFindingBestSort: isFindingBestSort ?? this.isFindingBestSort,
+    sortedWithValidSort: sortedWithValidSort ?? this.sortedWithValidSort,
+    sortedWithCurrentBestSort:
+        sortedWithCurrentBestSort ?? this.sortedWithCurrentBestSort,
+    bestSortPossibleFound: bestSortPossibleFound ?? this.bestSortPossibleFound,
     sortInProgress: sortInProgress ?? this.sortInProgress,
     toApplyNextBestSort: toApplyNextBestSort ?? this.toApplyNextBestSort,
     toAlwaysApplyCurrentBestSort:
@@ -850,9 +1052,9 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       primSelHistory: data.primSelHistory.present
           ? data.primSelHistory.value
           : this.primSelHistory,
-      selectionIndex: data.selectionIndex.present
-          ? data.selectionIndex.value
-          : this.selectionIndex,
+      primSelHistoryId: data.primSelHistoryId.present
+          ? data.primSelHistoryId.value
+          : this.primSelHistoryId,
       scrollOffsetX: data.scrollOffsetX.present
           ? data.scrollOffsetX.value
           : this.scrollOffsetX,
@@ -879,6 +1081,21 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       analysisResult: data.analysisResult.present
           ? data.analysisResult.value
           : this.analysisResult,
+      validSortIsImpossible: data.validSortIsImpossible.present
+          ? data.validSortIsImpossible.value
+          : this.validSortIsImpossible,
+      isFindingBestSort: data.isFindingBestSort.present
+          ? data.isFindingBestSort.value
+          : this.isFindingBestSort,
+      sortedWithValidSort: data.sortedWithValidSort.present
+          ? data.sortedWithValidSort.value
+          : this.sortedWithValidSort,
+      sortedWithCurrentBestSort: data.sortedWithCurrentBestSort.present
+          ? data.sortedWithCurrentBestSort.value
+          : this.sortedWithCurrentBestSort,
+      bestSortPossibleFound: data.bestSortPossibleFound.present
+          ? data.bestSortPossibleFound.value
+          : this.bestSortPossibleFound,
       sortInProgress: data.sortInProgress.present
           ? data.sortInProgress.value
           : this.sortInProgress,
@@ -904,7 +1121,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           ..write('colHeaderHeight: $colHeaderHeight, ')
           ..write('rowHeaderWidth: $rowHeaderWidth, ')
           ..write('primSelHistory: $primSelHistory, ')
-          ..write('selectionIndex: $selectionIndex, ')
+          ..write('primSelHistoryId: $primSelHistoryId, ')
           ..write('scrollOffsetX: $scrollOffsetX, ')
           ..write('scrollOffsetY: $scrollOffsetY, ')
           ..write('selectedCells: $selectedCells, ')
@@ -915,6 +1132,11 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           ..write('validAreas: $validAreas, ')
           ..write('sortIndex: $sortIndex, ')
           ..write('analysisResult: $analysisResult, ')
+          ..write('validSortIsImpossible: $validSortIsImpossible, ')
+          ..write('isFindingBestSort: $isFindingBestSort, ')
+          ..write('sortedWithValidSort: $sortedWithValidSort, ')
+          ..write('sortedWithCurrentBestSort: $sortedWithCurrentBestSort, ')
+          ..write('bestSortPossibleFound: $bestSortPossibleFound, ')
           ..write('sortInProgress: $sortInProgress, ')
           ..write('toApplyNextBestSort: $toApplyNextBestSort, ')
           ..write(
@@ -934,7 +1156,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     colHeaderHeight,
     rowHeaderWidth,
     primSelHistory,
-    selectionIndex,
+    primSelHistoryId,
     scrollOffsetX,
     scrollOffsetY,
     selectedCells,
@@ -945,6 +1167,11 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     validAreas,
     sortIndex,
     analysisResult,
+    validSortIsImpossible,
+    isFindingBestSort,
+    sortedWithValidSort,
+    sortedWithCurrentBestSort,
+    bestSortPossibleFound,
     sortInProgress,
     toApplyNextBestSort,
     toAlwaysApplyCurrentBestSort,
@@ -961,7 +1188,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           other.colHeaderHeight == this.colHeaderHeight &&
           other.rowHeaderWidth == this.rowHeaderWidth &&
           other.primSelHistory == this.primSelHistory &&
-          other.selectionIndex == this.selectionIndex &&
+          other.primSelHistoryId == this.primSelHistoryId &&
           other.scrollOffsetX == this.scrollOffsetX &&
           other.scrollOffsetY == this.scrollOffsetY &&
           other.selectedCells == this.selectedCells &&
@@ -972,6 +1199,11 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           other.validAreas == this.validAreas &&
           other.sortIndex == this.sortIndex &&
           other.analysisResult == this.analysisResult &&
+          other.validSortIsImpossible == this.validSortIsImpossible &&
+          other.isFindingBestSort == this.isFindingBestSort &&
+          other.sortedWithValidSort == this.sortedWithValidSort &&
+          other.sortedWithCurrentBestSort == this.sortedWithCurrentBestSort &&
+          other.bestSortPossibleFound == this.bestSortPossibleFound &&
           other.sortInProgress == this.sortInProgress &&
           other.toApplyNextBestSort == this.toApplyNextBestSort &&
           other.toAlwaysApplyCurrentBestSort ==
@@ -987,10 +1219,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
   final Value<double> colHeaderHeight;
   final Value<double> rowHeaderWidth;
   final Value<List<CellPosition>> primSelHistory;
-  final Value<int> selectionIndex;
+  final Value<int> primSelHistoryId;
   final Value<double> scrollOffsetX;
   final Value<double> scrollOffsetY;
-  final Value<List<CellPosition>> selectedCells;
+  final Value<Set<CellPosition>> selectedCells;
   final Value<List<int>> bestSortFound;
   final Value<List<int>> bestDistFound;
   final Value<List<int>> cursors;
@@ -998,6 +1230,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
   final Value<List<List<List<int>>>> validAreas;
   final Value<int> sortIndex;
   final Value<AnalysisResult> analysisResult;
+  final Value<bool> validSortIsImpossible;
+  final Value<bool> isFindingBestSort;
+  final Value<bool> sortedWithValidSort;
+  final Value<bool> sortedWithCurrentBestSort;
+  final Value<bool> bestSortPossibleFound;
   final Value<bool> sortInProgress;
   final Value<bool> toApplyNextBestSort;
   final Value<bool> toAlwaysApplyCurrentBestSort;
@@ -1010,7 +1247,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     this.colHeaderHeight = const Value.absent(),
     this.rowHeaderWidth = const Value.absent(),
     this.primSelHistory = const Value.absent(),
-    this.selectionIndex = const Value.absent(),
+    this.primSelHistoryId = const Value.absent(),
     this.scrollOffsetX = const Value.absent(),
     this.scrollOffsetY = const Value.absent(),
     this.selectedCells = const Value.absent(),
@@ -1021,6 +1258,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     this.validAreas = const Value.absent(),
     this.sortIndex = const Value.absent(),
     this.analysisResult = const Value.absent(),
+    this.validSortIsImpossible = const Value.absent(),
+    this.isFindingBestSort = const Value.absent(),
+    this.sortedWithValidSort = const Value.absent(),
+    this.sortedWithCurrentBestSort = const Value.absent(),
+    this.bestSortPossibleFound = const Value.absent(),
     this.sortInProgress = const Value.absent(),
     this.toApplyNextBestSort = const Value.absent(),
     this.toAlwaysApplyCurrentBestSort = const Value.absent(),
@@ -1034,10 +1276,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     required double colHeaderHeight,
     required double rowHeaderWidth,
     required List<CellPosition> primSelHistory,
-    required int selectionIndex,
+    required int primSelHistoryId,
     required double scrollOffsetX,
     required double scrollOffsetY,
-    required List<CellPosition> selectedCells,
+    required Set<CellPosition> selectedCells,
     required List<int> bestSortFound,
     required List<int> bestDistFound,
     required List<int> cursors,
@@ -1045,6 +1287,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     required List<List<List<int>>> validAreas,
     required int sortIndex,
     required AnalysisResult analysisResult,
+    required bool validSortIsImpossible,
+    required bool isFindingBestSort,
+    required bool sortedWithValidSort,
+    required bool sortedWithCurrentBestSort,
+    required bool bestSortPossibleFound,
     required bool sortInProgress,
     required bool toApplyNextBestSort,
     required bool toAlwaysApplyCurrentBestSort,
@@ -1055,7 +1302,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
        colHeaderHeight = Value(colHeaderHeight),
        rowHeaderWidth = Value(rowHeaderWidth),
        primSelHistory = Value(primSelHistory),
-       selectionIndex = Value(selectionIndex),
+       primSelHistoryId = Value(primSelHistoryId),
        scrollOffsetX = Value(scrollOffsetX),
        scrollOffsetY = Value(scrollOffsetY),
        selectedCells = Value(selectedCells),
@@ -1066,6 +1313,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
        validAreas = Value(validAreas),
        sortIndex = Value(sortIndex),
        analysisResult = Value(analysisResult),
+       validSortIsImpossible = Value(validSortIsImpossible),
+       isFindingBestSort = Value(isFindingBestSort),
+       sortedWithValidSort = Value(sortedWithValidSort),
+       sortedWithCurrentBestSort = Value(sortedWithCurrentBestSort),
+       bestSortPossibleFound = Value(bestSortPossibleFound),
        sortInProgress = Value(sortInProgress),
        toApplyNextBestSort = Value(toApplyNextBestSort),
        toAlwaysApplyCurrentBestSort = Value(toAlwaysApplyCurrentBestSort),
@@ -1078,7 +1330,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Expression<double>? colHeaderHeight,
     Expression<double>? rowHeaderWidth,
     Expression<String>? primSelHistory,
-    Expression<int>? selectionIndex,
+    Expression<int>? primSelHistoryId,
     Expression<double>? scrollOffsetX,
     Expression<double>? scrollOffsetY,
     Expression<String>? selectedCells,
@@ -1089,6 +1341,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Expression<String>? validAreas,
     Expression<int>? sortIndex,
     Expression<String>? analysisResult,
+    Expression<bool>? validSortIsImpossible,
+    Expression<bool>? isFindingBestSort,
+    Expression<bool>? sortedWithValidSort,
+    Expression<bool>? sortedWithCurrentBestSort,
+    Expression<bool>? bestSortPossibleFound,
     Expression<bool>? sortInProgress,
     Expression<bool>? toApplyNextBestSort,
     Expression<bool>? toAlwaysApplyCurrentBestSort,
@@ -1102,7 +1359,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       if (colHeaderHeight != null) 'col_header_height': colHeaderHeight,
       if (rowHeaderWidth != null) 'row_header_width': rowHeaderWidth,
       if (primSelHistory != null) 'prim_sel_history': primSelHistory,
-      if (selectionIndex != null) 'selection_index': selectionIndex,
+      if (primSelHistoryId != null) 'prim_sel_history_id': primSelHistoryId,
       if (scrollOffsetX != null) 'scroll_offset_x': scrollOffsetX,
       if (scrollOffsetY != null) 'scroll_offset_y': scrollOffsetY,
       if (selectedCells != null) 'selected_cells': selectedCells,
@@ -1113,6 +1370,15 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       if (validAreas != null) 'valid_areas': validAreas,
       if (sortIndex != null) 'sort_index': sortIndex,
       if (analysisResult != null) 'analysis_result': analysisResult,
+      if (validSortIsImpossible != null)
+        'valid_sort_is_impossible': validSortIsImpossible,
+      if (isFindingBestSort != null) 'is_finding_best_sort': isFindingBestSort,
+      if (sortedWithValidSort != null)
+        'sorted_with_valid_sort': sortedWithValidSort,
+      if (sortedWithCurrentBestSort != null)
+        'sorted_with_current_best_sort': sortedWithCurrentBestSort,
+      if (bestSortPossibleFound != null)
+        'best_sort_possible_found': bestSortPossibleFound,
       if (sortInProgress != null) 'sort_in_progress': sortInProgress,
       if (toApplyNextBestSort != null)
         'to_apply_next_best_sort': toApplyNextBestSort,
@@ -1130,10 +1396,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Value<double>? colHeaderHeight,
     Value<double>? rowHeaderWidth,
     Value<List<CellPosition>>? primSelHistory,
-    Value<int>? selectionIndex,
+    Value<int>? primSelHistoryId,
     Value<double>? scrollOffsetX,
     Value<double>? scrollOffsetY,
-    Value<List<CellPosition>>? selectedCells,
+    Value<Set<CellPosition>>? selectedCells,
     Value<List<int>>? bestSortFound,
     Value<List<int>>? bestDistFound,
     Value<List<int>>? cursors,
@@ -1141,6 +1407,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Value<List<List<List<int>>>>? validAreas,
     Value<int>? sortIndex,
     Value<AnalysisResult>? analysisResult,
+    Value<bool>? validSortIsImpossible,
+    Value<bool>? isFindingBestSort,
+    Value<bool>? sortedWithValidSort,
+    Value<bool>? sortedWithCurrentBestSort,
+    Value<bool>? bestSortPossibleFound,
     Value<bool>? sortInProgress,
     Value<bool>? toApplyNextBestSort,
     Value<bool>? toAlwaysApplyCurrentBestSort,
@@ -1154,7 +1425,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       colHeaderHeight: colHeaderHeight ?? this.colHeaderHeight,
       rowHeaderWidth: rowHeaderWidth ?? this.rowHeaderWidth,
       primSelHistory: primSelHistory ?? this.primSelHistory,
-      selectionIndex: selectionIndex ?? this.selectionIndex,
+      primSelHistoryId: primSelHistoryId ?? this.primSelHistoryId,
       scrollOffsetX: scrollOffsetX ?? this.scrollOffsetX,
       scrollOffsetY: scrollOffsetY ?? this.scrollOffsetY,
       selectedCells: selectedCells ?? this.selectedCells,
@@ -1165,6 +1436,14 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       validAreas: validAreas ?? this.validAreas,
       sortIndex: sortIndex ?? this.sortIndex,
       analysisResult: analysisResult ?? this.analysisResult,
+      validSortIsImpossible:
+          validSortIsImpossible ?? this.validSortIsImpossible,
+      isFindingBestSort: isFindingBestSort ?? this.isFindingBestSort,
+      sortedWithValidSort: sortedWithValidSort ?? this.sortedWithValidSort,
+      sortedWithCurrentBestSort:
+          sortedWithCurrentBestSort ?? this.sortedWithCurrentBestSort,
+      bestSortPossibleFound:
+          bestSortPossibleFound ?? this.bestSortPossibleFound,
       sortInProgress: sortInProgress ?? this.sortInProgress,
       toApplyNextBestSort: toApplyNextBestSort ?? this.toApplyNextBestSort,
       toAlwaysApplyCurrentBestSort:
@@ -1201,8 +1480,8 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
         ),
       );
     }
-    if (selectionIndex.present) {
-      map['selection_index'] = Variable<int>(selectionIndex.value);
+    if (primSelHistoryId.present) {
+      map['prim_sel_history_id'] = Variable<int>(primSelHistoryId.value);
     }
     if (scrollOffsetX.present) {
       map['scroll_offset_x'] = Variable<double>(scrollOffsetX.value);
@@ -1256,6 +1535,27 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
         ),
       );
     }
+    if (validSortIsImpossible.present) {
+      map['valid_sort_is_impossible'] = Variable<bool>(
+        validSortIsImpossible.value,
+      );
+    }
+    if (isFindingBestSort.present) {
+      map['is_finding_best_sort'] = Variable<bool>(isFindingBestSort.value);
+    }
+    if (sortedWithValidSort.present) {
+      map['sorted_with_valid_sort'] = Variable<bool>(sortedWithValidSort.value);
+    }
+    if (sortedWithCurrentBestSort.present) {
+      map['sorted_with_current_best_sort'] = Variable<bool>(
+        sortedWithCurrentBestSort.value,
+      );
+    }
+    if (bestSortPossibleFound.present) {
+      map['best_sort_possible_found'] = Variable<bool>(
+        bestSortPossibleFound.value,
+      );
+    }
     if (sortInProgress.present) {
       map['sort_in_progress'] = Variable<bool>(sortInProgress.value);
     }
@@ -1285,7 +1585,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
           ..write('colHeaderHeight: $colHeaderHeight, ')
           ..write('rowHeaderWidth: $rowHeaderWidth, ')
           ..write('primSelHistory: $primSelHistory, ')
-          ..write('selectionIndex: $selectionIndex, ')
+          ..write('primSelHistoryId: $primSelHistoryId, ')
           ..write('scrollOffsetX: $scrollOffsetX, ')
           ..write('scrollOffsetY: $scrollOffsetY, ')
           ..write('selectedCells: $selectedCells, ')
@@ -1296,6 +1596,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
           ..write('validAreas: $validAreas, ')
           ..write('sortIndex: $sortIndex, ')
           ..write('analysisResult: $analysisResult, ')
+          ..write('validSortIsImpossible: $validSortIsImpossible, ')
+          ..write('isFindingBestSort: $isFindingBestSort, ')
+          ..write('sortedWithValidSort: $sortedWithValidSort, ')
+          ..write('sortedWithCurrentBestSort: $sortedWithCurrentBestSort, ')
+          ..write('bestSortPossibleFound: $bestSortPossibleFound, ')
           ..write('sortInProgress: $sortInProgress, ')
           ..write('toApplyNextBestSort: $toApplyNextBestSort, ')
           ..write(
@@ -3727,10 +4032,10 @@ typedef $$SheetDataTablesTableCreateCompanionBuilder =
       required double colHeaderHeight,
       required double rowHeaderWidth,
       required List<CellPosition> primSelHistory,
-      required int selectionIndex,
+      required int primSelHistoryId,
       required double scrollOffsetX,
       required double scrollOffsetY,
-      required List<CellPosition> selectedCells,
+      required Set<CellPosition> selectedCells,
       required List<int> bestSortFound,
       required List<int> bestDistFound,
       required List<int> cursors,
@@ -3738,6 +4043,11 @@ typedef $$SheetDataTablesTableCreateCompanionBuilder =
       required List<List<List<int>>> validAreas,
       required int sortIndex,
       required AnalysisResult analysisResult,
+      required bool validSortIsImpossible,
+      required bool isFindingBestSort,
+      required bool sortedWithValidSort,
+      required bool sortedWithCurrentBestSort,
+      required bool bestSortPossibleFound,
       required bool sortInProgress,
       required bool toApplyNextBestSort,
       required bool toAlwaysApplyCurrentBestSort,
@@ -3752,10 +4062,10 @@ typedef $$SheetDataTablesTableUpdateCompanionBuilder =
       Value<double> colHeaderHeight,
       Value<double> rowHeaderWidth,
       Value<List<CellPosition>> primSelHistory,
-      Value<int> selectionIndex,
+      Value<int> primSelHistoryId,
       Value<double> scrollOffsetX,
       Value<double> scrollOffsetY,
-      Value<List<CellPosition>> selectedCells,
+      Value<Set<CellPosition>> selectedCells,
       Value<List<int>> bestSortFound,
       Value<List<int>> bestDistFound,
       Value<List<int>> cursors,
@@ -3763,6 +4073,11 @@ typedef $$SheetDataTablesTableUpdateCompanionBuilder =
       Value<List<List<List<int>>>> validAreas,
       Value<int> sortIndex,
       Value<AnalysisResult> analysisResult,
+      Value<bool> validSortIsImpossible,
+      Value<bool> isFindingBestSort,
+      Value<bool> sortedWithValidSort,
+      Value<bool> sortedWithCurrentBestSort,
+      Value<bool> bestSortPossibleFound,
       Value<bool> sortInProgress,
       Value<bool> toApplyNextBestSort,
       Value<bool> toAlwaysApplyCurrentBestSort,
@@ -4036,8 +4351,8 @@ class $$SheetDataTablesTableFilterComposer
     builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 
-  ColumnFilters<int> get selectionIndex => $composableBuilder(
-    column: $table.selectionIndex,
+  ColumnFilters<int> get primSelHistoryId => $composableBuilder(
+    column: $table.primSelHistoryId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4051,7 +4366,7 @@ class $$SheetDataTablesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnWithTypeConverterFilters<List<CellPosition>, List<CellPosition>, String>
+  ColumnWithTypeConverterFilters<Set<CellPosition>, Set<CellPosition>, String>
   get selectedCells => $composableBuilder(
     column: $table.selectedCells,
     builder: (column) => ColumnWithTypeConverterFilters(column),
@@ -4100,6 +4415,31 @@ class $$SheetDataTablesTableFilterComposer
   get analysisResult => $composableBuilder(
     column: $table.analysisResult,
     builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<bool> get validSortIsImpossible => $composableBuilder(
+    column: $table.validSortIsImpossible,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isFindingBestSort => $composableBuilder(
+    column: $table.isFindingBestSort,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sortedWithValidSort => $composableBuilder(
+    column: $table.sortedWithValidSort,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sortedWithCurrentBestSort => $composableBuilder(
+    column: $table.sortedWithCurrentBestSort,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get bestSortPossibleFound => $composableBuilder(
+    column: $table.bestSortPossibleFound,
+    builder: (column) => ColumnFilters(column),
   );
 
   ColumnFilters<bool> get sortInProgress => $composableBuilder(
@@ -4376,8 +4716,8 @@ class $$SheetDataTablesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get selectionIndex => $composableBuilder(
-    column: $table.selectionIndex,
+  ColumnOrderings<int> get primSelHistoryId => $composableBuilder(
+    column: $table.primSelHistoryId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4428,6 +4768,31 @@ class $$SheetDataTablesTableOrderingComposer
 
   ColumnOrderings<String> get analysisResult => $composableBuilder(
     column: $table.analysisResult,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get validSortIsImpossible => $composableBuilder(
+    column: $table.validSortIsImpossible,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isFindingBestSort => $composableBuilder(
+    column: $table.isFindingBestSort,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get sortedWithValidSort => $composableBuilder(
+    column: $table.sortedWithValidSort,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get sortedWithCurrentBestSort => $composableBuilder(
+    column: $table.sortedWithCurrentBestSort,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get bestSortPossibleFound => $composableBuilder(
+    column: $table.bestSortPossibleFound,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4493,8 +4858,8 @@ class $$SheetDataTablesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get selectionIndex => $composableBuilder(
-    column: $table.selectionIndex,
+  GeneratedColumn<int> get primSelHistoryId => $composableBuilder(
+    column: $table.primSelHistoryId,
     builder: (column) => column,
   );
 
@@ -4508,7 +4873,7 @@ class $$SheetDataTablesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumnWithTypeConverter<List<CellPosition>, String>
+  GeneratedColumnWithTypeConverter<Set<CellPosition>, String>
   get selectedCells => $composableBuilder(
     column: $table.selectedCells,
     builder: (column) => column,
@@ -4549,6 +4914,31 @@ class $$SheetDataTablesTableAnnotationComposer
         column: $table.analysisResult,
         builder: (column) => column,
       );
+
+  GeneratedColumn<bool> get validSortIsImpossible => $composableBuilder(
+    column: $table.validSortIsImpossible,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isFindingBestSort => $composableBuilder(
+    column: $table.isFindingBestSort,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get sortedWithValidSort => $composableBuilder(
+    column: $table.sortedWithValidSort,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get sortedWithCurrentBestSort => $composableBuilder(
+    column: $table.sortedWithCurrentBestSort,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get bestSortPossibleFound => $composableBuilder(
+    column: $table.bestSortPossibleFound,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get sortInProgress => $composableBuilder(
     column: $table.sortInProgress,
@@ -4829,10 +5219,10 @@ class $$SheetDataTablesTableTableManager
                 Value<double> colHeaderHeight = const Value.absent(),
                 Value<double> rowHeaderWidth = const Value.absent(),
                 Value<List<CellPosition>> primSelHistory = const Value.absent(),
-                Value<int> selectionIndex = const Value.absent(),
+                Value<int> primSelHistoryId = const Value.absent(),
                 Value<double> scrollOffsetX = const Value.absent(),
                 Value<double> scrollOffsetY = const Value.absent(),
-                Value<List<CellPosition>> selectedCells = const Value.absent(),
+                Value<Set<CellPosition>> selectedCells = const Value.absent(),
                 Value<List<int>> bestSortFound = const Value.absent(),
                 Value<List<int>> bestDistFound = const Value.absent(),
                 Value<List<int>> cursors = const Value.absent(),
@@ -4840,6 +5230,11 @@ class $$SheetDataTablesTableTableManager
                 Value<List<List<List<int>>>> validAreas = const Value.absent(),
                 Value<int> sortIndex = const Value.absent(),
                 Value<AnalysisResult> analysisResult = const Value.absent(),
+                Value<bool> validSortIsImpossible = const Value.absent(),
+                Value<bool> isFindingBestSort = const Value.absent(),
+                Value<bool> sortedWithValidSort = const Value.absent(),
+                Value<bool> sortedWithCurrentBestSort = const Value.absent(),
+                Value<bool> bestSortPossibleFound = const Value.absent(),
                 Value<bool> sortInProgress = const Value.absent(),
                 Value<bool> toApplyNextBestSort = const Value.absent(),
                 Value<bool> toAlwaysApplyCurrentBestSort = const Value.absent(),
@@ -4852,7 +5247,7 @@ class $$SheetDataTablesTableTableManager
                 colHeaderHeight: colHeaderHeight,
                 rowHeaderWidth: rowHeaderWidth,
                 primSelHistory: primSelHistory,
-                selectionIndex: selectionIndex,
+                primSelHistoryId: primSelHistoryId,
                 scrollOffsetX: scrollOffsetX,
                 scrollOffsetY: scrollOffsetY,
                 selectedCells: selectedCells,
@@ -4863,6 +5258,11 @@ class $$SheetDataTablesTableTableManager
                 validAreas: validAreas,
                 sortIndex: sortIndex,
                 analysisResult: analysisResult,
+                validSortIsImpossible: validSortIsImpossible,
+                isFindingBestSort: isFindingBestSort,
+                sortedWithValidSort: sortedWithValidSort,
+                sortedWithCurrentBestSort: sortedWithCurrentBestSort,
+                bestSortPossibleFound: bestSortPossibleFound,
                 sortInProgress: sortInProgress,
                 toApplyNextBestSort: toApplyNextBestSort,
                 toAlwaysApplyCurrentBestSort: toAlwaysApplyCurrentBestSort,
@@ -4877,10 +5277,10 @@ class $$SheetDataTablesTableTableManager
                 required double colHeaderHeight,
                 required double rowHeaderWidth,
                 required List<CellPosition> primSelHistory,
-                required int selectionIndex,
+                required int primSelHistoryId,
                 required double scrollOffsetX,
                 required double scrollOffsetY,
-                required List<CellPosition> selectedCells,
+                required Set<CellPosition> selectedCells,
                 required List<int> bestSortFound,
                 required List<int> bestDistFound,
                 required List<int> cursors,
@@ -4888,6 +5288,11 @@ class $$SheetDataTablesTableTableManager
                 required List<List<List<int>>> validAreas,
                 required int sortIndex,
                 required AnalysisResult analysisResult,
+                required bool validSortIsImpossible,
+                required bool isFindingBestSort,
+                required bool sortedWithValidSort,
+                required bool sortedWithCurrentBestSort,
+                required bool bestSortPossibleFound,
                 required bool sortInProgress,
                 required bool toApplyNextBestSort,
                 required bool toAlwaysApplyCurrentBestSort,
@@ -4900,7 +5305,7 @@ class $$SheetDataTablesTableTableManager
                 colHeaderHeight: colHeaderHeight,
                 rowHeaderWidth: rowHeaderWidth,
                 primSelHistory: primSelHistory,
-                selectionIndex: selectionIndex,
+                primSelHistoryId: primSelHistoryId,
                 scrollOffsetX: scrollOffsetX,
                 scrollOffsetY: scrollOffsetY,
                 selectedCells: selectedCells,
@@ -4911,6 +5316,11 @@ class $$SheetDataTablesTableTableManager
                 validAreas: validAreas,
                 sortIndex: sortIndex,
                 analysisResult: analysisResult,
+                validSortIsImpossible: validSortIsImpossible,
+                isFindingBestSort: isFindingBestSort,
+                sortedWithValidSort: sortedWithValidSort,
+                sortedWithCurrentBestSort: sortedWithCurrentBestSort,
+                bestSortPossibleFound: bestSortPossibleFound,
                 sortInProgress: sortInProgress,
                 toApplyNextBestSort: toApplyNextBestSort,
                 toAlwaysApplyCurrentBestSort: toAlwaysApplyCurrentBestSort,

@@ -9,6 +9,7 @@ import 'package:trying_flutter/features/media_sorter/application/state/sheet_dat
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
@@ -27,10 +28,8 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   final TreeController treeController;
 
   int get currentSheetId => workbookController.currentSheetId;
-  int get primarySelectedCellX =>
-      selectionController.getSelectionData(currentSheetId).primarySelectedCellX;
-  int get primarySelectedCellY =>
-      selectionController.getSelectionData(currentSheetId).primarySelectedCellY;
+  int get primarySelectedCellX => selectionController.primarySelectedCellX;
+  int get primarySelectedCellY => selectionController.primarySelectedCellY;
 
   SpreadsheetCoordinator(
     this.historyController,
@@ -76,8 +75,10 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   Future<void> loadSheet(int sheetId, bool init) async {
-    await workbookController.loadSheet(sheetId, init);
-    afterLoadingSheet();
+    final result = await workbookController.loadSheet(sheetId, init);
+    if (result.isRight()) {
+      afterLoadingSheet();
+    }
   }
 
   void afterLoadingSheet() {
@@ -128,7 +129,8 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     );
   }
 
-  void applyUpdatesAndSort(Map<String, UpdateUnit> updates, 
+  void applyUpdatesAndSort(
+    Map<String, UpdateUnit> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromSort,
@@ -191,7 +193,8 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     }
   }
 
-  void applyUpdatesNoSort(Map<String, UpdateUnit> updates, 
+  void applyUpdatesNoSort(
+    Map<String, UpdateUnit> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,
@@ -203,7 +206,6 @@ class SpreadsheetCoordinator extends ChangeNotifier {
       isFromEditing,
     );
     gridController.adjustRowHeightAfterUpdate(currentSheetId, updates);
-    sheetDataController.save(updates);
     updateTreeAndRowColCount();
     if (isFromEditing) {
       gridController.scrollToCell();
@@ -224,7 +226,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
           break;
         }
         CellPosition selectedCell = treeController.onTapCellSelect(node);
-        setPrimarySelection(selectedCell.x, selectedCell.y, false);
+        setPrimarySelection(primarySelectedCellX, primarySelectedCellY, false);
         break;
       case OnTapAction.selectCell:
         if (node.rowId != null && node.colId != null) {
@@ -457,9 +459,8 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     applyUpdatesAndSort(updates, currentSheetId, false, false, false);
   }
 
-  void loadSheetByName(String name) {
-    workbookController.loadSheetByName(name);
+  void createSheetByName(String name) {
+    workbookController.createSheetByName(name);
     afterLoadingSheet();
   }
-
 }

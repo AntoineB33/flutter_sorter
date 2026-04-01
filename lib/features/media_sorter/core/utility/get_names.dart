@@ -2,6 +2,7 @@
 import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 
 
 
@@ -40,9 +41,8 @@ class GetNames {
     }
   }
 
-  static ColumnType getColumnType(CoreSheetContent sheetContent, int col) {
-    if (!sheetContent.columnTypes.containsKey(col)) return ColumnType.attributes;
-    return sheetContent.columnTypes[col]!;
+  static ColumnType getColumnType(Map<int, ColumnType> columnTypes, int col) {
+    return columnTypes[col] ?? ColumnType.attributes;
   }
 
   static bool isSourceColumn(ColumnType type) {

@@ -65,10 +65,13 @@ class _SideMenuState extends State<SideMenu> {
 
   @override
   Widget build(BuildContext context) {
-    final SpreadsheetCoordinator coordinator = context.watch<SpreadsheetCoordinator>();
-    
-    final WorkbookController workbookController = context.watch<WorkbookController>();
-    final SheetDataController sheetDataController = context.watch<SheetDataController>();
+    final SpreadsheetCoordinator coordinator = context
+        .watch<SpreadsheetCoordinator>();
+
+    final WorkbookController workbookController = context
+        .watch<WorkbookController>();
+    final SheetDataController sheetDataController = context
+        .watch<SheetDataController>();
     final SortController sortController = context.watch<SortController>();
     final TreeController treeController = context.watch<TreeController>();
 
@@ -87,18 +90,28 @@ class _SideMenuState extends State<SideMenu> {
           const SizedBox(height: 16),
 
           // --- Autocomplete Input Field ---
-          _buildSheetAutocomplete(workbookController, sheetDataController, coordinator),
+          _buildSheetAutocomplete(
+            workbookController,
+            sheetDataController,
+            coordinator,
+          ),
 
           const SizedBox(height: 10),
 
           Row(
             children: [
               ElevatedButton(
-                onPressed: sortController.isApplyBetterSortButtonLocked() ? null : coordinator.applyBetterSortButton,
+                onPressed: sortController.isApplyBetterSortButtonLocked()
+                    ? null
+                    : coordinator.applyBetterSortButton,
                 child: const Text("Find better sort"),
               ),
               const SizedBox(width: 16),
-              Text(sortController.isSortedWithValidSort() ? "Sorted" : "Not Sorted"),
+              Text(
+                sortController.isSortedWithValidSort()
+                    ? "Sorted"
+                    : "Not Sorted",
+              ),
             ],
           ),
 
@@ -110,7 +123,10 @@ class _SideMenuState extends State<SideMenu> {
               children: [
                 // --- Toggle 1 ---
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey.shade300),
                     borderRadius: BorderRadius.circular(8),
@@ -126,12 +142,14 @@ class _SideMenuState extends State<SideMenu> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(width: 16), // Spacing between the toggles
-                
                 // --- Toggle 2 ---
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey.shade300),
                     borderRadius: BorderRadius.circular(8),
@@ -142,17 +160,20 @@ class _SideMenuState extends State<SideMenu> {
                       const SizedBox(width: 8),
                       Switch(
                         value: sortController.isCurrentBestSortAlwaysApplied(),
-                        onChanged: sortController.isAlwaysApplySortToggleLocked() ? null : coordinator.alwaysApplySortToggle,
+                        onChanged:
+                            sortController.isAlwaysApplySortToggleLocked()
+                            ? null
+                            : coordinator.alwaysApplySortToggle,
                       ),
                     ],
                   ),
                 ),
-                
+
                 // You can add more toggles here, and the Row will continue to scroll horizontally
               ],
             ),
           ),
-        
+
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 10),
@@ -231,7 +252,11 @@ class _SideMenuState extends State<SideMenu> {
     );
   }
 
-  Widget _buildSheetAutocomplete(WorkbookController workbookController, SheetDataController sheetDataController, SpreadsheetCoordinator coordinator) {
+  Widget _buildSheetAutocomplete(
+    WorkbookController workbookController,
+    SheetDataController sheetDataController,
+    SpreadsheetCoordinator coordinator,
+  ) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Autocomplete<CoreSheetContent>(
@@ -241,7 +266,10 @@ class _SideMenuState extends State<SideMenu> {
             final allSheets = workbookController.getRecentSheetIds();
             if (query.isEmpty) {
               final sorted = List<CoreSheetContent>.from(allSheets);
-              sorted.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+              sorted.sort(
+                (a, b) =>
+                    a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+              );
               return sorted;
             }
             final matches = <CoreSheetContent>[];
@@ -254,7 +282,9 @@ class _SideMenuState extends State<SideMenu> {
                 others.add(sheet);
               }
             }
-            others.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+            others.sort(
+              (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+            );
             return [...matches, ...others];
           },
           optionsViewBuilder: (context, onSelected, options) {
@@ -271,13 +301,15 @@ class _SideMenuState extends State<SideMenu> {
                     itemBuilder: (context, index) {
                       final CoreSheetContent option = options.elementAt(index);
                       final query = _textEditingController.text.toLowerCase();
-                      final isMatch = option.title.toLowerCase().contains(query);
+                      final isMatch = option.title.toLowerCase().contains(
+                        query,
+                      );
                       bool showDivider = false;
                       if (index > 0 && !isMatch) {
                         final prevOption = options.elementAt(index - 1);
-                        final prevWasMatch = prevOption.title.toLowerCase().contains(
-                          query,
-                        );
+                        final prevWasMatch = prevOption.title
+                            .toLowerCase()
+                            .contains(query);
                         if (prevWasMatch) showDivider = true;
                       }
                       return Column(
@@ -331,7 +363,7 @@ class _SideMenuState extends State<SideMenu> {
                     suffixIcon: Icon(Icons.table_chart),
                   ),
                   onSubmitted: (String value) {
-                    coordinator.loadSheetByName(value.trim(), false);
+                    coordinator.createSheetByName(value.trim());
                   },
                 );
               },

@@ -19,6 +19,10 @@ class SheetDataController extends ChangeNotifier {
     return sheetDataUsecase.getSheet(sheetId);
   }
 
+  CoreSheetContent getCurrentSheet() {
+    return sheetDataUsecase.getSheet(currentSheetId);
+  }
+
   Future<Either<Failure, Map<String, UpdateUnit>>> paste() {
     return sheetDataUsecase.paste();
   }

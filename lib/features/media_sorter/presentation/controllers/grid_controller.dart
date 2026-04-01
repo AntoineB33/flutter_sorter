@@ -75,9 +75,8 @@ class GridController extends ChangeNotifier {
 
   void scrollToCell() {
     final layout = gridUsecase.getLayout(currentSheetId);
-    final selection = selectionUsecase.getSelectionData(currentSheetId);
-    int rowId = selection.primarySelectedCellX;
-    int colId = selection.primarySelectedCellY;
+    int rowId = selectionUsecase.primarySelectedCellX;
+    int colId = selectionUsecase.primarySelectedCellY;
     bool scrollX = true;
     bool scrollY = true;
     if (rowId > 0) {

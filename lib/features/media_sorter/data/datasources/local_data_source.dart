@@ -1,7 +1,9 @@
 import 'package:drift/native.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:drift/drift.dart';
 
@@ -24,6 +26,7 @@ abstract class ILocalDataSource {
   Future<List<RowsManuallyAdjustedHeightEntity>> getRowsManuallyAdjustedHeightEntities(int sheetId);
   Future<List<ColsManuallyAdjustedWidthEntity>> getColsManuallyAdjustedWidthEntities(int sheetId);
   Future<List<SelectedCellsEntity>> getSelectedCellsEntities(int sheetId);
+  Future<List<SortStatusData>> getSortStatus();
 }
 
 class DriftLocalDataSource implements ILocalDataSource {
@@ -54,7 +57,7 @@ class DriftLocalDataSource implements ILocalDataSource {
               primSelHistory: item.primSelHistory != null
                   ? Value(item.primSelHistory!)
                   : Value.absent(),
-              primSelHistoryIndex: item.primSelHistoryId != null
+              primSelHistoryId: item.primSelHistoryId != null
                   ? Value(item.primSelHistoryId!)
                   : Value.absent(),
               scrollOffsetX: item.scrollOffsetX != null
@@ -380,4 +383,30 @@ class DriftLocalDataSource implements ILocalDataSource {
       throw CacheException('An unknown database error occurred.');
     }
   }
+
+  @override
+  Future<List<SortStatusData>> getSortStatus() async {
+    try {
+      final query = db.selectOnly(db.sheetDataTables)
+        ..addColumns([db.sheetDataTables.id, db.sheetDataTables.sortInProgress, db.sheetDataTables.toApplyNextBestSort, db.sheetDataTables.toAlwaysApplyCurrentBestSort, db.sheetDataTables.analysisDone])
+          ..where(db.sheetDataTables.sortInProgress.equals(true));
+      final result = await query.get();
+      if (result.isEmpty) {
+        throw CacheException("No sort status found for the provided sheet IDs");
+      }
+      return result
+          .map((row) => SortStatusData(
+                sheetId: row.read(db.sheetDataTables.id)!,
+                toApplyNextBestSort: row.read(db.sheetDataTables.toApplyNextBestSort) ?? false,
+                toAlwaysApplyCurrentBestSort: row.read(db.sheetDataTables.toAlwaysApplyCurrentBestSort) ?? false,
+                analysisDone: row.read(db.sheetDataTables.analysisDone) ?? false,
+              ))
+          .toList();
+    } on SqliteException catch (e) {
+      throw CacheException('Failed to retrieve sort status: ${e.message}');
+    } catch (e) {
+      throw CacheException('An unknown database error occurred.');
+    }
+  }
+
 }

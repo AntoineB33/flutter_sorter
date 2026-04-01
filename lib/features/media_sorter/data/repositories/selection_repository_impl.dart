@@ -21,11 +21,11 @@ class SelectionRepositoryImpl implements SelectionRepository {
   final HistoryCache _historyCache;
 
   int get currentSheetId => _workbookCache.currentSheetId;
+  @override
+  int get primarySelectedCellX => _selectionCache.primarySelectedCellX(currentSheetId);
+  @override
+  int get primarySelectedCellY => _selectionCache.primarySelectedCellY(currentSheetId);
   SelectionData get selection => _selectionCache.getSelectionData(currentSheetId);
-  @override
-  int get primarySelectedCellX => _historyCache.getPrimarySelectedCellX(currentSheetId);
-  @override
-  int get primarySelectedCellY => _historyCache.getPrimarySelectedCellY(currentSheetId);
 
   SelectionRepositoryImpl(
     this._selectionCache,
@@ -61,17 +61,11 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
-  List<String> getSheetIds() {
-    return _selectionCache.getSheetIds();
-  }
-
-  @override
   void setPrimarySelection(int row, int col, bool keepSelection) {
     if (!keepSelection) {
       selection.selectedCells.clear();
     }
-    selection.primarySelectedCell = Point(row, col);
-    saveLastSelection();
+    selection.selectedCells.add(CellPosition(row, col));
   }
 
   @override

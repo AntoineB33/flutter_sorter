@@ -74,29 +74,29 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
 
   @override
   Future<void> copySelectionToClipboard() async {
-    int startRow = selection.primarySelectedCellX;
-    int endRow = selection.primarySelectedCellX;
-    int startCol = selection.primarySelectedCellY;
-    int endCol = selection.primarySelectedCellY;
+    int startRow = selectionCache.primarySelectedCellX(currentSheetId);
+    int endRow = selectionCache.primarySelectedCellX(currentSheetId);
+    int startCol = selectionCache.primarySelectedCellY(currentSheetId);
+    int endCol = selectionCache.primarySelectedCellY(currentSheetId);
     for (CellPosition cell in selection.selectedCells) {
-      if (cell.x < startRow) startRow = cell.x;
-      if (cell.y < startCol) startCol = cell.y;
-      if (cell.x > endRow) endRow = cell.x;
-      if (cell.y > endCol) endCol = cell.y;
+      if (cell.rowId < startRow) startRow = cell.rowId;
+      if (cell.colId < startCol) startCol = cell.colId;
+      if (cell.rowId > endRow) endRow = cell.rowId;
+      if (cell.colId > endCol) endCol = cell.colId;
     }
     List<List<bool>> selectedCellsTable = List.generate(
       endRow - startRow + 1,
       (_) => List.generate(endCol - startCol + 1, (_) => false),
     );
     for (CellPosition cell in selection.selectedCells) {
-      selectedCellsTable[cell.x - startRow][cell.y - startCol] = true;
+      selectedCellsTable[cell.rowId - startRow][cell.colId - startCol] = true;
     }
     if (!selectedCellsTable.every((row) => row.every((cell) => !cell))) {
       await _clipboardService.copy(
         loadedSheetsCache.getCellContent(
           currentSheetId,
-          selectionCache.getSelectionData(currentSheetId).primarySelectedCellX,
-          selectionCache.getSelectionData(currentSheetId).primarySelectedCellY,
+          selectionCache.primarySelectedCellX(currentSheetId),
+          selectionCache.primarySelectedCellY(currentSheetId),
         ),
       );
       return;
@@ -128,33 +128,17 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
 
     final Map<String, UpdateUnit> updates = {};
     final rows = text.split('\n');
-    int startRow = selectionCache
-        .getSelectionData(currentSheetId)
-        .primarySelectedCellX;
-    int startCol = selectionCache
-        .getSelectionData(currentSheetId)
-        .primarySelectedCellY;
+    int startRow = selectionCache.primarySelectedCellX(currentSheetId);
+    int startCol = selectionCache.primarySelectedCellY(currentSheetId);
     for (int r = 0; r < rows.length; r++) {
       final columns = rows[r].split('\t');
       for (int c = 0; c < columns.length; c++) {
         String val = columns[c].replaceAll('\r', '');
-        final cellUpdate = CellUpdate(startRow + r, startCol + c, val);
+        final cellUpdate = CellUpdate(currentSheetId, startRow + r, startCol + c, val);
         updates[cellUpdate.getKey()] = cellUpdate;
       }
     }
     return Right(updates);
-  }
-
-  void scheduleSheetSave(int sheetId) {
-    if (!_saveSheetDataExecutor.containsKey(sheetId)) {
-      _saveSheetDataExecutor[sheetId] = ManageWaitingTasks<void>(
-        Duration(seconds: 2),
-        _errorController,
-      );
-    }
-    _saveSheetDataExecutor[sheetId]!.execute(() async {
-      await dataSource.saveSheet(sheetId, loadedSheetsCache.getSheet(sheetId));
-    });
   }
 
   void dispose() {
@@ -166,7 +150,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
 
   @override
   String getCellContent(CellPosition cell, int sheetId) {
-    return loadedSheetsCache.getCellContent(sheetId, cell.x, cell.y);
+    return loadedSheetsCache.getCellContent(sheetId, cell.rowId, cell.colId);
   }
 
   @override
@@ -227,18 +211,18 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         );
         loadedSheetsCache.setSheet(sheetId, sheetDataTable);
         final selectionData = SelectionData(
-          primarySelectedCellX: sheetData.primarySelectedCellX ?? 0,
-          primarySelectedCellY: sheetData.primarySelectedCellY ?? 0,
-          selectedCells: sheetData.selectedCells ?? Set<CellPosition>(),
+          selectedCells: sheetData.selectedCells,
+          primSelHistory: sheetData.primSelHistory,
+          primSelHistoryId: sheetData.primSelHistoryId,
         );
         selectionCache.setSelectionData(sheetId, selectionData);
         final sortProgression = SortProgressData(
-          bestDistFound: sheetData.bestDistFound ?? [],
-          bestSortFound: sheetData.bestSortFound ?? [],
-          possibleIntsById: sheetData.possibleInts ?? [],
-          cursors: sheetData.cursors ?? [],
-          validAreasById: sheetData.validAreas ?? [],
-          sortIndex: sheetData.sortIndex ?? 0,
+          bestDistFound: sheetData.bestDistFound,
+          bestSortFound: sheetData.bestSortFound,
+          possibleIntsById: sheetData.possibleInts,
+          cursors: sheetData.cursors,
+          validAreasById: sheetData.validAreas,
+          sortIndex: sheetData.sortIndex,
         );
         sortProgressCache.update(sheetId, sortProgression);
         return const Right(unit);
@@ -253,7 +237,6 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   @override
   Future<void> addNewSheet(int sheetId) async {
     loadedSheetsCache.setSheet(sheetId, CoreSheetContent.empty());
-    scheduleSheetSave(sheetId);
   }
 
   @override
@@ -275,6 +258,5 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   @override
   void update(Map<String, UpdateUnit> updates, int sheetId) {
     loadedSheetsCache.update(updates, sheetId);
-    scheduleSheetSave(sheetId);
   }
 }

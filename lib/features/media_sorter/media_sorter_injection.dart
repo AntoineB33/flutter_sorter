@@ -87,6 +87,9 @@ Future<void> initMediaSorterDependencies() async {
   );
   LocalDataRepositoryImpl saveRepository = LocalDataRepositoryImpl(
     saveDataSource,
+    loadedSheetsCache,
+    layoutCache,
+    selectionCache,
   );
   WorkbookRepositoryImpl workbookRepository = WorkbookRepositoryImpl(
     saveDataSource,
@@ -99,6 +102,7 @@ Future<void> initMediaSorterDependencies() async {
     selectionCache,
     loadedSheetsCache,
     workbookCache,
+    historyCache,
   );
   TreeRepositoryImpl treeRepository = TreeRepositoryImpl(
     analysisResultCache,
@@ -106,10 +110,10 @@ Future<void> initMediaSorterDependencies() async {
     selectionCache,
     sortStatusCache,
     workbookCache,
-    saveDataSource,
   );
 
   SortUsecase sortUsecase = SortUsecase(
+      saveRepository,
     sortRepository,
     sheetDataRepository,
     workbookRepository,
@@ -120,8 +124,9 @@ Future<void> initMediaSorterDependencies() async {
     selectionRepository,
     sortRepository,
     sheetDataRepository,
+    saveRepository,
   );
-  HistoryUsecase historyUsecase = HistoryUsecase(historyRepository);
+  HistoryUsecase historyUsecase = HistoryUsecase(historyRepository, saveRepository);
   GridUsecase gridUsecase = GridUsecase(gridRepository, treeRepository);
   SelectionUsecase selectionUsecase = SelectionUsecase(
     selectionRepository,
@@ -168,7 +173,7 @@ Future<void> initMediaSorterDependencies() async {
     workbookUsecase,
     sortUsecase,
   );
-  TreeController treeController = TreeController(treeUsecase);
+  TreeController treeController = TreeController(treeUsecase, selectionUsecase);
 
   SpreadsheetCoordinator spreadsheetCoordinator = SpreadsheetCoordinator(
     historyController,
@@ -196,7 +201,6 @@ Future<void> initMediaSorterDependencies() async {
   );
   sl.registerLazySingleton<SelectionRepositoryImpl>(
     () => selectionRepository,
-    dispose: (repo) => repo.dispose(),
   );
   sl.registerLazySingleton<SheetDataRepositoryImpl>(
     () => sheetDataRepository,

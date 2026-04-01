@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/calculate_service.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/isolate_message.dart';
 
 class AnalysisReturn {
   final AnalysisResult result;
@@ -26,20 +25,6 @@ class CalculationService {
       sendPort,
       AnalysisReturn(result, true, result.errorChildren.isEmpty),
     );
-  }
-
-  static IsolateMessage getMessage(CoreSheetContent sheetContent) {
-    if (sheetContent.lastRow < 5000) {
-      return IsolateMessage(
-        Right(sheetContent.cells),
-        sheetContent.columnTypes,
-      );
-    } else {
-      final String combined = jsonEncode(sheetContent.cells);
-      final Uint8List bytes = utf8.encode(combined);
-      final transferable = TransferableTypedData.fromList([bytes]);
-      return IsolateMessage(Left(transferable), sheetContent.columnTypes);
-    }
   }
 
   static AnalysisResult _isolateHandler(IsolateMessage message) {

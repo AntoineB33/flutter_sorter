@@ -43,23 +43,23 @@ class SortStatusCache {
 
   void setToApplyOnce(int sheetId, bool value) {
     if (_sortStatusBySheet.containsKey(sheetId)) {
-      _sortStatusBySheet[sheetId]!.toApplyNextBestSort = value;
+      _sortStatusBySheet[sheetId]!.copyWith(toApplyNextBestSort: value);
     }
   }
 
   void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
     if (_sortStatusBySheet.containsKey(sheetId)) {
-      _sortStatusBySheet[sheetId]!.toAlwaysApplyCurrentBestSort = toAlwaysApply;
+      _sortStatusBySheet[sheetId]!.copyWith(toAlwaysApplyCurrentBestSort: toAlwaysApply);
     }
   }
 
   void isAnalysing(int sheetId) {
-    _sortStatusBySheet[sheetId] = SortStatus(analysisDone: false);
+    _sortStatusBySheet[sheetId]!.copyWith(analysisDone: false);
   }
 
   void analysisIsDone(int sheetId, bool toFindValidSort) {
     if (toFindValidSort) {
-      _sortStatusBySheet[sheetId]!.analysisDone = true;
+      _sortStatusBySheet[sheetId]!.copyWith(analysisDone: true);
     } else {
       removeSortStatus(sheetId);
     }

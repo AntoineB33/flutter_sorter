@@ -1,5 +1,4 @@
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/utils/logger.dart';
@@ -24,30 +23,19 @@ class LoadedSheetsCache {
   }
 
   int rowCount(int sheetId) {
-    return getCells(sheetId).length;
+    return getSheet(sheetId).lastRow + 1;
   }
 
   int colCount(int sheetId) {
-    return getCells(sheetId).table.isEmpty
-        ? 0
-        : getCells(sheetId).table[0].length;
+    return getSheet(sheetId).lastCol + 1;
   }
 
   String getCellContent(int sheetId, int row, int col) {
-    final sheetContent = getCells(sheetId);
-    if (row < sheetContent.table.length &&
-        col < sheetContent.table[row].length) {
-      return sheetContent.table[row][col];
-    }
-    return "";
+    return getCells(sheetId)[CellPosition(row, col)] ?? '';
   }
 
   ColumnType getColumnType(int sheetId, int col) {
-    final sheetContent = getCells(sheetId);
-    if (col < sheetContent.columnTypes.length) {
-      return sheetContent.columnTypes[col];
-    }
-    return ColumnType.attributes;
+    return _loadedSheetsData[sheetId]!.columnTypes[col] ?? ColumnType.attributes;
   }
 
   String getSheetName(int sheetId) {
@@ -59,51 +47,34 @@ class LoadedSheetsCache {
   }
 
   void _updateCell(int sheetId, CellUpdate update) {
-    String prevValue = '';
-    SheetContent sheetContent = _loadedSheetsData[sheetId]!.sheetContent;
-    int row = update.rowId;
-    int col = update.colId;
-    String newValue = update.newValue;
-    if (newValue.isNotEmpty ||
-        (row < rowCount(sheetId) && col < colCount(sheetId))) {
-      if (row >= rowCount(sheetId)) {
-        final needed = row + 1 - rowCount(sheetId);
-        sheetContent.table.addAll(
-          List.generate(
-            needed,
-            (_) => List.filled(colCount(sheetId), '', growable: true),
-          ),
-        );
-      }
-      _increaseColumnCount(sheetId, col, sheetContent);
-      prevValue = sheetContent.table[row][col];
-      sheetContent.table[row][col] = newValue;
-    }
-
-    // Clean up empty rows/cols at the end
-    if (newValue.isEmpty &&
-        row < rowCount(sheetId) &&
-        col < colCount(sheetId) &&
-        (row == rowCount(sheetId) - 1 || col == colCount(sheetId) - 1) &&
-        prevValue.isNotEmpty) {
-      _decreaseRowCount(row, rowCount(sheetId), sheetContent);
-      if (col == colCount(sheetId) - 1) {
-        int colId = col;
-        bool canRemove = true;
-        while (canRemove && colId >= 0) {
-          for (var r = 0; r < rowCount(sheetId); r++) {
-            if (sheetContent.table[r][colId].isNotEmpty) {
-              canRemove = false;
-              break;
-            }
-          }
-          if (canRemove) {
-            for (var r = 0; r < rowCount(sheetId); r++) {
-              sheetContent.table[r].removeLast();
-            }
-            colId--;
+    _loadedSheetsData[sheetId]!.cells[CellPosition(update.rowId, update.colId)] =
+        update.newValue;
+    if (update.rowId > _loadedSheetsData[sheetId]!.lastRow) {
+      _loadedSheetsData[sheetId]!.lastRow = update.rowId;
+    } else if (update.rowId == _loadedSheetsData[sheetId]!.lastRow &&
+        update.newValue.isEmpty) {
+      while (_loadedSheetsData[sheetId]!.lastRow >= 0) {
+        for (int col = 0; col <= _loadedSheetsData[sheetId]!.lastCol; col++) {
+          if (getCellContent(sheetId, _loadedSheetsData[sheetId]!.lastRow, col)
+              .isNotEmpty) {
+            return;
           }
         }
+        _loadedSheetsData[sheetId]!.lastRow--;
+      }
+    }
+    if (update.colId > _loadedSheetsData[sheetId]!.lastCol) {
+      _loadedSheetsData[sheetId]!.lastCol = update.colId;
+    } else if (update.colId == _loadedSheetsData[sheetId]!.lastCol &&
+        update.newValue.isEmpty) {
+      while (_loadedSheetsData[sheetId]!.lastCol >= 0) {
+        for (int row = 0; row <= _loadedSheetsData[sheetId]!.lastRow; row++) {
+          if (getCellContent(sheetId, row, _loadedSheetsData[sheetId]!.lastCol)
+              .isNotEmpty) {
+            return;
+          }
+        }
+        _loadedSheetsData[sheetId]!.lastCol--;
       }
     }
   }
@@ -123,7 +94,7 @@ class LoadedSheetsCache {
           }
           break;
         default:
-          throw Exception('Unknown update type');
+          break;
       }
     }
   }

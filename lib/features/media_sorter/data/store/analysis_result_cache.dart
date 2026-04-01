@@ -3,7 +3,7 @@ import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_ca
 import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
 
 class AnalysisResultCache {
-  final Map<String, AnalysisResult> _analysisResults = {};
+  final Map<int, AnalysisResult> _analysisResults = {};
 
   final LoadedSheetsCache loadedSheetsDataStore;
 

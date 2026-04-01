@@ -192,16 +192,18 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                             widget.gridController.colHeaderHeight(),
                           ),
                           cellBuilder: (context, vicinity) =>
-                              _buildCellDispatcher(
-                                context,
-                                vicinity,
-                                widget.spreadsheetCoordinator,
-                                widget.workbookController,
-                                widget.sheetDataController,
-                                widget.selectionController,
-                                widget.sheetDataController,
-                                widget.treeController,
-                                widget.gridController,
+                              TableViewCell(
+                                child: _buildCellDispatcher(
+                                  context,
+                                  vicinity,
+                                  widget.spreadsheetCoordinator,
+                                  widget.workbookController,
+                                  widget.sheetDataController,
+                                  widget.selectionController,
+                                  widget.sheetDataController,
+                                  widget.treeController,
+                                  widget.gridController,
+                                ),
                               ),
                         ),
                       );
@@ -291,7 +293,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         label: GetNames.getColumnLabel(c - 1),
         colIndex: c - 1,
         backgroundColor: GetNames.getColumnType(
-          widget.sheetDataController.sheetContent,
+          widget.sheetDataController.getCurrentSheet(),
           c - 1,
         ).color,
         onContextMenu: (details) => _showColumnContextMenu(
@@ -357,7 +359,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     int col,
   ) async {
     final currentType = GetNames.getColumnType(
-      sheetDataController.sheetContent,
+      sheetDataController.getCurrentSheet(),
       col,
     );
     final List<PopupMenuEntry<dynamic>> items = ColumnType.values

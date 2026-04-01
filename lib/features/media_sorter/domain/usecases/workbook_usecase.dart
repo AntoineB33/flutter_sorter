@@ -1,5 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
+import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
@@ -50,34 +52,31 @@ class WorkbookUsecase {
     }
   }
 
-  Future<void> loadSheetByName(String name) async {
+  Future<void> createSheetByName(String name) async {
     loadSheet(workbookRepository.getNewSheetId(), false);
   }
 
-  Future<void> loadSheet(int sheetId, bool init) async {
+  Future<Either<Failure, Unit>> loadSheet(int sheetId, bool init) async {
     if (workbookRepository.containsSheetId(sheetId)) {
-      saveRepository.saveUpdate(SheetDataUpdate(
-        sheetId,
-        true,
-        lastOpened: DateTime.now(),
-      ));
       if (!sheetDataRepository.containsSheetId(sheetId)) {
-        Either<Failure, void> result = await sheetDataRepository.loadSheet(
+        Either<Failure, Unit> result = await sheetDataRepository.loadSheet(
           sheetId,
         );
         if (result.isLeft()) {
-          selectionRepository.clearSheetSelection(sheetId);
+          createSheetByName(SpreadsheetConstants.defaultSheetTitle);
+          return result;
         }
       }
+      saveRepository.saveUpdate(
+        SheetDataUpdate(sheetId, true, lastOpened: DateTime.now()),
+      );
     } else {
       workbookRepository.addNewSheetId(sheetId, 0);
       sheetDataRepository.addNewSheet(sheetId);
       sortRepository.addNewAnalysisResult(sheetId);
-      selectionRepository.clearSheetSelection(sheetId);
+      selectionRepository.setSelectionData(sheetId, SelectionData.empty());
       saveRepository.saveUpdate(SheetDataUpdate.initial(sheetId));
     }
-    if (!init) {
-      selectionRepository.saveLastSelection();
-    }
+    return Right(unit);
   }
 }

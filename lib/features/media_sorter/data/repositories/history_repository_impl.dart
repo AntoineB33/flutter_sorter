@@ -6,6 +6,7 @@ import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/history_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 
@@ -116,24 +117,23 @@ class HistoryRepositoryImpl implements HistoryRepository {
   @override
   @useResult
   UpdateUnit newPrimarySelection(int rowId, int colId) {
-    if (historyData.primSelHistoryId < historyData.primSelHistory.length - 1) {
-      historyData.primSelHistory = historyData.primSelHistory.sublist(
-        0,
-        historyData.primSelHistoryId + 1,
-      );
+    var selectionData = selectionCache.getSelectionData(currentSheetId);
+    if (selectionData.primSelHistoryId < selectionData.primSelHistory.length - 1) {
+      final newPrimSelHistory = selectionData.primSelHistory.sublist(0, selectionData.primSelHistoryId + 1);
+      selectionData.primSelHistory..clear()..addAll(newPrimSelHistory);
     }
-    historyData.primSelHistory.add(CellPosition(rowId, colId));
-    historyData.primSelHistoryId++;
+    selectionData.primSelHistory.add(CellPosition(rowId, colId));
+    selectionData = selectionData.copyWith(primSelHistoryId: selectionData.primSelHistoryId + 1);
     const int primSelHistoryLimit = 30;
-    if (historyData.primSelHistoryId == primSelHistoryLimit) {
-      historyData.primSelHistory.removeAt(0);
-      historyData.primSelHistoryId--;
+    if (selectionData.primSelHistoryId == primSelHistoryLimit) {
+      selectionData.primSelHistory.removeAt(0);
+      selectionData = selectionData.copyWith(primSelHistoryId: selectionData.primSelHistoryId - 1);
     }
     return SheetDataUpdate(
       currentSheetId,
       true,
-      primSelHistory: historyData.primSelHistory,
-      primSelHistoryId: historyData.primSelHistoryId == primSelHistoryLimit - 1 ? null : historyData.primSelHistoryId,
+      primSelHistory: selectionData.primSelHistory,
+      primSelHistoryId: selectionData.primSelHistoryId == primSelHistoryLimit - 1 ? null : selectionData.primSelHistoryId,
     );
   }
 

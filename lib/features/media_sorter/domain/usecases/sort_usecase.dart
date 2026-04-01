@@ -3,12 +3,15 @@ import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
 
 class SortUsecase {
+  final SaveRepository saveRepository;
+
   final SortRepository sortRepository;
   final SheetDataRepository sheetDataRepository;
   final WorkbookRepository workbookRepository;
@@ -17,6 +20,7 @@ class SortUsecase {
   int get currentSheetId => workbookRepository.currentSheetId;
 
   SortUsecase(
+    this.saveRepository,
     this.sortRepository,
     this.sheetDataRepository,
     this.workbookRepository,
@@ -33,10 +37,6 @@ class SortUsecase {
 
   Future<void> analyze(int sheetId) {
     return sortRepository.analyze(sheetId);
-  }
-
-  void lightCalculations(int sheetId) {
-    sortRepository.lightCalculations(sheetId);
   }
 
   List<int> getSheetIds() {
@@ -61,8 +61,7 @@ class SortUsecase {
 
   void setFindingBestSort(int sheetId, bool value) {
     sortRepository.setFindingBestSort(sheetId, value);
-    FindBestSortChg findBestSortChg = FindBestSortChg(sheetId, value);
-    saveRepository.save({findBestSortChg.findingBestSortKey: findBestSortChg});
+    saveRepository.saveUpdate(SheetDataUpdate(sheetId, true, isFindingBestSort: value));
   }
 
   void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
@@ -77,10 +76,15 @@ class SortUsecase {
     SortProgressDataMsg sortProgressDataMsg,
     int sheetId,
   ) {
-    return sortRepository.handleSortProgressDataMsg(
+    Map<String, UpdateUnit> updates = {};
+    final result = sortRepository.handleSortProgressDataMsg(
       sortProgressDataMsg,
       sheetId,
+updates
     );
+    saveRepository.save(updates);
+    return result;
+
   }
 
   bool willNextBestSortBeApplied(int sheetId) {

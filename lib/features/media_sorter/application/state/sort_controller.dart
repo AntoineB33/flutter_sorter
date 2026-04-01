@@ -24,11 +24,7 @@ class SortController extends ChangeNotifier {
     this.sheetDataUsecase,
     this.sortUseCase,
     this.workbookUsecase,
-  ) {
-    _subscription = sortUseCase.failureStream.listen((Failure failure) {
-      _onFailure(failure);
-    });
-  }
+  );
 
   List<int> getRecentSheetIds() {
     return workbookUsecase.getRecentSheetIds();

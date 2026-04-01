@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sort_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/workbook_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/helpers/calculation_service.dart';
@@ -27,12 +29,11 @@ class WorkbookController extends ChangeNotifier {
     return workbookUseCase.getRecentSheetIds();
   }
 
-  Future<void> loadSheet(int sheetId, bool init) async {
-    workbookUseCase.loadSheet(sheetId, init);
+  Future<Either<Failure, Unit>> loadSheet(int sheetId, bool init) async {
+    return workbookUseCase.loadSheet(sheetId, init);
   }
 
-  Future<void> loadSheetByName(String name) async {
-    workbookUseCase.loadSheetByName(name);
+  Future<void> createSheetByName(String name) async {
+    workbookUseCase.createSheetByName(name);
   }
-  
 }
