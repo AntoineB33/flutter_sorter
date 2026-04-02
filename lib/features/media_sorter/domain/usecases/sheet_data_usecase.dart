@@ -109,8 +109,8 @@ class SheetDataUsecase {
     if (!isFromHistory) {
       historyRepository.commitHistory(updates, sheetId, isFromEditing);
     }
-    save(updates);
     sheetDataRepository.update(updates, sheetId);
+    save(updates);
   }
 
   Map<String, UpdateUnit> delete() {

@@ -16,6 +16,12 @@ SheetDataUpdate _$SheetDataUpdateFromJson(
   lastOpened: json['lastOpened'] == null
       ? null
       : DateTime.parse(json['lastOpened'] as String),
+  usedRows: (json['usedRows'] as List<dynamic>?)
+      ?.map((e) => (e as num).toInt())
+      .toList(),
+  usedCols: (json['usedCols'] as List<dynamic>?)
+      ?.map((e) => (e as num).toInt())
+      .toList(),
   historyIndex: (json['historyIndex'] as num?)?.toInt(),
   colHeaderHeight: (json['colHeaderHeight'] as num?)?.toDouble(),
   prevColHeaderHeight: (json['prevColHeaderHeight'] as num?)?.toDouble(),
@@ -72,6 +78,8 @@ Map<String, dynamic> _$SheetDataUpdateToJson(SheetDataUpdate instance) =>
       'newName': instance.newName,
       'prevName': instance.prevName,
       'lastOpened': instance.lastOpened?.toIso8601String(),
+      'usedRows': instance.usedRows,
+      'usedCols': instance.usedCols,
       'colHeaderHeight': instance.colHeaderHeight,
       'prevColHeaderHeight': instance.prevColHeaderHeight,
       'rowHeaderWidth': instance.rowHeaderWidth,

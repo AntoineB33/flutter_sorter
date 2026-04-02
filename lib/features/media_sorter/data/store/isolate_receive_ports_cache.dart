@@ -39,15 +39,13 @@ class IsolateReceivePortsCache {
     }
   }
 
-  void addIsolatePortIfNecessary(int sheetId) {
-    _isolatePorts[sheetId] ??= IsolateReceivePorts();
-  }
-
   void initPortB(int sheetId) {
+    _isolatePorts[sheetId] ??= IsolateReceivePorts();
     _isolatePorts[sheetId]!._portB = ReceivePort();
   }
 
   void initPortC(int sheetId) {
+    _isolatePorts[sheetId] ??= IsolateReceivePorts();
     _isolatePorts[sheetId]!._portC = ReceivePort();
   }
 

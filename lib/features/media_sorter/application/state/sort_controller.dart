@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/helpers/calculation_service.dart';
@@ -8,7 +7,6 @@ import 'dart:async';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sort_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/workbook_usecase.dart';
-import 'package:trying_flutter/utils/logger.dart';
 
 class SortController extends ChangeNotifier {
   final SheetDataUsecase sheetDataUsecase;

@@ -62,6 +62,8 @@ Future<void> initMediaSorterDependencies() async {
     selectionCache,
     sortProgressCache,
     workbookCache,
+    layoutCache,
+    historyCache,
   );
   SortRepositoryImpl sortRepository = SortRepositoryImpl(
     saveDataSource,
@@ -102,7 +104,6 @@ Future<void> initMediaSorterDependencies() async {
     selectionCache,
     loadedSheetsCache,
     workbookCache,
-    historyCache,
   );
   TreeRepositoryImpl treeRepository = TreeRepositoryImpl(
     analysisResultCache,
@@ -204,7 +205,6 @@ Future<void> initMediaSorterDependencies() async {
   );
   sl.registerLazySingleton<SheetDataRepositoryImpl>(
     () => sheetDataRepository,
-    dispose: (repo) => repo.dispose(),
   );
   sl.registerLazySingleton<SortRepositoryImpl>(
     () => sortRepository,

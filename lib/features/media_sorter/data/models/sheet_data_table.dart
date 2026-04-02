@@ -11,12 +11,10 @@ class SheetDataTables extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get title => text()();
   DateTimeColumn get lastOpened => dateTime()();
-  IntColumn get lastRow => integer()();
-  IntColumn get lastCol => integer()();
     TextColumn get usedRows =>
-      text().map(const SetIntConverter())();
+      text().map(const ListIntConverter())();
   TextColumn get usedCols =>
-      text().map(const SetIntConverter())();
+      text().map(const ListIntConverter())();
   IntColumn get historyIndex => integer()();
   RealColumn get colHeaderHeight => real()();
   RealColumn get rowHeaderWidth => real()();
@@ -157,17 +155,6 @@ class ColsManuallyAdjustedWidthTable extends Table {
   Set<Column> get primaryKey => {sheetId, colIndex};
 }
 
-@DataClassName('SelectedCellsEntity')
-class SelectedCellsTable extends Table {
-  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
-  IntColumn get cellIndex => integer()(); // To allow multiple selected cells
-  IntColumn get row => integer()();
-  IntColumn get col => integer()();
-
-  @override
-  Set<Column> get primaryKey => {sheetId, cellIndex};
-}
-
 class NodeStructListConverter extends TypeConverter<List<NodeStruct>, String> {
   const NodeStructListConverter();
 
@@ -215,21 +202,6 @@ class ListPointConverter extends TypeConverter<List<CellPosition>, String> {
   String toSql(List<CellPosition> value) {
     final encoded = value.map((e) => [e.rowId, e.colId]).toList();
     return jsonEncode(encoded);
-  }
-}
-
-class SetIntConverter extends TypeConverter<Set<int>, String> {
-  const SetIntConverter();
-
-  @override
-  Set<int> fromSql(String fromDb) {
-    final decoded = jsonDecode(fromDb) as List<dynamic>;
-    return decoded.map((e) => e as int).toSet();
-  }
-
-  @override
-  String toSql(Set<int> value) {
-    return jsonEncode(value.toList());
   }
 }
 

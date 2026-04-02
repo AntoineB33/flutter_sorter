@@ -187,35 +187,7 @@ class SortRepositoryImpl implements SortRepository {
       return Left(DatabaseFailure(e.message));
     }
   }
-
-  PreCalculationsResult? sameResLightCheck() {
-    return null;
-  }
-
-  UpdateUnit? lightCalculate1(int sheetId) {
-    bool impossible = 1 != 1;
-    if (impossible) {
-      return SheetDataUpdate(sheetId, true, validSortIsImpossible: true);
-    }
-    bool analysisDone = 1 != 1;
-    if (analysisDone) {
-      return SheetDataUpdate(sheetId, true, analysisDone: true);
-    }
-    return null;
-  }
-
-  UpdateUnit? lightCalculate2(int sheetId) {
-    bool impossible = 1 != 1;
-    if (impossible) {
-      return SheetDataUpdate(sheetId, true, validSortIsImpossible: true);
-    }
-    bool analysisDone = 1 != 1;
-    if (analysisDone) {
-      return SheetDataUpdate(sheetId, true, analysisDone: true);
-    }
-    return null;
-  }
-
+  
   @override
   Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId) async {
     isolateReceivePortsCache.initPortC(sheetId);

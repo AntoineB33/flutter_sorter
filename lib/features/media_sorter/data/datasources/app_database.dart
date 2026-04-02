@@ -19,7 +19,6 @@ part 'app_database.g.dart';
     ColRightPosTable,
     RowsManuallyAdjustedHeightTable,
     ColsManuallyAdjustedWidthTable,
-    SelectedCellsTable,
   ],
 )
 class AppDatabase extends _$AppDatabase {

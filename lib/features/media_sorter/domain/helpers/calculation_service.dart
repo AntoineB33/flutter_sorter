@@ -1,10 +1,7 @@
-import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
-import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/calculate_service.dart';
-import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 
 class AnalysisReturn {

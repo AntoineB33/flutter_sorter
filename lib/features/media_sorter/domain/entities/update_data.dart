@@ -82,10 +82,8 @@ class SheetDataUpdate extends UpdateUnit {
   final String? newName;
   final String? prevName;
   final DateTime? lastOpened;
-  final int? lastRow;
-  final int? lastCol;
-  final Set<int>? usedRows;
-  final Set<int>? usedCols;
+  final List<int>? usedRows;
+  final List<int>? usedCols;
 
   final double? colHeaderHeight;
   final double? prevColHeaderHeight;
@@ -126,8 +124,6 @@ class SheetDataUpdate extends UpdateUnit {
     this.newName,
     this.prevName,
     this.lastOpened,
-    this.lastRow,
-    this.lastCol,
     this.usedRows,
     this.usedCols,
     this.historyIndex,
@@ -186,8 +182,6 @@ class SheetDataUpdate extends UpdateUnit {
       newName: newSheetDataUpdate.newName ?? newName,
       prevName: newSheetDataUpdate.prevName ?? prevName,
       lastOpened: newSheetDataUpdate.lastOpened ?? lastOpened,
-      lastRow: newSheetDataUpdate.lastRow ?? lastRow,
-      lastCol: newSheetDataUpdate.lastCol ?? lastCol,
       usedRows: newSheetDataUpdate.usedRows ?? usedRows,
       usedCols: newSheetDataUpdate.usedCols ?? usedCols,
       historyIndex: newSheetDataUpdate.historyIndex ?? historyIndex,

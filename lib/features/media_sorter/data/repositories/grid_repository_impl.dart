@@ -155,7 +155,6 @@ class GridRepositoryImpl implements GridRepository {
   @override
   void adjustRowHeightAfterUpdate(int sheetId, Map<String, UpdateUnit> updates) {
     final layout = layoutCache.getLayout(sheetId);
-    final coreSheetContent = loadedSheetsCache.getSheet(sheetId);
     for (var update in updates.values) {
       if (update is CellUpdate) {
         final int row = update.rowId;
@@ -199,7 +198,7 @@ class GridRepositoryImpl implements GridRepository {
               );
               if (heightItNeeded == currentHeight) {
                 double newHeight = heightItNeeds;
-                if (row < coreSheetContent.lastRow) {
+                if (row < rowCount(sheetId)) {
                   for (int j = 0; j < colCount(sheetId); j++) {
                     if (j == col) continue;
                     newHeight = max(

@@ -39,18 +39,6 @@ class AnalysisResultCache {
     return _getAnalysisResult(sheetId);
   }
 
-  bool validRowIndexesEmpty(int sheetId) {
-    return _getAnalysisResult(sheetId).validRowIndexes.isEmpty;
-  }
-
-  bool myRulesEmpty(int sheetId) {
-    return _getAnalysisResult(sheetId).myRules.isEmpty;
-  }
-
-  bool groupsToMaximizeEmpty(int sheetId) {
-    return _getAnalysisResult(sheetId).groupsToMaximize.isEmpty;
-  }
-
   bool isSortedWithValidSort(int sheetId) {
     return _getAnalysisResult(sheetId).sortedWithValidSort;
   }

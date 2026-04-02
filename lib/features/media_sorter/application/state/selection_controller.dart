@@ -1,4 +1,3 @@
-import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/history_usecase.dart';
@@ -27,10 +26,6 @@ class SelectionController extends ChangeNotifier {
     this.workbookUsecase,
     this.sheetDataUsecase,
   );
-
-  SelectionData getSelectionData(int sheetId) {
-    return selectionUsecase.getSelectionData(sheetId);
-  }
 
   bool isCellSelected(int row, int col) {
     return selectionUsecase

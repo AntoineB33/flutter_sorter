@@ -24,7 +24,6 @@ abstract class ILocalDataSource {
   Future<List<ColRightPosEntity>> getColRightPosEntities(int sheetId);
   Future<List<RowsManuallyAdjustedHeightEntity>> getRowsManuallyAdjustedHeightEntities(int sheetId);
   Future<List<ColsManuallyAdjustedWidthEntity>> getColsManuallyAdjustedWidthEntities(int sheetId);
-  Future<List<SelectedCellsEntity>> getSelectedCellsEntities(int sheetId);
   Future<List<SortStatusData>> getSortStatus();
   Future<void> clearAllData();
 }
@@ -304,7 +303,11 @@ class DriftLocalDataSource implements ILocalDataSource {
   Future<List<UpdateHistoriesEntity>> getUpdateHistoriesEntities(int sheetId) async {
     try {
       final query = db.select(db.updateHistoriesTable)
-        ..where((table) => table.sheetId.equals(sheetId));
+        ..where((table) => table.sheetId.equals(sheetId))
+        ..orderBy([
+          (t) => OrderingTerm.asc(t.timestamp),
+          (t) => OrderingTerm.asc(t.chronoId)
+        ]);
       final updateHistories = await query.get();
       return updateHistories;
     } on SqliteException catch (e) {
@@ -371,20 +374,6 @@ class DriftLocalDataSource implements ILocalDataSource {
   }
 
   @override
-  Future<List<SelectedCellsEntity>> getSelectedCellsEntities(int sheetId) async {
-    try {
-      final query = db.select(db.selectedCellsTable)
-        ..where((table) => table.sheetId.equals(sheetId));
-      final selectedCells = await query.get();
-      return selectedCells;
-    } on SqliteException catch (e) {
-      throw CacheException('Failed to retrieve selected cells: ${e.message}');
-    } catch (e) {
-      throw CacheException('An unknown database error occurred.');
-    }
-  }
-
-  @override
   Future<List<SortStatusData>> getSortStatus() async {
     try {
       final query = db.selectOnly(db.sheetDataTables)
@@ -421,7 +410,6 @@ class DriftLocalDataSource implements ILocalDataSource {
         await db.delete(db.colRightPosTable).go();
         await db.delete(db.rowsManuallyAdjustedHeightTable).go();
         await db.delete(db.colsManuallyAdjustedWidthTable).go();
-        await db.delete(db.selectedCellsTable).go();
       });
     } on SqliteException catch (e) {
       throw CacheException('Failed to clear all data: ${e.message}');

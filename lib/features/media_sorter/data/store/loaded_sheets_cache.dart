@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/add_update.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
@@ -23,11 +24,11 @@ class LoadedSheetsCache {
   }
 
   int rowCount(int sheetId) {
-    return getSheet(sheetId).lastRow + 1;
+    return getSheet(sheetId).usedRows.isEmpty ? 0 : getSheet(sheetId).usedRows.last + 1;
   }
 
   int colCount(int sheetId) {
-    return getSheet(sheetId).lastCol + 1;
+    return getSheet(sheetId).usedCols.isEmpty ? 0 : getSheet(sheetId).usedCols.last + 1;
   }
 
   String getCellContent(int sheetId, int row, int col) {
@@ -49,60 +50,50 @@ class LoadedSheetsCache {
   void _updateCell(Map<String, UpdateUnit> updates, int sheetId, CellUpdate update) {
     _loadedSheetsData[sheetId]!.cells[CellPosition(update.rowId, update.colId)] =
         update.newValue;
-    if (update.rowId > _loadedSheetsData[sheetId]!.lastRow) {
-      _loadedSheetsData[sheetId]!.lastRow = update.rowId;
-    } else if (update.rowId == _loadedSheetsData[sheetId]!.lastRow &&
-        update.newValue.isEmpty) {
-      while (_loadedSheetsData[sheetId]!.lastRow >= 0) {
-        for (int col = 0; col <= _loadedSheetsData[sheetId]!.lastCol; col++) {
-          if (getCellContent(sheetId, _loadedSheetsData[sheetId]!.lastRow, col)
-              .isNotEmpty) {
-            return;
-          }
+    final usedRows = _loadedSheetsData[sheetId]!.usedRows;
+    final usedCols = _loadedSheetsData[sheetId]!.usedCols;
+    List<int>? newUsedRows;
+    List<int>? newUsedCols;
+    if (update.newValue.isNotEmpty) {
+      if (!usedRows.contains(update.rowId)) {
+        usedRows.insert(lowerBound(usedRows, update.rowId), update.rowId);
+        newUsedRows = usedRows;
+      }
+      if (!usedCols.contains(update.colId)) {
+        usedCols.insert(lowerBound(usedCols, update.colId), update.colId);
+        newUsedCols = usedCols;
+      }
+    } else {
+      bool isRowUsed = false;
+      for (int row in usedRows) {
+        if (getCellContent(sheetId, row, update.colId).isNotEmpty) {
+          isRowUsed = true;
+          break;
         }
-        _loadedSheetsData[sheetId]!.lastRow--;
+      }
+      if (!isRowUsed) {
+        usedCols.remove(update.colId);
+        newUsedCols = usedCols;
+      }
+      bool isColUsed = false;
+      for (int col in usedCols) {
+        if (getCellContent(sheetId, update.rowId, col).isNotEmpty) {
+          isColUsed = true;
+          break;
+        }
+      }
+      if (!isColUsed) {
+        usedRows.remove(update.rowId);
+        newUsedRows = usedRows;
       }
     }
-    if (update.colId > _loadedSheetsData[sheetId]!.lastCol) {
-      _loadedSheetsData[sheetId]!.lastCol = update.colId;
-    } else if (update.colId == _loadedSheetsData[sheetId]!.lastCol &&
-        update.newValue.isEmpty) {
-      while (_loadedSheetsData[sheetId]!.lastCol >= 0) {
-        for (int row = 0; row <= _loadedSheetsData[sheetId]!.lastRow; row++) {
-          if (getCellContent(sheetId, row, _loadedSheetsData[sheetId]!.lastCol)
-              .isNotEmpty) {
-            return;
-          }
-        }
-        _loadedSheetsData[sheetId]!.lastCol--;
-        AddUpdate.addUpdate(updates, SheetDataUpdate(
-          sheetId,
-          true,
-          lastCol: _loadedSheetsData[sheetId]!.lastCol,
-        ));
-      }
-      if (update.newValue.isNotEmpty) {
-        final usedRows = _loadedSheetsData[sheetId]!.usedRows;
-        final usedCols = _loadedSheetsData[sheetId]!.usedCols;
-        AddUpdate.addUpdate(updates, SheetDataUpdate(
-          sheetId,
-          true,
-          usedRows: !usedRows.contains(update.rowId) ? (usedRows..add(update.rowId)) : null,
-          usedCols: !usedCols.contains(update.colId) ? (usedCols..add(update.colId)) : null,
-        ));
-      } else {
-        final usedRows = _loadedSheetsData[sheetId]!.usedRows;
-        final usedCols = _loadedSheetsData[sheetId]!.usedCols;
-        sfqsfq
-        if (usedRows.contains(update.rowId) || usedCols.contains(update.colId)) {
-          AddUpdate.addUpdate(updates, SheetDataUpdate(
-            sheetId,
-            true,
-            usedRows: usedRows.contains(update.rowId) ? (usedRows..remove(update.rowId)) : null,
-            usedCols: usedCols.contains(update.colId) ? (usedCols..remove(update.colId)) : null,
-          ));
-        }
-      }
+    if (newUsedRows != null || newUsedCols != null) {
+      AddUpdate.addUpdate(updates, SheetDataUpdate(
+        sheetId,
+        true,
+        usedRows: newUsedRows,
+        usedCols: newUsedCols,
+      ));
     }
   }
 

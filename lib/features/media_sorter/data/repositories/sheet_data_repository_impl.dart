@@ -6,6 +6,7 @@ import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/add_update.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/history_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
@@ -13,6 +14,7 @@ import 'package:trying_flutter/features/media_sorter/data/store/sorting_progress
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/history_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/layout_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
@@ -27,6 +29,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   final SortProgressCache sortProgressCache;
   final WorkbookCache workbookCache;
   final LayoutCache layoutCache;
+  final HistoryCache historyCache;
 
   int get currentSheetId => workbookCache.currentSheetId;
 
@@ -40,6 +43,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     this.sortProgressCache,
     this.workbookCache,
     this.layoutCache,
+    this.historyCache,
   );
   SelectionData get selection =>
       selectionCache.getSelectionData(currentSheetId);
@@ -171,8 +175,6 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
           lastOpened: sheetData.lastOpened,
           cells: cellMap,
           columnTypes: columnTypeMap,
-          lastRow: sheetData.lastRow,
-          lastCol: sheetData.lastCol,
           usedRows: sheetData.usedRows,
           usedCols: sheetData.usedCols,
         );
@@ -215,6 +217,21 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
           sortIndex: sheetData.sortIndex,
         );
         sortProgressCache.update(sheetId, sortProgression);
+        final historyTable = await dataSource.getUpdateHistoriesEntities(sheetId);
+        historyCache.setUpdateHistories(sheetId, 
+          HistoryData(
+            updateHistories: historyTable
+                .map((e) => UpdateData(
+                  e.chronoId,
+                  sheetId,
+                  e.updates,
+                  true,
+                  timestamp: e.timestamp,
+                ))
+                .toList(),
+            historyIndex: sheetData.historyIndex,
+          ),
+        );
         return const Right(unit);
       } on CacheException catch (e) {
         // The UI will receive this clean Failure object

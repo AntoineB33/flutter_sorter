@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'dart:collection';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
@@ -70,20 +68,30 @@ class CalculateService {
   final CoreSheetContent coreSheetContent;
   
 
-  int get rowCount => coreSheetContent.lastRow + 1;
-  int get colCount => coreSheetContent.lastCol + 1;
   Map<CellPosition, String> get table => coreSheetContent.cells;
   Map<int, ColumnType> get columnTypes => coreSheetContent.columnTypes;
   late Map<int, String> headers;
-  Set<int> get usedRows => coreSheetContent.usedRows;
-  Set<int> get usedCols => coreSheetContent.usedCols;
+  List<int> get usedRows => coreSheetContent.usedRows;
+  List<int> get usedCols => coreSheetContent.usedCols;
+  int get rowCount => usedRows.isEmpty ? 0 : usedRows.last + 1;
+  int get colCount => usedCols.isEmpty ? 0 : usedCols.last + 1;
 
   CalculateService(this.coreSheetContent) {
-    headers = {for (int colId = 0; colId <= coreSheetContent.lastCol; colId++) colId: getCellContent(0, colId)};
+    headers = {for (int colId = 0; colId < colCount; colId++) colId: getCellContent(0, colId)};
   }
 
   String getCellContent(int row, int col) {
     return table[CellPosition(row, col)] ?? "";
+  }
+
+  void setCellContent(int row, int col, String content) {
+    table[CellPosition(row, col)] = content;
+  }
+
+  void transformCell(int row, int col, Function(String) transform) {
+    String currentContent = getCellContent(row, col);
+    String newContent = transform(currentContent);
+    setCellContent(row, col, newContent);
   }
 
   AnalysisResult run() {
@@ -93,37 +101,6 @@ class CalculateService {
     );
     _getEverything(instrTable);
     getRules(result, instrTable);
-    return result;
-  }
-
-  List<String> generateUniqueStrings(int n) {
-    const charset = 'abcdefghijklmnopqrstuvwxyz';
-    List<String> result = [];
-    int length = 1;
-
-    // Dart version of the generator "product"
-    Iterable<String> product(String chars, int repeat) sync* {
-      if (repeat == 0) {
-        yield "";
-      } else {
-        for (var c in chars.split('')) {
-          for (var suffix in product(chars, repeat - 1)) {
-            yield c + suffix;
-          }
-        }
-      }
-    }
-
-    while (result.length < n) {
-      for (final combo in product(charset, length)) {
-        result.add(combo);
-        if (result.length == n) {
-          return result;
-        }
-      }
-      length++;
-    }
-
     return result;
   }
 
@@ -1392,14 +1369,14 @@ class CalculateService {
   void _getEverything(List<Map<InstrStruct, Cell>> instrTable) {
     errorRoot.newChildren!.clear();
     warningRoot.newChildren!.clear();
-    for (final row in table) {
-      for (int idx = 0; idx < row.length; idx++) {
-        row[idx] = row[idx].trim().toLowerCase();
+    for (int row in usedRows) {
+      for (int col in usedCols) {
+        transformCell(row, col, (content) => content.trim().toLowerCase());
       }
     }
     nameIndexes.clear();
     for (int index = 0; index < colCount; index++) {
-      final role = GetNames.getColumnType(_sheetContent!, index);
+      final role = GetNames.getColumnType(columnTypes, index);
       if (role == ColumnType.names) {
         nameIndexes.add(index);
       }
@@ -1414,7 +1391,7 @@ class CalculateService {
       );
     for (int i = 1; i < rowCount; i++) {
       for (int j in nameIndexes) {
-        var cellElements = table[i][j].split(";");
+        var cellElements = getCellContent(i, j).split(";");
         for (int k = 0; k < cellElements.length; k++) {
           cellElements[k] = cellElements[k].trim().toLowerCase();
           if (cellElements[k].isNotEmpty) {
