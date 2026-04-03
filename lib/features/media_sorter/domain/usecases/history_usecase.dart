@@ -12,8 +12,8 @@ class HistoryUsecase {
     return historyRepository.moveInUpdateHistory(direction);
   }
   
-  void stopEditing(bool escape, {Map<String, UpdateUnit>? updates}) {
-    historyRepository.stopEditing(escape, updates: updates);
+  void stopEditing(bool escape) {
+    saveRepository.save(historyRepository.stopEditing(escape));
   }
 
   void newPrimarySelection(int row, int col) {

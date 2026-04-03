@@ -155,8 +155,10 @@ const _$ColumnTypeEnumMap = {
 UpdateData _$UpdateDataFromJson(Map<String, dynamic> json) => UpdateData(
   (json['chronoId'] as num).toInt(),
   (json['sheetId'] as num).toInt(),
-  (json['updates'] as Map<String, dynamic>).map(
-    (k, e) => MapEntry(k, UpdateUnit.fromJson(e as Map<String, dynamic>)),
+  IMap<String, UpdateUnit>.fromJson(
+    json['updates'] as Map<String, dynamic>,
+    (value) => value as String,
+    (value) => UpdateUnit.fromJson(value as Map<String, dynamic>),
   ),
   json['addOtherwiseRemove'] as bool,
   timestamp: json['timestamp'] == null
@@ -169,16 +171,18 @@ Map<String, dynamic> _$UpdateDataToJson(UpdateData instance) =>
       'timestamp': instance.timestamp.toIso8601String(),
       'chronoId': instance.chronoId,
       'sheetId': instance.sheetId,
-      'updates': instance.updates.map((k, e) => MapEntry(k, e.toJson())),
+      'updates': instance.updates.toJson(
+        (value) => value,
+        (value) => value.toJson(),
+      ),
       'addOtherwiseRemove': instance.addOtherwiseRemove,
     };
 
 RowsBottomPosUpdate _$RowsBottomPosUpdateFromJson(Map<String, dynamic> json) =>
     RowsBottomPosUpdate(
       (json['sheetId'] as num).toInt(),
-      json['addOtherwiseRemove'] as bool,
       (json['rowIndex'] as num).toInt(),
-      (json['newBottomPos'] as num).toDouble(),
+      newBottomPos: (json['newBottomPos'] as num?)?.toDouble(),
       prevBottomPos: (json['prevBottomPos'] as num?)?.toDouble(),
     );
 
@@ -186,7 +190,6 @@ Map<String, dynamic> _$RowsBottomPosUpdateToJson(
   RowsBottomPosUpdate instance,
 ) => <String, dynamic>{
   'sheetId': instance.sheetId,
-  'addOtherwiseRemove': instance.addOtherwiseRemove,
   'rowIndex': instance.rowIndex,
   'newBottomPos': instance.newBottomPos,
   'prevBottomPos': instance.prevBottomPos,

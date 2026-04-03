@@ -1,12 +1,17 @@
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'package:meta/meta.dart';
+import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 
 abstract class HistoryRepository {
   UpdateData? moveInUpdateHistory(int direction);
-  void commitHistory(
-    Map<String, UpdateUnit> updates,
+  @useResult
+  ChangeSet commitHistory(
+    IMap<String, UpdateUnit> updates,
     int sheetId,
     bool isFromEditing,
   );
-  void stopEditing(bool escape, {Map<String, UpdateUnit>? updates});
+  @useResult
+  ChangeSet stopEditing(bool escape);
   UpdateUnit newPrimarySelection(int rowId, int colId);
 }

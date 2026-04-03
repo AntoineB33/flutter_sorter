@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/history_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/selection_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data_usecase.dart';
@@ -41,8 +40,8 @@ class SelectionController extends ChangeNotifier {
   bool isCellEditing(int row, int col) =>
       editingMode && primarySelectedCellX == row && primarySelectedCellY == col;
 
-  void stopEditing(bool escape, {Map<String, UpdateUnit>? updates}) {
-    historyUsecase.stopEditing(escape, updates: updates);
+  void stopEditing(bool escape) {
+    historyUsecase.stopEditing(escape);
     editingMode = false;
     notifyListeners();
   }

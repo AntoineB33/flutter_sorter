@@ -1,3 +1,5 @@
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
@@ -73,15 +75,12 @@ class SortUsecase {
     SortProgressDataMsg sortProgressDataMsg,
     int sheetId,
   ) {
-    Map<String, UpdateUnit> updates = {};
-    final result = sortRepository.handleSortProgressDataMsg(
+    ChangeSet changeSet = sortRepository.handleSortProgressDataMsg(
       sortProgressDataMsg,
       sheetId,
-updates
     );
-    saveRepository.save(updates);
-    return result;
-
+    saveRepository.save(changeSet);
+    return sortRepository.stopLoop(sortProgressDataMsg, sheetId);
   }
 
   bool willNextBestSortBeApplied(int sheetId) {
@@ -116,7 +115,7 @@ updates
     sortRepository.setSortedWithCurrentBestSort(sheetId, value);
   }
 
-  Map<String, UpdateUnit> sortTableWithCurrentBestSort(int sheetId) {
+  IMap<String, UpdateUnit> sortTableWithCurrentBestSort(int sheetId) {
     return sortRepository.sortTableWithCurrentBestSort(sheetId);
   }
 

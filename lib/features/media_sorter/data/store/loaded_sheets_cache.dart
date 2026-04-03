@@ -1,5 +1,7 @@
 import 'package:collection/collection.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/add_update.dart';
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'package:meta/meta.dart';
+import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
@@ -47,7 +49,9 @@ class LoadedSheetsCache {
     _loadedSheetsData[sheetId] = sheetData;
   }
 
-  void _updateCell(Map<String, UpdateUnit> updates, int sheetId, CellUpdate update) {
+  @useResult
+  ChangeSet _updateCell(int sheetId, CellUpdate update) {
+    final changeSet = ChangeSet();
     _loadedSheetsData[sheetId]!.cells[CellPosition(update.rowId, update.colId)] =
         update.newValue;
     final usedRows = _loadedSheetsData[sheetId]!.usedRows;
@@ -88,20 +92,23 @@ class LoadedSheetsCache {
       }
     }
     if (newUsedRows != null || newUsedCols != null) {
-      AddUpdate.addUpdate(updates, SheetDataUpdate(
+      changeSet.addUpdate(SheetDataUpdate(
         sheetId,
         true,
         usedRows: newUsedRows,
         usedCols: newUsedCols,
       ));
     }
+    return changeSet;
   }
 
-  void update(Map<String, UpdateUnit> updates, int sheetId) {
+  @useResult
+  ChangeSet update(IMap<String, UpdateUnit> updates, int sheetId) {
+    final changeSet = ChangeSet();
     for (var update in updates.values) {
       switch (update) {
         case CellUpdate():
-          _updateCell(updates, sheetId, update);
+          changeSet.merge(_updateCell(sheetId, update));
           break;
         case ColumnTypeUpdate():
           _setColumnType(sheetId, update);
@@ -115,6 +122,7 @@ class LoadedSheetsCache {
           break;
       }
     }
+    return changeSet;
   }
 
   void _setColumnType(int sheetId, ColumnTypeUpdate update) {

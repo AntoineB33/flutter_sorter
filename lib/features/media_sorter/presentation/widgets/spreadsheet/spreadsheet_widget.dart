@@ -191,20 +191,19 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                             widget.gridController,
                             widget.gridController.colHeaderHeight(),
                           ),
-                          cellBuilder: (context, vicinity) =>
-                              TableViewCell(
-                                child: _buildCellDispatcher(
-                                  context,
-                                  vicinity,
-                                  widget.spreadsheetCoordinator,
-                                  widget.workbookController,
-                                  widget.sheetDataController,
-                                  widget.selectionController,
-                                  widget.sheetDataController,
-                                  widget.treeController,
-                                  widget.gridController,
-                                ),
-                              ),
+                          cellBuilder: (context, vicinity) => TableViewCell(
+                            child: _buildCellDispatcher(
+                              context,
+                              vicinity,
+                              widget.spreadsheetCoordinator,
+                              widget.workbookController,
+                              widget.sheetDataController,
+                              widget.selectionController,
+                              widget.sheetDataController,
+                              widget.treeController,
+                              widget.gridController,
+                            ),
+                          ),
                         ),
                       );
                     },
@@ -284,9 +283,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     final int c = vicinity.column;
 
     if (r == 0 && c == 0) {
-      return SpreadsheetSelectAllCorner(
-        onTap: () => coordinator.selectAll(),
-      );
+      return SpreadsheetSelectAllCorner(onTap: () => coordinator.selectAll());
     }
     if (r == 0) {
       return SpreadsheetColumnHeader(
@@ -335,16 +332,16 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       onDoubleTap: () {
         coordinator.startEditing();
       },
-      onTapOutside: () => coordinator.stopEditing(false),
+      onTapOutside: () => selectionController.stopEditing(false),
       onChanged: (newValue) {
         coordinator.setCellContent(newValue);
       },
       onSave: (String newValue, {bool moveUp = false}) {
-        coordinator.onSave(newValue, moveUp);
+        coordinator.onCellSave(newValue, moveUp);
         _focusNode.requestFocus();
       },
       onEscape: () {
-        coordinator.stopEditing(true);
+        selectionController.stopEditing(true);
         _focusNode.requestFocus();
       },
     );

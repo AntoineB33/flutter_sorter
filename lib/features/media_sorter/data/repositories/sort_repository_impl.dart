@@ -1,12 +1,13 @@
 import 'dart:isolate';
 
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
+import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/calculation_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/add_update.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/isolate_receive_ports_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sorting_progress_cache.dart';
@@ -217,11 +218,11 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  bool handleSortProgressDataMsg(
+  ChangeSet handleSortProgressDataMsg(
     SortProgressDataMsg sortProgressDataMsg,
     int sheetId,
-    Map<String, UpdateUnit> updates,
   ) {
+    final changeSet = ChangeSet();
     SortProgressData sort = sortProgressDataMsg.sortProgressData;
     if (sortProgressDataMsg.newBestSortFound &&
         sortProgressCache.getSortProgressData(sheetId).bestDistFound.isEmpty) {
@@ -235,19 +236,24 @@ class SortRepositoryImpl implements SortRepository {
         }
       }
       final result = setSortedWithValidSort(sheetId, isNaturalOrderValid);
-      AddUpdate.addUpdate(updates, result);
+      changeSet.addUpdate(result);
     }
     sortProgressCache.update(sheetId, sort);
     if (!sort.hasMoreToExplore()) {
       final result = removeSortStatus(sheetId);
-      AddUpdate.addUpdate(updates, result);
+      changeSet.addUpdate(result);
       if (sort.bestDistFound.isEmpty) {
         final result = setValidSortIsImpossible(sheetId, true);
-        AddUpdate.addUpdate(updates, result);
+        changeSet.addUpdate(result);
         final result2 = setSortedWithCurrentBestSort(sheetId, true);
-        AddUpdate.addUpdate(updates, result2);
+        changeSet.addUpdate(result2);
       }
     }
+    return changeSet;
+  }
+
+  @override
+  bool stopLoop(SortProgressDataMsg sortProgressDataMsg, int sheetId) {
     if (analysisResultCache.isFindingBestSort(sheetId) &&
         sortProgressDataMsg.newBestSortFound &&
         sortProgressDataMsg.sortProgressData.bestDistFound.every(
@@ -398,7 +404,8 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  Map<String, UpdateUnit> sortTableWithCurrentBestSort(int sheetId) {
+  ChangeSet sortTableWithCurrentBestSort(int sheetId) {
+    final changeSet = ChangeSet();
     List<int> sortOrder = [0];
     AnalysisResult result = analysisResultCache.getAnalysisResult(sheetId);
     List<int> stack = result.currentBestSort!
@@ -484,6 +491,6 @@ class SortRepositoryImpl implements SortRepository {
       updates[cellUpdate.getKey()] = cellUpdate;
     }
     _sortResult(sortOrder, sheetId);
-    return updates;
+    return changeSet;
   }
 }

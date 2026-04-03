@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
+import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
@@ -107,7 +109,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void delete() {
     final updates = sheetDataController.delete();
-    applyUpdatesAndSort(updates, currentSheetId, false, false, false);
+    applyUpdatesAndSort(updates.toMap(), currentSheetId, false, false, false);
   }
 
   void paste() async {
@@ -125,7 +127,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     final cellUpdate = CellUpdate(currentSheetId, rowId, colId, newValue);
     Map<String, UpdateUnit> updates = {cellUpdate.getKey(): cellUpdate};
     applyUpdatesAndSort(
-      updates,
+      updates.lock,
       currentSheetId,
       false,
       false,
@@ -134,7 +136,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyUpdatesAndSort(
-    Map<String, UpdateUnit> updates,
+    IMap<String, UpdateUnit> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromSort,
@@ -197,7 +199,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyUpdatesNoSort(
-    Map<String, UpdateUnit> updates,
+    IMap<String, UpdateUnit> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,
@@ -430,10 +432,10 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     Map<String, UpdateUnit> updates = {
       for (var update in updatesLst) update.getKey(): update,
     };
-    applyUpdatesAndSort(updates, currentSheetId, false, false, false);
+    applyUpdatesAndSort(updates.lock, currentSheetId, false, false, false);
   }
 
-  void onSave(String newValue, bool moveUp) {
+  void onCellSave(String newValue, bool moveUp) {
     if (moveUp) {
       setPrimarySelection(
         max(0, primarySelectedCellX - 1),
@@ -450,16 +452,10 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     selectionController.stopEditing(true);
   }
 
-  void stopEditing(bool escape) {
-    Map<String, UpdateData> updates = {};
-    selectionController.stopEditing(escape, updates: updates);
-    sheetDataController.save(updates);
-  }
-
   void setColumnType(int col, ColumnType type) {
     final update = ColumnTypeUpdate(currentSheetId, col, type);
     final updates = {update.getKey(): update};
-    applyUpdatesAndSort(updates, currentSheetId, false, false, false);
+    applyUpdatesAndSort(updates.lock, currentSheetId, false, false, false);
   }
 
   void createSheetByName(String name) {

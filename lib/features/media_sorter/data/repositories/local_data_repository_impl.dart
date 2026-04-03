@@ -3,7 +3,6 @@ import 'package:flutter/widgets.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/add_update.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
@@ -48,7 +47,7 @@ class LocalDataRepositoryImpl
   @override
   void save(ChangeSet updates) {
     for (var update in updates.toMap().values) {
-      AddUpdate.addUpdate(_pendingSaves, update);
+      _pendingSaves.update(update.getKey(), (existing) => existing.merge(update), ifAbsent: () => update);
       _saveTrigger.add(null);
     }
   }

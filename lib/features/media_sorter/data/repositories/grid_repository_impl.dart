@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:meta/meta.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
@@ -157,7 +156,7 @@ class GridRepositoryImpl implements GridRepository {
 
   @override
   ChangeSet adjustRowHeightAfterUpdate(int sheetId, IMap<String, UpdateUnit> updates) {
-    final ChangeSet changeSet = ChangeSet();
+    final ChangeSet changeSet = ChangeSet(initialChanges: updates);
     final layout = layoutCache.getLayout(sheetId);
     for (var update in updates.values) {
       if (update is CellUpdate) {

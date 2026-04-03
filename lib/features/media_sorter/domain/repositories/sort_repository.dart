@@ -1,5 +1,8 @@
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
+import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 
@@ -17,12 +20,14 @@ abstract class SortRepository {
   void setToApplyOnce(int sheetId, bool toApplyOnce);
   void setSortedWithCurrentBestSort(int sheetId, bool value);
   bool isSortedWithValidSort(int sheetId);
-  bool handleSortProgressDataMsg(
+  @useResult
+  ChangeSet handleSortProgressDataMsg(
     SortProgressDataMsg sortProgressDataMsg,
     int sheetId,
-    Map<String, UpdateUnit> updates,
   );
-  Map<String, UpdateUnit> sortTableWithCurrentBestSort(int sheetId);
+  bool stopLoop(SortProgressDataMsg sortProgressDataMsg, int sheetId);
+  @useResult
+  ChangeSet sortTableWithCurrentBestSort(int sheetId);
   Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId);
   bool canFindBetterSort(int sheetId);
   bool isApplyBetterSortButtonLocked();

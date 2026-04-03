@@ -1,9 +1,11 @@
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:meta/meta.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/add_update.dart';
+import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/history_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
+import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/history_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
@@ -41,27 +43,31 @@ class HistoryRepositoryImpl implements HistoryRepository {
     return updateData;
   }
 
-  void _removeLastHistoryEditingMode(Map<String, UpdateUnit> updates) {
+  @useResult
+  ChangeSet _removeLastHistoryBcEdit() {
     UpdateData lastUpdateData = historyData.updateHistories.last;
     lastUpdateData.addOtherwiseRemove = false;
     historyData.updateHistories.removeAt(historyData.historyIndex);
     historyData.historyIndex--;
-    AddUpdate.addUpdate(updates, lastUpdateData);
+    ChangeSet changeSet = ChangeSet();
+    changeSet.addUpdate(lastUpdateData);
     final historyChg = SheetDataUpdate(
       currentSheetId,
       true,
       historyIndex: historyData.historyIndex,
     );
-    AddUpdate.addUpdate(updates, historyChg);
+    changeSet.addUpdate(historyChg);
+    return changeSet;
   }
 
   @override
-  void commitHistory(
-    Map<String, UpdateUnit> updates,
+  ChangeSet commitHistory(
+    IMap<String, UpdateUnit> updates,
     int sheetId,
     bool isFromEditing,
   ) {
     final updateData = UpdateData(chronoIdCounter++, sheetId, updates, true);
+    final changeSet = ChangeSet(initialChanges: updates);
     if (isFromEditing) {
       if (isLastChangeInSameEditingMode) {
         CellUpdate cellUpdate = updates.values.first as CellUpdate;
@@ -69,16 +75,13 @@ class HistoryRepositoryImpl implements HistoryRepository {
         CellUpdate prevCellUpdate =
             lastUpdateData.updates.values.first as CellUpdate;
         if (cellUpdate.newValue == prevCellUpdate.prevValue) {
-          _removeLastHistoryEditingMode(updates);
           isLastChangeInSameEditingMode = false;
-          return;
+          return _removeLastHistoryBcEdit();
         }
         cellUpdate.prevValue = prevCellUpdate.prevValue;
         historyData.updateHistories[historyData.historyIndex] = updateData;
-        lastUpdateData.addOtherwiseRemove = false;
-        AddUpdate.addUpdate(updates, lastUpdateData);
-        AddUpdate.addUpdate(updates, updateData);
-        return;
+        changeSet.addUpdate(updateData);
+        return changeSet;
       }
       isLastChangeInSameEditingMode = true;
     }
@@ -89,7 +92,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
         i++
       ) {
         historyData.updateHistories[i].addOtherwiseRemove = false;
-        AddUpdate.addUpdate(updates, historyData.updateHistories[i]);
+        changeSet.addUpdate(historyData.updateHistories[i]);
       }
       historyData.updateHistories = historyData.updateHistories.sublist(
         0,
@@ -97,11 +100,11 @@ class HistoryRepositoryImpl implements HistoryRepository {
       );
     }
     historyData.updateHistories.add(updateData);
-    AddUpdate.addUpdate(updates, updateData);
+    changeSet.addUpdate(updateData);
     historyData.historyIndex++;
-    if (historyData.historyIndex == 100) {
+    if (historyData.historyIndex == SpreadsheetConstants.historyLimit) {
       historyData.updateHistories.first.addOtherwiseRemove = false;
-      AddUpdate.addUpdate(updates, historyData.updateHistories.first);
+      changeSet.addUpdate(historyData.updateHistories.first);
       historyData.updateHistories.removeAt(0);
       historyData.historyIndex--;
     }
@@ -110,7 +113,8 @@ class HistoryRepositoryImpl implements HistoryRepository {
       true,
       historyIndex: historyData.historyIndex,
     );
-    AddUpdate.addUpdate(updates, historyChg);
+    changeSet.addUpdate(historyChg);
+    return changeSet;
   }
 
   @override
@@ -123,7 +127,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
     }
     selectionData.primSelHistory.add(CellPosition(rowId, colId));
     selectionData = selectionData.copyWith(primSelHistoryId: selectionData.primSelHistoryId + 1);
-    const int primSelHistoryLimit = 30;
+    const int primSelHistoryLimit = SpreadsheetConstants.primSelHistoryLimit;
     if (selectionData.primSelHistoryId == primSelHistoryLimit) {
       selectionData.primSelHistory.removeAt(0);
       selectionData = selectionData.copyWith(primSelHistoryId: selectionData.primSelHistoryId - 1);
@@ -137,10 +141,12 @@ class HistoryRepositoryImpl implements HistoryRepository {
   }
 
   @override
-  void stopEditing(bool escape, {Map<String, UpdateUnit>? updates}) {
+  ChangeSet stopEditing(bool escape) {
+    ChangeSet changeSet = ChangeSet();
     if (escape && isLastChangeInSameEditingMode) {
-      _removeLastHistoryEditingMode(updates!);
+      changeSet = _removeLastHistoryBcEdit();
     }
     isLastChangeInSameEditingMode = false;
+    return changeSet;
   }
 }

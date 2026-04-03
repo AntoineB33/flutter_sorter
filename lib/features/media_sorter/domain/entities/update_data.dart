@@ -1,4 +1,5 @@
 
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'dart:core';
 import 'package:json_annotation/json_annotation.dart';
@@ -289,7 +290,7 @@ class UpdateData extends UpdateUnit {
   final DateTime timestamp;
   final int chronoId;
   final int sheetId;
-  final Map<String, UpdateUnit> updates;
+  final IMap<String, UpdateUnit> updates;
   bool addOtherwiseRemove;
   UpdateData(
     this.chronoId,
@@ -308,14 +309,18 @@ class UpdateData extends UpdateUnit {
   UpdateUnit merge(UpdateUnit newUpdate) {
     final newUpdateData = newUpdate as UpdateData;
 
+    final Map<String, UpdateUnit> mergedUpdates = {};
     for (var entry in updates.entries) {
-      updates.update(entry.key, (existing) => existing.merge(entry.value));
+      mergedUpdates[entry.key] = entry.value;
+    }
+    for (var entry in newUpdateData.updates.entries) {
+      mergedUpdates.update(entry.key, (existing) => existing.merge(entry.value), ifAbsent: () => entry.value);
     }
     // 1. Merge constructor parameters
     final merged = UpdateData(
       chronoId,
       sheetId,
-      updates,
+      mergedUpdates.lock,
       addOtherwiseRemove || newUpdateData.addOtherwiseRemove,
       timestamp: newUpdateData.timestamp.isAfter(timestamp) ? newUpdateData.timestamp : timestamp, // Keep the latest timestamp
     );

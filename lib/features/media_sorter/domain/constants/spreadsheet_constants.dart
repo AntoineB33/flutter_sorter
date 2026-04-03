@@ -2,6 +2,9 @@ class SpreadsheetConstants {
   // Prevent instantiation
   const SpreadsheetConstants._();
 
+  static const int historyLimit = 100;
+  static const int primSelHistoryLimit = 30;
+
   static const patternDistance =
       r'^(?<prefix>as far as possible from )(?<any>any)?(?<att>.+)$';
   static const patternAreas =

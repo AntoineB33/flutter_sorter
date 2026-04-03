@@ -128,7 +128,7 @@ Future<void> initMediaSorterDependencies() async {
     saveRepository,
   );
   HistoryUsecase historyUsecase = HistoryUsecase(historyRepository, saveRepository);
-  GridUsecase gridUsecase = GridUsecase(gridRepository, treeRepository);
+  GridUsecase gridUsecase = GridUsecase(gridRepository, treeRepository, saveRepository);
   SelectionUsecase selectionUsecase = SelectionUsecase(
     selectionRepository,
     sheetDataRepository,

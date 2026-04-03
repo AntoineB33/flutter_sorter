@@ -1,10 +1,11 @@
 import 'dart:async';
 
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
+import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
-import 'package:trying_flutter/features/media_sorter/data/services/add_update.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/history_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
@@ -114,7 +115,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  Future<Either<Failure, Map<String, UpdateUnit>>> pasteSelection() async {
+  Future<Either<Failure, IMap<String, UpdateUnit>>> pasteSelection() async {
     final text = await _clipboardService.getText();
     if (text == null) return Left(ClipboardEmptyFailure());
     // if contains "
@@ -134,7 +135,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         updates[cellUpdate.getKey()] = cellUpdate;
       }
     }
-    return Right(updates);
+    return Right(updates.lock);
   }
 
   @override
@@ -247,8 +248,8 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  Map<String, UpdateUnit> delete() {
-    Map<String, UpdateUnit> updates = {};
+  ChangeSet delete() {
+    final updates = ChangeSet();
     for (CellPosition cellPos
         in selectionCache.getSelectionData(currentSheetId).selectedCells) {
       final cellUpdate = CellUpdate(
@@ -257,13 +258,13 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         cellPos.colId,
         '',
       );
-      AddUpdate.addUpdate(updates, cellUpdate);
+      updates.addUpdate(cellUpdate);
     }
     return updates;
   }
 
   @override
-  void update(Map<String, UpdateUnit> updates, int sheetId) {
-    loadedSheetsCache.update(updates, sheetId);
+  ChangeSet update(IMap<String, UpdateUnit> updates, int sheetId) {
+    return loadedSheetsCache.update(updates, sheetId);
   }
 }

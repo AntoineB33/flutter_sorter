@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:drift/drift.dart';
@@ -86,19 +87,19 @@ class SheetColumnTypesTable extends Table {
 }
 
 class UpdateUnitMapConverter
-    extends TypeConverter<Map<String, UpdateUnit>, String> {
+    extends TypeConverter<IMap<String, UpdateUnit>, String> {
   const UpdateUnitMapConverter();
 
   @override
-  Map<String, UpdateUnit> fromSql(String fromDb) {
+  IMap<String, UpdateUnit> fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as Map<String, dynamic>;
     return decoded.map((key, value) {
       return MapEntry(key, UpdateUnit.fromJson(value as Map<String, dynamic>));
-    });
+    }).lock;
   }
 
   @override
-  String toSql(Map<String, UpdateUnit> value) {
+  String toSql(IMap<String, UpdateUnit> value) {
     final encoded = value.map((key, val) => MapEntry(key, val.toJson()));
     return jsonEncode(encoded);
   }

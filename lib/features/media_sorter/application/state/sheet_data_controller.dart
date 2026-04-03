@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
+import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data_usecase.dart';
@@ -23,7 +26,7 @@ class SheetDataController extends ChangeNotifier {
     return sheetDataUsecase.getSheet(currentSheetId);
   }
 
-  Future<Either<Failure, Map<String, UpdateUnit>>> paste() {
+  Future<Either<Failure, IMap<String, UpdateUnit>>> paste() {
     return sheetDataUsecase.paste();
   }
 
@@ -35,11 +38,12 @@ class SheetDataController extends ChangeNotifier {
     return sheetDataUsecase.getCellContent(row, col, currentSheetId);
   }
 
-  Map<String, UpdateUnit> delete() {
+  @useResult
+  ChangeSet delete() {
     return sheetDataUsecase.delete();
   }
 
-  void applyUpdatesNoSort(Map<String, UpdateUnit> updates, 
+  void applyUpdatesNoSort(IMap<String, UpdateUnit> updates, 
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,
@@ -50,9 +54,5 @@ class SheetDataController extends ChangeNotifier {
       isFromHistory,
       isFromEditing,
     );
-  }
-
-  void save(Map<String, UpdateUnit> updates) {
-    sheetDataUsecase.save(updates);
   }
 }
