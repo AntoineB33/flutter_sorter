@@ -1,6 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:meta/meta.dart';
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
@@ -153,7 +156,8 @@ class GridRepositoryImpl implements GridRepository {
   }
 
   @override
-  void adjustRowHeightAfterUpdate(int sheetId, Map<String, UpdateUnit> updates) {
+  ChangeSet adjustRowHeightAfterUpdate(int sheetId, IMap<String, UpdateUnit> updates) {
+    final ChangeSet changeSet = ChangeSet();
     final layout = layoutCache.getLayout(sheetId);
     for (var update in updates.values) {
       if (update is CellUpdate) {
@@ -183,6 +187,13 @@ class GridRepositoryImpl implements GridRepository {
                 ? GetDefaultSizes.getDefaultRowHeight()
                 : layout.rowsBottomPos[i - 1] +
                       GetDefaultSizes.getDefaultRowHeight();
+            changeSet.addUpdate(
+              RowsBottomPosUpdate(
+                sheetId,
+                i,
+                newBottomPos: layout.rowsBottomPos[i],
+              ),
+            );
           }
         }
 
@@ -216,6 +227,13 @@ class GridRepositoryImpl implements GridRepository {
                   double heightDiff = currentHeight - newHeight;
                   for (int r = row; r < layout.rowsBottomPos.length; r++) {
                     layout.rowsBottomPos[r] -= heightDiff;
+                    changeSet.addUpdate(
+                      RowsBottomPosUpdate(
+                        sheetId,
+                        r,
+                        newBottomPos: layout.rowsBottomPos[r],
+                      ),
+                    );
                   }
                   if (newHeight == GetDefaultSizes.getDefaultRowHeight()) {
                     int removeFrom = layout.rowsBottomPos.length;
@@ -229,6 +247,14 @@ class GridRepositoryImpl implements GridRepository {
                       }
                       removeFrom--;
                     }
+                    for (int i = removeFrom; i < layout.rowsBottomPos.length; i++) {
+                      changeSet.addUpdate(
+                        RowsBottomPosUpdate(
+                          sheetId,
+                          i,
+                        ),
+                      );
+                    }
                     layout.rowsBottomPos = layout.rowsBottomPos.sublist(
                       0,
                       removeFrom,
@@ -240,6 +266,13 @@ class GridRepositoryImpl implements GridRepository {
               double heightDiff = heightItNeeds - currentHeight;
               for (int r = row; r < layout.rowsBottomPos.length; r++) {
                 layout.rowsBottomPos[r] = layout.rowsBottomPos[r] + heightDiff;
+                changeSet.addUpdate(
+                  RowsBottomPosUpdate(
+                    sheetId,
+                    r,
+                    newBottomPos: layout.rowsBottomPos[r],
+                  ),
+                );
               }
             }
           }
@@ -250,10 +283,17 @@ class GridRepositoryImpl implements GridRepository {
                   GetDefaultSizes.getDefaultRowHeight() &&
               row > 0) {
             layout.rowsBottomPos.removeLast();
+            changeSet.addUpdate(
+              RowsBottomPosUpdate(
+                sheetId,
+                i,
+              ),
+            );
             i--;
           }
         }
       }
     }
+    return changeSet;
   }
 }

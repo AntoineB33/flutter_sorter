@@ -34,8 +34,8 @@ class SortController extends ChangeNotifier {
     super.dispose();
   }
 
-  bool getAnalysisDone(int sheetId) {
-    return sortUseCase.getAnalysisDone(sheetId);
+  bool getAnalysIsDone(int sheetId) {
+    return sortUseCase.getAnalysIsDone(sheetId);
   }
 
   Future<void> analyze(int sheetId) {
@@ -101,8 +101,8 @@ class SortController extends ChangeNotifier {
     return sortUseCase.isCurrentBestSortAlwaysApplied(currentSheetId);
   }
 
-  void findBestSortToggle(bool value) {
-    sortUseCase.setFindingBestSort(currentSheetId, value);
+  void setFindingBestSort(int sheetId, bool value) {
+    sortUseCase.setFindingBestSort(sheetId, value);
   }
 
   void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {

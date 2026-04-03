@@ -44,8 +44,8 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  bool getAnalysisDone(int sheetId) {
-    return sortStatusCache.getAnalysisDone(sheetId);
+  bool getAnalysIsDone(int sheetId) {
+    return sortStatusCache.getAnalysIsDone(sheetId);
   }
 
   @override
@@ -178,7 +178,7 @@ class SortRepositoryImpl implements SortRepository {
           table.sheetId: SortStatus(
             table.toApplyNextBestSort,
             table.toAlwaysApplyCurrentBestSort,
-            table.analysisDone,
+            table.analysIsDone,
           )
       };
       sortStatusCache.setSortStatus(sortStatusBySheet);

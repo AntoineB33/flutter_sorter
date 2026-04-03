@@ -28,8 +28,8 @@ class SortUsecase {
     return sortRepository.isReordering(currentSheetId);
   }
 
-  bool getAnalysisDone(int sheetId) {
-    return sortRepository.getAnalysisDone(sheetId);
+  bool getAnalysIsDone(int sheetId) {
+    return sortRepository.getAnalysIsDone(sheetId);
   }
 
   Future<void> analyze(int sheetId) {

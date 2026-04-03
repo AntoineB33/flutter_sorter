@@ -33,8 +33,8 @@ class SortStatusCache {
     return _sortStatusBySheet.keys.toList();
   }
 
-  bool getAnalysisDone(int sheetId) {
-    return _sortStatusBySheet[sheetId]?.analysisDone ?? false;
+  bool getAnalysIsDone(int sheetId) {
+    return _sortStatusBySheet[sheetId]?.analysIsDone ?? false;
   }
 
   bool isCurrentBestSortAlwaysApplied(int sheetId) {
@@ -54,12 +54,12 @@ class SortStatusCache {
   }
 
   void isAnalysing(int sheetId) {
-    _sortStatusBySheet[sheetId]!.copyWith(analysisDone: false);
+    _sortStatusBySheet[sheetId]!.copyWith(analysIsDone: false);
   }
 
   void analysisIsDone(int sheetId, bool toFindValidSort) {
     if (toFindValidSort) {
-      _sortStatusBySheet[sheetId]!.copyWith(analysisDone: true);
+      _sortStatusBySheet[sheetId]!.copyWith(analysIsDone: true);
     } else {
       removeSortStatus(sheetId);
     }

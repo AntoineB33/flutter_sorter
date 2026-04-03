@@ -70,7 +70,7 @@ class TreeRepositoryImpl implements TreeRepository {
 
   @override
   bool isRowValid(int rowId) {
-    if (sortStatusCache.getAnalysisDone(currentSheetId)) {
+    if (sortStatusCache.getAnalysIsDone(currentSheetId)) {
       return rowId < analysisCache.isMedium(currentSheetId).length &&
           analysisCache.isMedium(currentSheetId)[rowId];
     }

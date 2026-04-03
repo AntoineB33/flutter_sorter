@@ -9,12 +9,12 @@ part of 'sort_status.dart';
 SortStatus _$SortStatusFromJson(Map<String, dynamic> json) => SortStatus(
   json['toApplyNextBestSort'] as bool,
   json['toAlwaysApplyCurrentBestSort'] as bool,
-  json['analysisDone'] as bool,
+  json['analysIsDone'] as bool,
 );
 
 Map<String, dynamic> _$SortStatusToJson(SortStatus instance) =>
     <String, dynamic>{
       'toApplyNextBestSort': instance.toApplyNextBestSort,
       'toAlwaysApplyCurrentBestSort': instance.toAlwaysApplyCurrentBestSort,
-      'analysisDone': instance.analysisDone,
+      'analysIsDone': instance.analysIsDone,
     };

@@ -6,12 +6,12 @@ part 'sort_status.g.dart';
 class SortStatus {
   final bool toApplyNextBestSort;
   final bool toAlwaysApplyCurrentBestSort;
-  final bool analysisDone;
+  final bool analysIsDone;
 
   SortStatus(
     this.toApplyNextBestSort,
     this.toAlwaysApplyCurrentBestSort,
-    this.analysisDone,
+    this.analysIsDone,
   );
 
   factory SortStatus.initial() {
@@ -21,12 +21,12 @@ class SortStatus {
   SortStatus copyWith({
     bool? toApplyNextBestSort,
     bool? toAlwaysApplyCurrentBestSort,
-    bool? analysisDone,
+    bool? analysIsDone,
   }) {
     return SortStatus(
       toApplyNextBestSort ?? this.toApplyNextBestSort,
       toAlwaysApplyCurrentBestSort ?? this.toAlwaysApplyCurrentBestSort,
-      analysisDone ?? this.analysisDone,
+      analysIsDone ?? this.analysIsDone,
     );
   }
 

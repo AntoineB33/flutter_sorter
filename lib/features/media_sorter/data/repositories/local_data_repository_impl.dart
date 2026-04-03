@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/add_update.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
@@ -41,12 +42,12 @@ class LocalDataRepositoryImpl
 
   @override
   void saveUpdate(UpdateUnit update) {
-    save({update.getKey(): update});
+    save(ChangeSet()..addUpdate(update));
   }
 
   @override
-  void save(Map<String, UpdateUnit> updates) {
-    for (var update in updates.values) {
+  void save(ChangeSet updates) {
+    for (var update in updates.toMap().values) {
       AddUpdate.addUpdate(_pendingSaves, update);
       _saveTrigger.add(null);
     }

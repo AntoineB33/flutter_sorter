@@ -96,8 +96,8 @@ class DriftLocalDataSource implements ILocalDataSource {
                   item.toAlwaysApplyCurrentBestSort != null
                   ? Value(item.toAlwaysApplyCurrentBestSort!)
                   : Value.absent(),
-              analysisDone: item.analysisDone != null
-                  ? Value(item.analysisDone!)
+              analysIsDone: item.analysIsDone != null
+                  ? Value(item.analysIsDone!)
                   : Value.absent(),
             );
             if (item.addOtherwiseRemove) {
@@ -170,9 +170,9 @@ class DriftLocalDataSource implements ILocalDataSource {
             final companion = RowsBottomPosTableCompanion(
               sheetId: Value(item.sheetId),
               rowIndex: Value(item.rowIndex),
-              bottomPos: Value(item.newBottomPos),
+              bottomPos: item.newBottomPos != null ? Value(item.newBottomPos!) : Value.absent(),
             );
-            if (item.addOtherwiseRemove) {
+            if (item.newBottomPos != null) {
               batch.insert(
                 db.rowsBottomPosTable,
                 companion,
@@ -377,7 +377,7 @@ class DriftLocalDataSource implements ILocalDataSource {
   Future<List<SortStatusData>> getSortStatus() async {
     try {
       final query = db.selectOnly(db.sheetDataTables)
-        ..addColumns([db.sheetDataTables.id, db.sheetDataTables.sortInProgress, db.sheetDataTables.toApplyNextBestSort, db.sheetDataTables.toAlwaysApplyCurrentBestSort, db.sheetDataTables.analysisDone])
+        ..addColumns([db.sheetDataTables.id, db.sheetDataTables.sortInProgress, db.sheetDataTables.toApplyNextBestSort, db.sheetDataTables.toAlwaysApplyCurrentBestSort, db.sheetDataTables.analysIsDone])
           ..where(db.sheetDataTables.sortInProgress.equals(true));
       final result = await query.get();
       if (result.isEmpty) {
@@ -388,7 +388,7 @@ class DriftLocalDataSource implements ILocalDataSource {
                 sheetId: row.read(db.sheetDataTables.id)!,
                 toApplyNextBestSort: row.read(db.sheetDataTables.toApplyNextBestSort) ?? false,
                 toAlwaysApplyCurrentBestSort: row.read(db.sheetDataTables.toAlwaysApplyCurrentBestSort) ?? false,
-                analysisDone: row.read(db.sheetDataTables.analysisDone) ?? false,
+                analysIsDone: row.read(db.sheetDataTables.analysIsDone) ?? false,
               ))
           .toList();
     } on SqliteException catch (e) {

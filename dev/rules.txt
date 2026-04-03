@@ -9,10 +9,11 @@ Repository Impl --> holds pointers to LocalDataSource and RemoteDataSource
 
 
 
+Functions in repositories that make updates to save locally :
 
-extensions :
-    Dart Unused Code
-        excluions :
-            !Unused public method '[]' - not referenced in workspace
-        to ignore all :
-            !Dart Unused Code
+  @override
+  @useResult
+  ChangeSet adjustRowHeightAfterUpdate(int sheetId, IMap<String, UpdateUnit> updates) {
+
+
+

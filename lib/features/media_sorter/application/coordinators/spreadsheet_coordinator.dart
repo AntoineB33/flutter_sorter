@@ -79,6 +79,13 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     }
   }
 
+  void findBestSortToggle(bool value) {
+    sortController.setFindingBestSort(currentSheetId, value);
+    if (value) {
+      launchCalculation(currentSheetId);
+    }
+  }
+
   void afterLoadingSheet() {
     updateTreeAndRowColCount();
     gridController.scrollToLastSelection();
@@ -140,7 +147,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   Future<void> launchCalculation(int sheetId) async {
-    if (!sortController.getAnalysisDone(sheetId)) {
+    if (!sortController.getAnalysIsDone(sheetId)) {
       await sortController.analyze(sheetId);
     }
     try {

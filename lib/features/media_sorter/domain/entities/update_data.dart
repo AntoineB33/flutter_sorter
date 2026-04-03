@@ -116,7 +116,7 @@ class SheetDataUpdate extends UpdateUnit {
   final bool? sortInProgress;
   final bool? toApplyNextBestSort;
   final bool? toAlwaysApplyCurrentBestSort;
-  final bool? analysisDone;
+  final bool? analysIsDone;
 
   SheetDataUpdate(
     this.sheetId,
@@ -151,7 +151,7 @@ class SheetDataUpdate extends UpdateUnit {
     this.sortInProgress,
     this.toApplyNextBestSort,
     this.toAlwaysApplyCurrentBestSort,
-    this.analysisDone,
+    this.analysIsDone,
   });
 
   factory SheetDataUpdate.initial(int sheetId) {
@@ -334,16 +334,14 @@ class UpdateData extends UpdateUnit {
 class RowsBottomPosUpdate extends UpdateUnit {
   final RecordType type = RecordType.rowsBottomPosUpdate;
   final int sheetId;
-  bool addOtherwiseRemove;
   final int rowIndex;
-  final double newBottomPos;
-  double? prevBottomPos;
+  final double? newBottomPos;
+  final double? prevBottomPos;
 
   RowsBottomPosUpdate(
     this.sheetId,
-    this.addOtherwiseRemove,
-    this.rowIndex,
-    this.newBottomPos, {
+    this.rowIndex, {
+    this.newBottomPos,
     this.prevBottomPos,
   });
 
@@ -357,10 +355,10 @@ class RowsBottomPosUpdate extends UpdateUnit {
     final newRowsBottomPosUpdate = newUpdate as RowsBottomPosUpdate;
     return RowsBottomPosUpdate(
       sheetId,
-      addOtherwiseRemove || newRowsBottomPosUpdate.addOtherwiseRemove,
       rowIndex,
-      newRowsBottomPosUpdate.newBottomPos, // Always take the latest value
-    )..prevBottomPos = newRowsBottomPosUpdate.prevBottomPos ?? prevBottomPos; // Keep the original prevBottomPos if the new one is null
+      newBottomPos: newRowsBottomPosUpdate.newBottomPos,
+      prevBottomPos: newRowsBottomPosUpdate.prevBottomPos ?? prevBottomPos
+    );
   }
 
   factory RowsBottomPosUpdate.fromJson(Map<String, dynamic> json) =>

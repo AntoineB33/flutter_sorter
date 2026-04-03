@@ -68,7 +68,7 @@ SheetDataUpdate _$SheetDataUpdateFromJson(
   sortInProgress: json['sortInProgress'] as bool?,
   toApplyNextBestSort: json['toApplyNextBestSort'] as bool?,
   toAlwaysApplyCurrentBestSort: json['toAlwaysApplyCurrentBestSort'] as bool?,
-  analysisDone: json['analysisDone'] as bool?,
+  analysIsDone: json['analysIsDone'] as bool?,
 );
 
 Map<String, dynamic> _$SheetDataUpdateToJson(SheetDataUpdate instance) =>
@@ -105,7 +105,7 @@ Map<String, dynamic> _$SheetDataUpdateToJson(SheetDataUpdate instance) =>
       'sortInProgress': instance.sortInProgress,
       'toApplyNextBestSort': instance.toApplyNextBestSort,
       'toAlwaysApplyCurrentBestSort': instance.toAlwaysApplyCurrentBestSort,
-      'analysisDone': instance.analysisDone,
+      'analysIsDone': instance.analysIsDone,
     };
 
 CellUpdate _$CellUpdateFromJson(Map<String, dynamic> json) => CellUpdate(

@@ -137,7 +137,7 @@ class _SideMenuState extends State<SideMenu> {
                       const SizedBox(width: 8),
                       Switch(
                         value: sortController.isFindingBestSort(),
-                        onChanged: sortController.findBestSortToggle,
+                        onChanged: coordinator.findBestSortToggle,
                       ),
                     ],
                   ),
