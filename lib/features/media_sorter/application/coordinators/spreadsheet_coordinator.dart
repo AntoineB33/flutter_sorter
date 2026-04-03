@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
-import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
@@ -192,7 +191,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void sortTableWithCurrentBestSort(int sheetId) {
     final updates = sortController.sortTableWithCurrentBestSort(sheetId);
-    applyUpdatesNoSort(updates, sheetId, false, false);
+    applyUpdatesNoSort(updates.toMap(), sheetId, false, false);
     if (sortController.getToApplyOnce(sheetId)) {
       sortController.setToApplyOnce(sheetId, false);
     }

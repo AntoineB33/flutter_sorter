@@ -1,7 +1,7 @@
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/material.dart';
+import 'package:meta/meta.dart';
+import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/helpers/calculation_service.dart';
 import 'dart:async';
 
@@ -58,7 +58,8 @@ class SortController extends ChangeNotifier {
     return sortUseCase.willNextBestSortBeApplied(sheetId);
   }
 
-  IMap<String, UpdateUnit> sortTableWithCurrentBestSort(int sheetId) {
+  @useResult
+  ChangeSet sortTableWithCurrentBestSort(int sheetId) {
     return sortUseCase.sortTableWithCurrentBestSort(sheetId);
   }
 

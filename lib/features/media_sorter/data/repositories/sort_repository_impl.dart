@@ -1,6 +1,5 @@
 import 'dart:isolate';
 
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
