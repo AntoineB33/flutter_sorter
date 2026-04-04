@@ -1,5 +1,6 @@
 
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'dart:core';
 import 'package:json_annotation/json_annotation.dart';
@@ -106,7 +107,7 @@ class SheetDataUpdate extends UpdateUnit {
   final List<List<List<int>>>? validAreas;
   final int? sortIndex;
 
-  final String? analysisResult;
+  final AnalysisResult? analysisResult;
 
   final bool? validSortIsImpossible;
   final bool? isFindingBestSort;

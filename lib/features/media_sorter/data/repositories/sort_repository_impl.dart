@@ -63,7 +63,7 @@ class SortRepositoryImpl implements SortRepository {
       update = SheetDataUpdate(
         sheetId,
         true,
-        analysisResult: resultB.result.toString(),
+        analysisResult: resultB.result,
       );
     }
     if (!resultB.toFindValidSort) {
