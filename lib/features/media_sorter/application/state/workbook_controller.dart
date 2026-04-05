@@ -33,7 +33,7 @@ class WorkbookController extends ChangeNotifier {
     return workbookUseCase.loadSheet(sheetId, init);
   }
 
-  Future<void> createSheetByName(String name) async {
+  void createSheetByName(String name) {
     workbookUseCase.createSheetByName(name);
   }
 }

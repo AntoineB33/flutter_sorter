@@ -59,7 +59,9 @@ SheetDataUpdate _$SheetDataUpdateFromJson(
       )
       .toList(),
   sortIndex: (json['sortIndex'] as num?)?.toInt(),
-  analysisResult: json['analysisResult'] as String?,
+  analysisResult: json['analysisResult'] == null
+      ? null
+      : AnalysisResult.fromJson(json['analysisResult'] as Map<String, dynamic>),
   validSortIsImpossible: json['validSortIsImpossible'] as bool?,
   isFindingBestSort: json['isFindingBestSort'] as bool?,
   sortedWithValidSort: json['sortedWithValidSort'] as bool?,

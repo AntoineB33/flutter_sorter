@@ -132,7 +132,7 @@ class DriftLocalDataSource implements ILocalDataSource {
             final companion = SheetColumnTypesTableCompanion(
               sheetId: Value(item.sheetId),
               columnIndex: Value(item.colId),
-              columnType: Value(item.newColumnType.toString()),
+              columnType: Value(item.newColumnType),
             );
             if (item.newColumnType != ColumnType.attributes) {
               batch.insert(
@@ -241,9 +241,6 @@ class DriftLocalDataSource implements ILocalDataSource {
       final query = db.selectOnly(db.sheetDataTables)
         ..addColumns([db.sheetDataTables.id, db.sheetDataTables.lastOpened]);
       final result = await query.get();
-      if (result.isEmpty) {
-        throw CacheException("No sheets found");
-      }
       return result
           .map((row) => SheetIdAndLastOpened(row.read(db.sheetDataTables.id)!, row.read(db.sheetDataTables.lastOpened)!))
           .toList();
@@ -380,9 +377,6 @@ class DriftLocalDataSource implements ILocalDataSource {
         ..addColumns([db.sheetDataTables.id, db.sheetDataTables.sortInProgress, db.sheetDataTables.toApplyNextBestSort, db.sheetDataTables.toAlwaysApplyCurrentBestSort, db.sheetDataTables.analysIsDone])
           ..where(db.sheetDataTables.sortInProgress.equals(true));
       final result = await query.get();
-      if (result.isEmpty) {
-        throw CacheException("No sort status found for the provided sheet IDs");
-      }
       return result
           .map((row) => SortStatusData(
                 sheetId: row.read(db.sheetDataTables.id)!,

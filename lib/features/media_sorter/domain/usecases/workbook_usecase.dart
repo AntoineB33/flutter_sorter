@@ -3,6 +3,7 @@ import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
@@ -15,6 +16,7 @@ class WorkbookUsecase {
   final SelectionRepository selectionRepository;
   final SortRepository sortRepository;
   final SheetDataRepository sheetDataRepository;
+  final GridRepository gridRepository;
   final SaveRepository saveRepository;
 
   WorkbookUsecase(
@@ -22,6 +24,7 @@ class WorkbookUsecase {
     this.selectionRepository,
     this.sortRepository,
     this.sheetDataRepository,
+    this.gridRepository,
     this.saveRepository,
   );
 
@@ -49,10 +52,16 @@ class WorkbookUsecase {
     result = await workbookRepository.loadRecentSheetIds();
     if (result.isLeft()) {
       logger.e('Failed to load recent sheet IDs.');
+    } else if (workbookRepository.getRecentSheetIds().isEmpty) {
+      createDefaultSheet();
     }
   }
 
-  Future<void> createSheetByName(String name) async {
+  void createDefaultSheet() {
+    createSheetByName(SpreadsheetConstants.defaultSheetTitle);
+  }
+
+  void createSheetByName(String name) {
     loadSheet(workbookRepository.getNewSheetId(), false);
   }
 
@@ -63,7 +72,7 @@ class WorkbookUsecase {
           sheetId,
         );
         if (result.isLeft()) {
-          createSheetByName(SpreadsheetConstants.defaultSheetTitle);
+          createDefaultSheet();
           return result;
         }
       }
@@ -75,6 +84,7 @@ class WorkbookUsecase {
       sheetDataRepository.addNewSheet(sheetId);
       sortRepository.addNewAnalysisResult(sheetId);
       selectionRepository.setSelectionData(sheetId, SelectionData.empty());
+      gridRepository.initializeGrid(sheetId);
       saveRepository.saveUpdate(SheetDataUpdate.initial(sheetId));
     }
     return Right(unit);

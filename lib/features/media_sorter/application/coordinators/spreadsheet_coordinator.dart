@@ -18,6 +18,9 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/tr
 import 'package:trying_flutter/utils/logger.dart';
 
 class SpreadsheetCoordinator extends ChangeNotifier {
+  bool pageReady = false;
+  bool get isPageReady => pageReady;
+
   final HistoryController historyController;
   final SheetDataController sheetDataController;
   final GridController gridController;
@@ -39,7 +42,6 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     this.workbookController,
     this.treeController,
   ) {
-    init();
     historyController.addListener(() {
       notifyListeners();
     });
@@ -61,12 +63,15 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     treeController.addListener(() {
       notifyListeners();
     });
+    init();
   }
 
   Future<void> init() async {
-    await workbookController.clearAllData();
+    // await workbookController.clearAllData();
     await workbookController.loadRecentSheetIds();
     await loadSheet(workbookController.currentSheetId, true);
+    pageReady = true;
+    notifyListeners();
     sortController.loadSortStatus();
     for (var sheetId in sortController.getRecentSheetIds()) {
       launchCalculation(sheetId);

@@ -35,7 +35,7 @@ import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 
-final sl = GetIt.instance; // sl = Service Locator
+final slMediaSorter = GetIt.instance; // sl = Service Locator
 
 Future<void> initMediaSorterDependencies() async {
   IsolateReceivePortsCache isolateReceivePortsCache =
@@ -114,7 +114,7 @@ Future<void> initMediaSorterDependencies() async {
   );
 
   SortUsecase sortUsecase = SortUsecase(
-      saveRepository,
+    saveRepository,
     sortRepository,
     sheetDataRepository,
     workbookRepository,
@@ -127,8 +127,15 @@ Future<void> initMediaSorterDependencies() async {
     sheetDataRepository,
     saveRepository,
   );
-  HistoryUsecase historyUsecase = HistoryUsecase(historyRepository, saveRepository);
-  GridUsecase gridUsecase = GridUsecase(gridRepository, treeRepository, saveRepository);
+  HistoryUsecase historyUsecase = HistoryUsecase(
+    historyRepository,
+    saveRepository,
+  );
+  GridUsecase gridUsecase = GridUsecase(
+    gridRepository,
+    treeRepository,
+    saveRepository,
+  );
   SelectionUsecase selectionUsecase = SelectionUsecase(
     selectionRepository,
     sheetDataRepository,
@@ -186,27 +193,29 @@ Future<void> initMediaSorterDependencies() async {
     treeController,
   );
 
-  sl.registerLazySingleton<SpreadsheetCoordinator>(
-    () => spreadsheetCoordinator,
+  slMediaSorter.registerLazySingleton<SpreadsheetCoordinator>(() => spreadsheetCoordinator);
+  slMediaSorter.registerLazySingleton<WorkbookController>(
+    () => workbookController,
   );
-  sl.registerLazySingleton<WorkbookController>(() => workbookController);
-  sl.registerLazySingleton<SheetDataController>(() => sheetDataController);
-  sl.registerLazySingleton<GridController>(() => gridController);
-  sl.registerLazySingleton<TreeController>(() => treeController);
-  sl.registerLazySingleton<SelectionController>(() => selectionController);
-  sl.registerLazySingleton<SheetDataUsecase>(() => sheetDataUsecase);
+  slMediaSorter.registerLazySingleton<SheetDataController>(
+    () => sheetDataController,
+  );
+  slMediaSorter.registerLazySingleton<GridController>(() => gridController);
+  slMediaSorter.registerLazySingleton<TreeController>(() => treeController);
+  slMediaSorter.registerLazySingleton<SelectionController>(
+    () => selectionController,
+  );
+  slMediaSorter.registerLazySingleton<SheetDataUsecase>(() => sheetDataUsecase);
 
-  sl.registerLazySingleton<LocalDataRepositoryImpl>(
+  slMediaSorter.registerLazySingleton<LocalDataRepositoryImpl>(
     () => saveRepository,
     dispose: (repo) => repo.dispose(),
   );
-  sl.registerLazySingleton<SelectionRepositoryImpl>(
+  slMediaSorter.registerLazySingleton<SelectionRepositoryImpl>(
     () => selectionRepository,
   );
-  sl.registerLazySingleton<SheetDataRepositoryImpl>(
+  slMediaSorter.registerLazySingleton<SheetDataRepositoryImpl>(
     () => sheetDataRepository,
   );
-  sl.registerLazySingleton<SortRepositoryImpl>(
-    () => sortRepository,
-  );
+  slMediaSorter.registerLazySingleton<SortRepositoryImpl>(() => sortRepository);
 }
