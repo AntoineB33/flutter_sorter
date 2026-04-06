@@ -1,5 +1,6 @@
 import 'dart:isolate';
 
+import 'package:trying_flutter/features/media_sorter/data/models/isolate_message.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/calculate_service.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
@@ -13,11 +14,11 @@ class AnalysisReturn {
 }
 
 class CalculationService {
-  static Future<void> runCalculation(List<dynamic> args) async {
-    SendPort sendPort = args[0];
-    CoreSheetContent sheetContent = args[1];
-    // AnalysisResult prevResult = args[2];
-    
+  static Future<void> runCalculation(IsolateMessage args) async {
+    SendPort sendPort = args.sendPort;
+    CoreSheetContent sheetContent = args.sheetContent;
+    // AnalysisResult prevResult = args.prevResult;
+
     final worker = CalculateService(sheetContent);
     AnalysisResult result = worker.run();
     Isolate.exit(

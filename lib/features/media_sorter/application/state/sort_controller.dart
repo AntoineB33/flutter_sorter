@@ -83,8 +83,8 @@ class SortController extends ChangeNotifier {
     return sortUseCase.isSortedWithValidSort(currentSheetId);
   }
 
-  bool isApplyBetterSortButtonLocked() {
-    return sortUseCase.isApplyBetterSortButtonLocked();
+  bool isReorderBetterButtonLocked() {
+    return sortUseCase.isReorderBetterButtonLocked();
   }
 
   bool sortedWithCurrentBestSort(int sheetId) {

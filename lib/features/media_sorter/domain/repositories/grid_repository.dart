@@ -13,4 +13,5 @@ abstract class GridRepository {
   int minCols(int sheetId, int colCount, double width);
   double getTargetLeft(int sheetId, int colId);
   double getTargetTop(int sheetId, int rowId);
+  void setLayout(int sheetId, LayoutData layoutData);
 }

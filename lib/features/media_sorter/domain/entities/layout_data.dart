@@ -18,4 +18,17 @@ class LayoutData {
     required this.scrollOffsetX,
     required this.scrollOffsetY,
   });
+
+  factory LayoutData.empty() {
+    return LayoutData(
+      rowsBottomPos: [],
+      colRightPos: [],
+      rowsManuallyAdjustedHeight: [],
+      colsManuallyAdjustedWidth: [],
+      colHeaderHeight: 0,
+      rowHeaderWidth: 0,
+      scrollOffsetX: 0,
+      scrollOffsetY: 0,
+    );
+  }
 }

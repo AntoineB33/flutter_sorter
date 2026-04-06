@@ -14,6 +14,7 @@ class IsolateReceivePortsCache {
   final Map<int, IsolateReceivePorts> _isolatePorts = {};
 
   void cancelB(int sheetId) {
+    _isolatePorts[sheetId] ??= IsolateReceivePorts();
     if (_isolatePorts[sheetId]!._isolateB != null) {
       // Kill the isolate immediately
       _isolatePorts[sheetId]!._isolateB!.kill(priority: Isolate.immediate);

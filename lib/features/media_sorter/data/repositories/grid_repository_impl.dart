@@ -295,4 +295,9 @@ class GridRepositoryImpl implements GridRepository {
     }
     return changeSet;
   }
+
+  @override
+  void setLayout(int sheetId, LayoutData layoutData) {
+    layoutCache.setLayout(sheetId, layoutData);
+  }
 }

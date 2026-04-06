@@ -7,6 +7,7 @@ import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/calculation_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/isolate_message.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/isolate_receive_ports_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sorting_progress_cache.dart';
@@ -40,7 +41,10 @@ class SortRepositoryImpl implements SortRepository {
 
   @override
   bool isReordering(int sheetId) {
-    return sortStatusCache.isReordering(sheetId);
+    return sortStatusCache.containsSheet(sheetId) && (
+      sortStatusCache.getToApplyOnce(sheetId) ||
+      analysisResultCache.isCurrentBestSortAlwaysApplied(sheetId)
+    );
   }
 
   @override
@@ -89,22 +93,21 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  bool isApplyBetterSortButtonLocked() {
-    return canFindBetterSort(currentSheetId) ||
+  bool isReorderBetterButtonLocked() {
+    return !canFindBetterSort(currentSheetId) ||
         isCalculating(currentSheetId) &&
-            sortStatusCache.willNextBestSortBeApplied(currentSheetId);
+            willNextBestSortBeApplied(currentSheetId);
+  }
+
+  @override
+  bool willNextBestSortBeApplied(int sheetId) {
+    return sortStatusCache.getToApplyOnce(sheetId) ||
+        analysisResultCache.isCurrentBestSortAlwaysApplied(sheetId);
   }
 
   @override
   bool sortedWithCurrentBestSort(int sheetId) {
     return analysisResultCache.sortedWithCurrentBestSort(sheetId);
-  }
-
-  @override
-  bool isApplyBetterSortButtonInAction() {
-    return isCalculating(currentSheetId) &&
-        (sortStatusCache.getToApplyOnce(currentSheetId) ||
-            sortStatusCache.isCurrentBestSortAlwaysApplied(currentSheetId));
   }
 
   @override
@@ -133,9 +136,6 @@ class SortRepositoryImpl implements SortRepository {
   @override
   bool isCurrentBestSortAlwaysApplied(int sheetId) =>
       sortStatusCache.isCurrentBestSortAlwaysApplied(sheetId);
-  @override
-  bool willNextBestSortBeApplied(int sheetId) =>
-      sortStatusCache.willNextBestSortBeApplied(sheetId);
   @override
   bool getToApplyOnce(int sheetId) => sortStatusCache.getToApplyOnce(sheetId);
   @override
@@ -177,7 +177,6 @@ class SortRepositoryImpl implements SortRepository {
         for (var table in tables)
           table.sheetId: SortStatus(
             table.toApplyNextBestSort,
-            table.toAlwaysApplyCurrentBestSort,
             table.analysIsDone,
           )
       };
@@ -298,11 +297,11 @@ class SortRepositoryImpl implements SortRepository {
 
     isolateReceivePortsCache.setIsolateB(
       sheetId,
-      await Isolate.spawn(CalculationService.runCalculation, [
+      await Isolate.spawn(CalculationService.runCalculation, IsolateMessage(
         isolateReceivePortsCache.getReceivePortB(sheetId).sendPort,
-        loadedSheetsCache.getCells(sheetId),
+        loadedSheetsCache.getSheet(sheetId),
         result,
-      ]),
+      )),
     );
 
     AnalysisReturn analysisReturn = await isolateReceivePortsCache
@@ -323,7 +322,7 @@ class SortRepositoryImpl implements SortRepository {
     for (int i = 0; i < rowCount; i++) {
       newInd[sortOrder[i]] = i;
     }
-    result.tableToAtt = List.generate(
+    result.tableToAtt..clear()..addAll(List.generate(
       rowCount,
       (i) => List.generate(
         colCount,
@@ -333,11 +332,11 @@ class SortRepositoryImpl implements SortRepository {
           ),
         ),
       ),
-    );
+    ));
     result.names.forEach((key, value) {
       value.rowId = newInd[value.rowId];
     });
-    result.formatedTable = List.generate(
+    result.formatedTable..clear()..addAll(List.generate(
       rowCount,
       (i) => List.generate(
         colCount,
@@ -348,7 +347,7 @@ class SortRepositoryImpl implements SortRepository {
               .toList(),
         ),
       ),
-    );
+    ));
     result.attToRefFromAttColToCol.forEach((key, value) {
       if (key.rowId != null) {
         key.rowId = newInd[key.rowId!];
@@ -368,7 +367,7 @@ class SortRepositoryImpl implements SortRepository {
     for (int id = 0; id < result.validRowIndexes.length; id++) {
       result.validRowIndexes[id] = newInd[result.validRowIndexes[id]];
     }
-    result.colToAtt = Map.fromEntries(
+    result.colToAtt..clear()..addAll(Map.fromEntries(
       result.colToAtt.entries.map(
         (e) => MapEntry(
           e.key,
@@ -380,8 +379,8 @@ class SortRepositoryImpl implements SortRepository {
           ),
         ),
       ),
-    );
-    result.myRules = Map.fromEntries(
+    ));
+    result.myRules..clear()..addAll(Map.fromEntries(
       result.myRules.entries.map(
         (e) => MapEntry(
           newInd[e.key],
@@ -392,14 +391,14 @@ class SortRepositoryImpl implements SortRepository {
           ),
         ),
       ),
-    );
-    result.groupsToMaximize = result.groupsToMaximize
+    ));
+    result.groupsToMaximize..clear()..addAll(result.groupsToMaximize
         .map((group) => group.map((id) => newInd[id]).toList())
-        .toList();
-    result.validAreas = List.generate(
+        .toList());
+    result.validAreas..clear()..addAll(List.generate(
       rowCount,
       (i) => result.validAreas[sortOrder[i]],
-    );
+    ));
   }
 
   @override

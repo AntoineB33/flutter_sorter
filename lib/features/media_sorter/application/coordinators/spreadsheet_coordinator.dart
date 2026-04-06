@@ -290,7 +290,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     }
   }
 
-  void applyBetterSortButton() {
+  void reorderBetterButton() {
     if (!sortController.sortedWithCurrentBestSort(currentSheetId)) {
       sortTableWithCurrentBestSort(currentSheetId);
     } else {

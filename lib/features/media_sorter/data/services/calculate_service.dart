@@ -1359,10 +1359,10 @@ class CalculateService {
     }
     int index = 0;
     instrTable.retainWhere((_) => isMedium[index++]);
-    result.validAreas = List.generate(
+    result.validAreas..clear()..addAll(List.generate(
       instrTable.length,
       (index) => List.generate(instrTable.length, (i) => i),
-    );
+    ));
     return;
   }
 
@@ -1479,7 +1479,7 @@ class CalculateService {
     List<Map<InstrStruct, Cell>> instrTable,
   ) {
     int nVal = instrTable.length;
-    result.myRules = {};
+    result.myRules.clear();
     for (int rowId = 0; rowId < nVal; rowId++) {
       result.myRules[rowId] = {};
       for (final instr in instrTable[rowId].keys) {

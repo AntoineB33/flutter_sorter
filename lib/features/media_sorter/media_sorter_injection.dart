@@ -125,6 +125,7 @@ Future<void> initMediaSorterDependencies() async {
     selectionRepository,
     sortRepository,
     sheetDataRepository,
+    gridRepository,
     saveRepository,
   );
   HistoryUsecase historyUsecase = HistoryUsecase(
@@ -193,7 +194,9 @@ Future<void> initMediaSorterDependencies() async {
     treeController,
   );
 
-  slMediaSorter.registerLazySingleton<SpreadsheetCoordinator>(() => spreadsheetCoordinator);
+  slMediaSorter.registerLazySingleton<SpreadsheetCoordinator>(
+    () => spreadsheetCoordinator,
+  );
   slMediaSorter.registerLazySingleton<WorkbookController>(
     () => workbookController,
   );

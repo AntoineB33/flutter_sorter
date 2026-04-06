@@ -381,7 +381,6 @@ class DriftLocalDataSource implements ILocalDataSource {
           .map((row) => SortStatusData(
                 sheetId: row.read(db.sheetDataTables.id)!,
                 toApplyNextBestSort: row.read(db.sheetDataTables.toApplyNextBestSort) ?? false,
-                toAlwaysApplyCurrentBestSort: row.read(db.sheetDataTables.toAlwaysApplyCurrentBestSort) ?? false,
                 analysIsDone: row.read(db.sheetDataTables.analysIsDone) ?? false,
               ))
           .toList();

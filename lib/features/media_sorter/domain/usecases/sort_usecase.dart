@@ -46,16 +46,12 @@ class SortUsecase {
     return sortRepository.isSortedWithValidSort(sheetId);
   }
 
-  bool isApplyBetterSortButtonLocked() {
-    return sortRepository.isApplyBetterSortButtonLocked();
+  bool isReorderBetterButtonLocked() {
+    return sortRepository.isReorderBetterButtonLocked();
   }
 
   bool sortedWithCurrentBestSort(int sheetId) {
     return sortRepository.sortedWithCurrentBestSort(sheetId);
-  }
-
-  bool isApplyBetterSortButtonInAction() {
-    return sortRepository.isApplyBetterSortButtonInAction();
   }
 
   void setFindingBestSort(int sheetId, bool value) {

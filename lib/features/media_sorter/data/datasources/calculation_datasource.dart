@@ -265,6 +265,9 @@ class CalculationDatasource {
   }
 
   static ({bool success, int newDistCheckId}) getDist(List<List<int>> groupAttribution, List<List<int>> lastOccurrence, List<int> lastOccurrenceIds, List<int> bestSortFound, List<int> currentDist, int id, int distCheckId) {
+    if (groupAttribution.isEmpty) {
+      return (success: true, newDistCheckId: distCheckId);
+    }
     bool success = true;
     int newDistCheckId = distCheckId;
     for (int group in groupAttribution[id]) {

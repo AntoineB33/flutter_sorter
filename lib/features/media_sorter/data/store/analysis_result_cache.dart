@@ -43,12 +43,19 @@ class AnalysisResultCache {
     return _getAnalysisResult(sheetId).sortedWithValidSort;
   }
 
+  bool isCurrentBestSortAlwaysApplied(int sheetId) {
+    return _getAnalysisResult(sheetId).toAlwaysApplyCurrentBestSort;
+  }
+
   void setSortedWithCurrentBestSort(int sheetId, bool value) {
-    _getAnalysisResult(sheetId).sortedWithCurrentBestSort = value;
+    updateResults(
+      sheetId,
+       _getAnalysisResult(sheetId).merge(sortedWithCurrentBestSort: value),
+    );
   }
 
   void setFindingBestSort(int sheetId, bool findingBestSort) {
-    _analysisResults[sheetId]!.isFindingBestSort = findingBestSort;
+    updateResults(sheetId, _getAnalysisResult(sheetId).merge(isFindingBestSort: findingBestSort));
   }
 
   void updateResults(int sheetId, AnalysisResult newResult) {
@@ -56,7 +63,7 @@ class AnalysisResultCache {
   }
 
   void setSortedWithValidSort(int sheetId, bool sorted) {
-    _analysisResults[sheetId]!.sortedWithValidSort = sorted;
+    updateResults(sheetId, _getAnalysisResult(sheetId).merge(sortedWithValidSort: sorted));
   }
 
   void addNewAnalysisResult(int sheetId) {
@@ -64,7 +71,7 @@ class AnalysisResultCache {
   }
 
   void setValidSortIsImpossible(int sheetId, bool impossible) {
-    _analysisResults[sheetId]!.validSortIsImpossible = impossible;
+    updateResults(sheetId, _getAnalysisResult(sheetId).merge(validSortIsImpossible: impossible));
   }
 
   AnalysisResultCache(this.loadedSheetsDataStore);

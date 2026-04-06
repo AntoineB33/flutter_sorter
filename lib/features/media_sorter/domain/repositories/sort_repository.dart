@@ -28,9 +28,8 @@ abstract class SortRepository {
   ChangeSet sortTableWithCurrentBestSort(int sheetId);
   Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId);
   bool canFindBetterSort(int sheetId);
-  bool isApplyBetterSortButtonLocked();
+  bool isReorderBetterButtonLocked();
   bool sortedWithCurrentBestSort(int sheetId);
-  bool isApplyBetterSortButtonInAction();
   void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply);
   void removeSortStatus(int sheetId);
   void addNewAnalysisResult(int sheetId);

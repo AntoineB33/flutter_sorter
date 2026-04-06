@@ -280,13 +280,11 @@ class AnalysisResultConverter extends TypeConverter<AnalysisResult, String> {
 class SortStatusData {
   final int sheetId;
   final bool toApplyNextBestSort;
-  final bool toAlwaysApplyCurrentBestSort;
   final bool analysIsDone;
 
   SortStatusData({
     required this.sheetId,
     required this.toApplyNextBestSort,
-    required this.toAlwaysApplyCurrentBestSort,
     required this.analysIsDone,
   });
 }
