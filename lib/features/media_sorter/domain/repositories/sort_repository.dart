@@ -7,12 +7,12 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progre
 abstract class SortRepository {
   bool isReordering(int sheetId);
   bool getAnalysIsDone(int sheetId);
+  bool getBestSortPossibleFound(int sheetId);
   Future<void> analyze(int sheetId);
   List<int> getSheetIds();
   Future<Either<Failure, void>> loadSortStatus();
   bool getToApplyOnce(int sheetId);
   bool isCalculating(int sheetId);
-  bool isCurrentBestSortAlwaysApplied(int sheetId);
   bool willNextBestSortBeApplied(int sheetId);
   bool isFindingBestSort(int sheetId);
   void setToApplyOnce(int sheetId, bool toApplyOnce);
@@ -27,7 +27,8 @@ abstract class SortRepository {
   @useResult
   ChangeSet sortTableWithCurrentBestSort(int sheetId);
   Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId);
-  bool canFindBetterSort(int sheetId);
+  bool betterSortNotImpossible(int sheetId);
+  bool isCurrentBestSortAlwaysApplied(int sheetId);
   bool isReorderBetterButtonLocked();
   bool sortedWithCurrentBestSort(int sheetId);
   void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply);

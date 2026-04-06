@@ -67,7 +67,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   Future<void> init() async {
-    // await workbookController.clearAllData();
+    await workbookController.clearAllData();
     await workbookController.loadRecentSheetIds();
     await loadSheet(workbookController.currentSheetId, true);
     pageReady = true;
@@ -155,6 +155,9 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   Future<void> launchCalculation(int sheetId) async {
     if (!sortController.getAnalysIsDone(sheetId)) {
       await sortController.analyze(sheetId);
+    }
+    if (sortController.getBestSortPossibleFound(sheetId)) {
+      return;
     }
     try {
       await for (final SortProgressDataMsg sortProgressDataMsg

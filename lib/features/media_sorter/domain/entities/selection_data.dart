@@ -15,7 +15,7 @@ class SelectionData {
   SelectionData.empty()
       :
       selectedCells = <CellPosition>{},
-      primSelHistory = [],
+      primSelHistory = [CellPosition(0, 0)],
       primSelHistoryId = -1;
 
   SelectionData copyWith({

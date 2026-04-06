@@ -10,12 +10,6 @@ import 'package:trying_flutter/features/media_sorter/presentation/controllers/tr
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
 import 'analysis_tree_node.dart';
 
-enum ButtonState {
-  available,   // Can be clicked
-  impossible,  // Cannot be clicked (e.g., missing form fields)
-  completed    // Cannot be clicked (action already triggered)
-}
-
 class SideMenu extends StatefulWidget {
   const SideMenu({super.key});
 

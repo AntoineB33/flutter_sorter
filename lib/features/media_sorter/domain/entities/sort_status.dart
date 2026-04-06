@@ -23,7 +23,6 @@ class SortStatus {
   }) {
     return SortStatus(
       toApplyNextBestSort ?? this.toApplyNextBestSort,
-      toAlwaysApplyCurrentBestSort ?? this.toAlwaysApplyCurrentBestSort,
       analysIsDone ?? this.analysIsDone,
     );
   }

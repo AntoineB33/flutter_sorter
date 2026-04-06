@@ -34,6 +34,10 @@ class SortUsecase {
     return sortRepository.getAnalysIsDone(sheetId);
   }
 
+  bool getBestSortPossibleFound(int sheetId) {
+    return sortRepository.getBestSortPossibleFound(sheetId);
+  }
+
   Future<void> analyze(int sheetId) {
     return sortRepository.analyze(sheetId);
   }
@@ -56,7 +60,9 @@ class SortUsecase {
 
   void setFindingBestSort(int sheetId, bool value) {
     sortRepository.setFindingBestSort(sheetId, value);
-    saveRepository.saveUpdate(SheetDataUpdate(sheetId, true, isFindingBestSort: value));
+    saveRepository.saveUpdate(
+      SheetDataUpdate(sheetId, true, isFindingBestSort: value),
+    );
   }
 
   void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
@@ -96,7 +102,7 @@ class SortUsecase {
   }
 
   bool canFindBetterSort(int sheetId) {
-    return sortRepository.canFindBetterSort(sheetId);
+    return sortRepository.betterSortNotImpossible(sheetId);
   }
 
   bool isCurrentBestSortAlwaysApplied(int sheetId) {

@@ -19,11 +19,7 @@ class SortController extends ChangeNotifier {
 
   int get currentSheetId => workbookUsecase.currentSheetId;
 
-  SortController(
-    this.sheetDataUsecase,
-    this.sortUseCase,
-    this.workbookUsecase,
-  );
+  SortController(this.sheetDataUsecase, this.sortUseCase, this.workbookUsecase);
 
   List<int> getRecentSheetIds() {
     return workbookUsecase.getRecentSheetIds();
@@ -37,6 +33,10 @@ class SortController extends ChangeNotifier {
 
   bool getAnalysIsDone(int sheetId) {
     return sortUseCase.getAnalysIsDone(sheetId);
+  }
+
+  bool getBestSortPossibleFound(int sheetId) {
+    return sortUseCase.getBestSortPossibleFound(sheetId);
   }
 
   Future<void> analyze(int sheetId) {

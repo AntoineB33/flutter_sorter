@@ -41,10 +41,9 @@ class SortRepositoryImpl implements SortRepository {
 
   @override
   bool isReordering(int sheetId) {
-    return sortStatusCache.containsSheet(sheetId) && (
-      sortStatusCache.getToApplyOnce(sheetId) ||
-      analysisResultCache.isCurrentBestSortAlwaysApplied(sheetId)
-    );
+    return sortStatusCache.containsSheet(sheetId) &&
+        (sortStatusCache.getToApplyOnce(sheetId) ||
+            analysisResultCache.isCurrentBestSortAlwaysApplied(sheetId));
   }
 
   @override
@@ -53,22 +52,26 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
+  bool getBestSortPossibleFound(int sheetId) {
+    return analysisResultCache.bestSortPossibleFound(sheetId);
+  }
+
+  @override
   @useResult
   Future<UpdateUnit?> analyze(int sheetId) async {
+    UpdateUnit? update;
+    if (loadedSheetsCache.rowCount(sheetId) == 0) {
+      
+    }
     isolateReceivePortsCache.cancelB(sheetId);
     AnalysisReturn resultB = await runHeavyCalculationB(
       sheetId,
       analysisResultCache.getAnalysisResult(sheetId),
     );
     sortStatusCache.analysisIsDone(sheetId, resultB.toFindValidSort);
-    UpdateUnit? update;
     if (resultB.changed) {
       analysisResultCache.updateResults(sheetId, resultB.result);
-      update = SheetDataUpdate(
-        sheetId,
-        true,
-        analysisResult: resultB.result,
-      );
+      update = SheetDataUpdate(sheetId, true, analysisResult: resultB.result);
     }
     if (!resultB.toFindValidSort) {
       return update;
@@ -86,17 +89,20 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  bool canFindBetterSort(int sheetId) {
+  bool betterSortNotImpossible(int sheetId) {
     return !sortProgressCache.isValidSortImpossible(sheetId) &&
         (!analysisResultCache.bestSortPossibleFound(sheetId) ||
             !analysisResultCache.sortedWithCurrentBestSort(sheetId));
   }
 
   @override
+  bool isCurrentBestSortAlwaysApplied(int sheetId) {
+    return analysisResultCache.isCurrentBestSortAlwaysApplied(sheetId);
+  }
+
+  @override
   bool isReorderBetterButtonLocked() {
-    return !canFindBetterSort(currentSheetId) ||
-        isCalculating(currentSheetId) &&
-            willNextBestSortBeApplied(currentSheetId);
+    return sortProgressCache.isValidSortImpossible(currentSheetId) || analysisResultCache.sortedWithCurrentBestSort(currentSheetId) && analysisResultCache.bestSortPossibleFound(currentSheetId);
   }
 
   @override
@@ -132,10 +138,7 @@ class SortRepositoryImpl implements SortRepository {
   void addNewAnalysisResult(int sheetId) {
     analysisResultCache.addNewAnalysisResult(sheetId);
   }
-
-  @override
-  bool isCurrentBestSortAlwaysApplied(int sheetId) =>
-      sortStatusCache.isCurrentBestSortAlwaysApplied(sheetId);
+  
   @override
   bool getToApplyOnce(int sheetId) => sortStatusCache.getToApplyOnce(sheetId);
   @override
@@ -178,7 +181,7 @@ class SortRepositoryImpl implements SortRepository {
           table.sheetId: SortStatus(
             table.toApplyNextBestSort,
             table.analysIsDone,
-          )
+          ),
       };
       sortStatusCache.setSortStatus(sortStatusBySheet);
       return const Right(unit);
@@ -186,7 +189,7 @@ class SortRepositoryImpl implements SortRepository {
       return Left(DatabaseFailure(e.message));
     }
   }
-  
+
   @override
   Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId) async {
     isolateReceivePortsCache.initPortC(sheetId);
@@ -208,11 +211,7 @@ class SortRepositoryImpl implements SortRepository {
   @useResult
   UpdateUnit setSortedWithValidSort(int sheetId, bool sorted) {
     analysisResultCache.setSortedWithValidSort(sheetId, sorted);
-    return SheetDataUpdate(
-      sheetId,
-      true,
-      sortedWithValidSort: sorted,
-    );
+    return SheetDataUpdate(sheetId, true, sortedWithValidSort: sorted);
   }
 
   @override
@@ -265,11 +264,7 @@ class SortRepositoryImpl implements SortRepository {
 
   UpdateUnit setValidSortIsImpossible(int sheetId, bool impossible) {
     analysisResultCache.setValidSortIsImpossible(sheetId, impossible);
-    return SheetDataUpdate(
-      sheetId,
-      true,
-      validSortIsImpossible: impossible,
-    );
+    return SheetDataUpdate(sheetId, true, validSortIsImpossible: impossible);
   }
 
   @override
@@ -297,11 +292,14 @@ class SortRepositoryImpl implements SortRepository {
 
     isolateReceivePortsCache.setIsolateB(
       sheetId,
-      await Isolate.spawn(CalculationService.runCalculation, IsolateMessage(
-        isolateReceivePortsCache.getReceivePortB(sheetId).sendPort,
-        loadedSheetsCache.getSheet(sheetId),
-        result,
-      )),
+      await Isolate.spawn(
+        CalculationService.runCalculation,
+        IsolateMessage(
+          isolateReceivePortsCache.getReceivePortB(sheetId).sendPort,
+          loadedSheetsCache.getSheet(sheetId),
+          result,
+        ),
+      ),
     );
 
     AnalysisReturn analysisReturn = await isolateReceivePortsCache
@@ -322,32 +320,40 @@ class SortRepositoryImpl implements SortRepository {
     for (int i = 0; i < rowCount; i++) {
       newInd[sortOrder[i]] = i;
     }
-    result.tableToAtt..clear()..addAll(List.generate(
-      rowCount,
-      (i) => List.generate(
-        colCount,
-        (j) => Set<Attribute>.from(
-          result.tableToAtt[sortOrder[i]][j].map(
-            (e) => e.rowId != null ? Attribute.row(newInd[e.rowId!]) : e,
+    result.tableToAtt
+      ..clear()
+      ..addAll(
+        List.generate(
+          rowCount,
+          (i) => List.generate(
+            colCount,
+            (j) => Set<Attribute>.from(
+              result.tableToAtt[sortOrder[i]][j].map(
+                (e) => e.rowId != null ? Attribute.row(newInd[e.rowId!]) : e,
+              ),
+            ),
           ),
         ),
-      ),
-    ));
+      );
     result.names.forEach((key, value) {
       value.rowId = newInd[value.rowId];
     });
-    result.formatedTable..clear()..addAll(List.generate(
-      rowCount,
-      (i) => List.generate(
-        colCount,
-        (j) => StrInt(
-          strings: result.formatedTable[sortOrder[i]][j].strings,
-          integers: result.formatedTable[sortOrder[i]][j].integers
-              .map((e) => newInd[e])
-              .toList(),
+    result.formatedTable
+      ..clear()
+      ..addAll(
+        List.generate(
+          rowCount,
+          (i) => List.generate(
+            colCount,
+            (j) => StrInt(
+              strings: result.formatedTable[sortOrder[i]][j].strings,
+              integers: result.formatedTable[sortOrder[i]][j].integers
+                  .map((e) => newInd[e])
+                  .toList(),
+            ),
+          ),
         ),
-      ),
-    ));
+      );
     result.attToRefFromAttColToCol.forEach((key, value) {
       if (key.rowId != null) {
         key.rowId = newInd[key.rowId!];
@@ -367,38 +373,50 @@ class SortRepositoryImpl implements SortRepository {
     for (int id = 0; id < result.validRowIndexes.length; id++) {
       result.validRowIndexes[id] = newInd[result.validRowIndexes[id]];
     }
-    result.colToAtt..clear()..addAll(Map.fromEntries(
-      result.colToAtt.entries.map(
-        (e) => MapEntry(
-          e.key,
-          Set<Attribute>.from(
-            e.value.map(
-              (att) =>
-                  att.rowId != null ? Attribute.row(newInd[att.rowId!]) : att,
+    result.colToAtt
+      ..clear()
+      ..addAll(
+        Map.fromEntries(
+          result.colToAtt.entries.map(
+            (e) => MapEntry(
+              e.key,
+              Set<Attribute>.from(
+                e.value.map(
+                  (att) => att.rowId != null
+                      ? Attribute.row(newInd[att.rowId!])
+                      : att,
+                ),
+              ),
             ),
           ),
         ),
-      ),
-    ));
-    result.myRules..clear()..addAll(Map.fromEntries(
-      result.myRules.entries.map(
-        (e) => MapEntry(
-          newInd[e.key],
-          Map.fromEntries(
-            e.value.entries.map(
-              (innerE) => MapEntry(newInd[innerE.key], innerE.value),
+      );
+    result.myRules
+      ..clear()
+      ..addAll(
+        Map.fromEntries(
+          result.myRules.entries.map(
+            (e) => MapEntry(
+              newInd[e.key],
+              Map.fromEntries(
+                e.value.entries.map(
+                  (innerE) => MapEntry(newInd[innerE.key], innerE.value),
+                ),
+              ),
             ),
           ),
         ),
-      ),
-    ));
-    result.groupsToMaximize..clear()..addAll(result.groupsToMaximize
-        .map((group) => group.map((id) => newInd[id]).toList())
-        .toList());
-    result.validAreas..clear()..addAll(List.generate(
-      rowCount,
-      (i) => result.validAreas[sortOrder[i]],
-    ));
+      );
+    result.groupsToMaximize
+      ..clear()
+      ..addAll(
+        result.groupsToMaximize
+            .map((group) => group.map((id) => newInd[id]).toList())
+            .toList(),
+      );
+    result.validAreas
+      ..clear()
+      ..addAll(List.generate(rowCount, (i) => result.validAreas[sortOrder[i]]));
   }
 
   @override
