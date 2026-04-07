@@ -65,9 +65,10 @@ class SortRepositoryImpl implements SortRepository {
   @override
   @useResult
   Future<UpdateUnit?> analyze(int sheetId) async {
-    UpdateUnit update
+    UpdateUnit? update;
     if (loadedSheetsCache.rowCount(sheetId) == 0) {
-      return update..merge(setAnalysisDone(sheetId, true));
+      update = setAnalysisDone(sheetId, true);
+      return update..merge();
     }
     isolateReceivePortsCache.cancelB(sheetId);
     AnalysisReturn resultB = await runHeavyCalculationB(

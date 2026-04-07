@@ -63,3 +63,7 @@ analyzer:
     - "ios/**"
     - "android/**"
     - "web/**"
+
+custom_lint:
+  rules:
+    - avoid_unused_parameters

@@ -26,6 +26,13 @@ class SortStatus {
       analysisDone ?? this.analysisDone,
     );
   }
+  void _f(int y) {
+    return;
+  }
+  void _fe(int y) {
+    _f(y);
+    return;
+  }
 
   factory SortStatus.fromJson(Map<String, dynamic> json) =>
       _$SortStatusFromJson(json);
