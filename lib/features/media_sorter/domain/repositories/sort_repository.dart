@@ -6,7 +6,7 @@ import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progre
 
 abstract class SortRepository {
   bool isReordering(int sheetId);
-  bool getAnalysIsDone(int sheetId);
+  bool getAnalysisDone(int sheetId);
   bool getBestSortPossibleFound(int sheetId);
   Future<void> analyze(int sheetId);
   List<int> getSheetIds();

@@ -50,7 +50,7 @@ class SheetDataTables extends Table {
   BoolColumn get sortInProgress => boolean()();
   BoolColumn get toApplyNextBestSort => boolean()();
   BoolColumn get toAlwaysApplyCurrentBestSort => boolean()();
-  BoolColumn get analysIsDone => boolean()();
+  BoolColumn get analysisDone => boolean()();
 }
 
 @DataClassName('SheetCellEntity')
@@ -280,11 +280,11 @@ class AnalysisResultConverter extends TypeConverter<AnalysisResult, String> {
 class SortStatusData {
   final int sheetId;
   final bool toApplyNextBestSort;
-  final bool analysIsDone;
+  final bool analysisDone;
 
   SortStatusData({
     required this.sheetId,
     required this.toApplyNextBestSort,
-    required this.analysIsDone,
+    required this.analysisDone,
   });
 }

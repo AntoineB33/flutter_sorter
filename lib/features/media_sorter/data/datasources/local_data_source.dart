@@ -96,8 +96,8 @@ class DriftLocalDataSource implements ILocalDataSource {
                   item.toAlwaysApplyCurrentBestSort != null
                   ? Value(item.toAlwaysApplyCurrentBestSort!)
                   : Value.absent(),
-              analysIsDone: item.analysIsDone != null
-                  ? Value(item.analysIsDone!)
+              analysisDone: item.analysisDone != null
+                  ? Value(item.analysisDone!)
                   : Value.absent(),
             );
             if (item.addOtherwiseRemove) {
@@ -374,14 +374,14 @@ class DriftLocalDataSource implements ILocalDataSource {
   Future<List<SortStatusData>> getSortStatus() async {
     try {
       final query = db.selectOnly(db.sheetDataTables)
-        ..addColumns([db.sheetDataTables.id, db.sheetDataTables.sortInProgress, db.sheetDataTables.toApplyNextBestSort, db.sheetDataTables.toAlwaysApplyCurrentBestSort, db.sheetDataTables.analysIsDone])
+        ..addColumns([db.sheetDataTables.id, db.sheetDataTables.sortInProgress, db.sheetDataTables.toApplyNextBestSort, db.sheetDataTables.toAlwaysApplyCurrentBestSort, db.sheetDataTables.analysisDone])
           ..where(db.sheetDataTables.sortInProgress.equals(true));
       final result = await query.get();
       return result
           .map((row) => SortStatusData(
                 sheetId: row.read(db.sheetDataTables.id)!,
                 toApplyNextBestSort: row.read(db.sheetDataTables.toApplyNextBestSort) ?? false,
-                analysIsDone: row.read(db.sheetDataTables.analysIsDone) ?? false,
+                analysisDone: row.read(db.sheetDataTables.analysisDone) ?? false,
               ))
           .toList();
     } on SqliteException catch (e) {

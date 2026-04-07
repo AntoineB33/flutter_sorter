@@ -5,11 +5,11 @@ part 'sort_status.g.dart';
 @JsonSerializable()
 class SortStatus {
   final bool toApplyNextBestSort;
-  final bool analysIsDone;
+  final bool analysisDone;
 
   SortStatus(
     this.toApplyNextBestSort,
-    this.analysIsDone,
+    this.analysisDone,
   );
 
   factory SortStatus.initial() {
@@ -19,11 +19,11 @@ class SortStatus {
   SortStatus copyWith({
     bool? toApplyNextBestSort,
     bool? toAlwaysApplyCurrentBestSort,
-    bool? analysIsDone,
+    bool? analysisDone,
   }) {
     return SortStatus(
       toApplyNextBestSort ?? this.toApplyNextBestSort,
-      analysIsDone ?? this.analysIsDone,
+      analysisDone ?? this.analysisDone,
     );
   }
 

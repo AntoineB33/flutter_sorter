@@ -153,7 +153,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   Future<void> launchCalculation(int sheetId) async {
-    if (!sortController.getAnalysIsDone(sheetId)) {
+    if (!sortController.getAnalysisDone(sheetId)) {
       await sortController.analyze(sheetId);
     }
     if (sortController.getBestSortPossibleFound(sheetId)) {

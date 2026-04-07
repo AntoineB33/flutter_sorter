@@ -47,8 +47,8 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  bool getAnalysIsDone(int sheetId) {
-    return sortStatusCache.getAnalysIsDone(sheetId);
+  bool getAnalysisDone(int sheetId) {
+    return sortStatusCache.getAnalysisDone(sheetId);
   }
 
   @override
@@ -56,19 +56,29 @@ class SortRepositoryImpl implements SortRepository {
     return analysisResultCache.bestSortPossibleFound(sheetId);
   }
 
+  @useResult
+  UpdateUnit setAnalysisDone(int sheetId, bool analysisDone) {
+    sortStatusCache.setAnalysisDone(sheetId, analysisDone);
+    return SheetDataUpdate(sheetId, true, analysisDone: analysisDone);
+  }
+
   @override
   @useResult
   Future<UpdateUnit?> analyze(int sheetId) async {
-    UpdateUnit? update;
+    UpdateUnit update
     if (loadedSheetsCache.rowCount(sheetId) == 0) {
-      
+      return update..merge(setAnalysisDone(sheetId, true));
     }
     isolateReceivePortsCache.cancelB(sheetId);
     AnalysisReturn resultB = await runHeavyCalculationB(
       sheetId,
       analysisResultCache.getAnalysisResult(sheetId),
     );
-    sortStatusCache.analysisIsDone(sheetId, resultB.toFindValidSort);
+    if (resultB.toFindValidSort) {
+      sortStatusCache.setAnalysisDone(sheetId, true);
+    } else {
+      sortStatusCache.removeSortStatus(sheetId);
+    }
     if (resultB.changed) {
       analysisResultCache.updateResults(sheetId, resultB.result);
       update = SheetDataUpdate(sheetId, true, analysisResult: resultB.result);
@@ -180,7 +190,7 @@ class SortRepositoryImpl implements SortRepository {
         for (var table in tables)
           table.sheetId: SortStatus(
             table.toApplyNextBestSort,
-            table.analysIsDone,
+            table.analysisDone,
           ),
       };
       sortStatusCache.setSortStatus(sortStatusBySheet);

@@ -30,8 +30,8 @@ class SortUsecase {
     return sortRepository.isReordering(currentSheetId);
   }
 
-  bool getAnalysIsDone(int sheetId) {
-    return sortRepository.getAnalysIsDone(sheetId);
+  bool getAnalysisDone(int sheetId) {
+    return sortRepository.getAnalysisDone(sheetId);
   }
 
   bool getBestSortPossibleFound(int sheetId) {

@@ -118,7 +118,7 @@ class SheetDataUpdate extends UpdateUnit {
   final bool? sortInProgress;
   final bool? toApplyNextBestSort;
   final bool? toAlwaysApplyCurrentBestSort;
-  final bool? analysIsDone;
+  final bool? analysisDone;
 
   SheetDataUpdate(
     this.sheetId,
@@ -153,7 +153,7 @@ class SheetDataUpdate extends UpdateUnit {
     this.sortInProgress,
     this.toApplyNextBestSort,
     this.toAlwaysApplyCurrentBestSort,
-    this.analysIsDone,
+    this.analysisDone,
   });
 
   factory SheetDataUpdate.initial(int sheetId) {

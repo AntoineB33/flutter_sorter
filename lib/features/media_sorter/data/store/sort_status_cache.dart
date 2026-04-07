@@ -22,8 +22,8 @@ class SortStatusCache {
     return _sortStatusBySheet.keys.toList();
   }
 
-  bool getAnalysIsDone(int sheetId) {
-    return _sortStatusBySheet[sheetId]?.analysIsDone ?? false;
+  bool getAnalysisDone(int sheetId) {
+    return _sortStatusBySheet[sheetId]?.analysisDone ?? false;
   }
 
   void setToApplyOnce(int sheetId, bool value) {
@@ -36,18 +36,14 @@ class SortStatusCache {
     _sortStatusBySheet[sheetId]!.copyWith(toAlwaysApplyCurrentBestSort: toAlwaysApply);
   }
 
-  void isAnalysing(int sheetId) {
+  void setAnalysisDone(int sheetId, bool analysisDone) {
     _sortStatusBySheet[sheetId] ??= SortStatus.initial();
-    _sortStatusBySheet[sheetId]!.copyWith(analysIsDone: false);
+    _sortStatusBySheet[sheetId]!.copyWith(analysisDone: analysisDone);
   }
 
-  void analysisIsDone(int sheetId, bool toFindValidSort) {
+  void isAnalysing(int sheetId) {
     _sortStatusBySheet[sheetId] ??= SortStatus.initial();
-    if (toFindValidSort) {
-      _sortStatusBySheet[sheetId]!.copyWith(analysIsDone: true);
-    } else {
-      removeSortStatus(sheetId);
-    }
+    _sortStatusBySheet[sheetId]!.copyWith(analysisDone: false);
   }
 
   void setSortStatus(Map<int, SortStatus> statuses) {

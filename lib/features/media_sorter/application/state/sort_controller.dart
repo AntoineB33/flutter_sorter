@@ -31,8 +31,8 @@ class SortController extends ChangeNotifier {
     super.dispose();
   }
 
-  bool getAnalysIsDone(int sheetId) {
-    return sortUseCase.getAnalysIsDone(sheetId);
+  bool getAnalysisDone(int sheetId) {
+    return sortUseCase.getAnalysisDone(sheetId);
   }
 
   bool getBestSortPossibleFound(int sheetId) {

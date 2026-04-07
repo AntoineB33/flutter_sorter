@@ -334,11 +334,11 @@ class $SheetDataTablesTable extends SheetDataTables
           'CHECK ("to_always_apply_current_best_sort" IN (0, 1))',
         ),
       );
-  static const VerificationMeta _analysIsDoneMeta = const VerificationMeta(
-    'analysIsDone',
+  static const VerificationMeta _analysisDoneMeta = const VerificationMeta(
+    'analysisDone',
   );
   @override
-  late final GeneratedColumn<bool> analysIsDone = GeneratedColumn<bool>(
+  late final GeneratedColumn<bool> analysisDone = GeneratedColumn<bool>(
     'analys_is_done',
     aliasedName,
     false,
@@ -378,7 +378,7 @@ class $SheetDataTablesTable extends SheetDataTables
     sortInProgress,
     toApplyNextBestSort,
     toAlwaysApplyCurrentBestSort,
-    analysIsDone,
+    analysisDone,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -575,14 +575,14 @@ class $SheetDataTablesTable extends SheetDataTables
     }
     if (data.containsKey('analys_is_done')) {
       context.handle(
-        _analysIsDoneMeta,
-        analysIsDone.isAcceptableOrUnknown(
+        _analysisDoneMeta,
+        analysisDone.isAcceptableOrUnknown(
           data['analys_is_done']!,
-          _analysIsDoneMeta,
+          _analysisDoneMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_analysIsDoneMeta);
+      context.missing(_analysisDoneMeta);
     }
     return context;
   }
@@ -725,7 +725,7 @@ class $SheetDataTablesTable extends SheetDataTables
         DriftSqlType.bool,
         data['${effectivePrefix}to_always_apply_current_best_sort'],
       )!,
-      analysIsDone: attachedDatabase.typeMapping.read(
+      analysisDone: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}analys_is_done'],
       )!,
@@ -788,7 +788,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
   final bool sortInProgress;
   final bool toApplyNextBestSort;
   final bool toAlwaysApplyCurrentBestSort;
-  final bool analysIsDone;
+  final bool analysisDone;
   const SheetDataEntity({
     required this.id,
     required this.title,
@@ -818,7 +818,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     required this.sortInProgress,
     required this.toApplyNextBestSort,
     required this.toAlwaysApplyCurrentBestSort,
-    required this.analysIsDone,
+    required this.analysisDone,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -895,7 +895,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     map['to_always_apply_current_best_sort'] = Variable<bool>(
       toAlwaysApplyCurrentBestSort,
     );
-    map['analys_is_done'] = Variable<bool>(analysIsDone);
+    map['analys_is_done'] = Variable<bool>(analysisDone);
     return map;
   }
 
@@ -929,7 +929,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       sortInProgress: Value(sortInProgress),
       toApplyNextBestSort: Value(toApplyNextBestSort),
       toAlwaysApplyCurrentBestSort: Value(toAlwaysApplyCurrentBestSort),
-      analysIsDone: Value(analysIsDone),
+      analysisDone: Value(analysisDone),
     );
   }
 
@@ -987,7 +987,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       toAlwaysApplyCurrentBestSort: serializer.fromJson<bool>(
         json['toAlwaysApplyCurrentBestSort'],
       ),
-      analysIsDone: serializer.fromJson<bool>(json['analysIsDone']),
+      analysisDone: serializer.fromJson<bool>(json['analysisDone']),
     );
   }
   @override
@@ -1026,7 +1026,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       'toAlwaysApplyCurrentBestSort': serializer.toJson<bool>(
         toAlwaysApplyCurrentBestSort,
       ),
-      'analysIsDone': serializer.toJson<bool>(analysIsDone),
+      'analysisDone': serializer.toJson<bool>(analysisDone),
     };
   }
 
@@ -1059,7 +1059,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     bool? sortInProgress,
     bool? toApplyNextBestSort,
     bool? toAlwaysApplyCurrentBestSort,
-    bool? analysIsDone,
+    bool? analysisDone,
   }) => SheetDataEntity(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -1091,7 +1091,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     toApplyNextBestSort: toApplyNextBestSort ?? this.toApplyNextBestSort,
     toAlwaysApplyCurrentBestSort:
         toAlwaysApplyCurrentBestSort ?? this.toAlwaysApplyCurrentBestSort,
-    analysIsDone: analysIsDone ?? this.analysIsDone,
+    analysisDone: analysisDone ?? this.analysisDone,
   );
   SheetDataEntity copyWithCompanion(SheetDataTablesCompanion data) {
     return SheetDataEntity(
@@ -1167,9 +1167,9 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       toAlwaysApplyCurrentBestSort: data.toAlwaysApplyCurrentBestSort.present
           ? data.toAlwaysApplyCurrentBestSort.value
           : this.toAlwaysApplyCurrentBestSort,
-      analysIsDone: data.analysIsDone.present
-          ? data.analysIsDone.value
-          : this.analysIsDone,
+      analysisDone: data.analysisDone.present
+          ? data.analysisDone.value
+          : this.analysisDone,
     );
   }
 
@@ -1206,7 +1206,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           ..write(
             'toAlwaysApplyCurrentBestSort: $toAlwaysApplyCurrentBestSort, ',
           )
-          ..write('analysIsDone: $analysIsDone')
+          ..write('analysisDone: $analysisDone')
           ..write(')'))
         .toString();
   }
@@ -1241,7 +1241,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     sortInProgress,
     toApplyNextBestSort,
     toAlwaysApplyCurrentBestSort,
-    analysIsDone,
+    analysisDone,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -1276,7 +1276,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           other.toApplyNextBestSort == this.toApplyNextBestSort &&
           other.toAlwaysApplyCurrentBestSort ==
               this.toAlwaysApplyCurrentBestSort &&
-          other.analysIsDone == this.analysIsDone);
+          other.analysisDone == this.analysisDone);
 }
 
 class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
@@ -1308,7 +1308,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
   final Value<bool> sortInProgress;
   final Value<bool> toApplyNextBestSort;
   final Value<bool> toAlwaysApplyCurrentBestSort;
-  final Value<bool> analysIsDone;
+  final Value<bool> analysisDone;
   const SheetDataTablesCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
@@ -1338,7 +1338,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     this.sortInProgress = const Value.absent(),
     this.toApplyNextBestSort = const Value.absent(),
     this.toAlwaysApplyCurrentBestSort = const Value.absent(),
-    this.analysIsDone = const Value.absent(),
+    this.analysisDone = const Value.absent(),
   });
   SheetDataTablesCompanion.insert({
     this.id = const Value.absent(),
@@ -1369,7 +1369,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     required bool sortInProgress,
     required bool toApplyNextBestSort,
     required bool toAlwaysApplyCurrentBestSort,
-    required bool analysIsDone,
+    required bool analysisDone,
   }) : title = Value(title),
        lastOpened = Value(lastOpened),
        usedRows = Value(usedRows),
@@ -1397,7 +1397,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
        sortInProgress = Value(sortInProgress),
        toApplyNextBestSort = Value(toApplyNextBestSort),
        toAlwaysApplyCurrentBestSort = Value(toAlwaysApplyCurrentBestSort),
-       analysIsDone = Value(analysIsDone);
+       analysisDone = Value(analysisDone);
   static Insertable<SheetDataEntity> custom({
     Expression<int>? id,
     Expression<String>? title,
@@ -1427,7 +1427,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Expression<bool>? sortInProgress,
     Expression<bool>? toApplyNextBestSort,
     Expression<bool>? toAlwaysApplyCurrentBestSort,
-    Expression<bool>? analysIsDone,
+    Expression<bool>? analysisDone,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1464,7 +1464,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
         'to_apply_next_best_sort': toApplyNextBestSort,
       if (toAlwaysApplyCurrentBestSort != null)
         'to_always_apply_current_best_sort': toAlwaysApplyCurrentBestSort,
-      if (analysIsDone != null) 'analys_is_done': analysIsDone,
+      if (analysisDone != null) 'analys_is_done': analysisDone,
     });
   }
 
@@ -1497,7 +1497,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Value<bool>? sortInProgress,
     Value<bool>? toApplyNextBestSort,
     Value<bool>? toAlwaysApplyCurrentBestSort,
-    Value<bool>? analysIsDone,
+    Value<bool>? analysisDone,
   }) {
     return SheetDataTablesCompanion(
       id: id ?? this.id,
@@ -1532,7 +1532,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       toApplyNextBestSort: toApplyNextBestSort ?? this.toApplyNextBestSort,
       toAlwaysApplyCurrentBestSort:
           toAlwaysApplyCurrentBestSort ?? this.toAlwaysApplyCurrentBestSort,
-      analysIsDone: analysIsDone ?? this.analysIsDone,
+      analysisDone: analysisDone ?? this.analysisDone,
     );
   }
 
@@ -1663,8 +1663,8 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
         toAlwaysApplyCurrentBestSort.value,
       );
     }
-    if (analysIsDone.present) {
-      map['analys_is_done'] = Variable<bool>(analysIsDone.value);
+    if (analysisDone.present) {
+      map['analys_is_done'] = Variable<bool>(analysisDone.value);
     }
     return map;
   }
@@ -1702,7 +1702,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
           ..write(
             'toAlwaysApplyCurrentBestSort: $toAlwaysApplyCurrentBestSort, ',
           )
-          ..write('analysIsDone: $analysIsDone')
+          ..write('analysisDone: $analysisDone')
           ..write(')'))
         .toString();
   }
@@ -3831,7 +3831,7 @@ typedef $$SheetDataTablesTableCreateCompanionBuilder =
       required bool sortInProgress,
       required bool toApplyNextBestSort,
       required bool toAlwaysApplyCurrentBestSort,
-      required bool analysIsDone,
+      required bool analysisDone,
     });
 typedef $$SheetDataTablesTableUpdateCompanionBuilder =
     SheetDataTablesCompanion Function({
@@ -3863,7 +3863,7 @@ typedef $$SheetDataTablesTableUpdateCompanionBuilder =
       Value<bool> sortInProgress,
       Value<bool> toApplyNextBestSort,
       Value<bool> toAlwaysApplyCurrentBestSort,
-      Value<bool> analysIsDone,
+      Value<bool> analysisDone,
     });
 
 final class $$SheetDataTablesTableReferences
@@ -4224,8 +4224,8 @@ class $$SheetDataTablesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<bool> get analysIsDone => $composableBuilder(
-    column: $table.analysIsDone,
+  ColumnFilters<bool> get analysisDone => $composableBuilder(
+    column: $table.analysisDone,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4563,8 +4563,8 @@ class $$SheetDataTablesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get analysIsDone => $composableBuilder(
-    column: $table.analysIsDone,
+  ColumnOrderings<bool> get analysisDone => $composableBuilder(
+    column: $table.analysisDone,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -4713,8 +4713,8 @@ class $$SheetDataTablesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<bool> get analysIsDone => $composableBuilder(
-    column: $table.analysIsDone,
+  GeneratedColumn<bool> get analysisDone => $composableBuilder(
+    column: $table.analysisDone,
     builder: (column) => column,
   );
 
@@ -4971,7 +4971,7 @@ class $$SheetDataTablesTableTableManager
                 Value<bool> sortInProgress = const Value.absent(),
                 Value<bool> toApplyNextBestSort = const Value.absent(),
                 Value<bool> toAlwaysApplyCurrentBestSort = const Value.absent(),
-                Value<bool> analysIsDone = const Value.absent(),
+                Value<bool> analysisDone = const Value.absent(),
               }) => SheetDataTablesCompanion(
                 id: id,
                 title: title,
@@ -5001,7 +5001,7 @@ class $$SheetDataTablesTableTableManager
                 sortInProgress: sortInProgress,
                 toApplyNextBestSort: toApplyNextBestSort,
                 toAlwaysApplyCurrentBestSort: toAlwaysApplyCurrentBestSort,
-                analysIsDone: analysIsDone,
+                analysisDone: analysisDone,
               ),
           createCompanionCallback:
               ({
@@ -5033,7 +5033,7 @@ class $$SheetDataTablesTableTableManager
                 required bool sortInProgress,
                 required bool toApplyNextBestSort,
                 required bool toAlwaysApplyCurrentBestSort,
-                required bool analysIsDone,
+                required bool analysisDone,
               }) => SheetDataTablesCompanion.insert(
                 id: id,
                 title: title,
@@ -5063,7 +5063,7 @@ class $$SheetDataTablesTableTableManager
                 sortInProgress: sortInProgress,
                 toApplyNextBestSort: toApplyNextBestSort,
                 toAlwaysApplyCurrentBestSort: toAlwaysApplyCurrentBestSort,
-                analysIsDone: analysIsDone,
+                analysisDone: analysisDone,
               ),
           withReferenceMapper: (p0) => p0
               .map(
