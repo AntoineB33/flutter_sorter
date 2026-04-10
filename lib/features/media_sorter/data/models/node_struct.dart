@@ -1,6 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/attribute.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 
 part 'node_struct.g.dart';
 
@@ -8,11 +8,11 @@ part 'node_struct.g.dart';
 class NodeStruct {
   final String? instruction;
   String? message;
-  Cell? cell;
+  CellPosition? cell;
   Attribute? att;
   int? rowId;
   int? colId;
-  List<Cell>? cells;
+  List<CellPosition>? cells;
   String? name;
   final int? dist;
   final int? minDist;
@@ -23,7 +23,7 @@ class NodeStruct {
   bool isExpanded = false;
   OnTapAction? idOnTap;
   bool defaultOnTap = true;
-  List<Cell>? cellsToSelect;
+  List<CellPosition>? cellsToSelect;
 
   NodeStruct({
     this.instruction,
@@ -32,8 +32,8 @@ class NodeStruct {
     int? colId,
     String? name,
     this.att,
-    Cell? cell,
-    List<Cell>? cells,
+    CellPosition? cell,
+    List<CellPosition>? cells,
     this.dist,
     this.minDist,
     this.newChildren,
@@ -45,7 +45,7 @@ class NodeStruct {
        message = message ?? instruction {
     if (this.rowId != null) {
       if (this.colId != null) {
-        this.cell ??= Cell(rowId: this.rowId!, colId: this.colId!);
+        this.cell ??= CellPosition(this.rowId!, this.colId!);
       }
       att ??= Attribute.row(this.rowId!);
     } else {

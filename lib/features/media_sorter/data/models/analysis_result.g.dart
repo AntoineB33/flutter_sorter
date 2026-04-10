@@ -47,7 +47,7 @@ AnalysisResult _$AnalysisResultFromJson(
       )
       .toList(),
   names: (json['names'] as Map<String, dynamic>).map(
-    (k, e) => MapEntry(k, Cell.fromJson(e as Map<String, dynamic>)),
+    (k, e) => MapEntry(k, CellPosition.fromJson(e as Map<String, dynamic>)),
   ),
   attToCol: (json['attToCol'] as Map<String, dynamic>).map(
     (k, e) => MapEntry(

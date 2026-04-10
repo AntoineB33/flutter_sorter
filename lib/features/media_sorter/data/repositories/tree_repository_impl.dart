@@ -5,13 +5,12 @@ import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/attribute.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/core_sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/tree_repository.dart';
 import 'package:trying_flutter/utils/logger.dart';
 
@@ -92,7 +91,7 @@ class TreeRepositoryImpl implements TreeRepository {
 
   @override
   CellPosition onTapCellSelect(NodeStruct node) {
-    List<Cell> cells = [];
+    List<CellPosition> cells = [];
     List<MapEntry> entries = [];
 
     if (node.colId != SpreadsheetConstants.notUsedCst) {
@@ -115,13 +114,15 @@ class TreeRepositoryImpl implements TreeRepository {
 
     for (final MapEntry(key: rowId, value: colIds) in entries) {
       for (final colId in colIds) {
-        cells.add(Cell(rowId: rowId, colId: colId));
+        cells.add(CellPosition(rowId, colId));
       }
     }
-    return _handleSelectionCycling(node, cells);
+    return _handleSelectionCycling(cells);
   }
 
-  CellPosition _handleSelectionCycling(NodeStruct node, List<Cell> cells) {
+  CellPosition _handleSelectionCycling(
+    List<CellPosition> cells,
+  ) {
     int found = -1;
     for (int i = 0; i < cells.length; i++) {
       final child = cells[i];
@@ -381,7 +382,7 @@ class TreeRepositoryImpl implements TreeRepository {
           .isNotEmpty) {
         rowCells.add(
           NodeStruct(
-            cell: Cell(rowId: rowId, colId: colId),
+            cell: CellPosition(rowId, colId),
           ),
         );
       }
@@ -413,16 +414,18 @@ class TreeRepositoryImpl implements TreeRepository {
       if (node.cellsToSelect == null) {
         node.cellsToSelect = node.cells;
         if (node.cellsToSelect == null || node.cellsToSelect!.isEmpty) {
-          List<Cell> cells = [];
+          List<CellPosition> cells = [];
           for (final child in node.newChildren ?? []) {
             if (child.rowId != null) {
               if (child.colId != null) {
-                cells.add(Cell(rowId: child.rowId!, colId: child.colId!));
+                cells.add(
+                  CellPosition(child.rowId!, child.colId!),
+                );
               } else {
-                cells.add(Cell(rowId: child.rowId!, colId: 0));
+                cells.add(CellPosition(child.rowId!, 0));
               }
             } else if (child.colId != null) {
-              cells.add(Cell(rowId: 0, colId: child.colId!));
+              cells.add(CellPosition(0, child.colId!));
             }
           }
           node.cellsToSelect = cells;

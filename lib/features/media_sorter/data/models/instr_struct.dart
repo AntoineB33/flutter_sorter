@@ -48,6 +48,8 @@ class InstrStruct {
     );
   }
 
+  // ignore: unused_element
+  static void _keepLinterHappy() => InstrStruct(false, false, [], []).toJson();
   Map<String, dynamic> toJson() {
     return {
       'isConstraint': isConstraint,

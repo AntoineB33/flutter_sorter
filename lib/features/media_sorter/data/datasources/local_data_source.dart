@@ -2,8 +2,8 @@ import 'package:drift/native.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 import 'package:drift/drift.dart';
 
 class SheetIdAndLastOpened {
@@ -55,11 +55,11 @@ class DriftLocalDataSource implements ILocalDataSource {
               rowHeaderWidth: item.rowHeaderWidth != null
                   ? Value(item.rowHeaderWidth!)
                   : Value.absent(),
-              primSelHistory: item.primSelHistory != null
-                  ? Value(item.primSelHistory!)
+              selectionHistory: item.selectionHistory != null
+                  ? Value(item.selectionHistory!)
                   : Value.absent(),
-              primSelHistoryId: item.primSelHistoryId != null
-                  ? Value(item.primSelHistoryId!)
+              selHistoryId: item.selHistoryIndex != null
+                  ? Value(item.selHistoryIndex!)
                   : Value.absent(),
               scrollOffsetX: item.scrollOffsetX != null
                   ? Value(item.scrollOffsetX!)

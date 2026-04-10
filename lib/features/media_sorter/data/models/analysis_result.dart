@@ -1,10 +1,10 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/attribute.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sorting_rule.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/calculate_service.dart';
 import 'dart:convert';
 
@@ -22,6 +22,8 @@ class StrInt {
 
   factory StrInt.fromJson(Map<String, dynamic> json) => _$StrIntFromJson(json);
   Map<String, dynamic> toJson() => _$StrIntToJson(this);
+  // ignore: unused_element
+  static void _keepLinterHappy() => StrInt().toJson();
 }
 
 Map<Attribute, Map<int, Cols>> _attColMapFromJson(Map<String, dynamic> json) {
@@ -103,7 +105,7 @@ class AnalysisResult {
   /// 2D table of attribute identifiers (row index or name)
   /// mentioned in each cell.
   final List<List<Set<Attribute>>> tableToAtt;
-  final Map<String, Cell> names;
+  final Map<String, CellPosition> names;
   final Map<String, List<int>> attToCol;
   final List<int> nameIndexes;
   final List<List<StrInt>> formatedTable;
@@ -206,7 +208,7 @@ class AnalysisResult {
       List<NodeStruct>? categoryChildren,
       List<NodeStruct>? distPairChildren,
       List<List<Set<Attribute>>>? tableToAtt,
-      Map<String, Cell>? names,
+      Map<String, CellPosition>? names,
       Map<String, List<int>>? attToCol,
       List<int>? nameIndexes,
       Map<Attribute, Map<int, Cols>>? attToRefFromAttColToCol,

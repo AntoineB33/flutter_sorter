@@ -4,8 +4,8 @@ import 'package:fpdart/fpdart.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/core_sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
@@ -29,10 +29,6 @@ class SheetDataUsecase {
     this.historyRepository,
     this.saveRepository,
   );
-
-  bool containsSheetId(int sheetId) {
-    return sheetDataRepository.containsSheetId(sheetId);
-  }
 
   int rowCount(int sheetId) {
     return sheetDataRepository.rowCount(sheetId);

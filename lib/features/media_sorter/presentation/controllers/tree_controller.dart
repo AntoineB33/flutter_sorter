@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/node_struct.dart';
 import 'package:flutter/material.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/selection_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/tree_usecase.dart';
 

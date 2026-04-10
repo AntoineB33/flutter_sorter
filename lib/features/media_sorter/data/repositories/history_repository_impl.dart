@@ -1,14 +1,15 @@
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/history_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/history_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/core_sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/history_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 
 class HistoryRepositoryImpl implements HistoryRepository {
@@ -119,25 +120,25 @@ class HistoryRepositoryImpl implements HistoryRepository {
 
   @override
   @useResult
-  UpdateUnit newPrimarySelection(int rowId, int colId, bool keepSelection) {
+  UpdateUnit commitSelection(SelectionState selectionState) {
     var selectionData = selectionCache.getSelectionData(currentSheetId);
     if (selectionData.primSelHistoryId <
-        selectionData.primSelHistory.length - 1) {
-      final newPrimSelHistory = selectionData.primSelHistory.sublist(
+        selectionData.selectionStates.length - 1) {
+      final newPrimSelHistory = selectionData.selectionStates.sublist(
         0,
         selectionData.primSelHistoryId + 1,
       );
-      selectionData.primSelHistory
+      selectionData.selectionStates
         ..clear()
         ..addAll(newPrimSelHistory);
     }
-    selectionData.primSelHistory.add(CellPosition(rowId, colId));
+    selectionData.selectionStates.add(selectionState);
     selectionData = selectionData.copyWith(
       primSelHistoryId: selectionData.primSelHistoryId + 1,
     );
     const int primSelHistoryLimit = SpreadsheetConstants.primSelHistoryLimit;
     if (selectionData.primSelHistoryId == primSelHistoryLimit) {
-      selectionData.primSelHistory.removeAt(0);
+      selectionData.selectionStates.removeAt(0);
       selectionData = selectionData.copyWith(
         primSelHistoryId: selectionData.primSelHistoryId - 1,
       );
@@ -145,11 +146,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
     return SheetDataUpdate(
       currentSheetId,
       true,
-      primSelHistory: selectionData.primSelHistory,
-      primSelHistoryId:
-          selectionData.primSelHistoryId == primSelHistoryLimit - 1
-          ? null
-          : selectionData.primSelHistoryId,
+      selectionHistory: selectionCache.getSelectionData(currentSheetId),
     );
   }
 

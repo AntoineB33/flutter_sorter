@@ -1,6 +1,4 @@
-import 'dart:async';
-
-import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
@@ -30,17 +28,19 @@ class SelectionUsecase {
   );
 
   void selectAll() {
-    final update = selectionRepository.selectAll();
-    saveRepository.saveUpdate(update);
+    final selectionState = selectionRepository.selectAll();
+    final result = historyRepository.commitSelection(selectionState);
+    saveRepository.saveUpdate(result);
   }
 
-  SelectionData getSelectionData(int sheetId) {
-    return selectionRepository.getSelectionData(sheetId);
+  SelectionState getSelectionState(int sheetId) {
+    return selectionRepository.getSelectionState(sheetId);
   }
 
-  Future<SelectionData> getLastSelection() async {
-    return selectionRepository.getSelectionData(
-      workbookRepository.currentSheetId,
-    );
+  void setPrimarySelection(int row, int col, bool keepSelection) {
+    final selectionState =
+        selectionRepository.setPrimarySelection(row, col, keepSelection);
+    final result = historyRepository.commitSelection(selectionState);
+    saveRepository.saveUpdate(result);
   }
 }

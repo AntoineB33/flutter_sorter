@@ -1,9 +1,9 @@
 import 'dart:isolate';
 
 import 'package:trying_flutter/features/media_sorter/data/models/isolate_message.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/calculate_service.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/core_sheet_content.dart';
 
 class AnalysisReturn {
   final AnalysisResult result;

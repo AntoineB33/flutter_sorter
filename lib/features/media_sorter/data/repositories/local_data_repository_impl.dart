@@ -6,7 +6,7 @@ import 'package:trying_flutter/features/media_sorter/data/datasources/local_data
 import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/utils/logger.dart';
 

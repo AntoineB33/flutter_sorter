@@ -1,4 +1,4 @@
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sort_progress_data.dart';
 
 class SortProgressCache {
   final Map<int, SortProgressData> _dataBySheet = {};

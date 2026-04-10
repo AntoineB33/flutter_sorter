@@ -1,11 +1,12 @@
 import 'dart:convert';
 
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
 import 'package:drift/drift.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 
 @DataClassName('SheetDataEntity')
 class SheetDataTables extends Table {
@@ -17,8 +18,8 @@ class SheetDataTables extends Table {
   IntColumn get historyIndex => integer()();
   RealColumn get colHeaderHeight => real()();
   RealColumn get rowHeaderWidth => real()();
-  TextColumn get primSelHistory => text().map(const ListPointConverter())();
-  IntColumn get primSelHistoryId => integer()();
+  TextColumn get selectionHistory => text().map(const SelectionDataConverter())();
+  IntColumn get selHistoryId => integer()();
   RealColumn get scrollOffsetX => real()();
   RealColumn get scrollOffsetY => real()();
   TextColumn get selectedCells => text().map(const SetPointConverter())();
@@ -162,6 +163,22 @@ class NodeStructListConverter extends TypeConverter<List<NodeStruct>, String> {
   @override
   String toSql(List<NodeStruct> value) {
     final encoded = value.map((e) => e.toJson()).toList();
+    return jsonEncode(encoded);
+  }
+}
+
+class SelectionDataConverter extends TypeConverter<SelectionData, String> {
+  const SelectionDataConverter();
+
+  @override
+  SelectionData fromSql(String fromDb) {
+    final decoded = jsonDecode(fromDb) as Map<String, dynamic>;
+    return SelectionData.fromJson(decoded);
+  }
+
+  @override
+  String toSql(SelectionData value) {
+    final encoded = value.toJson();
     return jsonEncode(encoded);
   }
 }

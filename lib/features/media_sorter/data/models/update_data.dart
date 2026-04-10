@@ -1,9 +1,10 @@
 
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
 import 'dart:core';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 
 part 'update_data.g.dart';
 
@@ -23,6 +24,7 @@ sealed class UpdateUnit {
 
   String getKey();
 
+  //ignore: avoid_unused_parameters
   UpdateUnit merge(UpdateUnit newUpdate);
 
   factory UpdateUnit.fromJson(Map<String, dynamic> json) {
@@ -51,18 +53,16 @@ sealed class UpdateUnit {
   Map<String, dynamic> toJson();
 }
 
+@JsonSerializable()
 class CellPosition {
   final int rowId;
   final int colId;
   CellPosition(this.rowId, this.colId);
   
-  factory CellPosition.fromJson(Map<String, dynamic> json) =>
-      CellPosition(json['row'] as int, json['col'] as int);
-  
-  Map<String, dynamic> toJson() => {
-        'row': rowId,
-        'col': colId,
-      };
+  factory CellPosition.fromJson(Map<String, dynamic> json) => _$CellPositionFromJson(json);
+  Map<String, dynamic> toJson() => _$CellPositionToJson(this);
+  // ignore: unused_element
+  static void _keepLinterHappy() => CellPosition(0, 0).toJson();
   
   @override
   bool operator ==(Object other) =>
@@ -94,11 +94,10 @@ class SheetDataUpdate extends UpdateUnit {
   final double? scrollOffsetX;
   final double? scrollOffsetY;
 
-  final List<CellPosition>? primSelHistory;
-  final int? primSelHistoryId;
   final int? historyIndex;
+  final SelectionData? selectionHistory;
+  final int? selHistoryIndex;
 
-  final Set<CellPosition>? selectedCells;
 
   final List<int>? bestSortFound;
   final List<int>? bestDistFound;
@@ -129,15 +128,14 @@ class SheetDataUpdate extends UpdateUnit {
     this.usedRows,
     this.usedCols,
     this.historyIndex,
+    this.selHistoryIndex,
     this.colHeaderHeight,
     this.prevColHeaderHeight,
     this.rowHeaderWidth,
     this.prevRowHeaderWidth,
-    this.primSelHistory,
-    this.primSelHistoryId,
+    this.selectionHistory,
     this.scrollOffsetX,
     this.scrollOffsetY,
-    this.selectedCells,
     this.bestSortFound,
     this.bestDistFound,
     this.cursors,
@@ -191,11 +189,9 @@ class SheetDataUpdate extends UpdateUnit {
       prevColHeaderHeight: newSheetDataUpdate.prevColHeaderHeight ?? prevColHeaderHeight,
       rowHeaderWidth: newSheetDataUpdate.rowHeaderWidth ?? rowHeaderWidth,
       prevRowHeaderWidth: newSheetDataUpdate.prevRowHeaderWidth ?? prevRowHeaderWidth,
-      primSelHistory: newSheetDataUpdate.primSelHistory ?? primSelHistory,
-      primSelHistoryId: newSheetDataUpdate.primSelHistoryId ?? primSelHistoryId,
+      selectionHistory: newSheetDataUpdate.selectionHistory ?? selectionHistory,
       scrollOffsetX: newSheetDataUpdate.scrollOffsetX ?? scrollOffsetX,
       scrollOffsetY: newSheetDataUpdate.scrollOffsetY ?? scrollOffsetY,
-      selectedCells: newSheetDataUpdate.selectedCells ?? selectedCells,
       bestSortFound: newSheetDataUpdate.bestSortFound ?? bestSortFound,
       bestDistFound: newSheetDataUpdate.bestDistFound ?? bestDistFound,
       cursors: newSheetDataUpdate.cursors ?? cursors,
@@ -220,13 +216,14 @@ class CellUpdate extends UpdateUnit {
   final int sheetId;
   final int rowId;
   final int colId;
-  String? prevValue;
-  String newValue;
+  final String? prevValue;
+  final String newValue;
   CellUpdate(
     this.sheetId,
     this.rowId,
     this.colId,
-    this.newValue);
+    this.newValue, {
+    this.prevValue});
 
   @override
   String getKey() {
@@ -240,8 +237,9 @@ class CellUpdate extends UpdateUnit {
       sheetId,
       rowId,
       colId,
-      newCellUpdate.newValue, // Always take the latest value
-    )..prevValue = newCellUpdate.prevValue ?? prevValue; // Keep the original prevValue if the new one is null
+      newCellUpdate.newValue,
+      prevValue: newCellUpdate.prevValue ?? prevValue, // Keep the original prevValue if the new one is null
+    );
   }
 
   factory CellUpdate.fromJson(Map<String, dynamic> json) =>

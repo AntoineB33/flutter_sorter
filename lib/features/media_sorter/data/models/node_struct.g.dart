@@ -18,9 +18,9 @@ NodeStruct _$NodeStructFromJson(Map<String, dynamic> json) =>
             : Attribute.fromJson(json['att'] as Map<String, dynamic>),
         cell: json['cell'] == null
             ? null
-            : Cell.fromJson(json['cell'] as Map<String, dynamic>),
+            : CellPosition.fromJson(json['cell'] as Map<String, dynamic>),
         cells: (json['cells'] as List<dynamic>?)
-            ?.map((e) => Cell.fromJson(e as Map<String, dynamic>))
+            ?.map((e) => CellPosition.fromJson(e as Map<String, dynamic>))
             .toList(),
         dist: (json['dist'] as num?)?.toInt(),
         minDist: (json['minDist'] as num?)?.toInt(),
@@ -37,7 +37,7 @@ NodeStruct _$NodeStructFromJson(Map<String, dynamic> json) =>
       ..idOnTap = $enumDecodeNullable(_$OnTapActionEnumMap, json['idOnTap'])
       ..defaultOnTap = json['defaultOnTap'] as bool
       ..cellsToSelect = (json['cellsToSelect'] as List<dynamic>?)
-          ?.map((e) => Cell.fromJson(e as Map<String, dynamic>))
+          ?.map((e) => CellPosition.fromJson(e as Map<String, dynamic>))
           .toList();
 
 Map<String, dynamic> _$NodeStructToJson(NodeStruct instance) =>

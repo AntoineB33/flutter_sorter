@@ -6,6 +6,14 @@ part of 'update_data.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+CellPosition _$CellPositionFromJson(Map<String, dynamic> json) => CellPosition(
+  (json['rowId'] as num).toInt(),
+  (json['colId'] as num).toInt(),
+);
+
+Map<String, dynamic> _$CellPositionToJson(CellPosition instance) =>
+    <String, dynamic>{'rowId': instance.rowId, 'colId': instance.colId};
+
 SheetDataUpdate _$SheetDataUpdateFromJson(
   Map<String, dynamic> json,
 ) => SheetDataUpdate(
@@ -23,19 +31,18 @@ SheetDataUpdate _$SheetDataUpdateFromJson(
       ?.map((e) => (e as num).toInt())
       .toList(),
   historyIndex: (json['historyIndex'] as num?)?.toInt(),
+  selHistoryIndex: (json['selHistoryIndex'] as num?)?.toInt(),
   colHeaderHeight: (json['colHeaderHeight'] as num?)?.toDouble(),
   prevColHeaderHeight: (json['prevColHeaderHeight'] as num?)?.toDouble(),
   rowHeaderWidth: (json['rowHeaderWidth'] as num?)?.toDouble(),
   prevRowHeaderWidth: (json['prevRowHeaderWidth'] as num?)?.toDouble(),
-  primSelHistory: (json['primSelHistory'] as List<dynamic>?)
-      ?.map((e) => CellPosition.fromJson(e as Map<String, dynamic>))
-      .toList(),
-  primSelHistoryId: (json['primSelHistoryId'] as num?)?.toInt(),
+  selectionHistory: json['selectionHistory'] == null
+      ? null
+      : SelectionData.fromJson(
+          json['selectionHistory'] as Map<String, dynamic>,
+        ),
   scrollOffsetX: (json['scrollOffsetX'] as num?)?.toDouble(),
   scrollOffsetY: (json['scrollOffsetY'] as num?)?.toDouble(),
-  selectedCells: (json['selectedCells'] as List<dynamic>?)
-      ?.map((e) => CellPosition.fromJson(e as Map<String, dynamic>))
-      .toSet(),
   bestSortFound: (json['bestSortFound'] as List<dynamic>?)
       ?.map((e) => (e as num).toInt())
       .toList(),
@@ -88,10 +95,9 @@ Map<String, dynamic> _$SheetDataUpdateToJson(SheetDataUpdate instance) =>
       'prevRowHeaderWidth': instance.prevRowHeaderWidth,
       'scrollOffsetX': instance.scrollOffsetX,
       'scrollOffsetY': instance.scrollOffsetY,
-      'primSelHistory': instance.primSelHistory,
-      'primSelHistoryId': instance.primSelHistoryId,
       'historyIndex': instance.historyIndex,
-      'selectedCells': instance.selectedCells?.toList(),
+      'selectionHistory': instance.selectionHistory,
+      'selHistoryIndex': instance.selHistoryIndex,
       'bestSortFound': instance.bestSortFound,
       'bestDistFound': instance.bestDistFound,
       'cursors': instance.cursors,

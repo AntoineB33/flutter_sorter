@@ -13,13 +13,13 @@ import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_ca
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sorting_progress_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/history_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/layout_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/core_sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/history_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/layout_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sort_progress_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 
 class SheetDataRepositoryImpl implements SheetDataRepository {
@@ -48,6 +48,8 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   );
   SelectionData get selection =>
       selectionCache.getSelectionData(currentSheetId);
+  SelectionState get selectionState =>
+      selectionCache.getSelectionState(currentSheetId);
 
   @override
   bool containsSheetId(int sheetId) {
@@ -75,7 +77,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     int endRow = selectionCache.primarySelectedCellX(currentSheetId);
     int startCol = selectionCache.primarySelectedCellY(currentSheetId);
     int endCol = selectionCache.primarySelectedCellY(currentSheetId);
-    for (CellPosition cell in selection.selectedCells) {
+    for (CellPosition cell in selectionState.selectedCells) {
       if (cell.rowId < startRow) startRow = cell.rowId;
       if (cell.colId < startCol) startCol = cell.colId;
       if (cell.rowId > endRow) endRow = cell.rowId;
@@ -85,7 +87,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       endRow - startRow + 1,
       (_) => List.generate(endCol - startCol + 1, (_) => false),
     );
-    for (CellPosition cell in selection.selectedCells) {
+    for (CellPosition cell in selectionState.selectedCells) {
       selectedCellsTable[cell.rowId - startRow][cell.colId - startCol] = true;
     }
     if (!selectedCellsTable.every((row) => row.every((cell) => !cell))) {
@@ -209,9 +211,8 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         );
         layoutCache.setLayout(sheetId, layoutDataTable);
         final selectionData = SelectionData(
-          selectedCells: sheetData.selectedCells,
-          primSelHistory: sheetData.primSelHistory,
-          primSelHistoryId: sheetData.primSelHistoryId,
+          selectionStates: sheetData.selectionHistory,
+          primSelHistoryId: sheetData.selHistoryId,
         );
         selectionCache.setSelectionData(sheetId, selectionData);
         final sortProgression = SortProgressData(
@@ -261,7 +262,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   ChangeSet delete() {
     final updates = ChangeSet();
     for (CellPosition cellPos
-        in selectionCache.getSelectionData(currentSheetId).selectedCells) {
+        in selectionCache.getSelectionState(currentSheetId).selectedCells) {
       final cellUpdate = CellUpdate(
         currentSheetId,
         cellPos.rowId,

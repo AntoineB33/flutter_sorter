@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:trying_flutter/features/media_sorter/application/coordinators/spreadsheet_coordinator.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
 import 'analysis_tree_node.dart';

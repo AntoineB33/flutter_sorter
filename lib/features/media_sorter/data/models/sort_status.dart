@@ -30,4 +30,6 @@ class SortStatus {
       _$SortStatusFromJson(json);
 
   Map<String, dynamic> toJson() => _$SortStatusToJson(this);
+  // ignore: unused_element
+  static void _keepLinterHappy() => SortStatus.initial().toJson();
 }

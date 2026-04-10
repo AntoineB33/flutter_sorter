@@ -94,23 +94,23 @@ class $SheetDataTablesTable extends SheetDataTables
     requiredDuringInsert: true,
   );
   @override
-  late final GeneratedColumnWithTypeConverter<List<CellPosition>, String>
-  primSelHistory =
+  late final GeneratedColumnWithTypeConverter<SelectionData, String>
+  selectionHistory =
       GeneratedColumn<String>(
-        'prim_sel_history',
+        'selection_history',
         aliasedName,
         false,
         type: DriftSqlType.string,
         requiredDuringInsert: true,
-      ).withConverter<List<CellPosition>>(
-        $SheetDataTablesTable.$converterprimSelHistory,
+      ).withConverter<SelectionData>(
+        $SheetDataTablesTable.$converterselectionHistory,
       );
-  static const VerificationMeta _primSelHistoryIdMeta = const VerificationMeta(
-    'primSelHistoryId',
+  static const VerificationMeta _selHistoryIdMeta = const VerificationMeta(
+    'selHistoryId',
   );
   @override
-  late final GeneratedColumn<int> primSelHistoryId = GeneratedColumn<int>(
-    'prim_sel_history_id',
+  late final GeneratedColumn<int> selHistoryId = GeneratedColumn<int>(
+    'sel_history_id',
     aliasedName,
     false,
     type: DriftSqlType.int,
@@ -339,13 +339,13 @@ class $SheetDataTablesTable extends SheetDataTables
   );
   @override
   late final GeneratedColumn<bool> analysisDone = GeneratedColumn<bool>(
-    'analys_is_done',
+    'analysis_done',
     aliasedName,
     false,
     type: DriftSqlType.bool,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("analys_is_done" IN (0, 1))',
+      'CHECK ("analysis_done" IN (0, 1))',
     ),
   );
   @override
@@ -358,8 +358,8 @@ class $SheetDataTablesTable extends SheetDataTables
     historyIndex,
     colHeaderHeight,
     rowHeaderWidth,
-    primSelHistory,
-    primSelHistoryId,
+    selectionHistory,
+    selHistoryId,
     scrollOffsetX,
     scrollOffsetY,
     selectedCells,
@@ -444,16 +444,16 @@ class $SheetDataTablesTable extends SheetDataTables
     } else if (isInserting) {
       context.missing(_rowHeaderWidthMeta);
     }
-    if (data.containsKey('prim_sel_history_id')) {
+    if (data.containsKey('sel_history_id')) {
       context.handle(
-        _primSelHistoryIdMeta,
-        primSelHistoryId.isAcceptableOrUnknown(
-          data['prim_sel_history_id']!,
-          _primSelHistoryIdMeta,
+        _selHistoryIdMeta,
+        selHistoryId.isAcceptableOrUnknown(
+          data['sel_history_id']!,
+          _selHistoryIdMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_primSelHistoryIdMeta);
+      context.missing(_selHistoryIdMeta);
     }
     if (data.containsKey('scroll_offset_x')) {
       context.handle(
@@ -573,11 +573,11 @@ class $SheetDataTablesTable extends SheetDataTables
     } else if (isInserting) {
       context.missing(_toAlwaysApplyCurrentBestSortMeta);
     }
-    if (data.containsKey('analys_is_done')) {
+    if (data.containsKey('analysis_done')) {
       context.handle(
         _analysisDoneMeta,
         analysisDone.isAcceptableOrUnknown(
-          data['analys_is_done']!,
+          data['analysis_done']!,
           _analysisDoneMeta,
         ),
       );
@@ -629,15 +629,16 @@ class $SheetDataTablesTable extends SheetDataTables
         DriftSqlType.double,
         data['${effectivePrefix}row_header_width'],
       )!,
-      primSelHistory: $SheetDataTablesTable.$converterprimSelHistory.fromSql(
-        attachedDatabase.typeMapping.read(
-          DriftSqlType.string,
-          data['${effectivePrefix}prim_sel_history'],
-        )!,
-      ),
-      primSelHistoryId: attachedDatabase.typeMapping.read(
+      selectionHistory: $SheetDataTablesTable.$converterselectionHistory
+          .fromSql(
+            attachedDatabase.typeMapping.read(
+              DriftSqlType.string,
+              data['${effectivePrefix}selection_history'],
+            )!,
+          ),
+      selHistoryId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}prim_sel_history_id'],
+        data['${effectivePrefix}sel_history_id'],
       )!,
       scrollOffsetX: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
@@ -727,7 +728,7 @@ class $SheetDataTablesTable extends SheetDataTables
       )!,
       analysisDone: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
-        data['${effectivePrefix}analys_is_done'],
+        data['${effectivePrefix}analysis_done'],
       )!,
     );
   }
@@ -741,8 +742,8 @@ class $SheetDataTablesTable extends SheetDataTables
       const ListIntConverter();
   static TypeConverter<List<int>, String> $converterusedCols =
       const ListIntConverter();
-  static TypeConverter<List<CellPosition>, String> $converterprimSelHistory =
-      const ListPointConverter();
+  static TypeConverter<SelectionData, String> $converterselectionHistory =
+      const SelectionDataConverter();
   static TypeConverter<Set<CellPosition>, String> $converterselectedCells =
       const SetPointConverter();
   static TypeConverter<List<int>, String> $converterbestSortFound =
@@ -768,8 +769,8 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
   final int historyIndex;
   final double colHeaderHeight;
   final double rowHeaderWidth;
-  final List<CellPosition> primSelHistory;
-  final int primSelHistoryId;
+  final SelectionData selectionHistory;
+  final int selHistoryId;
   final double scrollOffsetX;
   final double scrollOffsetY;
   final Set<CellPosition> selectedCells;
@@ -798,8 +799,8 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     required this.historyIndex,
     required this.colHeaderHeight,
     required this.rowHeaderWidth,
-    required this.primSelHistory,
-    required this.primSelHistoryId,
+    required this.selectionHistory,
+    required this.selHistoryId,
     required this.scrollOffsetX,
     required this.scrollOffsetY,
     required this.selectedCells,
@@ -840,11 +841,13 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     map['col_header_height'] = Variable<double>(colHeaderHeight);
     map['row_header_width'] = Variable<double>(rowHeaderWidth);
     {
-      map['prim_sel_history'] = Variable<String>(
-        $SheetDataTablesTable.$converterprimSelHistory.toSql(primSelHistory),
+      map['selection_history'] = Variable<String>(
+        $SheetDataTablesTable.$converterselectionHistory.toSql(
+          selectionHistory,
+        ),
       );
     }
-    map['prim_sel_history_id'] = Variable<int>(primSelHistoryId);
+    map['sel_history_id'] = Variable<int>(selHistoryId);
     map['scroll_offset_x'] = Variable<double>(scrollOffsetX);
     map['scroll_offset_y'] = Variable<double>(scrollOffsetY);
     {
@@ -895,7 +898,7 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     map['to_always_apply_current_best_sort'] = Variable<bool>(
       toAlwaysApplyCurrentBestSort,
     );
-    map['analys_is_done'] = Variable<bool>(analysisDone);
+    map['analysis_done'] = Variable<bool>(analysisDone);
     return map;
   }
 
@@ -909,8 +912,8 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       historyIndex: Value(historyIndex),
       colHeaderHeight: Value(colHeaderHeight),
       rowHeaderWidth: Value(rowHeaderWidth),
-      primSelHistory: Value(primSelHistory),
-      primSelHistoryId: Value(primSelHistoryId),
+      selectionHistory: Value(selectionHistory),
+      selHistoryId: Value(selHistoryId),
       scrollOffsetX: Value(scrollOffsetX),
       scrollOffsetY: Value(scrollOffsetY),
       selectedCells: Value(selectedCells),
@@ -947,10 +950,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       historyIndex: serializer.fromJson<int>(json['historyIndex']),
       colHeaderHeight: serializer.fromJson<double>(json['colHeaderHeight']),
       rowHeaderWidth: serializer.fromJson<double>(json['rowHeaderWidth']),
-      primSelHistory: serializer.fromJson<List<CellPosition>>(
-        json['primSelHistory'],
+      selectionHistory: serializer.fromJson<SelectionData>(
+        json['selectionHistory'],
       ),
-      primSelHistoryId: serializer.fromJson<int>(json['primSelHistoryId']),
+      selHistoryId: serializer.fromJson<int>(json['selHistoryId']),
       scrollOffsetX: serializer.fromJson<double>(json['scrollOffsetX']),
       scrollOffsetY: serializer.fromJson<double>(json['scrollOffsetY']),
       selectedCells: serializer.fromJson<Set<CellPosition>>(
@@ -1002,8 +1005,8 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       'historyIndex': serializer.toJson<int>(historyIndex),
       'colHeaderHeight': serializer.toJson<double>(colHeaderHeight),
       'rowHeaderWidth': serializer.toJson<double>(rowHeaderWidth),
-      'primSelHistory': serializer.toJson<List<CellPosition>>(primSelHistory),
-      'primSelHistoryId': serializer.toJson<int>(primSelHistoryId),
+      'selectionHistory': serializer.toJson<SelectionData>(selectionHistory),
+      'selHistoryId': serializer.toJson<int>(selHistoryId),
       'scrollOffsetX': serializer.toJson<double>(scrollOffsetX),
       'scrollOffsetY': serializer.toJson<double>(scrollOffsetY),
       'selectedCells': serializer.toJson<Set<CellPosition>>(selectedCells),
@@ -1039,8 +1042,8 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     int? historyIndex,
     double? colHeaderHeight,
     double? rowHeaderWidth,
-    List<CellPosition>? primSelHistory,
-    int? primSelHistoryId,
+    SelectionData? selectionHistory,
+    int? selHistoryId,
     double? scrollOffsetX,
     double? scrollOffsetY,
     Set<CellPosition>? selectedCells,
@@ -1069,8 +1072,8 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     historyIndex: historyIndex ?? this.historyIndex,
     colHeaderHeight: colHeaderHeight ?? this.colHeaderHeight,
     rowHeaderWidth: rowHeaderWidth ?? this.rowHeaderWidth,
-    primSelHistory: primSelHistory ?? this.primSelHistory,
-    primSelHistoryId: primSelHistoryId ?? this.primSelHistoryId,
+    selectionHistory: selectionHistory ?? this.selectionHistory,
+    selHistoryId: selHistoryId ?? this.selHistoryId,
     scrollOffsetX: scrollOffsetX ?? this.scrollOffsetX,
     scrollOffsetY: scrollOffsetY ?? this.scrollOffsetY,
     selectedCells: selectedCells ?? this.selectedCells,
@@ -1111,12 +1114,12 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       rowHeaderWidth: data.rowHeaderWidth.present
           ? data.rowHeaderWidth.value
           : this.rowHeaderWidth,
-      primSelHistory: data.primSelHistory.present
-          ? data.primSelHistory.value
-          : this.primSelHistory,
-      primSelHistoryId: data.primSelHistoryId.present
-          ? data.primSelHistoryId.value
-          : this.primSelHistoryId,
+      selectionHistory: data.selectionHistory.present
+          ? data.selectionHistory.value
+          : this.selectionHistory,
+      selHistoryId: data.selHistoryId.present
+          ? data.selHistoryId.value
+          : this.selHistoryId,
       scrollOffsetX: data.scrollOffsetX.present
           ? data.scrollOffsetX.value
           : this.scrollOffsetX,
@@ -1184,8 +1187,8 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           ..write('historyIndex: $historyIndex, ')
           ..write('colHeaderHeight: $colHeaderHeight, ')
           ..write('rowHeaderWidth: $rowHeaderWidth, ')
-          ..write('primSelHistory: $primSelHistory, ')
-          ..write('primSelHistoryId: $primSelHistoryId, ')
+          ..write('selectionHistory: $selectionHistory, ')
+          ..write('selHistoryId: $selHistoryId, ')
           ..write('scrollOffsetX: $scrollOffsetX, ')
           ..write('scrollOffsetY: $scrollOffsetY, ')
           ..write('selectedCells: $selectedCells, ')
@@ -1221,8 +1224,8 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     historyIndex,
     colHeaderHeight,
     rowHeaderWidth,
-    primSelHistory,
-    primSelHistoryId,
+    selectionHistory,
+    selHistoryId,
     scrollOffsetX,
     scrollOffsetY,
     selectedCells,
@@ -1255,8 +1258,8 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           other.historyIndex == this.historyIndex &&
           other.colHeaderHeight == this.colHeaderHeight &&
           other.rowHeaderWidth == this.rowHeaderWidth &&
-          other.primSelHistory == this.primSelHistory &&
-          other.primSelHistoryId == this.primSelHistoryId &&
+          other.selectionHistory == this.selectionHistory &&
+          other.selHistoryId == this.selHistoryId &&
           other.scrollOffsetX == this.scrollOffsetX &&
           other.scrollOffsetY == this.scrollOffsetY &&
           other.selectedCells == this.selectedCells &&
@@ -1288,8 +1291,8 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
   final Value<int> historyIndex;
   final Value<double> colHeaderHeight;
   final Value<double> rowHeaderWidth;
-  final Value<List<CellPosition>> primSelHistory;
-  final Value<int> primSelHistoryId;
+  final Value<SelectionData> selectionHistory;
+  final Value<int> selHistoryId;
   final Value<double> scrollOffsetX;
   final Value<double> scrollOffsetY;
   final Value<Set<CellPosition>> selectedCells;
@@ -1318,8 +1321,8 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     this.historyIndex = const Value.absent(),
     this.colHeaderHeight = const Value.absent(),
     this.rowHeaderWidth = const Value.absent(),
-    this.primSelHistory = const Value.absent(),
-    this.primSelHistoryId = const Value.absent(),
+    this.selectionHistory = const Value.absent(),
+    this.selHistoryId = const Value.absent(),
     this.scrollOffsetX = const Value.absent(),
     this.scrollOffsetY = const Value.absent(),
     this.selectedCells = const Value.absent(),
@@ -1349,8 +1352,8 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     required int historyIndex,
     required double colHeaderHeight,
     required double rowHeaderWidth,
-    required List<CellPosition> primSelHistory,
-    required int primSelHistoryId,
+    required SelectionData selectionHistory,
+    required int selHistoryId,
     required double scrollOffsetX,
     required double scrollOffsetY,
     required Set<CellPosition> selectedCells,
@@ -1377,8 +1380,8 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
        historyIndex = Value(historyIndex),
        colHeaderHeight = Value(colHeaderHeight),
        rowHeaderWidth = Value(rowHeaderWidth),
-       primSelHistory = Value(primSelHistory),
-       primSelHistoryId = Value(primSelHistoryId),
+       selectionHistory = Value(selectionHistory),
+       selHistoryId = Value(selHistoryId),
        scrollOffsetX = Value(scrollOffsetX),
        scrollOffsetY = Value(scrollOffsetY),
        selectedCells = Value(selectedCells),
@@ -1407,8 +1410,8 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Expression<int>? historyIndex,
     Expression<double>? colHeaderHeight,
     Expression<double>? rowHeaderWidth,
-    Expression<String>? primSelHistory,
-    Expression<int>? primSelHistoryId,
+    Expression<String>? selectionHistory,
+    Expression<int>? selHistoryId,
     Expression<double>? scrollOffsetX,
     Expression<double>? scrollOffsetY,
     Expression<String>? selectedCells,
@@ -1438,8 +1441,8 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       if (historyIndex != null) 'history_index': historyIndex,
       if (colHeaderHeight != null) 'col_header_height': colHeaderHeight,
       if (rowHeaderWidth != null) 'row_header_width': rowHeaderWidth,
-      if (primSelHistory != null) 'prim_sel_history': primSelHistory,
-      if (primSelHistoryId != null) 'prim_sel_history_id': primSelHistoryId,
+      if (selectionHistory != null) 'selection_history': selectionHistory,
+      if (selHistoryId != null) 'sel_history_id': selHistoryId,
       if (scrollOffsetX != null) 'scroll_offset_x': scrollOffsetX,
       if (scrollOffsetY != null) 'scroll_offset_y': scrollOffsetY,
       if (selectedCells != null) 'selected_cells': selectedCells,
@@ -1464,7 +1467,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
         'to_apply_next_best_sort': toApplyNextBestSort,
       if (toAlwaysApplyCurrentBestSort != null)
         'to_always_apply_current_best_sort': toAlwaysApplyCurrentBestSort,
-      if (analysisDone != null) 'analys_is_done': analysisDone,
+      if (analysisDone != null) 'analysis_done': analysisDone,
     });
   }
 
@@ -1477,8 +1480,8 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Value<int>? historyIndex,
     Value<double>? colHeaderHeight,
     Value<double>? rowHeaderWidth,
-    Value<List<CellPosition>>? primSelHistory,
-    Value<int>? primSelHistoryId,
+    Value<SelectionData>? selectionHistory,
+    Value<int>? selHistoryId,
     Value<double>? scrollOffsetX,
     Value<double>? scrollOffsetY,
     Value<Set<CellPosition>>? selectedCells,
@@ -1508,8 +1511,8 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       historyIndex: historyIndex ?? this.historyIndex,
       colHeaderHeight: colHeaderHeight ?? this.colHeaderHeight,
       rowHeaderWidth: rowHeaderWidth ?? this.rowHeaderWidth,
-      primSelHistory: primSelHistory ?? this.primSelHistory,
-      primSelHistoryId: primSelHistoryId ?? this.primSelHistoryId,
+      selectionHistory: selectionHistory ?? this.selectionHistory,
+      selHistoryId: selHistoryId ?? this.selHistoryId,
       scrollOffsetX: scrollOffsetX ?? this.scrollOffsetX,
       scrollOffsetY: scrollOffsetY ?? this.scrollOffsetY,
       selectedCells: selectedCells ?? this.selectedCells,
@@ -1567,15 +1570,15 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     if (rowHeaderWidth.present) {
       map['row_header_width'] = Variable<double>(rowHeaderWidth.value);
     }
-    if (primSelHistory.present) {
-      map['prim_sel_history'] = Variable<String>(
-        $SheetDataTablesTable.$converterprimSelHistory.toSql(
-          primSelHistory.value,
+    if (selectionHistory.present) {
+      map['selection_history'] = Variable<String>(
+        $SheetDataTablesTable.$converterselectionHistory.toSql(
+          selectionHistory.value,
         ),
       );
     }
-    if (primSelHistoryId.present) {
-      map['prim_sel_history_id'] = Variable<int>(primSelHistoryId.value);
+    if (selHistoryId.present) {
+      map['sel_history_id'] = Variable<int>(selHistoryId.value);
     }
     if (scrollOffsetX.present) {
       map['scroll_offset_x'] = Variable<double>(scrollOffsetX.value);
@@ -1664,7 +1667,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       );
     }
     if (analysisDone.present) {
-      map['analys_is_done'] = Variable<bool>(analysisDone.value);
+      map['analysis_done'] = Variable<bool>(analysisDone.value);
     }
     return map;
   }
@@ -1680,8 +1683,8 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
           ..write('historyIndex: $historyIndex, ')
           ..write('colHeaderHeight: $colHeaderHeight, ')
           ..write('rowHeaderWidth: $rowHeaderWidth, ')
-          ..write('primSelHistory: $primSelHistory, ')
-          ..write('primSelHistoryId: $primSelHistoryId, ')
+          ..write('selectionHistory: $selectionHistory, ')
+          ..write('selHistoryId: $selHistoryId, ')
           ..write('scrollOffsetX: $scrollOffsetX, ')
           ..write('scrollOffsetY: $scrollOffsetY, ')
           ..write('selectedCells: $selectedCells, ')
@@ -3811,8 +3814,8 @@ typedef $$SheetDataTablesTableCreateCompanionBuilder =
       required int historyIndex,
       required double colHeaderHeight,
       required double rowHeaderWidth,
-      required List<CellPosition> primSelHistory,
-      required int primSelHistoryId,
+      required SelectionData selectionHistory,
+      required int selHistoryId,
       required double scrollOffsetX,
       required double scrollOffsetY,
       required Set<CellPosition> selectedCells,
@@ -3843,8 +3846,8 @@ typedef $$SheetDataTablesTableUpdateCompanionBuilder =
       Value<int> historyIndex,
       Value<double> colHeaderHeight,
       Value<double> rowHeaderWidth,
-      Value<List<CellPosition>> primSelHistory,
-      Value<int> primSelHistoryId,
+      Value<SelectionData> selectionHistory,
+      Value<int> selHistoryId,
       Value<double> scrollOffsetX,
       Value<double> scrollOffsetY,
       Value<Set<CellPosition>> selectedCells,
@@ -4112,14 +4115,14 @@ class $$SheetDataTablesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnWithTypeConverterFilters<List<CellPosition>, List<CellPosition>, String>
-  get primSelHistory => $composableBuilder(
-    column: $table.primSelHistory,
+  ColumnWithTypeConverterFilters<SelectionData, SelectionData, String>
+  get selectionHistory => $composableBuilder(
+    column: $table.selectionHistory,
     builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 
-  ColumnFilters<int> get primSelHistoryId => $composableBuilder(
-    column: $table.primSelHistoryId,
+  ColumnFilters<int> get selHistoryId => $composableBuilder(
+    column: $table.selHistoryId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4463,13 +4466,13 @@ class $$SheetDataTablesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get primSelHistory => $composableBuilder(
-    column: $table.primSelHistory,
+  ColumnOrderings<String> get selectionHistory => $composableBuilder(
+    column: $table.selectionHistory,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get primSelHistoryId => $composableBuilder(
-    column: $table.primSelHistoryId,
+  ColumnOrderings<int> get selHistoryId => $composableBuilder(
+    column: $table.selHistoryId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4610,14 +4613,14 @@ class $$SheetDataTablesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumnWithTypeConverter<List<CellPosition>, String>
-  get primSelHistory => $composableBuilder(
-    column: $table.primSelHistory,
+  GeneratedColumnWithTypeConverter<SelectionData, String>
+  get selectionHistory => $composableBuilder(
+    column: $table.selectionHistory,
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get primSelHistoryId => $composableBuilder(
-    column: $table.primSelHistoryId,
+  GeneratedColumn<int> get selHistoryId => $composableBuilder(
+    column: $table.selHistoryId,
     builder: (column) => column,
   );
 
@@ -4951,8 +4954,8 @@ class $$SheetDataTablesTableTableManager
                 Value<int> historyIndex = const Value.absent(),
                 Value<double> colHeaderHeight = const Value.absent(),
                 Value<double> rowHeaderWidth = const Value.absent(),
-                Value<List<CellPosition>> primSelHistory = const Value.absent(),
-                Value<int> primSelHistoryId = const Value.absent(),
+                Value<SelectionData> selectionHistory = const Value.absent(),
+                Value<int> selHistoryId = const Value.absent(),
                 Value<double> scrollOffsetX = const Value.absent(),
                 Value<double> scrollOffsetY = const Value.absent(),
                 Value<Set<CellPosition>> selectedCells = const Value.absent(),
@@ -4981,8 +4984,8 @@ class $$SheetDataTablesTableTableManager
                 historyIndex: historyIndex,
                 colHeaderHeight: colHeaderHeight,
                 rowHeaderWidth: rowHeaderWidth,
-                primSelHistory: primSelHistory,
-                primSelHistoryId: primSelHistoryId,
+                selectionHistory: selectionHistory,
+                selHistoryId: selHistoryId,
                 scrollOffsetX: scrollOffsetX,
                 scrollOffsetY: scrollOffsetY,
                 selectedCells: selectedCells,
@@ -5013,8 +5016,8 @@ class $$SheetDataTablesTableTableManager
                 required int historyIndex,
                 required double colHeaderHeight,
                 required double rowHeaderWidth,
-                required List<CellPosition> primSelHistory,
-                required int primSelHistoryId,
+                required SelectionData selectionHistory,
+                required int selHistoryId,
                 required double scrollOffsetX,
                 required double scrollOffsetY,
                 required Set<CellPosition> selectedCells,
@@ -5043,8 +5046,8 @@ class $$SheetDataTablesTableTableManager
                 historyIndex: historyIndex,
                 colHeaderHeight: colHeaderHeight,
                 rowHeaderWidth: rowHeaderWidth,
-                primSelHistory: primSelHistory,
-                primSelHistoryId: primSelHistoryId,
+                selectionHistory: selectionHistory,
+                selHistoryId: selHistoryId,
                 scrollOffsetX: scrollOffsetX,
                 scrollOffsetY: scrollOffsetY,
                 selectedCells: selectedCells,

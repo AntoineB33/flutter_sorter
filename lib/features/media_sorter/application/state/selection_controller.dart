@@ -28,7 +28,7 @@ class SelectionController extends ChangeNotifier {
 
   bool isCellSelected(int row, int col) {
     return selectionUsecase
-        .getSelectionData(currentSheetId)
+        .getSelectionState(currentSheetId)
         .selectedCells
         .any((cell) => cell.rowId == row && cell.colId == col);
   }
@@ -61,5 +61,10 @@ class SelectionController extends ChangeNotifier {
 
   void selectAll() {
     selectionUsecase.selectAll();
+  }
+
+  void setPrimarySelection(int row, int col, bool keepSelection) {
+    selectionUsecase.setPrimarySelection(row, col, keepSelection);
+    notifyListeners();
   }
 }

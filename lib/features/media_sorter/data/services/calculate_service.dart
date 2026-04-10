@@ -1,15 +1,14 @@
-import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/core_sheet_content.dart';
 import 'dart:collection';
-import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/cell.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/instr_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/attribute.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/instr_struct.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sorting_rule.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 
 class Cols {
   final List<int> colIndexes = [];
@@ -48,7 +47,7 @@ class CalculateService {
   NodeStruct get distPairsRoot => result.distPairsRoot;
   List<List<Set<Attribute>>> get tableToAtt => result.tableToAtt;
 
-  Map<String, Cell> get names => result.names;
+  Map<String, CellPosition> get names => result.names;
   Map<String, List<int>> get attToCol => result.attToCol;
   List<int> get nameIndexes => result.nameIndexes;
   List<int> get validRowIndexes => result.validRowIndexes;
@@ -97,7 +96,7 @@ class CalculateService {
   }
 
   AnalysisResult run() {
-    List<Map<InstrStruct, Cell>> instrTable = List.generate(
+    List<Map<InstrStruct, CellPosition>> instrTable = List.generate(
       rowCount,
       (_) => {},
     );
@@ -124,18 +123,18 @@ class CalculateService {
     return result;
   }
 
-  List<List<Cell>> findPath(
+  List<List<CellPosition>> findPath(
     Map<Attribute, Map<int, Cols>> graph,
     Attribute start,
     int end, {
     bool reverse = true,
   }) {
     Attribute att = start;
-    List<List<Cell>> path = [];
+    List<List<CellPosition>> path = [];
     while (true) {
       if (graph[att]![end] != added && att != start) {
-        List<Cell> cells = graph[att]![end]!.colIndexes
-            .map((colId) => Cell(rowId: end, colId: colId))
+        List<CellPosition> cells = graph[att]![end]!.colIndexes
+            .map((colId) => CellPosition(end, colId))
             .toList();
         path.add(cells);
         return reverse ? path.reversed.toList() : path;
@@ -143,8 +142,8 @@ class CalculateService {
       for (final rowId in graph[att]!.keys) {
         Attribute childAtt = Attribute.row(rowId);
         if (graph.containsKey(childAtt) && graph[childAtt]!.containsKey(end)) {
-          List<Cell> cells = graph[att]![rowId]!.colIndexes
-              .map((colId) => Cell(rowId: rowId, colId: colId))
+          List<CellPosition> cells = graph[att]![rowId]!.colIndexes
+              .map((colId) => CellPosition(rowId, colId))
               .toList();
           path.add(cells);
           att = childAtt;
@@ -195,7 +194,10 @@ class CalculateService {
                             (colId) =>
                                 !rowsToCol[childRowId]!.toInformFstDep[colId],
                           )
-                          .map((colId) => Cell(rowId: childRowId, colId: colId))
+                          .map(
+                            (colId) =>
+                                CellPosition(childRowId, colId),
+                          )
                           .toList(),
                       newChildren: newPath,
                     ),
@@ -354,7 +356,7 @@ class CalculateService {
         warningRoot.newChildren!.add(
           NodeStruct(
             message: "Column ${splitStr[0]} does not exist",
-            cell: Cell(rowId: rowId, colId: colId),
+            cell: CellPosition(rowId, colId),
           ),
         );
         return att;
@@ -363,7 +365,7 @@ class CalculateService {
       errorRoot.newChildren!.add(
         NodeStruct(
           message: "Invalid attribute format: too many '.' characters",
-          cell: Cell(rowId: rowId, colId: colId),
+          cell: CellPosition(rowId, colId),
         ),
       );
       return att;
@@ -380,7 +382,7 @@ class CalculateService {
           NodeStruct(
             message:
                 "Cannot use both column and row index for attribute reference",
-            cell: Cell(rowId: rowId, colId: colId),
+            cell: CellPosition(rowId, colId),
           ),
         );
         return att;
@@ -389,7 +391,7 @@ class CalculateService {
         warningRoot.newChildren!.add(
           NodeStruct(
             message: "$name points to an empty row $numK",
-            cell: Cell(rowId: rowId, colId: colId),
+            cell: CellPosition(rowId, colId),
           ),
         );
       }
@@ -425,7 +427,7 @@ class CalculateService {
             NodeStruct(
               message:
                   "Column ${GetNames.getColumnLabel(attColId)} is not an attribute column",
-              cell: Cell(rowId: rowId, colId: colId),
+              cell: CellPosition(rowId, colId),
             ),
           );
           return att;
@@ -440,7 +442,7 @@ class CalculateService {
             NodeStruct(
               message:
                   "Attribute column ${GetNames.getColumnLabel(attColId)} differs from current column ${GetNames.getColumnLabel(colId)}",
-              cell: Cell(rowId: rowId, colId: colId),
+              cell: CellPosition(rowId, colId),
             ),
           );
         }
@@ -465,8 +467,8 @@ class CalculateService {
   void _addRulesBefAftOthers(
     List<int> newIndexList,
     List<int> newIndexes,
-    Map<int, Map<Attribute, Cell>> beforeAllOthers,
-    List<Map<InstrStruct, Cell>> instrTable,
+    Map<int, Map<Attribute, CellPosition>> beforeAllOthers,
+    List<Map<InstrStruct, CellPosition>> instrTable,
     List<List<int>> intervals,
     String errorMessage,
   ) {
@@ -517,7 +519,7 @@ class CalculateService {
     }
   }
 
-  void _getCategories(List<Map<InstrStruct, Cell>> instrTable) {
+  void _getCategories(List<Map<InstrStruct, CellPosition>> instrTable) {
     // final saved = {
     //   input: { name: name, table: table, columnTypes: columnTypes },
     //   output: { errorRoot: errorRoot },
@@ -541,10 +543,10 @@ class CalculateService {
 
     colToAtt.clear();
     Map<Attribute, List<int>> attToDist = {};
-    final Map<int, Map<Attribute, Cell>> isFstToAppear = {};
-    final Map<int, Map<Attribute, Cell>> isLstToAppear = {};
-    final Map<int, Map<Attribute, Cell>> beforeAllOthers = {};
-    final Map<int, Map<Attribute, Cell>> afterAllOthers = {};
+    final Map<int, Map<Attribute, CellPosition>> isFstToAppear = {};
+    final Map<int, Map<Attribute, CellPosition>> isLstToAppear = {};
+    final Map<int, Map<Attribute, CellPosition>> beforeAllOthers = {};
+    final Map<int, Map<Attribute, CellPosition>> afterAllOthers = {};
     colToAtt[all] = <Attribute>{};
     colToAtt[notUsedCst] = <Attribute>{};
     for (int colId = 0; colId < colCount; colId++) {
@@ -571,7 +573,7 @@ class CalculateService {
           NodeStruct(
             message:
                 "Column header ${GetNames.getColumnLabel(colId)} \"${getCellContent(0, colId)}\" conflicts with Column header ${GetNames.getColumnLabel(index)} \"${getCellContent(0, index)}\"",
-            cell: Cell(rowId: 0, colId: colId),
+            cell: CellPosition(0, colId),
           ),
         );
         return;
@@ -591,7 +593,7 @@ class CalculateService {
               errorRoot.newChildren!.add(
                 NodeStruct(
                   message: "empty attribute name",
-                  cell: Cell(rowId: rowId, colId: colId),
+                  cell: CellPosition(rowId, colId),
                 ),
               );
               return;
@@ -605,7 +607,7 @@ class CalculateService {
             );
             bool isFst = attWritten.endsWith(SpreadsheetConstants.first);
             bool isLst = attWritten.endsWith(SpreadsheetConstants.last);
-            Cell cell = Cell(rowId: rowId, colId: colId);
+            CellPosition cell = CellPosition(rowId, colId);
             if (isAppearFst || isAppearLst) {
               attWritten = attWritten
                   .substring(0, attWritten.length - 11)
@@ -709,8 +711,10 @@ class CalculateService {
                               (x) => NodeStruct(
                                 cells: x
                                     .map(
-                                      (y) =>
-                                          Cell(rowId: y.rowId, colId: y.colId),
+                                      (y) => CellPosition(
+                                        y.rowId,
+                                        y.colId,
+                                      ),
                                     )
                                     .toList(),
                               ),
@@ -726,8 +730,10 @@ class CalculateService {
                               (x) => NodeStruct(
                                 cells: x
                                     .map(
-                                      (y) =>
-                                          Cell(rowId: y.rowId, colId: y.colId),
+                                      (y) => CellPosition(
+                                        y.rowId,
+                                        y.colId,
+                                      ),
                                     )
                                     .toList(),
                               ),
@@ -1050,7 +1056,7 @@ class CalculateService {
     //       children = attToRefFromAttColToCol[att]!.keys
     //           .map(
     //             (k) => NodeStruct(
-    //               cell: Cell(
+    //               cell: CellPosition(
     //                 rowId: k,
     //                 colId: attToRefFromAttColToCol[att]![k]!,
     //               ),
@@ -1088,7 +1094,7 @@ class CalculateService {
     //       children = attToRefFromAttColToCol[att]!.keys
     //           .map(
     //             (k) => NodeStruct(
-    //               cell: Cell(
+    //               cell: CellPosition(
     //                 rowId: k,
     //                 colId: attToRefFromAttColToCol[att]![k]!,
     //               ),
@@ -1144,7 +1150,7 @@ class CalculateService {
                 NodeStruct(
                   message:
                       "$instr does not match dependencies pattern ${depPattern[colId]}",
-                  cell: Cell(rowId: rowId, colId: colId),
+                  cell: CellPosition(rowId, colId),
                 ),
               );
               return;
@@ -1172,7 +1178,7 @@ class CalculateService {
                 errorRoot.newChildren!.add(
                   NodeStruct(
                     message: "$instr does not match expected format",
-                    cell: Cell(rowId: rowId, colId: colId),
+                    cell: CellPosition(rowId, colId),
                   ),
                 );
                 return;
@@ -1210,7 +1216,7 @@ class CalculateService {
                   errorRoot.newChildren!.add(
                     NodeStruct(
                       message: "Attribute reference overlaps with header",
-                      cell: Cell(rowId: rowId, colId: colId),
+                      cell: CellPosition(rowId, colId),
                     ),
                   );
                   return;
@@ -1351,13 +1357,14 @@ class CalculateService {
                 newChildren: [
                   NodeStruct(cell: instrTable[rowId][instruction]),
                   NodeStruct(
-                    cell: Cell(rowId: rowId, colId: colId),
+                    cell: CellPosition(rowId, colId),
                   ),
                 ],
               ),
             );
           } else {
-            instrTable[rowId][instruction] = Cell(rowId: rowId, colId: colId);
+            instrTable[rowId][instruction] = CellPosition(rowId, colId,
+            );
           }
         }
       }
@@ -1375,7 +1382,7 @@ class CalculateService {
     return;
   }
 
-  void _getEverything(List<Map<InstrStruct, Cell>> instrTable) {
+  void _getEverything(List<Map<InstrStruct, CellPosition>> instrTable) {
     errorRoot.newChildren!.clear();
     warningRoot.newChildren!.clear();
     for (int row in usedRows) {
@@ -1420,7 +1427,7 @@ class CalculateService {
             errorRoot.newChildren!.add(
               NodeStruct(
                 message: "${att.name} is not a valid name",
-                cell: Cell(rowId: i, colId: j),
+                cell: CellPosition(i, j),
               ),
             );
             return;
@@ -1434,7 +1441,7 @@ class CalculateService {
             errorRoot.newChildren!.add(
               NodeStruct(
                 message: "${att.name} contains invalid characters (_ : | -)",
-                cell: Cell(rowId: i, colId: j),
+                cell: CellPosition(i, j),
               ),
             );
           }
@@ -1444,7 +1451,7 @@ class CalculateService {
             errorRoot.newChildren!.add(
               NodeStruct(
                 message: "${att.name} contains invalid parentheses",
-                cell: Cell(rowId: i, colId: j),
+                cell: CellPosition(i, j),
               ),
             );
           }
@@ -1453,7 +1460,7 @@ class CalculateService {
             errorRoot.newChildren!.add(
               NodeStruct(
                 message: "${att.name} is a reserved name",
-                cell: Cell(rowId: i, colId: j),
+                cell: CellPosition(i, j),
               ),
             );
           }
@@ -1464,19 +1471,19 @@ class CalculateService {
                 message: "name ${att.name} used two times",
                 newChildren: [
                   NodeStruct(
-                    cell: Cell(rowId: i, colId: j),
+                    cell: CellPosition(i, j),
                   ),
                   NodeStruct(
-                    cell: Cell(
-                      rowId: names[att.name]!.rowId,
-                      colId: names[att.name]!.colId,
+                    cell: CellPosition(
+                      names[att.name]!.rowId,
+                      names[att.name]!.colId,
                     ),
                   ),
                 ],
               ),
             );
           }
-          names[att.name!] = Cell(rowId: i, colId: j);
+          names[att.name!] = CellPosition(i, j);
         }
       }
     }
@@ -1485,7 +1492,7 @@ class CalculateService {
 
   void getRules(
     AnalysisResult result,
-    List<Map<InstrStruct, Cell>> instrTable,
+    List<Map<InstrStruct, CellPosition>> instrTable,
   ) {
     int nVal = instrTable.length;
     result.myRules.clear();

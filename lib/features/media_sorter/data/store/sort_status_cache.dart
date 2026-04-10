@@ -1,5 +1,5 @@
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sort_status.dart';
 
 class SortStatusCache {
   final Map<int, SortStatus> _sortStatusBySheet = {};
@@ -34,11 +34,6 @@ class SortStatusCache {
   void setAnalysisDone(int sheetId, bool analysisDone) {
     _sortStatusBySheet[sheetId] ??= SortStatus.initial();
     _sortStatusBySheet[sheetId]!.copyWith(analysisDone: analysisDone);
-  }
-
-  void isAnalysing(int sheetId) {
-    _sortStatusBySheet[sheetId] ??= SortStatus.initial();
-    _sortStatusBySheet[sheetId]!.copyWith(analysisDone: false);
   }
 
   void setSortStatus(Map<int, SortStatus> statuses) {

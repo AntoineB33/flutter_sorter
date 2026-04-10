@@ -7,10 +7,10 @@ import 'package:flutter/services.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sort_progress_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/selection_controller.dart';
@@ -104,7 +104,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     bool keepSelection, {
     bool scrollTo = true,
   }) {
-    historyController.newPrimarySelection(row, col);
+    selectionController.setPrimarySelection(row, col, keepSelection);
     treeController.updateMentionsContext();
     if (scrollTo) {
       gridController.scrollToCell();
@@ -442,7 +442,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     applyUpdatesAndSort(updates.lock, currentSheetId, false, false, false);
   }
 
-  void onCellSave(String newValue, bool moveUp) {
+  void onCellSave(bool moveUp) {
     if (moveUp) {
       setPrimarySelection(
         max(0, primarySelectedCellX - 1),

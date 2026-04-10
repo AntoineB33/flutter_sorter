@@ -1,8 +1,8 @@
 import 'dart:isolate';
 import 'dart:math';
 
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sorting_rule.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sort_progress_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sorting_rule.dart';
 
 class CalculationDatasource {
   
@@ -246,7 +246,7 @@ class CalculationDatasource {
         }
       }
       if (!found) {
-        reverseGetDist(groupAttribution, lastOccurrence, lastOccurrenceIds, bestSortFound, currentDist, id, distCheckId);
+        reverseGetDist(groupAttribution, lastOccurrence, lastOccurrenceIds, currentDist, id, distCheckId);
         id -= 1;
         if (id >= 0) {
           cursors[id]++;
@@ -293,7 +293,7 @@ class CalculationDatasource {
     return (success: success, newDistCheckId: newDistCheckId);
   }
 
-  static int reverseGetDist(List<List<int>> groupAttribution, List<List<int>> lastOccurrence, List<int> lastOccurrenceIds, List<int> bestSortFound, List<int> currentDist, int id, int distCheckId) {
+  static int reverseGetDist(List<List<int>> groupAttribution, List<List<int>> lastOccurrence, List<int> lastOccurrenceIds, List<int> currentDist, int id, int distCheckId) {
     for (int group in groupAttribution[id]) {
       if (lastOccurrenceIds[group] != -1 && lastOccurrence[group][lastOccurrenceIds[group]] == id) {
         lastOccurrenceIds[group]--;

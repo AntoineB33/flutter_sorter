@@ -12,11 +12,11 @@ import 'package:trying_flutter/features/media_sorter/data/store/isolate_receive_
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sorting_progress_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/attribute.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_status.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/attribute.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sort_progress_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sort_status.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/helpers/calculation_service.dart';
 import 'dart:async';
@@ -351,9 +351,15 @@ class SortRepositoryImpl implements SortRepository {
           ),
         ),
       );
-    result.names.forEach((key, value) {
-      value.rowId = newInd[value.rowId];
-    });
+    // transform all the rowIds into newInd[rowId] in result.names:
+    final newNames = Map.fromEntries(
+      result.names.entries.map(
+        (e) => MapEntry(e.key, CellPosition(newInd[e.value.rowId], e.value.colId)),
+      ),
+    );
+    result.names
+      ..clear()
+      ..addAll(newNames);
     result.formatedTable
       ..clear()
       ..addAll(

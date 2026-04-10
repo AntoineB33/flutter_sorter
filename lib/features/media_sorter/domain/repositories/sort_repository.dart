@@ -2,7 +2,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/sort_progress_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sort_progress_data.dart';
 
 abstract class SortRepository {
   bool isReordering(int sheetId);

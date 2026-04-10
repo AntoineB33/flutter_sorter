@@ -1,40 +1,29 @@
-import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 
 class SelectionCache {
-  final Map<int, SelectionData> _lastSelections = {};
+  final Map<int, SelectionData> _selections = {};
 
-  
+  SelectionState getSelectionState(int sheetId) {
+    return getSelectionData(sheetId).selectionStates[getSelectionData(
+      sheetId,
+    ).primSelHistoryId];
+  }
+
   int primarySelectedCellX(int sheetId) {
-    return getSelectionData(sheetId).primSelHistory[
-      getSelectionData(sheetId).primSelHistoryId].rowId;
-  }
-  
-  int primarySelectedCellY(int sheetId) {
-    return getSelectionData(sheetId).primSelHistory[
-      getSelectionData(sheetId).primSelHistoryId].colId;
+    return getSelectionState(sheetId).primarySelection.rowId;
   }
 
-  Map<String, SelectionData> get lastSelections =>
-      Map.unmodifiable(_lastSelections);
+  int primarySelectedCellY(int sheetId) {
+    return getSelectionState(sheetId).primarySelection.colId;
+  }
+
+  Map<String, SelectionData> get selections => Map.unmodifiable(_selections);
 
   SelectionData getSelectionData(int sheetId) {
-    return _lastSelections[sheetId] ??= SelectionData.empty();
-  }
-
-  void setLastSelections(
-    Map<int, SelectionData> lastSelections,
-    int currentSheetId,
-  ) {
-    SelectionData? currentSheetSelection = _lastSelections[currentSheetId];
-    _lastSelections
-      ..clear()
-      ..addAll(lastSelections);
-    if (currentSheetSelection != null) {
-      _lastSelections[currentSheetId] = currentSheetSelection;
-    }
+    return _selections[sheetId] ??= SelectionData.empty();
   }
 
   void setSelectionData(int sheetId, SelectionData selectionData) {
-    _lastSelections[sheetId] = selectionData;
+    _selections[sheetId] = selectionData;
   }
 }

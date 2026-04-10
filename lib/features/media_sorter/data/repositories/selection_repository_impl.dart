@@ -2,8 +2,8 @@ import 'package:meta/meta.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 
 class SelectionRepositoryImpl implements SelectionRepository {
@@ -20,6 +20,8 @@ class SelectionRepositoryImpl implements SelectionRepository {
       _selectionCache.primarySelectedCellY(currentSheetId);
   SelectionData get selection =>
       _selectionCache.getSelectionData(currentSheetId);
+  SelectionState get selectionState =>
+      _selectionCache.getSelectionState(currentSheetId);
 
   SelectionRepositoryImpl(
     this._selectionCache,
@@ -29,18 +31,20 @@ class SelectionRepositoryImpl implements SelectionRepository {
 
   @override
   @useResult
-  UpdateUnit selectAll() {
+  SelectionState selectAll() {
+    SelectionState selection = SelectionState.empty();
     selection.selectedCells.clear();
     for (int r = 0; r < _loadedSheetsCache.rowCount(currentSheetId); r++) {
       for (int c = 0; c < _loadedSheetsCache.colCount(currentSheetId); c++) {
         selection.selectedCells.add(CellPosition(r, c));
       }
     }
-    return SheetDataUpdate(
-      currentSheetId,
-      true,
-      selectedCells: selection.selectedCells,
-    );
+    return selection;
+  }
+
+  @override
+  SelectionState getSelectionState(int sheetId) {
+    return _selectionCache.getSelectionState(sheetId);
   }
 
   @override
@@ -49,11 +53,8 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
-  void setPrimarySelection(int row, int col, bool keepSelection) {
-    if (!keepSelection) {
-      selection.selectedCells.clear();
-    }
-    selection.selectedCells.add(CellPosition(row, col));
+  SelectionState setPrimarySelection(int row, int col, bool keepSelection) {
+    return SelectionState(primarySelection: CellPosition(row, col), selectedCells: keepSelection ? selectionState.selectedCells : {CellPosition(row, col)});
   }
 
   @override
