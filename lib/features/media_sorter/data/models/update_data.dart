@@ -213,16 +213,13 @@ class SheetDataUpdate extends UpdateUnit {
 @JsonSerializable()
 class CellUpdate extends UpdateUnit {
   final RecordType type = RecordType.cellUpdate;
-  final int sheetId;
-  final int rowId;
-  final int colId;
+  final int? sheetId;
+  final int? rowId;
+  final int? colId;
   final String? prevValue;
-  final String newValue;
+  final String? newValue;
   CellUpdate(
-    this.sheetId,
-    this.rowId,
-    this.colId,
-    this.newValue, {
+    {this.sheetId, this.rowId, this.colId, this.newValue,
     this.prevValue});
 
   @override
@@ -234,10 +231,10 @@ class CellUpdate extends UpdateUnit {
   UpdateUnit merge(UpdateUnit newUpdate) {
     final newCellUpdate = newUpdate as CellUpdate;
     return CellUpdate(
-      sheetId,
-      rowId,
-      colId,
-      newCellUpdate.newValue,
+      sheetId: newCellUpdate.sheetId ?? sheetId,
+      rowId: newCellUpdate.rowId ?? rowId,
+      colId: newCellUpdate.colId ?? colId,
+      newValue: newCellUpdate.newValue ?? newValue,
       prevValue: newCellUpdate.prevValue ?? prevValue, // Keep the original prevValue if the new one is null
     );
   }
@@ -287,7 +284,7 @@ class ColumnTypeUpdate extends UpdateUnit {
 class UpdateData extends UpdateUnit {
   final RecordType type = RecordType.updateData;
   final DateTime timestamp;
-  final int chronoId;
+  final int? chronoId;
   final int sheetId;
   final IMap<String, UpdateUnit> updates;
   bool addOtherwiseRemove;

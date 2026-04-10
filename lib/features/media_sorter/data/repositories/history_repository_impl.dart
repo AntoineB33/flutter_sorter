@@ -79,7 +79,11 @@ class HistoryRepositoryImpl implements HistoryRepository {
           isLastChangeInSameEditingMode = false;
           return _removeLastHistoryBcEdit();
         }
-        cellUpdate.prevValue = prevCellUpdate.prevValue;
+        changeSet.addUpdate(lastUpdateData.merge(UpdateData(
+          
+          CellUpdate(
+          prevValue: prevCellUpdate.prevValue,
+        )));
         historyData.updateHistories[historyData.historyIndex] = updateData;
         changeSet.addUpdate(updateData);
         return changeSet;
