@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
@@ -138,6 +139,11 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
           startRow + r,
           startCol + c,
           val,
+          loadedSheetsCache.getCellContent(
+            currentSheetId,
+            startRow + r,
+            startCol + c,
+          ),
         );
         updates[cellUpdate.getKey()] = cellUpdate;
       }
@@ -150,14 +156,15 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     return loadedSheetsCache.getCellContent(sheetId, cell.rowId, cell.colId);
   }
 
+  @useResult
   @override
-  ColumnType getColumnType(int colId, int sheetId) {
-    return loadedSheetsCache.getColumnType(sheetId, colId);
-  }
-
-  @override
-  String getSheetTitle(int sheetId) {
-    return loadedSheetsCache.getSheetName(sheetId);
+  ColumnTypeUpdate getColumnTypeUpdate(int colId, ColumnType newColumnType, int sheetId) {
+    return ColumnTypeUpdate(
+      sheetId,
+      colId,
+      newColumnType,
+      loadedSheetsCache.getColumnType(sheetId, colId),
+    );
   }
 
   @override
@@ -268,6 +275,11 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         cellPos.rowId,
         cellPos.colId,
         '',
+        loadedSheetsCache.getCellContent(
+          currentSheetId,
+          cellPos.rowId,
+          cellPos.colId,
+        ),
       );
       updates.addUpdate(cellUpdate);
     }

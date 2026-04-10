@@ -4,6 +4,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
@@ -42,57 +43,13 @@ class SheetDataUsecase {
     return sheetDataRepository.getCellContent(CellPosition(row, col), sheetId);
   }
 
-  CoreSheetContent getSheet(int sheetId) {
-    return sheetDataRepository.getSheet(sheetId);
+  @useResult
+  ColumnTypeUpdate getColumnTypeUpdate(int colId, ColumnType newColumnType, int sheetId) {
+    return sheetDataRepository.getColumnTypeUpdate(colId, newColumnType, sheetId);
   }
 
-  void addPrevValue(Map<String, UpdateUnit> updates, int sheetId) {
-    for (var entry in updates.entries) {
-      var update = entry.value;
-      if (update is CellUpdate) {
-        update.prevValue = sheetDataRepository.getCellContent(
-          CellPosition(update.rowId, update.colId),
-          sheetId,
-        );
-      } else if (update is ColumnTypeUpdate) {
-        update.previousColumnType = sheetDataRepository.getColumnType(
-          update.colId,
-          sheetId,
-        );
-      } else if (update is SheetDataUpdate) {
-        if (update.newName != null) {
-          updates[entry.key] = update.merge(
-            SheetDataUpdate(
-              update.sheetId,
-              update.addOtherwiseRemove,
-              prevName: sheetDataRepository.getSheetTitle(sheetId),
-            ),
-          );
-        }
-        if (update.colHeaderHeight != null) {
-          updates[entry.key] = update.merge(
-            SheetDataUpdate(
-              update.sheetId,
-              update.addOtherwiseRemove,
-              prevColHeaderHeight: gridRepository
-                  .getLayout(sheetId)
-                  .colHeaderHeight,
-            ),
-          );
-        }
-        if (update.rowHeaderWidth != null) {
-          updates[entry.key] = update.merge(
-            SheetDataUpdate(
-              update.sheetId,
-              update.addOtherwiseRemove,
-              prevRowHeaderWidth: gridRepository
-                  .getLayout(sheetId)
-                  .rowHeaderWidth,
-            ),
-          );
-        }
-      }
-    }
+  CoreSheetContent getSheet(int sheetId) {
+    return sheetDataRepository.getSheet(sheetId);
   }
 
   void applyUpdatesNoSort(

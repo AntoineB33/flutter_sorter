@@ -166,7 +166,7 @@ class GridRepositoryImpl implements GridRepository {
         final int row = update.rowId;
         final int col = update.colId;
         final String newValue = update.newValue;
-        final String prevValue = update.prevValue!;
+        final String prevValue = update.prevValue;
 
         if (row >= layout.rowsBottomPos.length && row >= rowCount(sheetId)) {
           break;

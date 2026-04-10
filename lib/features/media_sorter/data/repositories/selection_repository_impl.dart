@@ -48,11 +48,6 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
-  SelectionData getSelectionData(int sheetId) {
-    return _selectionCache.getSelectionData(sheetId);
-  }
-
-  @override
   SelectionState setPrimarySelection(int row, int col, bool keepSelection) {
     return SelectionState(primarySelection: CellPosition(row, col), selectedCells: keepSelection ? selectionState.selectedCells : {CellPosition(row, col)});
   }

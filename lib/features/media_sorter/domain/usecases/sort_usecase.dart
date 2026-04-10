@@ -42,10 +42,6 @@ class SortUsecase {
     return sortRepository.analyze(sheetId);
   }
 
-  List<int> getSheetIds() {
-    return sortRepository.getSheetIds();
-  }
-
   bool isSortedWithValidSort(int sheetId) {
     return sortRepository.isSortedWithValidSort(sheetId);
   }

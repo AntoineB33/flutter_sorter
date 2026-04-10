@@ -128,7 +128,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   void setCellContent(String newValue) {
     int rowId = primarySelectedCellX;
     int colId = primarySelectedCellY;
-    final cellUpdate = CellUpdate(currentSheetId, rowId, colId, newValue);
+    final cellUpdate = CellUpdate(currentSheetId, rowId, colId, newValue, sheetDataController.getCellContentCurrentSheet(rowId, colId));
     Map<String, UpdateUnit> updates = {cellUpdate.getKey(): cellUpdate};
     applyUpdatesAndSort(
       updates.lock,
@@ -430,11 +430,11 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void applyDefaultColumnSequence() {
     final updatesLst = [
-      ColumnTypeUpdate(currentSheetId, 1, ColumnType.dependencies),
-      ColumnTypeUpdate(currentSheetId, 2, ColumnType.dependencies),
-      ColumnTypeUpdate(currentSheetId, 3, ColumnType.dependencies),
-      ColumnTypeUpdate(currentSheetId, 7, ColumnType.urls),
-      ColumnTypeUpdate(currentSheetId, 8, ColumnType.dependencies),
+      sheetDataController.getCurrentSheetColumnTypeUpdate(1, ColumnType.dependencies),
+      sheetDataController.getCurrentSheetColumnTypeUpdate(2, ColumnType.dependencies),
+      sheetDataController.getCurrentSheetColumnTypeUpdate(3, ColumnType.dependencies),
+      sheetDataController.getCurrentSheetColumnTypeUpdate(7, ColumnType.urls),
+      sheetDataController.getCurrentSheetColumnTypeUpdate(8, ColumnType.dependencies),
     ];
     Map<String, UpdateUnit> updates = {
       for (var update in updatesLst) update.getKey(): update,
@@ -460,7 +460,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void setColumnType(int col, ColumnType type) {
-    final update = ColumnTypeUpdate(currentSheetId, col, type);
+    final update = sheetDataController.getCurrentSheetColumnTypeUpdate(col, type);
     final updates = {update.getKey(): update};
     applyUpdatesAndSort(updates.lock, currentSheetId, false, false, false);
   }

@@ -18,10 +18,6 @@ class SortStatusCache {
     return _sortStatusBySheet[sheetId]?.toApplyNextBestSort ?? false;
   }
 
-  List<int> getSheetIds() {
-    return _sortStatusBySheet.keys.toList();
-  }
-
   bool getAnalysisDone(int sheetId) {
     return _sortStatusBySheet[sheetId]?.analysisDone ?? false;
   }

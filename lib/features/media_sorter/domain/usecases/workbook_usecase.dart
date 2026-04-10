@@ -32,10 +32,6 @@ class WorkbookUsecase {
   int get currentSheetId => workbookRepository.currentSheetId;
   String get currentSheetName => workbookRepository.currentSheetName;
 
-  String getSheetTitle(int sheetId) {
-    return sheetDataRepository.getSheetTitle(sheetId);
-  }
-
   List<int> getRecentSheetIds() {
     return workbookRepository.getRecentSheetIds();
   }

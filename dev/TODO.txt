@@ -61,3 +61,4 @@ at startup : py install --update 3
 infinite dimensions update history
 performant multiple cell selection
 remove from cache when too much loaded
+CellUpdate prevValue should be handled automatically (also for column and sheet name, colHeaderHeight, rowHeaderWidth)

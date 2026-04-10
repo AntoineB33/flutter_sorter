@@ -213,14 +213,19 @@ class SheetDataUpdate extends UpdateUnit {
 @JsonSerializable()
 class CellUpdate extends UpdateUnit {
   final RecordType type = RecordType.cellUpdate;
-  final int? sheetId;
-  final int? rowId;
-  final int? colId;
-  final String? prevValue;
-  final String? newValue;
+  final int sheetId;
+  final int rowId;
+  final int colId;
+  final String prevValue;
+  final String newValue;
+
   CellUpdate(
-    {this.sheetId, this.rowId, this.colId, this.newValue,
-    this.prevValue});
+    this.sheetId,
+    this.rowId,
+    this.colId,
+    this.newValue,
+    this.prevValue,
+  );
 
   @override
   String getKey() {
@@ -231,11 +236,11 @@ class CellUpdate extends UpdateUnit {
   UpdateUnit merge(UpdateUnit newUpdate) {
     final newCellUpdate = newUpdate as CellUpdate;
     return CellUpdate(
-      sheetId: newCellUpdate.sheetId ?? sheetId,
-      rowId: newCellUpdate.rowId ?? rowId,
-      colId: newCellUpdate.colId ?? colId,
-      newValue: newCellUpdate.newValue ?? newValue,
-      prevValue: newCellUpdate.prevValue ?? prevValue, // Keep the original prevValue if the new one is null
+      sheetId,
+      rowId,
+      colId,
+      newCellUpdate.newValue,
+      prevValue,
     );
   }
 
@@ -252,11 +257,12 @@ class ColumnTypeUpdate extends UpdateUnit {
   final int sheetId;
   final int colId;
   final ColumnType newColumnType;
-  ColumnType? previousColumnType;
+  final ColumnType previousColumnType;
   ColumnTypeUpdate(
     this.sheetId,
     this.colId,
-    this.newColumnType);
+    this.newColumnType,
+    this.previousColumnType);
 
   @override
   String getKey() {
@@ -270,7 +276,8 @@ class ColumnTypeUpdate extends UpdateUnit {
       sheetId,
       colId,
       newColumnTypeUpdate.newColumnType, // Always take the latest value
-    )..previousColumnType = newColumnTypeUpdate.previousColumnType ?? previousColumnType; // Keep the original previousColumnType if the new one is null
+      previousColumnType, // Keep the original previousColumnType
+    );
   }
 
   factory ColumnTypeUpdate.fromJson(Map<String, dynamic> json) =>
@@ -284,7 +291,7 @@ class ColumnTypeUpdate extends UpdateUnit {
 class UpdateData extends UpdateUnit {
   final RecordType type = RecordType.updateData;
   final DateTime timestamp;
-  final int? chronoId;
+  final int chronoId;
   final int sheetId;
   final IMap<String, UpdateUnit> updates;
   bool addOtherwiseRemove;

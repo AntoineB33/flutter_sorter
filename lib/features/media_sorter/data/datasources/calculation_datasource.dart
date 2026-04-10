@@ -89,7 +89,7 @@ class CalculationDatasource {
   }
 
   /// Updates valid areas for other values based on the placement of `i` at `id`.
-  static List<List<int>>? getValidPlaces(
+  static List<List<int>>? _getValidPlaces(
     Map<int, Map<int, List<SortingRule>>> rules,
     List<List<int>> validAreas,
     int id,
@@ -208,7 +208,7 @@ class CalculationDatasource {
         int i = possibleIntsById[id][c];
         bestSortFound[id] = i;
 
-        List<List<int>>? newValidPlaces = getValidPlaces(
+        List<List<int>>? newValidPlaces = _getValidPlaces(
           rules,
           validAreasById[id],
           id,

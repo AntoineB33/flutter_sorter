@@ -46,10 +46,6 @@ class LoadedSheetsCache {
         ColumnType.attributes;
   }
 
-  String getSheetName(int sheetId) {
-    return _loadedSheetsData[sheetId]?.title ?? '';
-  }
-
   void setSheet(int sheetId, CoreSheetContent sheetData) {
     _loadedSheetsData[sheetId] = sheetData;
   }

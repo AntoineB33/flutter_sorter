@@ -9,7 +9,6 @@ abstract class SortRepository {
   bool getAnalysisDone(int sheetId);
   bool getBestSortPossibleFound(int sheetId);
   Future<void> analyze(int sheetId);
-  List<int> getSheetIds();
   Future<Either<Failure, void>> loadSortStatus();
   bool getToApplyOnce(int sheetId);
   bool isCalculating(int sheetId);

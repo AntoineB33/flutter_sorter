@@ -98,11 +98,6 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  List<int> getSheetIds() {
-    return sortStatusCache.getSheetIds();
-  }
-
-  @override
   bool betterSortNotImpossible(int sheetId) {
     return !sortProgressCache.isValidSortImpossible(sheetId) &&
         (!analysisResultCache.bestSortPossibleFound(sheetId) ||
@@ -525,6 +520,11 @@ class SortRepositoryImpl implements SortRepository {
         pos.rowId,
         pos.colId,
         sortedTable[pos]!,
+        loadedSheetsCache.getCellContent(
+          sheetId,
+          pos.rowId,
+          pos.colId,
+        ),
       );
       updates[cellUpdate.getKey()] = cellUpdate;
     }
