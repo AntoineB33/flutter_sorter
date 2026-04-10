@@ -12,35 +12,27 @@ class SheetDataTables extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get title => text()();
   DateTimeColumn get lastOpened => dateTime()();
-    TextColumn get usedRows =>
-      text().map(const ListIntConverter())();
-  TextColumn get usedCols =>
-      text().map(const ListIntConverter())();
+  TextColumn get usedRows => text().map(const ListIntConverter())();
+  TextColumn get usedCols => text().map(const ListIntConverter())();
   IntColumn get historyIndex => integer()();
   RealColumn get colHeaderHeight => real()();
   RealColumn get rowHeaderWidth => real()();
-  TextColumn get primSelHistory =>
-      text().map(const ListPointConverter())();
+  TextColumn get primSelHistory => text().map(const ListPointConverter())();
   IntColumn get primSelHistoryId => integer()();
   RealColumn get scrollOffsetX => real()();
   RealColumn get scrollOffsetY => real()();
-  TextColumn get selectedCells =>
-      text().map(const SetPointConverter())();
+  TextColumn get selectedCells => text().map(const SetPointConverter())();
 
-  TextColumn get bestSortFound =>
-      text().map(const ListIntConverter())();
-  TextColumn get bestDistFound =>
-      text().map(const ListIntConverter())();
+  TextColumn get bestSortFound => text().map(const ListIntConverter())();
+  TextColumn get bestDistFound => text().map(const ListIntConverter())();
   TextColumn get cursors => text().map(const ListIntConverter())();
-  TextColumn get possibleInts =>
-      text().map(const ListListIntConverter())();
-  TextColumn get validAreas =>
-      text().map(const ListListListIntConverter())();
+  TextColumn get possibleInts => text().map(const ListListIntConverter())();
+  TextColumn get validAreas => text().map(const ListListListIntConverter())();
   IntColumn get sortIndex => integer()();
 
   TextColumn get analysisResult =>
       text().map(const AnalysisResultConverter())();
-      
+
   BoolColumn get validSortIsImpossible => boolean()();
   BoolColumn get isFindingBestSort => boolean()();
   BoolColumn get sortedWithValidSort => boolean()();
@@ -275,7 +267,6 @@ class AnalysisResultConverter extends TypeConverter<AnalysisResult, String> {
     return jsonEncode(encoded);
   }
 }
-
 
 class SortStatusData {
   final int sheetId;

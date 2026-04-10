@@ -1,6 +1,6 @@
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:meta/meta.dart';
-import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/history_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
@@ -119,24 +119,37 @@ class HistoryRepositoryImpl implements HistoryRepository {
 
   @override
   @useResult
-  UpdateUnit newPrimarySelection(int rowId, int colId) {
+  UpdateUnit newPrimarySelection(int rowId, int colId, bool keepSelection) {
     var selectionData = selectionCache.getSelectionData(currentSheetId);
-    if (selectionData.primSelHistoryId < selectionData.primSelHistory.length - 1) {
-      final newPrimSelHistory = selectionData.primSelHistory.sublist(0, selectionData.primSelHistoryId + 1);
-      selectionData.primSelHistory..clear()..addAll(newPrimSelHistory);
+    if (selectionData.primSelHistoryId <
+        selectionData.primSelHistory.length - 1) {
+      final newPrimSelHistory = selectionData.primSelHistory.sublist(
+        0,
+        selectionData.primSelHistoryId + 1,
+      );
+      selectionData.primSelHistory
+        ..clear()
+        ..addAll(newPrimSelHistory);
     }
     selectionData.primSelHistory.add(CellPosition(rowId, colId));
-    selectionData = selectionData.copyWith(primSelHistoryId: selectionData.primSelHistoryId + 1);
+    selectionData = selectionData.copyWith(
+      primSelHistoryId: selectionData.primSelHistoryId + 1,
+    );
     const int primSelHistoryLimit = SpreadsheetConstants.primSelHistoryLimit;
     if (selectionData.primSelHistoryId == primSelHistoryLimit) {
       selectionData.primSelHistory.removeAt(0);
-      selectionData = selectionData.copyWith(primSelHistoryId: selectionData.primSelHistoryId - 1);
+      selectionData = selectionData.copyWith(
+        primSelHistoryId: selectionData.primSelHistoryId - 1,
+      );
     }
     return SheetDataUpdate(
       currentSheetId,
       true,
       primSelHistory: selectionData.primSelHistory,
-      primSelHistoryId: selectionData.primSelHistoryId == primSelHistoryLimit - 1 ? null : selectionData.primSelHistoryId,
+      primSelHistoryId:
+          selectionData.primSelHistoryId == primSelHistoryLimit - 1
+          ? null
+          : selectionData.primSelHistoryId,
     );
   }
 

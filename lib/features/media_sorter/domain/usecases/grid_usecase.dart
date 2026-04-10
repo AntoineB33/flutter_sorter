@@ -36,9 +36,12 @@ class GridUsecase {
     return gridRepository.getTargetTop(sheetId, rowId);
   }
 
-  void adjustRowHeightAfterUpdate(int sheetId, IMap<String, UpdateUnit> updateData) {
+  void adjustRowHeightAfterUpdate(
+    int sheetId,
+    IMap<String, UpdateUnit> updateData,
+  ) {
     saveRepository.save(
-      gridRepository.adjustRowHeightAfterUpdate(sheetId, updateData)
+      gridRepository.adjustRowHeightAfterUpdate(sheetId, updateData),
     );
   }
 

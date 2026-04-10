@@ -39,7 +39,7 @@ class CalculateService {
   static const all = SpreadsheetConstants.all;
   static const notUsedCst = SpreadsheetConstants.notUsedCst;
   static Cols added = Cols();
-  
+
   final AnalysisResult result = AnalysisResult.empty();
 
   NodeStruct get errorRoot => result.errorRoot;
@@ -66,7 +66,6 @@ class CalculateService {
   List<bool> get isMedium => result.isMedium;
 
   final CoreSheetContent coreSheetContent;
-  
 
   Map<CellPosition, String> get table => coreSheetContent.cells;
   Map<int, ColumnType> get columnTypes => coreSheetContent.columnTypes;
@@ -77,7 +76,10 @@ class CalculateService {
   int get colCount => usedCols.isEmpty ? 0 : usedCols.last + 1;
 
   CalculateService(this.coreSheetContent) {
-    headers = {for (int colId = 0; colId < colCount; colId++) colId: getCellContent(0, colId)};
+    headers = {
+      for (int colId = 0; colId < colCount; colId++)
+        colId: getCellContent(0, colId),
+    };
   }
 
   String getCellContent(int row, int col) {
@@ -344,9 +346,7 @@ class CalculateService {
     if (splitStr.length == 2) {
       name = splitStr[1];
       startStrRowId += splitStr[0].length;
-      attColId = headers.entries.firstWhere(
-        (e) => e.value == splitStr[0],
-      ).key;
+      attColId = headers.entries.firstWhere((e) => e.value == splitStr[0]).key;
       if (attColId == -1) {
         attColId = getIndexFromString(splitStr[0]);
       }
@@ -533,7 +533,8 @@ class CalculateService {
     for (int rowId = 1; rowId < rowCount; rowId++) {
       for (int colId = 0; colId < colCount; colId++) {
         if (GetNames.isSourceColumn(columnTypes[colId]!)) {
-          isMedium[rowId] = isMedium[rowId] || getCellContent(rowId, colId).isNotEmpty;
+          isMedium[rowId] =
+              isMedium[rowId] || getCellContent(rowId, colId).isNotEmpty;
         }
       }
     }
@@ -1116,8 +1117,10 @@ class CalculateService {
     //   }
     // }
 
-    final depPattern = {for (int colId = 0; colId < colCount; colId++)
-      colId: getCellContent(colId, 0).split("#")};
+    final depPattern = {
+      for (int colId = 0; colId < colCount; colId++)
+        colId: getCellContent(colId, 0).split("#"),
+    };
 
     final Map<int, Map<int, (Attribute, bool, RegExpMatch, List<List<int>>)>>
     depCache = {};
@@ -1153,7 +1156,9 @@ class CalculateService {
               for (int i = 1; i < depPattern[colId]!.length; i++) {
                 instr += instrSplit[i - 1] + depPattern[colId]![i];
                 separations.add(separations.last + instrSplit[i - 1].length);
-                separations.add(separations.last + depPattern[colId]![i].length);
+                separations.add(
+                  separations.last + depPattern[colId]![i].length,
+                );
               }
             }
 
@@ -1359,10 +1364,14 @@ class CalculateService {
     }
     int index = 0;
     instrTable.retainWhere((_) => isMedium[index++]);
-    result.validAreas..clear()..addAll(List.generate(
-      instrTable.length,
-      (index) => List.generate(instrTable.length, (i) => i),
-    ));
+    result.validAreas
+      ..clear()
+      ..addAll(
+        List.generate(
+          instrTable.length,
+          (index) => List.generate(instrTable.length, (i) => i),
+        ),
+      );
     return;
   }
 

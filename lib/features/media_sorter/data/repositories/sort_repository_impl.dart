@@ -4,7 +4,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/calculation_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/isolate_message.dart';
@@ -68,7 +68,10 @@ class SortRepositoryImpl implements SortRepository {
     UpdateUnit? update;
     if (loadedSheetsCache.rowCount(sheetId) == 0) {
       update = setAnalysisDone(sheetId, true);
-      return update..merge();
+      update = update.merge(setValidSortIsImpossible(sheetId, false));
+      update = update.merge(setSortedWithValidSort(sheetId, true));
+      update = update.merge(setSortedWithCurrentBestSort(sheetId, true));
+      return update;
     }
     isolateReceivePortsCache.cancelB(sheetId);
     AnalysisReturn resultB = await runHeavyCalculationB(
@@ -113,7 +116,9 @@ class SortRepositoryImpl implements SortRepository {
 
   @override
   bool isReorderBetterButtonLocked() {
-    return sortProgressCache.isValidSortImpossible(currentSheetId) || analysisResultCache.sortedWithCurrentBestSort(currentSheetId) && analysisResultCache.bestSortPossibleFound(currentSheetId);
+    return sortProgressCache.isValidSortImpossible(currentSheetId) ||
+        analysisResultCache.sortedWithCurrentBestSort(currentSheetId) &&
+            analysisResultCache.bestSortPossibleFound(currentSheetId);
   }
 
   @override
@@ -130,7 +135,7 @@ class SortRepositoryImpl implements SortRepository {
   @override
   @useResult
   UpdateUnit setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
-    sortStatusCache.setToAlwaysApplyBestSort(currentSheetId, toAlwaysApply);
+    analysisResultCache.setToAlwaysApplyBestSort(sheetId, toAlwaysApply);
     return SheetDataUpdate(
       sheetId,
       true,
@@ -149,7 +154,7 @@ class SortRepositoryImpl implements SortRepository {
   void addNewAnalysisResult(int sheetId) {
     analysisResultCache.addNewAnalysisResult(sheetId);
   }
-  
+
   @override
   bool getToApplyOnce(int sheetId) => sortStatusCache.getToApplyOnce(sheetId);
   @override

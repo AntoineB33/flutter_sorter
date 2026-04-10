@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
@@ -155,7 +155,10 @@ class GridRepositoryImpl implements GridRepository {
   }
 
   @override
-  ChangeSet adjustRowHeightAfterUpdate(int sheetId, IMap<String, UpdateUnit> updates) {
+  ChangeSet adjustRowHeightAfterUpdate(
+    int sheetId,
+    IMap<String, UpdateUnit> updates,
+  ) {
     final ChangeSet changeSet = ChangeSet(initialChanges: updates);
     final layout = layoutCache.getLayout(sheetId);
     for (var update in updates.values) {
@@ -246,13 +249,12 @@ class GridRepositoryImpl implements GridRepository {
                       }
                       removeFrom--;
                     }
-                    for (int i = removeFrom; i < layout.rowsBottomPos.length; i++) {
-                      changeSet.addUpdate(
-                        RowsBottomPosUpdate(
-                          sheetId,
-                          i,
-                        ),
-                      );
+                    for (
+                      int i = removeFrom;
+                      i < layout.rowsBottomPos.length;
+                      i++
+                    ) {
+                      changeSet.addUpdate(RowsBottomPosUpdate(sheetId, i));
                     }
                     layout.rowsBottomPos = layout.rowsBottomPos.sublist(
                       0,
@@ -282,12 +284,7 @@ class GridRepositoryImpl implements GridRepository {
                   GetDefaultSizes.getDefaultRowHeight() &&
               row > 0) {
             layout.rowsBottomPos.removeLast();
-            changeSet.addUpdate(
-              RowsBottomPosUpdate(
-                sheetId,
-                i,
-              ),
-            );
+            changeSet.addUpdate(RowsBottomPosUpdate(sheetId, i));
             i--;
           }
         }

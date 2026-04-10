@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
@@ -27,7 +27,12 @@ class LocalDataRepositoryImpl
   final PublishSubject<void> _saveTrigger = PublishSubject<void>();
   StreamSubscription? _saveSubscription;
 
-  LocalDataRepositoryImpl(this._localDataSource, this.sheetDataCache, this.layoutCache, this.selectionCache) {
+  LocalDataRepositoryImpl(
+    this._localDataSource,
+    this.sheetDataCache,
+    this.layoutCache,
+    this.selectionCache,
+  ) {
     // Listen to app lifecycle changes (pause, background, etc.)
     WidgetsBinding.instance.addObserver(this);
 
@@ -47,7 +52,11 @@ class LocalDataRepositoryImpl
   @override
   void save(ChangeSet updates) {
     for (var update in updates.toMap().values) {
-      _pendingSaves.update(update.getKey(), (existing) => existing.merge(update), ifAbsent: () => update);
+      _pendingSaves.update(
+        update.getKey(),
+        (existing) => existing.merge(update),
+        ifAbsent: () => update,
+      );
       _saveTrigger.add(null);
     }
   }

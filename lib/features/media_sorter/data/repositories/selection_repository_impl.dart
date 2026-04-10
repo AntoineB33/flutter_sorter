@@ -1,4 +1,3 @@
-
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
@@ -14,10 +13,13 @@ class SelectionRepositoryImpl implements SelectionRepository {
 
   int get currentSheetId => _workbookCache.currentSheetId;
   @override
-  int get primarySelectedCellX => _selectionCache.primarySelectedCellX(currentSheetId);
+  int get primarySelectedCellX =>
+      _selectionCache.primarySelectedCellX(currentSheetId);
   @override
-  int get primarySelectedCellY => _selectionCache.primarySelectedCellY(currentSheetId);
-  SelectionData get selection => _selectionCache.getSelectionData(currentSheetId);
+  int get primarySelectedCellY =>
+      _selectionCache.primarySelectedCellY(currentSheetId);
+  SelectionData get selection =>
+      _selectionCache.getSelectionData(currentSheetId);
 
   SelectionRepositoryImpl(
     this._selectionCache,
@@ -58,5 +60,4 @@ class SelectionRepositoryImpl implements SelectionRepository {
   void setSelectionData(int sheetId, SelectionData selectionData) {
     _selectionCache.setSelectionData(sheetId, selectionData);
   }
-
 }

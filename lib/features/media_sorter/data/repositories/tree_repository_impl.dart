@@ -125,11 +125,9 @@ class TreeRepositoryImpl implements TreeRepository {
     int found = -1;
     for (int i = 0; i < cells.length; i++) {
       final child = cells[i];
-      if (selectionDataStore
-                  .primarySelectedCellX(currentSheetId) ==
+      if (selectionDataStore.primarySelectedCellX(currentSheetId) ==
               child.rowId &&
-          selectionDataStore
-                  .primarySelectedCellY(currentSheetId) ==
+          selectionDataStore.primarySelectedCellY(currentSheetId) ==
               child.colId) {
         found = i;
         break;
@@ -346,7 +344,11 @@ class TreeRepositoryImpl implements TreeRepository {
         colType == ColumnType.urls) {
       node.newChildren!.add(
         NodeStruct(
-          message: loadedSheetsCache.getCellContent(currentSheetId, rowId, colId),
+          message: loadedSheetsCache.getCellContent(
+            currentSheetId,
+            rowId,
+            colId,
+          ),
           att: Attribute.row(rowId),
         ),
       );

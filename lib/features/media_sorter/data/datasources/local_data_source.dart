@@ -22,8 +22,10 @@ abstract class ILocalDataSource {
   Future<List<UpdateHistoriesEntity>> getUpdateHistoriesEntities(int sheetId);
   Future<List<RowsBottomPosEntity>> getRowsBottomPosEntities(int sheetId);
   Future<List<ColRightPosEntity>> getColRightPosEntities(int sheetId);
-  Future<List<RowsManuallyAdjustedHeightEntity>> getRowsManuallyAdjustedHeightEntities(int sheetId);
-  Future<List<ColsManuallyAdjustedWidthEntity>> getColsManuallyAdjustedWidthEntities(int sheetId);
+  Future<List<RowsManuallyAdjustedHeightEntity>>
+  getRowsManuallyAdjustedHeightEntities(int sheetId);
+  Future<List<ColsManuallyAdjustedWidthEntity>>
+  getColsManuallyAdjustedWidthEntities(int sheetId);
   Future<List<SortStatusData>> getSortStatus();
   Future<void> clearAllData();
 }
@@ -170,7 +172,9 @@ class DriftLocalDataSource implements ILocalDataSource {
             final companion = RowsBottomPosTableCompanion(
               sheetId: Value(item.sheetId),
               rowIndex: Value(item.rowIndex),
-              bottomPos: item.newBottomPos != null ? Value(item.newBottomPos!) : Value.absent(),
+              bottomPos: item.newBottomPos != null
+                  ? Value(item.newBottomPos!)
+                  : Value.absent(),
             );
             if (item.newBottomPos != null) {
               batch.insert(
@@ -242,10 +246,17 @@ class DriftLocalDataSource implements ILocalDataSource {
         ..addColumns([db.sheetDataTables.id, db.sheetDataTables.lastOpened]);
       final result = await query.get();
       return result
-          .map((row) => SheetIdAndLastOpened(row.read(db.sheetDataTables.id)!, row.read(db.sheetDataTables.lastOpened)!))
+          .map(
+            (row) => SheetIdAndLastOpened(
+              row.read(db.sheetDataTables.id)!,
+              row.read(db.sheetDataTables.lastOpened)!,
+            ),
+          )
           .toList();
     } on SqliteException catch (e) {
-      throw CacheException('Failed to retrieve sheet ID and last opened: ${e.message}');
+      throw CacheException(
+        'Failed to retrieve sheet ID and last opened: ${e.message}',
+      );
     } catch (e) {
       throw CacheException('An unknown database error occurred.');
     }
@@ -283,7 +294,9 @@ class DriftLocalDataSource implements ILocalDataSource {
   }
 
   @override
-  Future<List<SheetColumnTypeEntity>> getSheetColumnTypeEntities(int sheetId) async {
+  Future<List<SheetColumnTypeEntity>> getSheetColumnTypeEntities(
+    int sheetId,
+  ) async {
     try {
       final query = db.select(db.sheetColumnTypesTable)
         ..where((table) => table.sheetId.equals(sheetId));
@@ -295,15 +308,17 @@ class DriftLocalDataSource implements ILocalDataSource {
       throw CacheException('An unknown database error occurred.');
     }
   }
-  
+
   @override
-  Future<List<UpdateHistoriesEntity>> getUpdateHistoriesEntities(int sheetId) async {
+  Future<List<UpdateHistoriesEntity>> getUpdateHistoriesEntities(
+    int sheetId,
+  ) async {
     try {
       final query = db.select(db.updateHistoriesTable)
         ..where((table) => table.sheetId.equals(sheetId))
         ..orderBy([
           (t) => OrderingTerm.asc(t.timestamp),
-          (t) => OrderingTerm.asc(t.chronoId)
+          (t) => OrderingTerm.asc(t.chronoId),
         ]);
       final updateHistories = await query.get();
       return updateHistories;
@@ -315,14 +330,18 @@ class DriftLocalDataSource implements ILocalDataSource {
   }
 
   @override
-  Future<List<RowsBottomPosEntity>> getRowsBottomPosEntities(int sheetId) async {
+  Future<List<RowsBottomPosEntity>> getRowsBottomPosEntities(
+    int sheetId,
+  ) async {
     try {
       final query = db.select(db.rowsBottomPosTable)
         ..where((table) => table.sheetId.equals(sheetId));
       final rowsBottomPos = await query.get();
       return rowsBottomPos;
     } on SqliteException catch (e) {
-      throw CacheException('Failed to retrieve rows bottom positions: ${e.message}');
+      throw CacheException(
+        'Failed to retrieve rows bottom positions: ${e.message}',
+      );
     } catch (e) {
       throw CacheException('An unknown database error occurred.');
     }
@@ -336,35 +355,43 @@ class DriftLocalDataSource implements ILocalDataSource {
       final colRightPos = await query.get();
       return colRightPos;
     } on SqliteException catch (e) {
-      throw CacheException('Failed to retrieve column right positions: ${e.message}');
+      throw CacheException(
+        'Failed to retrieve column right positions: ${e.message}',
+      );
     } catch (e) {
       throw CacheException('An unknown database error occurred.');
     }
   }
 
   @override
-  Future<List<RowsManuallyAdjustedHeightEntity>> getRowsManuallyAdjustedHeightEntities(int sheetId) async {
+  Future<List<RowsManuallyAdjustedHeightEntity>>
+  getRowsManuallyAdjustedHeightEntities(int sheetId) async {
     try {
       final query = db.select(db.rowsManuallyAdjustedHeightTable)
         ..where((table) => table.sheetId.equals(sheetId));
       final rowsManuallyAdjustedHeight = await query.get();
       return rowsManuallyAdjustedHeight;
     } on SqliteException catch (e) {
-      throw CacheException('Failed to retrieve rows manually adjusted heights: ${e.message}');
+      throw CacheException(
+        'Failed to retrieve rows manually adjusted heights: ${e.message}',
+      );
     } catch (e) {
       throw CacheException('An unknown database error occurred.');
     }
   }
 
   @override
-  Future<List<ColsManuallyAdjustedWidthEntity>> getColsManuallyAdjustedWidthEntities(int sheetId) async {
+  Future<List<ColsManuallyAdjustedWidthEntity>>
+  getColsManuallyAdjustedWidthEntities(int sheetId) async {
     try {
       final query = db.select(db.colsManuallyAdjustedWidthTable)
         ..where((table) => table.sheetId.equals(sheetId));
       final colsManuallyAdjustedWidth = await query.get();
       return colsManuallyAdjustedWidth;
     } on SqliteException catch (e) {
-      throw CacheException('Failed to retrieve columns manually adjusted widths: ${e.message}');
+      throw CacheException(
+        'Failed to retrieve columns manually adjusted widths: ${e.message}',
+      );
     } catch (e) {
       throw CacheException('An unknown database error occurred.');
     }
@@ -374,15 +401,24 @@ class DriftLocalDataSource implements ILocalDataSource {
   Future<List<SortStatusData>> getSortStatus() async {
     try {
       final query = db.selectOnly(db.sheetDataTables)
-        ..addColumns([db.sheetDataTables.id, db.sheetDataTables.sortInProgress, db.sheetDataTables.toApplyNextBestSort, db.sheetDataTables.toAlwaysApplyCurrentBestSort, db.sheetDataTables.analysisDone])
-          ..where(db.sheetDataTables.sortInProgress.equals(true));
+        ..addColumns([
+          db.sheetDataTables.id,
+          db.sheetDataTables.sortInProgress,
+          db.sheetDataTables.toApplyNextBestSort,
+          db.sheetDataTables.toAlwaysApplyCurrentBestSort,
+          db.sheetDataTables.analysisDone,
+        ])
+        ..where(db.sheetDataTables.sortInProgress.equals(true));
       final result = await query.get();
       return result
-          .map((row) => SortStatusData(
-                sheetId: row.read(db.sheetDataTables.id)!,
-                toApplyNextBestSort: row.read(db.sheetDataTables.toApplyNextBestSort) ?? false,
-                analysisDone: row.read(db.sheetDataTables.analysisDone) ?? false,
-              ))
+          .map(
+            (row) => SortStatusData(
+              sheetId: row.read(db.sheetDataTables.id)!,
+              toApplyNextBestSort:
+                  row.read(db.sheetDataTables.toApplyNextBestSort) ?? false,
+              analysisDone: row.read(db.sheetDataTables.analysisDone) ?? false,
+            ),
+          )
           .toList();
     } on SqliteException catch (e) {
       throw CacheException('Failed to retrieve sort status: ${e.message}');
@@ -409,6 +445,5 @@ class DriftLocalDataSource implements ILocalDataSource {
     } catch (e) {
       throw CacheException('An unknown database error occurred.');
     }
-  } 
-
+  }
 }

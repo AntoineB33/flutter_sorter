@@ -11,7 +11,7 @@ class HistoryUsecase {
   UpdateData? moveInUpdateHistory(int direction) {
     return historyRepository.moveInUpdateHistory(direction);
   }
-  
+
   void stopEditing(bool escape) {
     saveRepository.save(historyRepository.stopEditing(escape));
   }

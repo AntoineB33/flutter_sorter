@@ -70,7 +70,10 @@ class GridController extends ChangeNotifier {
     return gridUsecase.minCols(sheetId, colCount, width);
   }
 
-  void adjustRowHeightAfterUpdate(int sheetId, IMap<String, UpdateUnit> updateData) {
+  void adjustRowHeightAfterUpdate(
+    int sheetId,
+    IMap<String, UpdateUnit> updateData,
+  ) {
     gridUsecase.adjustRowHeightAfterUpdate(sheetId, updateData);
   }
 
@@ -210,9 +213,7 @@ class GridController extends ChangeNotifier {
     }
   }
 
-  void updateColCount(
-    int sheetId,
-  ) {
+  void updateColCount(int sheetId) {
     int targetCols = tableViewCols;
     targetCols = minCols(
       sheetId,

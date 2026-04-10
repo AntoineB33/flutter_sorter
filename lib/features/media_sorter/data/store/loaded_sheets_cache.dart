@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:meta/meta.dart';
-import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/entities/update_data.dart';
@@ -26,11 +26,15 @@ class LoadedSheetsCache {
   }
 
   int rowCount(int sheetId) {
-    return getSheet(sheetId).usedRows.isEmpty ? 0 : getSheet(sheetId).usedRows.last + 1;
+    return getSheet(sheetId).usedRows.isEmpty
+        ? 0
+        : getSheet(sheetId).usedRows.last + 1;
   }
 
   int colCount(int sheetId) {
-    return getSheet(sheetId).usedCols.isEmpty ? 0 : getSheet(sheetId).usedCols.last + 1;
+    return getSheet(sheetId).usedCols.isEmpty
+        ? 0
+        : getSheet(sheetId).usedCols.last + 1;
   }
 
   String getCellContent(int sheetId, int row, int col) {
@@ -38,7 +42,8 @@ class LoadedSheetsCache {
   }
 
   ColumnType getColumnType(int sheetId, int col) {
-    return _loadedSheetsData[sheetId]!.columnTypes[col] ?? ColumnType.attributes;
+    return _loadedSheetsData[sheetId]!.columnTypes[col] ??
+        ColumnType.attributes;
   }
 
   String getSheetName(int sheetId) {
@@ -52,7 +57,10 @@ class LoadedSheetsCache {
   @useResult
   ChangeSet _updateCell(int sheetId, CellUpdate update) {
     final changeSet = ChangeSet();
-    _loadedSheetsData[sheetId]!.cells[CellPosition(update.rowId, update.colId)] =
+    _loadedSheetsData[sheetId]!.cells[CellPosition(
+          update.rowId,
+          update.colId,
+        )] =
         update.newValue;
     final usedRows = _loadedSheetsData[sheetId]!.usedRows;
     final usedCols = _loadedSheetsData[sheetId]!.usedCols;
@@ -92,12 +100,14 @@ class LoadedSheetsCache {
       }
     }
     if (newUsedRows != null || newUsedCols != null) {
-      changeSet.addUpdate(SheetDataUpdate(
-        sheetId,
-        true,
-        usedRows: newUsedRows,
-        usedCols: newUsedCols,
-      ));
+      changeSet.addUpdate(
+        SheetDataUpdate(
+          sheetId,
+          true,
+          usedRows: newUsedRows,
+          usedCols: newUsedCols,
+        ),
+      );
     }
     return changeSet;
   }
@@ -129,7 +139,7 @@ class LoadedSheetsCache {
     int col = update.colId;
     ColumnType type = update.newColumnType;
     final sheet = _loadedSheetsData[sheetId]!;
-    if (type == ColumnType.attributes ) {
+    if (type == ColumnType.attributes) {
       sheet.columnTypes.remove(col);
     } else {
       sheet.columnTypes[col] = type;

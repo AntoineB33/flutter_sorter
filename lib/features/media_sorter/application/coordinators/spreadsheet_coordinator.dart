@@ -63,10 +63,10 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     treeController.addListener(() {
       notifyListeners();
     });
-    init();
+    _init();
   }
 
-  Future<void> init() async {
+  Future<void> _init() async {
     await workbookController.clearAllData();
     await workbookController.loadRecentSheetIds();
     await loadSheet(workbookController.currentSheetId, true);

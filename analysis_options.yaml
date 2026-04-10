@@ -32,9 +32,6 @@ linter:
 
 analyzer:
   errors:
-    # This targets unused parameters in private methods
-    unused_element_parameter: warning
-
     # Treat unused local variables as warnings
     unused_local_variable: warning
     
@@ -63,6 +60,7 @@ analyzer:
     - "ios/**"
     - "android/**"
     - "web/**"
+    - "**/*.txt"
 
 custom_lint:
   rules:

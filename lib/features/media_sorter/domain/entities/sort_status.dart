@@ -18,20 +18,12 @@ class SortStatus {
 
   SortStatus copyWith({
     bool? toApplyNextBestSort,
-    bool? toAlwaysApplyCurrentBestSort,
     bool? analysisDone,
   }) {
     return SortStatus(
       toApplyNextBestSort ?? this.toApplyNextBestSort,
       analysisDone ?? this.analysisDone,
     );
-  }
-  void _f(int y) {
-    return;
-  }
-  void _fe(int y) {
-    _f(y);
-    return;
   }
 
   factory SortStatus.fromJson(Map<String, dynamic> json) =>

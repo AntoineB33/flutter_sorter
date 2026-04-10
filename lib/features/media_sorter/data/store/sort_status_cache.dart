@@ -31,11 +31,6 @@ class SortStatusCache {
     _sortStatusBySheet[sheetId]!.copyWith(toApplyNextBestSort: value);
   }
 
-  void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
-    _sortStatusBySheet[sheetId] ??= SortStatus.initial();
-    _sortStatusBySheet[sheetId]!.copyWith(toAlwaysApplyCurrentBestSort: toAlwaysApply);
-  }
-
   void setAnalysisDone(int sheetId, bool analysisDone) {
     _sortStatusBySheet[sheetId] ??= SortStatus.initial();
     _sortStatusBySheet[sheetId]!.copyWith(analysisDone: analysisDone);

@@ -4,7 +4,7 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/core/entities/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/history_cache.dart';
@@ -131,7 +131,12 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       final columns = rows[r].split('\t');
       for (int c = 0; c < columns.length; c++) {
         String val = columns[c].replaceAll('\r', '');
-        final cellUpdate = CellUpdate(currentSheetId, startRow + r, startCol + c, val);
+        final cellUpdate = CellUpdate(
+          currentSheetId,
+          startRow + r,
+          startCol + c,
+          val,
+        );
         updates[cellUpdate.getKey()] = cellUpdate;
       }
     }
@@ -218,17 +223,22 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
           sortIndex: sheetData.sortIndex,
         );
         sortProgressCache.update(sheetId, sortProgression);
-        final historyTable = await dataSource.getUpdateHistoriesEntities(sheetId);
-        historyCache.setUpdateHistories(sheetId, 
+        final historyTable = await dataSource.getUpdateHistoriesEntities(
+          sheetId,
+        );
+        historyCache.setUpdateHistories(
+          sheetId,
           HistoryData(
             updateHistories: historyTable
-                .map((e) => UpdateData(
-                  e.chronoId,
-                  sheetId,
-                  e.updates,
-                  true,
-                  timestamp: e.timestamp,
-                ))
+                .map(
+                  (e) => UpdateData(
+                    e.chronoId,
+                    sheetId,
+                    e.updates,
+                    true,
+                    timestamp: e.timestamp,
+                  ),
+                )
                 .toList(),
             historyIndex: sheetData.historyIndex,
           ),

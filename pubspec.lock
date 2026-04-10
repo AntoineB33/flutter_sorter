@@ -210,10 +210,18 @@ packages:
     source: hosted
     version: "3.0.7"
   custom_lint:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       name: custom_lint
       sha256: "751ee9440920f808266c3ec2553420dea56d3c7837dd2d62af76b11be3fcece5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.1"
+  custom_lint_builder:
+    dependency: transitive
+    description:
+      name: custom_lint_builder
+      sha256: "1128db6f58e71d43842f3b9be7465c83f0c47f4dd8918f878dd6ad3b72a32072"
       url: "https://pub.dev"
     source: hosted
     version: "0.8.1"
@@ -416,6 +424,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.2"
+  hotreloader:
+    dependency: transitive
+    description:
+      name: hotreloader
+      sha256: "66871df468fc24eee81f1a0a7cb98acc104716f9b7376d355437b48d633c4ebf"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.4.0"
   http:
     dependency: "direct main"
     description:
@@ -696,6 +712,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.0"
+  pyramid_lint:
+    dependency: "direct dev"
+    description:
+      name: pyramid_lint
+      sha256: "1ae03ed1b40b1df310eebf8d41f67ce55bb94ba9de4d98e5e5dcca28890661ba"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.0"
   recase:
     dependency: transitive
     description:
