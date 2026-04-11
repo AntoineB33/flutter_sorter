@@ -151,6 +151,11 @@ class HistoryRepositoryImpl implements HistoryRepository {
   }
 
   @override
+  void addSheetId(int sheetId) {
+    historyCache.setUpdateHistories(sheetId, HistoryData.empty());
+  }
+
+  @override
   ChangeSet stopEditing(bool escape) {
     ChangeSet changeSet = ChangeSet();
     if (escape && isLastChangeInSameEditingMode) {

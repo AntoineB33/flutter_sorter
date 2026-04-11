@@ -62,7 +62,8 @@ class SortUsecase {
   }
 
   void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
-    sortRepository.setToAlwaysApplyBestSort(sheetId, toAlwaysApply);
+    final update = sortRepository.setToAlwaysApplyBestSort(sheetId, toAlwaysApply);
+    saveRepository.save(update);
   }
 
   Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId) {

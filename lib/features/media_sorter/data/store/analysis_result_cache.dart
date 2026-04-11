@@ -70,10 +70,6 @@ class AnalysisResultCache {
     updateResults(sheetId, _getAnalysisResult(sheetId).merge(sortedWithValidSort: sorted));
   }
 
-  void addNewAnalysisResult(int sheetId) {
-    _analysisResults[sheetId] = AnalysisResult.empty();
-  }
-
   void setValidSortIsImpossible(int sheetId, bool impossible) {
     updateResults(sheetId, _getAnalysisResult(sheetId).merge(validSortIsImpossible: impossible));
   }

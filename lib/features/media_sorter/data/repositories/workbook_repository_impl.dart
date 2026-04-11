@@ -4,6 +4,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
@@ -31,8 +32,7 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
     this.workbookCache,
   );
 
-  @override
-  int getNewSheetId() {
+  int _getNewSheetId() {
     int newId = DateTime.now().millisecondsSinceEpoch;
     while (workbookCache.containsSheetId(newId)) {
       newId += 1; // Increment until we find a unique ID
@@ -47,7 +47,7 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
 
   @override
   Future<Either<Failure, Unit>> clearAllData() async {
-    try{
+    try {
       await fileSheetLocalDataSource.clearAllData();
       return Right(unit);
     } on CacheException catch (e) {
@@ -56,18 +56,21 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   }
 
   @override
-  void addNewSheetId(int sheetId, int index) {
-    workbookCache.addSheetId(sheetId, index);
+  SheetDataUpdate addNewSheetId(int index) {
+    workbookCache.addSheetId(_getNewSheetId(), index);
+    return SheetDataUpdate(workbookCache.currentSheetId, true);
   }
 
   @override
   Future<Either<Failure, Unit>> loadRecentSheetIds() async {
     try {
-      final recentSheetIds = await fileSheetLocalDataSource.getSheetIdAndLastOpened();
-      final sortedSheetIds = (recentSheetIds.toList()
-        ..sort((a, b) => b.lastOpened.compareTo(a.lastOpened)))
-        .map((e) => e.sheetId)
-        .toList();
+      final recentSheetIds = await fileSheetLocalDataSource
+          .getSheetIdAndLastOpened();
+      final sortedSheetIds =
+          (recentSheetIds.toList()
+                ..sort((a, b) => b.lastOpened.compareTo(a.lastOpened)))
+              .map((e) => e.sheetId)
+              .toList();
       workbookCache.setRecentIds(sortedSheetIds);
       return Right(unit);
     } on CacheException catch (e) {

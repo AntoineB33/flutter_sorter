@@ -3,11 +3,13 @@ import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sort_progress_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 
 abstract class SortRepository {
   bool isReordering(int sheetId);
   bool getAnalysisDone(int sheetId);
   bool getBestSortPossibleFound(int sheetId);
+  @useResult
   Future<void> analyze(int sheetId);
   Future<Either<Failure, void>> loadSortStatus();
   bool getToApplyOnce(int sheetId);
@@ -30,8 +32,11 @@ abstract class SortRepository {
   bool isCurrentBestSortAlwaysApplied(int sheetId);
   bool isReorderBetterButtonLocked();
   bool sortedWithCurrentBestSort(int sheetId);
-  void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply);
+  @useResult
+  ChangeSet setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply);
+  @useResult
   void removeSortStatus(int sheetId);
-  void addNewAnalysisResult(int sheetId);
+  @useResult
+  ChangeSet addSheetId(int sheetId);
   void setFindingBestSort(int sheetId, bool value);
 }

@@ -8,4 +8,11 @@ class HistoryData {
     required this.updateHistories,
     required this.historyIndex,
   });
+
+  factory HistoryData.empty() {
+    return HistoryData(
+      updateHistories: [],
+      historyIndex: -1,
+    );
+  }
 }

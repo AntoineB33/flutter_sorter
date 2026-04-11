@@ -294,7 +294,8 @@ class GridRepositoryImpl implements GridRepository {
   }
 
   @override
-  void setLayout(int sheetId, LayoutData layoutData) {
+  SheetDataUpdate setLayout(int sheetId, LayoutData layoutData) {
     layoutCache.setLayout(sheetId, layoutData);
+    return SheetDataUpdate(sheetId, true, colHeaderHeight: layoutData.colHeaderHeight, rowHeaderWidth: layoutData.rowHeaderWidth, scrollOffsetX: layoutData.scrollOffsetX, scrollOffsetY: layoutData.scrollOffsetY);
   }
 }

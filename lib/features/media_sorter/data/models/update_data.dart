@@ -156,8 +156,6 @@ class SheetDataUpdate extends UpdateUnit {
     return SheetDataUpdate(
       sheetId,
       true,
-      newName: 
-      lastOpened: DateTime.now(),
     );
   }
   
