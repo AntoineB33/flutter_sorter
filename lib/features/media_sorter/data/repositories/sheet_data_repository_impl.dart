@@ -217,11 +217,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
           scrollOffsetY: sheetData.scrollOffsetY,
         );
         layoutCache.setLayout(sheetId, layoutDataTable);
-        final selectionData = SelectionData(
-          selectionStates: sheetData.selectionHistory,
-          primSelHistoryId: sheetData.selHistoryId,
-        );
-        selectionCache.setSelectionData(sheetId, selectionData);
+        selectionCache.setSelectionData(sheetId, sheetData.selectionHistory);
         final sortProgression = SortProgressData(
           bestDistFound: sheetData.bestDistFound,
           bestSortFound: sheetData.bestSortFound,

@@ -18,8 +18,8 @@ class SelectionRepositoryImpl implements SelectionRepository {
   @override
   int get primarySelectedCellY =>
       _selectionCache.primarySelectedCellY(currentSheetId);
-  SelectionData get selection =>
-      _selectionCache.getSelectionData(currentSheetId);
+  List<SelectionState> get selection =>
+      _selectionCache.getSelectionData(currentSheetId).selectionStates;
   SelectionState get selectionState =>
       _selectionCache.getSelectionState(currentSheetId);
 

@@ -19,7 +19,6 @@ class SheetDataTables extends Table {
   RealColumn get colHeaderHeight => real()();
   RealColumn get rowHeaderWidth => real()();
   TextColumn get selectionHistory => text().map(const SelectionDataConverter())();
-  IntColumn get selHistoryId => integer()();
   RealColumn get scrollOffsetX => real()();
   RealColumn get scrollOffsetY => real()();
   TextColumn get selectedCells => text().map(const SetPointConverter())();

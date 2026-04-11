@@ -31,7 +31,6 @@ SheetDataUpdate _$SheetDataUpdateFromJson(
       ?.map((e) => (e as num).toInt())
       .toList(),
   historyIndex: (json['historyIndex'] as num?)?.toInt(),
-  selHistoryIndex: (json['selHistoryIndex'] as num?)?.toInt(),
   colHeaderHeight: (json['colHeaderHeight'] as num?)?.toDouble(),
   prevColHeaderHeight: (json['prevColHeaderHeight'] as num?)?.toDouble(),
   rowHeaderWidth: (json['rowHeaderWidth'] as num?)?.toDouble(),
@@ -97,7 +96,6 @@ Map<String, dynamic> _$SheetDataUpdateToJson(SheetDataUpdate instance) =>
       'scrollOffsetY': instance.scrollOffsetY,
       'historyIndex': instance.historyIndex,
       'selectionHistory': instance.selectionHistory,
-      'selHistoryIndex': instance.selHistoryIndex,
       'bestSortFound': instance.bestSortFound,
       'bestDistFound': instance.bestDistFound,
       'cursors': instance.cursors,
@@ -121,7 +119,8 @@ CellUpdate _$CellUpdateFromJson(Map<String, dynamic> json) => CellUpdate(
   (json['rowId'] as num).toInt(),
   (json['colId'] as num).toInt(),
   json['newValue'] as String,
-)..prevValue = json['prevValue'] as String?;
+  json['prevValue'] as String,
+);
 
 Map<String, dynamic> _$CellUpdateToJson(CellUpdate instance) =>
     <String, dynamic>{
@@ -134,21 +133,18 @@ Map<String, dynamic> _$CellUpdateToJson(CellUpdate instance) =>
 
 ColumnTypeUpdate _$ColumnTypeUpdateFromJson(Map<String, dynamic> json) =>
     ColumnTypeUpdate(
-        (json['sheetId'] as num).toInt(),
-        (json['colId'] as num).toInt(),
-        $enumDecode(_$ColumnTypeEnumMap, json['newColumnType']),
-      )
-      ..previousColumnType = $enumDecodeNullable(
-        _$ColumnTypeEnumMap,
-        json['previousColumnType'],
-      );
+      (json['sheetId'] as num).toInt(),
+      (json['colId'] as num).toInt(),
+      $enumDecode(_$ColumnTypeEnumMap, json['newColumnType']),
+      $enumDecode(_$ColumnTypeEnumMap, json['previousColumnType']),
+    );
 
 Map<String, dynamic> _$ColumnTypeUpdateToJson(ColumnTypeUpdate instance) =>
     <String, dynamic>{
       'sheetId': instance.sheetId,
       'colId': instance.colId,
       'newColumnType': _$ColumnTypeEnumMap[instance.newColumnType]!,
-      'previousColumnType': _$ColumnTypeEnumMap[instance.previousColumnType],
+      'previousColumnType': _$ColumnTypeEnumMap[instance.previousColumnType]!,
     };
 
 const _$ColumnTypeEnumMap = {

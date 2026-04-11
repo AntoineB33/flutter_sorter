@@ -49,4 +49,6 @@ class SelectionData {
   factory SelectionData.fromJson(Map<String, dynamic> json) => _$SelectionDataFromJson(json);
 
   Map<String, dynamic> toJson() => _$SelectionDataToJson(this);
+  // ignore: unused_element
+  static void _keepLinterHappy() => SelectionData.empty().toJson();
 }

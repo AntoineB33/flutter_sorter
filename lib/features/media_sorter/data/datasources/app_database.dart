@@ -8,6 +8,7 @@ import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_tabl
 import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
 
 // This is the file Drift will generate. It will show as an error until you run the generator.
 part 'app_database.g.dart';

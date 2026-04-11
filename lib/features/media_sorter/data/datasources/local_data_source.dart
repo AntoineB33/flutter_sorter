@@ -58,9 +58,6 @@ class DriftLocalDataSource implements ILocalDataSource {
               selectionHistory: item.selectionHistory != null
                   ? Value(item.selectionHistory!)
                   : Value.absent(),
-              selHistoryId: item.selHistoryIndex != null
-                  ? Value(item.selHistoryIndex!)
-                  : Value.absent(),
               scrollOffsetX: item.scrollOffsetX != null
                   ? Value(item.scrollOffsetX!)
                   : Value.absent(),

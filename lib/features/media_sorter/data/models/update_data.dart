@@ -96,7 +96,6 @@ class SheetDataUpdate extends UpdateUnit {
 
   final int? historyIndex;
   final SelectionData? selectionHistory;
-  final int? selHistoryIndex;
 
 
   final List<int>? bestSortFound;
@@ -128,7 +127,6 @@ class SheetDataUpdate extends UpdateUnit {
     this.usedRows,
     this.usedCols,
     this.historyIndex,
-    this.selHistoryIndex,
     this.colHeaderHeight,
     this.prevColHeaderHeight,
     this.rowHeaderWidth,
