@@ -14,5 +14,6 @@ abstract class HistoryRepository {
   );
   @useResult
   ChangeSet stopEditing(bool escape);
+  @useResult
   UpdateUnit commitSelection(SelectionState selectionState);
 }

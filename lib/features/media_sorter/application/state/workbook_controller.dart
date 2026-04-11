@@ -29,8 +29,8 @@ class WorkbookController extends ChangeNotifier {
     return workbookUseCase.getRecentSheetIds();
   }
 
-  Future<Either<Failure, Unit>> loadSheet(int sheetId, bool init) async {
-    return workbookUseCase.loadSheet(sheetId, init);
+  Future<Either<Failure, Unit>> loadSheet(int sheetId) async {
+    return workbookUseCase.loadSheet(sheetId);
   }
 
   void createSheetByName(String name) {

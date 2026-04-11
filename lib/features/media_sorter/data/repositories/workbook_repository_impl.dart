@@ -32,11 +32,6 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   );
 
   @override
-  bool containsSheetId(int sheetId) {
-    return workbookCache.containsSheetId(sheetId);
-  }
-
-  @override
   int getNewSheetId() {
     int newId = DateTime.now().millisecondsSinceEpoch;
     while (workbookCache.containsSheetId(newId)) {

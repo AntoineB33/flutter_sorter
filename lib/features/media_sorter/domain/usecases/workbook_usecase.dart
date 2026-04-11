@@ -58,30 +58,27 @@ class WorkbookUsecase {
     createSheetByName(SpreadsheetConstants.defaultSheetTitle);
   }
 
-  void createSheetByName(String name) {
-    loadSheet(workbookRepository.getNewSheetId(), false);
+  void createSheetByName(String title) {
+    int sheetId = workbookRepository.getNewSheetId();
+    workbookRepository.addNewSheetId(sheetId, 0);
+    sheetDataRepository.addNewSheet(sheetId, title);
+    sortRepository.addNewAnalysisResult(sheetId);
+    selectionRepository.setSelectionData(sheetId, SelectionData.empty());
+    gridRepository.setLayout(sheetId, LayoutData.empty());
+    saveRepository.saveUpdate(SheetDataUpdate.initial(sheetId));
   }
 
-  Future<Either<Failure, Unit>> loadSheet(int sheetId, bool init) async {
-    if (workbookRepository.containsSheetId(sheetId)) {
-      if (!sheetDataRepository.containsSheetId(sheetId)) {
-        final result = await sheetDataRepository.loadSheet(sheetId);
-        if (result.isLeft()) {
-          createDefaultSheet();
-          return result;
-        }
+  Future<Either<Failure, Unit>> loadSheet(int sheetId) async {
+    if (!sheetDataRepository.containsSheetId(sheetId)) {
+      final result = await sheetDataRepository.loadSheet(sheetId);
+      if (result.isLeft()) {
+        createDefaultSheet();
+        return result;
       }
-      saveRepository.saveUpdate(
-        SheetDataUpdate(sheetId, true, lastOpened: DateTime.now()),
-      );
-    } else {
-      workbookRepository.addNewSheetId(sheetId, 0);
-      sheetDataRepository.addNewSheet(sheetId);
-      sortRepository.addNewAnalysisResult(sheetId);
-      selectionRepository.setSelectionData(sheetId, SelectionData.empty());
-      gridRepository.setLayout(sheetId, LayoutData.empty());
-      saveRepository.saveUpdate(SheetDataUpdate.initial(sheetId));
     }
+    saveRepository.saveUpdate(
+      SheetDataUpdate(sheetId, true, lastOpened: DateTime.now()),
+    );
     return Right(unit);
   }
 }

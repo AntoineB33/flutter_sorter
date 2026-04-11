@@ -57,7 +57,7 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @useResult
-  UpdateUnit setAnalysisDone(int sheetId, bool analysisDone) {
+  UpdateUnit _setAnalysisDone(int sheetId, bool analysisDone) {
     sortStatusCache.setAnalysisDone(sheetId, analysisDone);
     return SheetDataUpdate(sheetId, true, analysisDone: analysisDone);
   }
@@ -71,7 +71,7 @@ class SortRepositoryImpl implements SortRepository {
       SortProgressData.empty(),
     );
     if (loadedSheetsCache.rowCount(sheetId) == 0) {
-      update = setAnalysisDone(sheetId, true);
+      update = _setAnalysisDone(sheetId, true);
       update = update.merge(setValidSortIsImpossible(sheetId, false));
       update = update.merge(setSortedWithValidSort(sheetId, true));
       update = update.merge(setSortedWithCurrentBestSort(sheetId, true));

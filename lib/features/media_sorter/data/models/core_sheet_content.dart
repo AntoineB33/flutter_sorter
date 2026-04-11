@@ -1,5 +1,4 @@
 
-import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 
@@ -24,10 +23,10 @@ class CoreSheetContent {
     required this.usedCols,
   });
 
-  factory CoreSheetContent.empty() {
+  factory CoreSheetContent.empty(String title) {
     return CoreSheetContent(
       id: _idCounter++,
-      title: SpreadsheetConstants.defaultSheetTitle,
+      title: title,
       lastOpened: DateTime.now(),
       cells: {},
       columnTypes: {},

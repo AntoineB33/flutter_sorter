@@ -45,4 +45,10 @@ class SortProgressData {
   bool hasMoreToExplore() {
     return cursors.isNotEmpty && cursors[0] < possibleIntsById[0].length;
   }
+
+  factory SortProgressData.fromJson(Map<String, dynamic> json) =>
+      _$SortProgressDataFromJson(json);
+  Map<String, dynamic> toJson() => _$SortProgressDataToJson(this);
+  // ignore: unused_element
+  static void _keepLinterHappy() => SortProgressData.empty().toJson();
 }

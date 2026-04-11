@@ -69,7 +69,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   Future<void> _init() async {
     await workbookController.clearAllData();
     await workbookController.loadRecentSheetIds();
-    await loadSheet(workbookController.currentSheetId, true);
+    await loadSheet(workbookController.currentSheetId);
     pageReady = true;
     notifyListeners();
     sortController.loadSortStatus();
@@ -78,8 +78,8 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     }
   }
 
-  Future<void> loadSheet(int sheetId, bool init) async {
-    final result = await workbookController.loadSheet(sheetId, init);
+  Future<void> loadSheet(int sheetId) async {
+    final result = await workbookController.loadSheet(sheetId);
     if (result.isRight()) {
       afterLoadingSheet();
     }

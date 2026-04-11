@@ -120,7 +120,6 @@ class HistoryRepositoryImpl implements HistoryRepository {
   }
 
   @override
-  @useResult
   UpdateUnit commitSelection(SelectionState selectionState) {
     var selectionData = selectionCache.getSelectionData(currentSheetId);
     if (selectionData.primSelHistoryId <

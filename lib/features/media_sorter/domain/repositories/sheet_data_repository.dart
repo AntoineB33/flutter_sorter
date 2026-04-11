@@ -17,9 +17,11 @@ abstract class SheetDataRepository {
   Future<void> copySelectionToClipboard();
   Future<Either<Failure, IMap<String, UpdateUnit>>> pasteSelection();
   String getCellContent(CellPosition cell, int sheetId);
+  @useResult
   ColumnTypeUpdate getColumnTypeUpdate(int colId, ColumnType newColumnType, int sheetId);
   Future<Either<Failure, Unit>> loadSheet(int sheetId);
-  Future<void> addNewSheet(int sheetId);
+  @useResult
+  SheetDataUpdate addNewSheet(int sheetId, String title);
   @useResult
   ChangeSet update(IMap<String, UpdateUnit> updates, int sheetId);
 }

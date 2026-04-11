@@ -30,7 +30,6 @@ class SelectionRepositoryImpl implements SelectionRepository {
   );
 
   @override
-  @useResult
   SelectionState selectAll() {
     SelectionState selection = SelectionState.empty();
     selection.selectedCells.clear();

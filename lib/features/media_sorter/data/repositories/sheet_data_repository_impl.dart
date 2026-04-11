@@ -156,7 +156,6 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     return loadedSheetsCache.getCellContent(sheetId, cell.rowId, cell.colId);
   }
 
-  @useResult
   @override
   ColumnTypeUpdate getColumnTypeUpdate(int colId, ColumnType newColumnType, int sheetId) {
     return ColumnTypeUpdate(
@@ -257,8 +256,13 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  Future<void> addNewSheet(int sheetId) async {
-    loadedSheetsCache.setSheet(sheetId, CoreSheetContent.empty());
+  SheetDataUpdate addNewSheet(int sheetId, String title) {
+    loadedSheetsCache.setSheet(sheetId, CoreSheetContent.empty(title));
+    return SheetDataUpdate(
+      sheetId,
+      true,
+      newName: title,
+    );
   }
 
   @override

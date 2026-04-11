@@ -165,7 +165,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                         onNotification: (notification) =>
                             _handleScrollNotification(
                               notification,
-                              widget.workbookController,
                               widget.gridController,
                             ),
                         child: TableView.builder(
@@ -219,7 +218,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
   bool _handleScrollNotification(
     ScrollNotification notification,
-    WorkbookController controller,
     GridController gridController,
   ) {
     if (notification is ScrollUpdateNotification) {
