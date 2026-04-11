@@ -43,6 +43,6 @@ class SortProgressData {
   }
 
   bool hasMoreToExplore() {
-    return cursors[0] < possibleIntsById[0].length;
+    return cursors.isNotEmpty && cursors[0] < possibleIntsById[0].length;
   }
 }

@@ -66,11 +66,16 @@ class SortRepositoryImpl implements SortRepository {
   @useResult
   Future<UpdateUnit?> analyze(int sheetId) async {
     UpdateUnit? update;
+    sortProgressCache.update(
+      sheetId,
+      SortProgressData.empty(),
+    );
     if (loadedSheetsCache.rowCount(sheetId) == 0) {
       update = setAnalysisDone(sheetId, true);
       update = update.merge(setValidSortIsImpossible(sheetId, false));
       update = update.merge(setSortedWithValidSort(sheetId, true));
       update = update.merge(setSortedWithCurrentBestSort(sheetId, true));
+      update = update.merge(_setBestSortPossibleFound(sheetId, true));
       return update;
     }
     isolateReceivePortsCache.cancelB(sheetId);
@@ -181,6 +186,16 @@ class SortRepositoryImpl implements SortRepository {
   UpdateUnit setSortedWithCurrentBestSort(int sheetId, bool value) {
     analysisResultCache.setSortedWithCurrentBestSort(sheetId, value);
     return SheetDataUpdate(sheetId, true, sortedWithCurrentBestSort: value);
+  }
+
+  @useResult
+  UpdateUnit _setBestSortPossibleFound(int sheetId, bool bestSortPossibleFound) {
+    analysisResultCache.setBestSortPossibleFound(sheetId, bestSortPossibleFound);
+    return SheetDataUpdate(
+      sheetId,
+      true,
+      bestSortPossibleFound: bestSortPossibleFound,
+    );
   }
 
   @override

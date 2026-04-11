@@ -208,6 +208,10 @@ Future<void> initMediaSorterDependencies() async {
   slMediaSorter.registerLazySingleton<SelectionController>(
     () => selectionController,
   );
+  slMediaSorter.registerLazySingleton<SortController>(() => sortController);
+  slMediaSorter.registerLazySingleton<HistoryController>(
+    () => historyController,
+  );
   slMediaSorter.registerLazySingleton<SheetDataUsecase>(() => sheetDataUsecase);
 
   slMediaSorter.registerLazySingleton<LocalDataRepositoryImpl>(

@@ -34,7 +34,7 @@ class SelectionData {
 
   SelectionData.empty()
     : selectionStates = [SelectionState.empty()],
-      primSelHistoryId = -1;
+      primSelHistoryId = 0;
 
   SelectionData copyWith({
     List<SelectionState>? selectionStates,

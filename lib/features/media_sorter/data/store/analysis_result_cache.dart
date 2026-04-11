@@ -54,6 +54,10 @@ class AnalysisResultCache {
     );
   }
 
+  void setBestSortPossibleFound(int sheetId, bool bestSortPossibleFound) {
+    updateResults(sheetId, _getAnalysisResult(sheetId).merge(bestSortPossibleFound: bestSortPossibleFound));
+  }
+
   void setFindingBestSort(int sheetId, bool findingBestSort) {
     updateResults(sheetId, _getAnalysisResult(sheetId).merge(isFindingBestSort: findingBestSort));
   }
