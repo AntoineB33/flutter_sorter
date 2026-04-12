@@ -213,75 +213,6 @@ class $SheetDataTablesTable extends SheetDataTables
       ).withConverter<AnalysisResult>(
         $SheetDataTablesTable.$converteranalysisResult,
       );
-  static const VerificationMeta _validSortIsImpossibleMeta =
-      const VerificationMeta('validSortIsImpossible');
-  @override
-  late final GeneratedColumn<bool> validSortIsImpossible =
-      GeneratedColumn<bool>(
-        'valid_sort_is_impossible',
-        aliasedName,
-        false,
-        type: DriftSqlType.bool,
-        requiredDuringInsert: true,
-        defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'CHECK ("valid_sort_is_impossible" IN (0, 1))',
-        ),
-      );
-  static const VerificationMeta _isFindingBestSortMeta = const VerificationMeta(
-    'isFindingBestSort',
-  );
-  @override
-  late final GeneratedColumn<bool> isFindingBestSort = GeneratedColumn<bool>(
-    'is_finding_best_sort',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_finding_best_sort" IN (0, 1))',
-    ),
-  );
-  static const VerificationMeta _sortedWithValidSortMeta =
-      const VerificationMeta('sortedWithValidSort');
-  @override
-  late final GeneratedColumn<bool> sortedWithValidSort = GeneratedColumn<bool>(
-    'sorted_with_valid_sort',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("sorted_with_valid_sort" IN (0, 1))',
-    ),
-  );
-  static const VerificationMeta _sortedWithCurrentBestSortMeta =
-      const VerificationMeta('sortedWithCurrentBestSort');
-  @override
-  late final GeneratedColumn<bool> sortedWithCurrentBestSort =
-      GeneratedColumn<bool>(
-        'sorted_with_current_best_sort',
-        aliasedName,
-        false,
-        type: DriftSqlType.bool,
-        requiredDuringInsert: true,
-        defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'CHECK ("sorted_with_current_best_sort" IN (0, 1))',
-        ),
-      );
-  static const VerificationMeta _bestSortPossibleFoundMeta =
-      const VerificationMeta('bestSortPossibleFound');
-  @override
-  late final GeneratedColumn<bool> bestSortPossibleFound =
-      GeneratedColumn<bool>(
-        'best_sort_possible_found',
-        aliasedName,
-        false,
-        type: DriftSqlType.bool,
-        requiredDuringInsert: true,
-        defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'CHECK ("best_sort_possible_found" IN (0, 1))',
-        ),
-      );
   static const VerificationMeta _sortInProgressMeta = const VerificationMeta(
     'sortInProgress',
   );
@@ -358,11 +289,6 @@ class $SheetDataTablesTable extends SheetDataTables
     validAreas,
     sortIndex,
     analysisResult,
-    validSortIsImpossible,
-    isFindingBestSort,
-    sortedWithValidSort,
-    sortedWithCurrentBestSort,
-    bestSortPossibleFound,
     sortInProgress,
     toApplyNextBestSort,
     toAlwaysApplyCurrentBestSort,
@@ -461,61 +387,6 @@ class $SheetDataTablesTable extends SheetDataTables
       );
     } else if (isInserting) {
       context.missing(_sortIndexMeta);
-    }
-    if (data.containsKey('valid_sort_is_impossible')) {
-      context.handle(
-        _validSortIsImpossibleMeta,
-        validSortIsImpossible.isAcceptableOrUnknown(
-          data['valid_sort_is_impossible']!,
-          _validSortIsImpossibleMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_validSortIsImpossibleMeta);
-    }
-    if (data.containsKey('is_finding_best_sort')) {
-      context.handle(
-        _isFindingBestSortMeta,
-        isFindingBestSort.isAcceptableOrUnknown(
-          data['is_finding_best_sort']!,
-          _isFindingBestSortMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_isFindingBestSortMeta);
-    }
-    if (data.containsKey('sorted_with_valid_sort')) {
-      context.handle(
-        _sortedWithValidSortMeta,
-        sortedWithValidSort.isAcceptableOrUnknown(
-          data['sorted_with_valid_sort']!,
-          _sortedWithValidSortMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_sortedWithValidSortMeta);
-    }
-    if (data.containsKey('sorted_with_current_best_sort')) {
-      context.handle(
-        _sortedWithCurrentBestSortMeta,
-        sortedWithCurrentBestSort.isAcceptableOrUnknown(
-          data['sorted_with_current_best_sort']!,
-          _sortedWithCurrentBestSortMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_sortedWithCurrentBestSortMeta);
-    }
-    if (data.containsKey('best_sort_possible_found')) {
-      context.handle(
-        _bestSortPossibleFoundMeta,
-        bestSortPossibleFound.isAcceptableOrUnknown(
-          data['best_sort_possible_found']!,
-          _bestSortPossibleFoundMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_bestSortPossibleFoundMeta);
     }
     if (data.containsKey('sort_in_progress')) {
       context.handle(
@@ -667,26 +538,6 @@ class $SheetDataTablesTable extends SheetDataTables
           data['${effectivePrefix}analysis_result'],
         )!,
       ),
-      validSortIsImpossible: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}valid_sort_is_impossible'],
-      )!,
-      isFindingBestSort: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_finding_best_sort'],
-      )!,
-      sortedWithValidSort: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}sorted_with_valid_sort'],
-      )!,
-      sortedWithCurrentBestSort: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}sorted_with_current_best_sort'],
-      )!,
-      bestSortPossibleFound: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}best_sort_possible_found'],
-      )!,
       sortInProgress: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}sort_in_progress'],
@@ -753,11 +604,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
   final List<List<List<int>>> validAreas;
   final int sortIndex;
   final AnalysisResult analysisResult;
-  final bool validSortIsImpossible;
-  final bool isFindingBestSort;
-  final bool sortedWithValidSort;
-  final bool sortedWithCurrentBestSort;
-  final bool bestSortPossibleFound;
   final bool sortInProgress;
   final bool toApplyNextBestSort;
   final bool toAlwaysApplyCurrentBestSort;
@@ -782,11 +628,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     required this.validAreas,
     required this.sortIndex,
     required this.analysisResult,
-    required this.validSortIsImpossible,
-    required this.isFindingBestSort,
-    required this.sortedWithValidSort,
-    required this.sortedWithCurrentBestSort,
-    required this.bestSortPossibleFound,
     required this.sortInProgress,
     required this.toApplyNextBestSort,
     required this.toAlwaysApplyCurrentBestSort,
@@ -856,13 +697,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
         $SheetDataTablesTable.$converteranalysisResult.toSql(analysisResult),
       );
     }
-    map['valid_sort_is_impossible'] = Variable<bool>(validSortIsImpossible);
-    map['is_finding_best_sort'] = Variable<bool>(isFindingBestSort);
-    map['sorted_with_valid_sort'] = Variable<bool>(sortedWithValidSort);
-    map['sorted_with_current_best_sort'] = Variable<bool>(
-      sortedWithCurrentBestSort,
-    );
-    map['best_sort_possible_found'] = Variable<bool>(bestSortPossibleFound);
     map['sort_in_progress'] = Variable<bool>(sortInProgress);
     map['to_apply_next_best_sort'] = Variable<bool>(toApplyNextBestSort);
     map['to_always_apply_current_best_sort'] = Variable<bool>(
@@ -893,11 +727,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       validAreas: Value(validAreas),
       sortIndex: Value(sortIndex),
       analysisResult: Value(analysisResult),
-      validSortIsImpossible: Value(validSortIsImpossible),
-      isFindingBestSort: Value(isFindingBestSort),
-      sortedWithValidSort: Value(sortedWithValidSort),
-      sortedWithCurrentBestSort: Value(sortedWithCurrentBestSort),
-      bestSortPossibleFound: Value(bestSortPossibleFound),
       sortInProgress: Value(sortInProgress),
       toApplyNextBestSort: Value(toApplyNextBestSort),
       toAlwaysApplyCurrentBestSort: Value(toAlwaysApplyCurrentBestSort),
@@ -938,19 +767,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       analysisResult: serializer.fromJson<AnalysisResult>(
         json['analysisResult'],
       ),
-      validSortIsImpossible: serializer.fromJson<bool>(
-        json['validSortIsImpossible'],
-      ),
-      isFindingBestSort: serializer.fromJson<bool>(json['isFindingBestSort']),
-      sortedWithValidSort: serializer.fromJson<bool>(
-        json['sortedWithValidSort'],
-      ),
-      sortedWithCurrentBestSort: serializer.fromJson<bool>(
-        json['sortedWithCurrentBestSort'],
-      ),
-      bestSortPossibleFound: serializer.fromJson<bool>(
-        json['bestSortPossibleFound'],
-      ),
       sortInProgress: serializer.fromJson<bool>(json['sortInProgress']),
       toApplyNextBestSort: serializer.fromJson<bool>(
         json['toApplyNextBestSort'],
@@ -984,13 +800,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       'validAreas': serializer.toJson<List<List<List<int>>>>(validAreas),
       'sortIndex': serializer.toJson<int>(sortIndex),
       'analysisResult': serializer.toJson<AnalysisResult>(analysisResult),
-      'validSortIsImpossible': serializer.toJson<bool>(validSortIsImpossible),
-      'isFindingBestSort': serializer.toJson<bool>(isFindingBestSort),
-      'sortedWithValidSort': serializer.toJson<bool>(sortedWithValidSort),
-      'sortedWithCurrentBestSort': serializer.toJson<bool>(
-        sortedWithCurrentBestSort,
-      ),
-      'bestSortPossibleFound': serializer.toJson<bool>(bestSortPossibleFound),
       'sortInProgress': serializer.toJson<bool>(sortInProgress),
       'toApplyNextBestSort': serializer.toJson<bool>(toApplyNextBestSort),
       'toAlwaysApplyCurrentBestSort': serializer.toJson<bool>(
@@ -1020,11 +829,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     List<List<List<int>>>? validAreas,
     int? sortIndex,
     AnalysisResult? analysisResult,
-    bool? validSortIsImpossible,
-    bool? isFindingBestSort,
-    bool? sortedWithValidSort,
-    bool? sortedWithCurrentBestSort,
-    bool? bestSortPossibleFound,
     bool? sortInProgress,
     bool? toApplyNextBestSort,
     bool? toAlwaysApplyCurrentBestSort,
@@ -1049,12 +853,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     validAreas: validAreas ?? this.validAreas,
     sortIndex: sortIndex ?? this.sortIndex,
     analysisResult: analysisResult ?? this.analysisResult,
-    validSortIsImpossible: validSortIsImpossible ?? this.validSortIsImpossible,
-    isFindingBestSort: isFindingBestSort ?? this.isFindingBestSort,
-    sortedWithValidSort: sortedWithValidSort ?? this.sortedWithValidSort,
-    sortedWithCurrentBestSort:
-        sortedWithCurrentBestSort ?? this.sortedWithCurrentBestSort,
-    bestSortPossibleFound: bestSortPossibleFound ?? this.bestSortPossibleFound,
     sortInProgress: sortInProgress ?? this.sortInProgress,
     toApplyNextBestSort: toApplyNextBestSort ?? this.toApplyNextBestSort,
     toAlwaysApplyCurrentBestSort:
@@ -1108,21 +906,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       analysisResult: data.analysisResult.present
           ? data.analysisResult.value
           : this.analysisResult,
-      validSortIsImpossible: data.validSortIsImpossible.present
-          ? data.validSortIsImpossible.value
-          : this.validSortIsImpossible,
-      isFindingBestSort: data.isFindingBestSort.present
-          ? data.isFindingBestSort.value
-          : this.isFindingBestSort,
-      sortedWithValidSort: data.sortedWithValidSort.present
-          ? data.sortedWithValidSort.value
-          : this.sortedWithValidSort,
-      sortedWithCurrentBestSort: data.sortedWithCurrentBestSort.present
-          ? data.sortedWithCurrentBestSort.value
-          : this.sortedWithCurrentBestSort,
-      bestSortPossibleFound: data.bestSortPossibleFound.present
-          ? data.bestSortPossibleFound.value
-          : this.bestSortPossibleFound,
       sortInProgress: data.sortInProgress.present
           ? data.sortInProgress.value
           : this.sortInProgress,
@@ -1160,11 +943,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           ..write('validAreas: $validAreas, ')
           ..write('sortIndex: $sortIndex, ')
           ..write('analysisResult: $analysisResult, ')
-          ..write('validSortIsImpossible: $validSortIsImpossible, ')
-          ..write('isFindingBestSort: $isFindingBestSort, ')
-          ..write('sortedWithValidSort: $sortedWithValidSort, ')
-          ..write('sortedWithCurrentBestSort: $sortedWithCurrentBestSort, ')
-          ..write('bestSortPossibleFound: $bestSortPossibleFound, ')
           ..write('sortInProgress: $sortInProgress, ')
           ..write('toApplyNextBestSort: $toApplyNextBestSort, ')
           ..write(
@@ -1196,11 +974,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     validAreas,
     sortIndex,
     analysisResult,
-    validSortIsImpossible,
-    isFindingBestSort,
-    sortedWithValidSort,
-    sortedWithCurrentBestSort,
-    bestSortPossibleFound,
     sortInProgress,
     toApplyNextBestSort,
     toAlwaysApplyCurrentBestSort,
@@ -1229,11 +1002,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           other.validAreas == this.validAreas &&
           other.sortIndex == this.sortIndex &&
           other.analysisResult == this.analysisResult &&
-          other.validSortIsImpossible == this.validSortIsImpossible &&
-          other.isFindingBestSort == this.isFindingBestSort &&
-          other.sortedWithValidSort == this.sortedWithValidSort &&
-          other.sortedWithCurrentBestSort == this.sortedWithCurrentBestSort &&
-          other.bestSortPossibleFound == this.bestSortPossibleFound &&
           other.sortInProgress == this.sortInProgress &&
           other.toApplyNextBestSort == this.toApplyNextBestSort &&
           other.toAlwaysApplyCurrentBestSort ==
@@ -1261,11 +1029,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
   final Value<List<List<List<int>>>> validAreas;
   final Value<int> sortIndex;
   final Value<AnalysisResult> analysisResult;
-  final Value<bool> validSortIsImpossible;
-  final Value<bool> isFindingBestSort;
-  final Value<bool> sortedWithValidSort;
-  final Value<bool> sortedWithCurrentBestSort;
-  final Value<bool> bestSortPossibleFound;
   final Value<bool> sortInProgress;
   final Value<bool> toApplyNextBestSort;
   final Value<bool> toAlwaysApplyCurrentBestSort;
@@ -1290,11 +1053,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     this.validAreas = const Value.absent(),
     this.sortIndex = const Value.absent(),
     this.analysisResult = const Value.absent(),
-    this.validSortIsImpossible = const Value.absent(),
-    this.isFindingBestSort = const Value.absent(),
-    this.sortedWithValidSort = const Value.absent(),
-    this.sortedWithCurrentBestSort = const Value.absent(),
-    this.bestSortPossibleFound = const Value.absent(),
     this.sortInProgress = const Value.absent(),
     this.toApplyNextBestSort = const Value.absent(),
     this.toAlwaysApplyCurrentBestSort = const Value.absent(),
@@ -1320,11 +1078,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     required List<List<List<int>>> validAreas,
     required int sortIndex,
     required AnalysisResult analysisResult,
-    required bool validSortIsImpossible,
-    required bool isFindingBestSort,
-    required bool sortedWithValidSort,
-    required bool sortedWithCurrentBestSort,
-    required bool bestSortPossibleFound,
     required bool sortInProgress,
     required bool toApplyNextBestSort,
     required bool toAlwaysApplyCurrentBestSort,
@@ -1347,11 +1100,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
        validAreas = Value(validAreas),
        sortIndex = Value(sortIndex),
        analysisResult = Value(analysisResult),
-       validSortIsImpossible = Value(validSortIsImpossible),
-       isFindingBestSort = Value(isFindingBestSort),
-       sortedWithValidSort = Value(sortedWithValidSort),
-       sortedWithCurrentBestSort = Value(sortedWithCurrentBestSort),
-       bestSortPossibleFound = Value(bestSortPossibleFound),
        sortInProgress = Value(sortInProgress),
        toApplyNextBestSort = Value(toApplyNextBestSort),
        toAlwaysApplyCurrentBestSort = Value(toAlwaysApplyCurrentBestSort),
@@ -1376,11 +1124,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Expression<String>? validAreas,
     Expression<int>? sortIndex,
     Expression<String>? analysisResult,
-    Expression<bool>? validSortIsImpossible,
-    Expression<bool>? isFindingBestSort,
-    Expression<bool>? sortedWithValidSort,
-    Expression<bool>? sortedWithCurrentBestSort,
-    Expression<bool>? bestSortPossibleFound,
     Expression<bool>? sortInProgress,
     Expression<bool>? toApplyNextBestSort,
     Expression<bool>? toAlwaysApplyCurrentBestSort,
@@ -1406,15 +1149,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       if (validAreas != null) 'valid_areas': validAreas,
       if (sortIndex != null) 'sort_index': sortIndex,
       if (analysisResult != null) 'analysis_result': analysisResult,
-      if (validSortIsImpossible != null)
-        'valid_sort_is_impossible': validSortIsImpossible,
-      if (isFindingBestSort != null) 'is_finding_best_sort': isFindingBestSort,
-      if (sortedWithValidSort != null)
-        'sorted_with_valid_sort': sortedWithValidSort,
-      if (sortedWithCurrentBestSort != null)
-        'sorted_with_current_best_sort': sortedWithCurrentBestSort,
-      if (bestSortPossibleFound != null)
-        'best_sort_possible_found': bestSortPossibleFound,
       if (sortInProgress != null) 'sort_in_progress': sortInProgress,
       if (toApplyNextBestSort != null)
         'to_apply_next_best_sort': toApplyNextBestSort,
@@ -1444,11 +1178,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Value<List<List<List<int>>>>? validAreas,
     Value<int>? sortIndex,
     Value<AnalysisResult>? analysisResult,
-    Value<bool>? validSortIsImpossible,
-    Value<bool>? isFindingBestSort,
-    Value<bool>? sortedWithValidSort,
-    Value<bool>? sortedWithCurrentBestSort,
-    Value<bool>? bestSortPossibleFound,
     Value<bool>? sortInProgress,
     Value<bool>? toApplyNextBestSort,
     Value<bool>? toAlwaysApplyCurrentBestSort,
@@ -1474,14 +1203,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       validAreas: validAreas ?? this.validAreas,
       sortIndex: sortIndex ?? this.sortIndex,
       analysisResult: analysisResult ?? this.analysisResult,
-      validSortIsImpossible:
-          validSortIsImpossible ?? this.validSortIsImpossible,
-      isFindingBestSort: isFindingBestSort ?? this.isFindingBestSort,
-      sortedWithValidSort: sortedWithValidSort ?? this.sortedWithValidSort,
-      sortedWithCurrentBestSort:
-          sortedWithCurrentBestSort ?? this.sortedWithCurrentBestSort,
-      bestSortPossibleFound:
-          bestSortPossibleFound ?? this.bestSortPossibleFound,
       sortInProgress: sortInProgress ?? this.sortInProgress,
       toApplyNextBestSort: toApplyNextBestSort ?? this.toApplyNextBestSort,
       toAlwaysApplyCurrentBestSort:
@@ -1580,27 +1301,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
         ),
       );
     }
-    if (validSortIsImpossible.present) {
-      map['valid_sort_is_impossible'] = Variable<bool>(
-        validSortIsImpossible.value,
-      );
-    }
-    if (isFindingBestSort.present) {
-      map['is_finding_best_sort'] = Variable<bool>(isFindingBestSort.value);
-    }
-    if (sortedWithValidSort.present) {
-      map['sorted_with_valid_sort'] = Variable<bool>(sortedWithValidSort.value);
-    }
-    if (sortedWithCurrentBestSort.present) {
-      map['sorted_with_current_best_sort'] = Variable<bool>(
-        sortedWithCurrentBestSort.value,
-      );
-    }
-    if (bestSortPossibleFound.present) {
-      map['best_sort_possible_found'] = Variable<bool>(
-        bestSortPossibleFound.value,
-      );
-    }
     if (sortInProgress.present) {
       map['sort_in_progress'] = Variable<bool>(sortInProgress.value);
     }
@@ -1642,11 +1342,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
           ..write('validAreas: $validAreas, ')
           ..write('sortIndex: $sortIndex, ')
           ..write('analysisResult: $analysisResult, ')
-          ..write('validSortIsImpossible: $validSortIsImpossible, ')
-          ..write('isFindingBestSort: $isFindingBestSort, ')
-          ..write('sortedWithValidSort: $sortedWithValidSort, ')
-          ..write('sortedWithCurrentBestSort: $sortedWithCurrentBestSort, ')
-          ..write('bestSortPossibleFound: $bestSortPossibleFound, ')
           ..write('sortInProgress: $sortInProgress, ')
           ..write('toApplyNextBestSort: $toApplyNextBestSort, ')
           ..write(
@@ -3772,11 +3467,6 @@ typedef $$SheetDataTablesTableCreateCompanionBuilder =
       required List<List<List<int>>> validAreas,
       required int sortIndex,
       required AnalysisResult analysisResult,
-      required bool validSortIsImpossible,
-      required bool isFindingBestSort,
-      required bool sortedWithValidSort,
-      required bool sortedWithCurrentBestSort,
-      required bool bestSortPossibleFound,
       required bool sortInProgress,
       required bool toApplyNextBestSort,
       required bool toAlwaysApplyCurrentBestSort,
@@ -3803,11 +3493,6 @@ typedef $$SheetDataTablesTableUpdateCompanionBuilder =
       Value<List<List<List<int>>>> validAreas,
       Value<int> sortIndex,
       Value<AnalysisResult> analysisResult,
-      Value<bool> validSortIsImpossible,
-      Value<bool> isFindingBestSort,
-      Value<bool> sortedWithValidSort,
-      Value<bool> sortedWithCurrentBestSort,
-      Value<bool> bestSortPossibleFound,
       Value<bool> sortInProgress,
       Value<bool> toApplyNextBestSort,
       Value<bool> toAlwaysApplyCurrentBestSort,
@@ -4127,31 +3812,6 @@ class $$SheetDataTablesTableFilterComposer
     builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 
-  ColumnFilters<bool> get validSortIsImpossible => $composableBuilder(
-    column: $table.validSortIsImpossible,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get isFindingBestSort => $composableBuilder(
-    column: $table.isFindingBestSort,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get sortedWithValidSort => $composableBuilder(
-    column: $table.sortedWithValidSort,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get sortedWithCurrentBestSort => $composableBuilder(
-    column: $table.sortedWithCurrentBestSort,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get bestSortPossibleFound => $composableBuilder(
-    column: $table.bestSortPossibleFound,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<bool> get sortInProgress => $composableBuilder(
     column: $table.sortInProgress,
     builder: (column) => ColumnFilters(column),
@@ -4461,31 +4121,6 @@ class $$SheetDataTablesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get validSortIsImpossible => $composableBuilder(
-    column: $table.validSortIsImpossible,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get isFindingBestSort => $composableBuilder(
-    column: $table.isFindingBestSort,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get sortedWithValidSort => $composableBuilder(
-    column: $table.sortedWithValidSort,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get sortedWithCurrentBestSort => $composableBuilder(
-    column: $table.sortedWithCurrentBestSort,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get bestSortPossibleFound => $composableBuilder(
-    column: $table.bestSortPossibleFound,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<bool> get sortInProgress => $composableBuilder(
     column: $table.sortInProgress,
     builder: (column) => ColumnOrderings(column),
@@ -4605,31 +4240,6 @@ class $$SheetDataTablesTableAnnotationComposer
         column: $table.analysisResult,
         builder: (column) => column,
       );
-
-  GeneratedColumn<bool> get validSortIsImpossible => $composableBuilder(
-    column: $table.validSortIsImpossible,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get isFindingBestSort => $composableBuilder(
-    column: $table.isFindingBestSort,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get sortedWithValidSort => $composableBuilder(
-    column: $table.sortedWithValidSort,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get sortedWithCurrentBestSort => $composableBuilder(
-    column: $table.sortedWithCurrentBestSort,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get bestSortPossibleFound => $composableBuilder(
-    column: $table.bestSortPossibleFound,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<bool> get sortInProgress => $composableBuilder(
     column: $table.sortInProgress,
@@ -4895,11 +4505,6 @@ class $$SheetDataTablesTableTableManager
                 Value<List<List<List<int>>>> validAreas = const Value.absent(),
                 Value<int> sortIndex = const Value.absent(),
                 Value<AnalysisResult> analysisResult = const Value.absent(),
-                Value<bool> validSortIsImpossible = const Value.absent(),
-                Value<bool> isFindingBestSort = const Value.absent(),
-                Value<bool> sortedWithValidSort = const Value.absent(),
-                Value<bool> sortedWithCurrentBestSort = const Value.absent(),
-                Value<bool> bestSortPossibleFound = const Value.absent(),
                 Value<bool> sortInProgress = const Value.absent(),
                 Value<bool> toApplyNextBestSort = const Value.absent(),
                 Value<bool> toAlwaysApplyCurrentBestSort = const Value.absent(),
@@ -4924,11 +4529,6 @@ class $$SheetDataTablesTableTableManager
                 validAreas: validAreas,
                 sortIndex: sortIndex,
                 analysisResult: analysisResult,
-                validSortIsImpossible: validSortIsImpossible,
-                isFindingBestSort: isFindingBestSort,
-                sortedWithValidSort: sortedWithValidSort,
-                sortedWithCurrentBestSort: sortedWithCurrentBestSort,
-                bestSortPossibleFound: bestSortPossibleFound,
                 sortInProgress: sortInProgress,
                 toApplyNextBestSort: toApplyNextBestSort,
                 toAlwaysApplyCurrentBestSort: toAlwaysApplyCurrentBestSort,
@@ -4955,11 +4555,6 @@ class $$SheetDataTablesTableTableManager
                 required List<List<List<int>>> validAreas,
                 required int sortIndex,
                 required AnalysisResult analysisResult,
-                required bool validSortIsImpossible,
-                required bool isFindingBestSort,
-                required bool sortedWithValidSort,
-                required bool sortedWithCurrentBestSort,
-                required bool bestSortPossibleFound,
                 required bool sortInProgress,
                 required bool toApplyNextBestSort,
                 required bool toAlwaysApplyCurrentBestSort,
@@ -4984,11 +4579,6 @@ class $$SheetDataTablesTableTableManager
                 validAreas: validAreas,
                 sortIndex: sortIndex,
                 analysisResult: analysisResult,
-                validSortIsImpossible: validSortIsImpossible,
-                isFindingBestSort: isFindingBestSort,
-                sortedWithValidSort: sortedWithValidSort,
-                sortedWithCurrentBestSort: sortedWithCurrentBestSort,
-                bestSortPossibleFound: bestSortPossibleFound,
                 sortInProgress: sortInProgress,
                 toApplyNextBestSort: toApplyNextBestSort,
                 toAlwaysApplyCurrentBestSort: toAlwaysApplyCurrentBestSort,

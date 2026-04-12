@@ -76,7 +76,7 @@ class CellPosition {
   int get hashCode => rowId.hashCode ^ colId.hashCode;
 }
 
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class SheetDataUpdate extends UpdateUnit {
   final RecordType type = RecordType.sheetDataUpdate;
   final int sheetId;
@@ -158,35 +158,26 @@ class SheetDataUpdate extends UpdateUnit {
     var newSheetDataUpdate = newUpdate as SheetDataUpdate;
 
     if (!newSheetDataUpdate.addOtherwiseRemove) {
-      newSheetDataUpdate = SheetDataUpdate.initial(sheetId);
+      return SheetDataUpdate.initial(sheetId); // Replaced reassignment with direct return
     }
 
-    // 1. Merge constructor parameters
-    final merged = SheetDataUpdate(
-      newSheetDataUpdate.sheetId,
-      newSheetDataUpdate.addOtherwiseRemove,
-      newName: newSheetDataUpdate.newName ?? newName,
-      prevName: newSheetDataUpdate.prevName ?? prevName,
-      lastOpened: newSheetDataUpdate.lastOpened ?? lastOpened,
-      usedRows: newSheetDataUpdate.usedRows ?? usedRows,
-      usedCols: newSheetDataUpdate.usedCols ?? usedCols,
-      historyIndex: newSheetDataUpdate.historyIndex ?? historyIndex,
-      colHeaderHeight: newSheetDataUpdate.colHeaderHeight ?? colHeaderHeight,
-      prevColHeaderHeight: newSheetDataUpdate.prevColHeaderHeight ?? prevColHeaderHeight,
-      rowHeaderWidth: newSheetDataUpdate.rowHeaderWidth ?? rowHeaderWidth,
-      prevRowHeaderWidth: newSheetDataUpdate.prevRowHeaderWidth ?? prevRowHeaderWidth,
-      selectionHistory: newSheetDataUpdate.selectionHistory ?? selectionHistory,
-      scrollOffsetX: newSheetDataUpdate.scrollOffsetX ?? scrollOffsetX,
-      scrollOffsetY: newSheetDataUpdate.scrollOffsetY ?? scrollOffsetY,
-      bestSortFound: newSheetDataUpdate.bestSortFound ?? bestSortFound,
-      bestDistFound: newSheetDataUpdate.bestDistFound ?? bestDistFound,
-      cursors: newSheetDataUpdate.cursors ?? cursors,
-      possibleInts: newSheetDataUpdate.possibleInts ?? possibleInts,
-      validAreas: newSheetDataUpdate.validAreas ?? validAreas,
-      sortIndex: newSheetDataUpdate.sortIndex ?? sortIndex,
-    );
+    // 1. Convert the current object to a Map
+    final currentJson = toJson();
 
-    return merged;
+    // 2. Convert the new update to a Map, but STRIP OUT all null values.
+    // This perfectly mimics your existing `new ?? old` logic.
+    final newJson = newSheetDataUpdate.toJson()
+      ..removeWhere((key, value) => value == null);
+
+    // 3. Merge the maps. Because newJson is second, its non-null values 
+    // will overwrite the values in currentJson.
+    final mergedJson = {
+      ...currentJson,
+      ...newJson,
+    };
+
+    // 4. Rebuild and return the object!
+    return SheetDataUpdate.fromJson(mergedJson);
   }
 
   factory SheetDataUpdate.fromJson(Map<String, dynamic> json) =>
