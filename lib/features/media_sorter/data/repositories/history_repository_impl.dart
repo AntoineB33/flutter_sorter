@@ -151,8 +151,12 @@ class HistoryRepositoryImpl implements HistoryRepository {
   }
 
   @override
-  void addSheetId(int sheetId) {
-    historyCache.setUpdateHistories(sheetId, HistoryData.empty());
+  ChangeSet addSheetId(int sheetId) {
+    final historyData = HistoryData.empty();
+    historyCache.setUpdateHistories(sheetId, historyData);
+    final changeSet = ChangeSet();
+    changeSet.addUpdate(SheetDataUpdate(sheetId, true, historyIndex: historyData.historyIndex));
+    return changeSet;
   }
 
   @override

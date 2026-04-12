@@ -56,6 +56,11 @@ class SortRepositoryImpl implements SortRepository {
     return analysisResultCache.bestSortPossibleFound(sheetId);
   }
 
+  @override
+  AnalysisResult getAnalysisResult(int sheetId) {
+    return analysisResultCache.getAnalysisResult(sheetId);
+  }
+
   @useResult
   UpdateUnit _setAnalysisDone(int sheetId, bool analysisDone) {
     sortStatusCache.setAnalysisDone(sheetId, analysisDone);
@@ -168,12 +173,24 @@ class SortRepositoryImpl implements SortRepository {
     return ChangeSet()..addUpdate(SheetDataUpdate(sheetId, true, analysisResult: newResult));
   }
 
+  @useResult
+  ChangeSet _updateSortStatus(int sheetId, SortStatus newStatus, sortInProgress) {
+    sortStatusCache.updateSortStatus(sheetId, newStatus);
+    return ChangeSet()..addUpdate(SheetDataUpdate(
+      sheetId,
+      true,
+      sortInProgress: sortInProgress,
+      toApplyNextBestSort: newStatus.toApplyNextBestSort,
+      analysisDone: newStatus.analysisDone,
+    ));
+  }
+
   @override
   ChangeSet addSheetId(int sheetId) {
     final changeSet = ChangeSet();
-    final sortProgress = SortProgressData.empty();
     changeSet.merge(_updateResults(sheetId, AnalysisResult.empty()));
-    changeSet.merge(_updateSortProgress(sheetId, sortProgress));
+    changeSet.merge(_updateSortStatus(sheetId, SortStatus.initial(), false));
+    changeSet.merge(_updateSortProgress(sheetId, SortProgressData.empty()));
     return changeSet;
   }
 
@@ -207,7 +224,7 @@ class SortRepositoryImpl implements SortRepository {
   @useResult
   UpdateUnit setSortedWithCurrentBestSort(int sheetId, bool value) {
     analysisResultCache.setSortedWithCurrentBestSort(sheetId, value);
-    return SheetDataUpdate(sheetId, true, sortedWithCurrentBestSort: value);
+    return SheetDataUpdate(sheetId, true, analysisResult: analysisResultCache.getAnalysisResult(sheetId).merge(sortedWithCurrentBestSort: value));
   }
 
   @useResult
@@ -222,7 +239,7 @@ class SortRepositoryImpl implements SortRepository {
     return SheetDataUpdate(
       sheetId,
       true,
-      bestSortPossibleFound: bestSortPossibleFound,
+      analysisResult: analysisResultCache.getAnalysisResult(sheetId).merge(bestSortPossibleFound: bestSortPossibleFound),
     );
   }
 
@@ -265,7 +282,7 @@ class SortRepositoryImpl implements SortRepository {
   @useResult
   UpdateUnit setSortedWithValidSort(int sheetId, bool sorted) {
     analysisResultCache.setSortedWithValidSort(sheetId, sorted);
-    return SheetDataUpdate(sheetId, true, sortedWithValidSort: sorted);
+    return SheetDataUpdate(sheetId, true, analysisResult: analysisResultCache.getAnalysisResult(sheetId).merge(sortedWithValidSort: sorted));
   }
 
   @override
@@ -318,7 +335,7 @@ class SortRepositoryImpl implements SortRepository {
 
   UpdateUnit setValidSortIsImpossible(int sheetId, bool impossible) {
     analysisResultCache.setValidSortIsImpossible(sheetId, impossible);
-    return SheetDataUpdate(sheetId, true, validSortIsImpossible: impossible);
+    return SheetDataUpdate(sheetId, true, analysisResult: analysisResultCache.getAnalysisResult(sheetId).merge(validSortIsImpossible: impossible));
   }
 
   @override

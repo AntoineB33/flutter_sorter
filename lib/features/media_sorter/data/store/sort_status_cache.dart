@@ -32,6 +32,10 @@ class SortStatusCache {
     _sortStatusBySheet[sheetId]!.copyWith(analysisDone: analysisDone);
   }
 
+  void updateSortStatus(int sheetId, SortStatus newStatus) {
+    _sortStatusBySheet[sheetId] = newStatus;
+  }
+
   void setSortStatus(Map<int, SortStatus> statuses) {
     _sortStatusBySheet
       ..clear()

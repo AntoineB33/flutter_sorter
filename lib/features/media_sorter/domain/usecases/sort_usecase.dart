@@ -57,7 +57,7 @@ class SortUsecase {
   void setFindingBestSort(int sheetId, bool value) {
     sortRepository.setFindingBestSort(sheetId, value);
     saveRepository.saveUpdate(
-      SheetDataUpdate(sheetId, true, isFindingBestSort: value),
+      SheetDataUpdate(sheetId, true, analysisResult: sortRepository.getAnalysisResult(sheetId).merge(isFindingBestSort: value)),
     );
   }
 

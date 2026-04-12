@@ -328,7 +328,7 @@ class CalculateService {
     return intervals;
   }
 
-  bool isValidAttName(String attName) {
+  bool _isValidAttName(String attName) {
     if (attName.contains(SpreadsheetConstants.appearFirst) ||
         attName.contains(SpreadsheetConstants.appearLast) ||
         attName.contains(SpreadsheetConstants.first) ||
@@ -410,7 +410,7 @@ class CalculateService {
       att = Attribute.row(numK);
       attColId = all;
     } else {
-      if (!isValidAttName(name)) {
+      if (!_isValidAttName(name)) {
         errorRoot.newChildren!.add(
           NodeStruct(
             message: "Invalid attribute name: \"$name\"",

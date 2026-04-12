@@ -126,6 +126,7 @@ Future<void> initMediaSorterDependencies() async {
     sortRepository,
     sheetDataRepository,
     gridRepository,
+    historyRepository,
     saveRepository,
   );
   HistoryUsecase historyUsecase = HistoryUsecase(

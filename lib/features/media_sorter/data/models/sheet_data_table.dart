@@ -33,12 +33,6 @@ class SheetDataTables extends Table {
   TextColumn get analysisResult =>
       text().map(const AnalysisResultConverter())();
 
-  BoolColumn get validSortIsImpossible => boolean()();
-  BoolColumn get isFindingBestSort => boolean()();
-  BoolColumn get sortedWithValidSort => boolean()();
-  BoolColumn get sortedWithCurrentBestSort => boolean()();
-  BoolColumn get bestSortPossibleFound => boolean()();
-
   BoolColumn get sortInProgress => boolean()();
   BoolColumn get toApplyNextBestSort => boolean()();
   BoolColumn get toAlwaysApplyCurrentBestSort => boolean()();
