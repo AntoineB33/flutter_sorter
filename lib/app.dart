@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'core/constants/route_constants.dart';
 import 'features/home/home_page.dart';
 import 'features/media_sorter/presentation/pages/media_sorter_page.dart';
-import 'features/scheduler/presentation/scheduler_page.dart';
+import 'features/scheduler/presentation/eye_care_page.dart';
 
 class MyApp extends StatelessWidget {
   final String initialRoute;
@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
       initialRoute: initialRoute,
       routes: {
         RouteConstants.home: (context) => const HomePage(),
-        RouteConstants.scheduler: (context) => const EyesHealthPage(),
+        RouteConstants.scheduler: (context) => const EyeCarePage(),
         RouteConstants.profile: (context) => const MediaSorterPage(),
       },
     );
