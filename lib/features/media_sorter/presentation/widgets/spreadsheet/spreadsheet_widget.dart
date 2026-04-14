@@ -195,11 +195,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
                               context,
                               vicinity,
                               widget.spreadsheetCoordinator,
-                              widget.workbookController,
-                              widget.sheetDataController,
                               widget.selectionController,
                               widget.sheetDataController,
-                              widget.treeController,
                               widget.gridController,
                             ),
                           ),
@@ -270,11 +267,8 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     BuildContext context,
     TableVicinity vicinity,
     SpreadsheetCoordinator coordinator,
-    WorkbookController workbookController,
-    SheetDataController dataController,
     SelectionController selectionController,
     SheetDataController sheetDataController,
-    TreeController treeController,
     GridController gridController,
   ) {
     final int r = vicinity.row;
@@ -294,7 +288,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         onContextMenu: (details) => _showColumnContextMenu(
           context,
           coordinator,
-          workbookController,
           details.globalPosition,
           c - 1,
         ),
@@ -348,7 +341,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   Future<void> _showTypeMenu(
     BuildContext context,
     SpreadsheetCoordinator coordinator,
-    WorkbookController workbookController,
     SheetDataController sheetDataController,
     Offset position,
     int col,
@@ -411,7 +403,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   void _showColumnContextMenu(
     BuildContext context,
     SpreadsheetCoordinator coordinator,
-    WorkbookController workbookController,
     Offset position,
     int col,
   ) async {
@@ -441,7 +432,6 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       await _showTypeMenu(
         context,
         coordinator,
-        workbookController,
         context.read<SheetDataController>(),
         position,
         col,

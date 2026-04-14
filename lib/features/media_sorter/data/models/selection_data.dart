@@ -3,7 +3,7 @@ import 'package:trying_flutter/features/media_sorter/data/models/update_data.dar
 
 part 'selection_data.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class SelectionState {
   final CellPosition primarySelection;
   final Set<CellPosition> selectedCells;
@@ -22,7 +22,7 @@ class SelectionState {
   static void _keepLinterHappy() => SelectionState.empty().toJson();
 }
 
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class SelectionData {
   final List<SelectionState> selectionStates;
   final int primSelHistoryId;

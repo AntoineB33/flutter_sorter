@@ -128,18 +128,6 @@ class $SheetDataTablesTable extends SheetDataTables
     requiredDuringInsert: true,
   );
   @override
-  late final GeneratedColumnWithTypeConverter<Set<CellPosition>, String>
-  selectedCells =
-      GeneratedColumn<String>(
-        'selected_cells',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: true,
-      ).withConverter<Set<CellPosition>>(
-        $SheetDataTablesTable.$converterselectedCells,
-      );
-  @override
   late final GeneratedColumnWithTypeConverter<List<int>, String> bestSortFound =
       GeneratedColumn<String>(
         'best_sort_found',
@@ -240,20 +228,6 @@ class $SheetDataTablesTable extends SheetDataTables
       'CHECK ("to_apply_next_best_sort" IN (0, 1))',
     ),
   );
-  static const VerificationMeta _toAlwaysApplyCurrentBestSortMeta =
-      const VerificationMeta('toAlwaysApplyCurrentBestSort');
-  @override
-  late final GeneratedColumn<bool> toAlwaysApplyCurrentBestSort =
-      GeneratedColumn<bool>(
-        'to_always_apply_current_best_sort',
-        aliasedName,
-        false,
-        type: DriftSqlType.bool,
-        requiredDuringInsert: true,
-        defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'CHECK ("to_always_apply_current_best_sort" IN (0, 1))',
-        ),
-      );
   static const VerificationMeta _analysisDoneMeta = const VerificationMeta(
     'analysisDone',
   );
@@ -281,7 +255,6 @@ class $SheetDataTablesTable extends SheetDataTables
     selectionHistory,
     scrollOffsetX,
     scrollOffsetY,
-    selectedCells,
     bestSortFound,
     bestDistFound,
     cursors,
@@ -291,7 +264,6 @@ class $SheetDataTablesTable extends SheetDataTables
     analysisResult,
     sortInProgress,
     toApplyNextBestSort,
-    toAlwaysApplyCurrentBestSort,
     analysisDone,
   ];
   @override
@@ -410,17 +382,6 @@ class $SheetDataTablesTable extends SheetDataTables
     } else if (isInserting) {
       context.missing(_toApplyNextBestSortMeta);
     }
-    if (data.containsKey('to_always_apply_current_best_sort')) {
-      context.handle(
-        _toAlwaysApplyCurrentBestSortMeta,
-        toAlwaysApplyCurrentBestSort.isAcceptableOrUnknown(
-          data['to_always_apply_current_best_sort']!,
-          _toAlwaysApplyCurrentBestSortMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_toAlwaysApplyCurrentBestSortMeta);
-    }
     if (data.containsKey('analysis_done')) {
       context.handle(
         _analysisDoneMeta,
@@ -492,12 +453,6 @@ class $SheetDataTablesTable extends SheetDataTables
         DriftSqlType.double,
         data['${effectivePrefix}scroll_offset_y'],
       )!,
-      selectedCells: $SheetDataTablesTable.$converterselectedCells.fromSql(
-        attachedDatabase.typeMapping.read(
-          DriftSqlType.string,
-          data['${effectivePrefix}selected_cells'],
-        )!,
-      ),
       bestSortFound: $SheetDataTablesTable.$converterbestSortFound.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.string,
@@ -546,10 +501,6 @@ class $SheetDataTablesTable extends SheetDataTables
         DriftSqlType.bool,
         data['${effectivePrefix}to_apply_next_best_sort'],
       )!,
-      toAlwaysApplyCurrentBestSort: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}to_always_apply_current_best_sort'],
-      )!,
       analysisDone: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}analysis_done'],
@@ -568,8 +519,6 @@ class $SheetDataTablesTable extends SheetDataTables
       const ListIntConverter();
   static TypeConverter<SelectionData, String> $converterselectionHistory =
       const SelectionDataConverter();
-  static TypeConverter<Set<CellPosition>, String> $converterselectedCells =
-      const SetPointConverter();
   static TypeConverter<List<int>, String> $converterbestSortFound =
       const ListIntConverter();
   static TypeConverter<List<int>, String> $converterbestDistFound =
@@ -596,7 +545,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
   final SelectionData selectionHistory;
   final double scrollOffsetX;
   final double scrollOffsetY;
-  final Set<CellPosition> selectedCells;
   final List<int> bestSortFound;
   final List<int> bestDistFound;
   final List<int> cursors;
@@ -606,7 +554,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
   final AnalysisResult analysisResult;
   final bool sortInProgress;
   final bool toApplyNextBestSort;
-  final bool toAlwaysApplyCurrentBestSort;
   final bool analysisDone;
   const SheetDataEntity({
     required this.id,
@@ -620,7 +567,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     required this.selectionHistory,
     required this.scrollOffsetX,
     required this.scrollOffsetY,
-    required this.selectedCells,
     required this.bestSortFound,
     required this.bestDistFound,
     required this.cursors,
@@ -630,7 +576,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     required this.analysisResult,
     required this.sortInProgress,
     required this.toApplyNextBestSort,
-    required this.toAlwaysApplyCurrentBestSort,
     required this.analysisDone,
   });
   @override
@@ -661,11 +606,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     }
     map['scroll_offset_x'] = Variable<double>(scrollOffsetX);
     map['scroll_offset_y'] = Variable<double>(scrollOffsetY);
-    {
-      map['selected_cells'] = Variable<String>(
-        $SheetDataTablesTable.$converterselectedCells.toSql(selectedCells),
-      );
-    }
     {
       map['best_sort_found'] = Variable<String>(
         $SheetDataTablesTable.$converterbestSortFound.toSql(bestSortFound),
@@ -699,9 +639,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     }
     map['sort_in_progress'] = Variable<bool>(sortInProgress);
     map['to_apply_next_best_sort'] = Variable<bool>(toApplyNextBestSort);
-    map['to_always_apply_current_best_sort'] = Variable<bool>(
-      toAlwaysApplyCurrentBestSort,
-    );
     map['analysis_done'] = Variable<bool>(analysisDone);
     return map;
   }
@@ -719,7 +656,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       selectionHistory: Value(selectionHistory),
       scrollOffsetX: Value(scrollOffsetX),
       scrollOffsetY: Value(scrollOffsetY),
-      selectedCells: Value(selectedCells),
       bestSortFound: Value(bestSortFound),
       bestDistFound: Value(bestDistFound),
       cursors: Value(cursors),
@@ -729,7 +665,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       analysisResult: Value(analysisResult),
       sortInProgress: Value(sortInProgress),
       toApplyNextBestSort: Value(toApplyNextBestSort),
-      toAlwaysApplyCurrentBestSort: Value(toAlwaysApplyCurrentBestSort),
       analysisDone: Value(analysisDone),
     );
   }
@@ -753,9 +688,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       ),
       scrollOffsetX: serializer.fromJson<double>(json['scrollOffsetX']),
       scrollOffsetY: serializer.fromJson<double>(json['scrollOffsetY']),
-      selectedCells: serializer.fromJson<Set<CellPosition>>(
-        json['selectedCells'],
-      ),
       bestSortFound: serializer.fromJson<List<int>>(json['bestSortFound']),
       bestDistFound: serializer.fromJson<List<int>>(json['bestDistFound']),
       cursors: serializer.fromJson<List<int>>(json['cursors']),
@@ -770,9 +702,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       sortInProgress: serializer.fromJson<bool>(json['sortInProgress']),
       toApplyNextBestSort: serializer.fromJson<bool>(
         json['toApplyNextBestSort'],
-      ),
-      toAlwaysApplyCurrentBestSort: serializer.fromJson<bool>(
-        json['toAlwaysApplyCurrentBestSort'],
       ),
       analysisDone: serializer.fromJson<bool>(json['analysisDone']),
     );
@@ -792,7 +721,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       'selectionHistory': serializer.toJson<SelectionData>(selectionHistory),
       'scrollOffsetX': serializer.toJson<double>(scrollOffsetX),
       'scrollOffsetY': serializer.toJson<double>(scrollOffsetY),
-      'selectedCells': serializer.toJson<Set<CellPosition>>(selectedCells),
       'bestSortFound': serializer.toJson<List<int>>(bestSortFound),
       'bestDistFound': serializer.toJson<List<int>>(bestDistFound),
       'cursors': serializer.toJson<List<int>>(cursors),
@@ -802,9 +730,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       'analysisResult': serializer.toJson<AnalysisResult>(analysisResult),
       'sortInProgress': serializer.toJson<bool>(sortInProgress),
       'toApplyNextBestSort': serializer.toJson<bool>(toApplyNextBestSort),
-      'toAlwaysApplyCurrentBestSort': serializer.toJson<bool>(
-        toAlwaysApplyCurrentBestSort,
-      ),
       'analysisDone': serializer.toJson<bool>(analysisDone),
     };
   }
@@ -821,7 +746,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     SelectionData? selectionHistory,
     double? scrollOffsetX,
     double? scrollOffsetY,
-    Set<CellPosition>? selectedCells,
     List<int>? bestSortFound,
     List<int>? bestDistFound,
     List<int>? cursors,
@@ -831,7 +755,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     AnalysisResult? analysisResult,
     bool? sortInProgress,
     bool? toApplyNextBestSort,
-    bool? toAlwaysApplyCurrentBestSort,
     bool? analysisDone,
   }) => SheetDataEntity(
     id: id ?? this.id,
@@ -845,7 +768,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     selectionHistory: selectionHistory ?? this.selectionHistory,
     scrollOffsetX: scrollOffsetX ?? this.scrollOffsetX,
     scrollOffsetY: scrollOffsetY ?? this.scrollOffsetY,
-    selectedCells: selectedCells ?? this.selectedCells,
     bestSortFound: bestSortFound ?? this.bestSortFound,
     bestDistFound: bestDistFound ?? this.bestDistFound,
     cursors: cursors ?? this.cursors,
@@ -855,8 +777,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     analysisResult: analysisResult ?? this.analysisResult,
     sortInProgress: sortInProgress ?? this.sortInProgress,
     toApplyNextBestSort: toApplyNextBestSort ?? this.toApplyNextBestSort,
-    toAlwaysApplyCurrentBestSort:
-        toAlwaysApplyCurrentBestSort ?? this.toAlwaysApplyCurrentBestSort,
     analysisDone: analysisDone ?? this.analysisDone,
   );
   SheetDataEntity copyWithCompanion(SheetDataTablesCompanion data) {
@@ -886,9 +806,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       scrollOffsetY: data.scrollOffsetY.present
           ? data.scrollOffsetY.value
           : this.scrollOffsetY,
-      selectedCells: data.selectedCells.present
-          ? data.selectedCells.value
-          : this.selectedCells,
       bestSortFound: data.bestSortFound.present
           ? data.bestSortFound.value
           : this.bestSortFound,
@@ -912,9 +829,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       toApplyNextBestSort: data.toApplyNextBestSort.present
           ? data.toApplyNextBestSort.value
           : this.toApplyNextBestSort,
-      toAlwaysApplyCurrentBestSort: data.toAlwaysApplyCurrentBestSort.present
-          ? data.toAlwaysApplyCurrentBestSort.value
-          : this.toAlwaysApplyCurrentBestSort,
       analysisDone: data.analysisDone.present
           ? data.analysisDone.value
           : this.analysisDone,
@@ -935,7 +849,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           ..write('selectionHistory: $selectionHistory, ')
           ..write('scrollOffsetX: $scrollOffsetX, ')
           ..write('scrollOffsetY: $scrollOffsetY, ')
-          ..write('selectedCells: $selectedCells, ')
           ..write('bestSortFound: $bestSortFound, ')
           ..write('bestDistFound: $bestDistFound, ')
           ..write('cursors: $cursors, ')
@@ -945,9 +858,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           ..write('analysisResult: $analysisResult, ')
           ..write('sortInProgress: $sortInProgress, ')
           ..write('toApplyNextBestSort: $toApplyNextBestSort, ')
-          ..write(
-            'toAlwaysApplyCurrentBestSort: $toAlwaysApplyCurrentBestSort, ',
-          )
           ..write('analysisDone: $analysisDone')
           ..write(')'))
         .toString();
@@ -966,7 +876,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     selectionHistory,
     scrollOffsetX,
     scrollOffsetY,
-    selectedCells,
     bestSortFound,
     bestDistFound,
     cursors,
@@ -976,7 +885,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     analysisResult,
     sortInProgress,
     toApplyNextBestSort,
-    toAlwaysApplyCurrentBestSort,
     analysisDone,
   ]);
   @override
@@ -994,7 +902,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           other.selectionHistory == this.selectionHistory &&
           other.scrollOffsetX == this.scrollOffsetX &&
           other.scrollOffsetY == this.scrollOffsetY &&
-          other.selectedCells == this.selectedCells &&
           other.bestSortFound == this.bestSortFound &&
           other.bestDistFound == this.bestDistFound &&
           other.cursors == this.cursors &&
@@ -1004,8 +911,6 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           other.analysisResult == this.analysisResult &&
           other.sortInProgress == this.sortInProgress &&
           other.toApplyNextBestSort == this.toApplyNextBestSort &&
-          other.toAlwaysApplyCurrentBestSort ==
-              this.toAlwaysApplyCurrentBestSort &&
           other.analysisDone == this.analysisDone);
 }
 
@@ -1021,7 +926,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
   final Value<SelectionData> selectionHistory;
   final Value<double> scrollOffsetX;
   final Value<double> scrollOffsetY;
-  final Value<Set<CellPosition>> selectedCells;
   final Value<List<int>> bestSortFound;
   final Value<List<int>> bestDistFound;
   final Value<List<int>> cursors;
@@ -1031,7 +935,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
   final Value<AnalysisResult> analysisResult;
   final Value<bool> sortInProgress;
   final Value<bool> toApplyNextBestSort;
-  final Value<bool> toAlwaysApplyCurrentBestSort;
   final Value<bool> analysisDone;
   const SheetDataTablesCompanion({
     this.id = const Value.absent(),
@@ -1045,7 +948,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     this.selectionHistory = const Value.absent(),
     this.scrollOffsetX = const Value.absent(),
     this.scrollOffsetY = const Value.absent(),
-    this.selectedCells = const Value.absent(),
     this.bestSortFound = const Value.absent(),
     this.bestDistFound = const Value.absent(),
     this.cursors = const Value.absent(),
@@ -1055,7 +957,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     this.analysisResult = const Value.absent(),
     this.sortInProgress = const Value.absent(),
     this.toApplyNextBestSort = const Value.absent(),
-    this.toAlwaysApplyCurrentBestSort = const Value.absent(),
     this.analysisDone = const Value.absent(),
   });
   SheetDataTablesCompanion.insert({
@@ -1070,7 +971,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     required SelectionData selectionHistory,
     required double scrollOffsetX,
     required double scrollOffsetY,
-    required Set<CellPosition> selectedCells,
     required List<int> bestSortFound,
     required List<int> bestDistFound,
     required List<int> cursors,
@@ -1080,7 +980,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     required AnalysisResult analysisResult,
     required bool sortInProgress,
     required bool toApplyNextBestSort,
-    required bool toAlwaysApplyCurrentBestSort,
     required bool analysisDone,
   }) : title = Value(title),
        lastOpened = Value(lastOpened),
@@ -1092,7 +991,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
        selectionHistory = Value(selectionHistory),
        scrollOffsetX = Value(scrollOffsetX),
        scrollOffsetY = Value(scrollOffsetY),
-       selectedCells = Value(selectedCells),
        bestSortFound = Value(bestSortFound),
        bestDistFound = Value(bestDistFound),
        cursors = Value(cursors),
@@ -1102,7 +1000,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
        analysisResult = Value(analysisResult),
        sortInProgress = Value(sortInProgress),
        toApplyNextBestSort = Value(toApplyNextBestSort),
-       toAlwaysApplyCurrentBestSort = Value(toAlwaysApplyCurrentBestSort),
        analysisDone = Value(analysisDone);
   static Insertable<SheetDataEntity> custom({
     Expression<int>? id,
@@ -1116,7 +1013,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Expression<String>? selectionHistory,
     Expression<double>? scrollOffsetX,
     Expression<double>? scrollOffsetY,
-    Expression<String>? selectedCells,
     Expression<String>? bestSortFound,
     Expression<String>? bestDistFound,
     Expression<String>? cursors,
@@ -1126,7 +1022,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Expression<String>? analysisResult,
     Expression<bool>? sortInProgress,
     Expression<bool>? toApplyNextBestSort,
-    Expression<bool>? toAlwaysApplyCurrentBestSort,
     Expression<bool>? analysisDone,
   }) {
     return RawValuesInsertable({
@@ -1141,7 +1036,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       if (selectionHistory != null) 'selection_history': selectionHistory,
       if (scrollOffsetX != null) 'scroll_offset_x': scrollOffsetX,
       if (scrollOffsetY != null) 'scroll_offset_y': scrollOffsetY,
-      if (selectedCells != null) 'selected_cells': selectedCells,
       if (bestSortFound != null) 'best_sort_found': bestSortFound,
       if (bestDistFound != null) 'best_dist_found': bestDistFound,
       if (cursors != null) 'cursors': cursors,
@@ -1152,8 +1046,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       if (sortInProgress != null) 'sort_in_progress': sortInProgress,
       if (toApplyNextBestSort != null)
         'to_apply_next_best_sort': toApplyNextBestSort,
-      if (toAlwaysApplyCurrentBestSort != null)
-        'to_always_apply_current_best_sort': toAlwaysApplyCurrentBestSort,
       if (analysisDone != null) 'analysis_done': analysisDone,
     });
   }
@@ -1170,7 +1062,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Value<SelectionData>? selectionHistory,
     Value<double>? scrollOffsetX,
     Value<double>? scrollOffsetY,
-    Value<Set<CellPosition>>? selectedCells,
     Value<List<int>>? bestSortFound,
     Value<List<int>>? bestDistFound,
     Value<List<int>>? cursors,
@@ -1180,7 +1071,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Value<AnalysisResult>? analysisResult,
     Value<bool>? sortInProgress,
     Value<bool>? toApplyNextBestSort,
-    Value<bool>? toAlwaysApplyCurrentBestSort,
     Value<bool>? analysisDone,
   }) {
     return SheetDataTablesCompanion(
@@ -1195,7 +1085,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       selectionHistory: selectionHistory ?? this.selectionHistory,
       scrollOffsetX: scrollOffsetX ?? this.scrollOffsetX,
       scrollOffsetY: scrollOffsetY ?? this.scrollOffsetY,
-      selectedCells: selectedCells ?? this.selectedCells,
       bestSortFound: bestSortFound ?? this.bestSortFound,
       bestDistFound: bestDistFound ?? this.bestDistFound,
       cursors: cursors ?? this.cursors,
@@ -1205,8 +1094,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       analysisResult: analysisResult ?? this.analysisResult,
       sortInProgress: sortInProgress ?? this.sortInProgress,
       toApplyNextBestSort: toApplyNextBestSort ?? this.toApplyNextBestSort,
-      toAlwaysApplyCurrentBestSort:
-          toAlwaysApplyCurrentBestSort ?? this.toAlwaysApplyCurrentBestSort,
       analysisDone: analysisDone ?? this.analysisDone,
     );
   }
@@ -1255,13 +1142,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     if (scrollOffsetY.present) {
       map['scroll_offset_y'] = Variable<double>(scrollOffsetY.value);
     }
-    if (selectedCells.present) {
-      map['selected_cells'] = Variable<String>(
-        $SheetDataTablesTable.$converterselectedCells.toSql(
-          selectedCells.value,
-        ),
-      );
-    }
     if (bestSortFound.present) {
       map['best_sort_found'] = Variable<String>(
         $SheetDataTablesTable.$converterbestSortFound.toSql(
@@ -1309,11 +1189,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
         toApplyNextBestSort.value,
       );
     }
-    if (toAlwaysApplyCurrentBestSort.present) {
-      map['to_always_apply_current_best_sort'] = Variable<bool>(
-        toAlwaysApplyCurrentBestSort.value,
-      );
-    }
     if (analysisDone.present) {
       map['analysis_done'] = Variable<bool>(analysisDone.value);
     }
@@ -1334,7 +1209,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
           ..write('selectionHistory: $selectionHistory, ')
           ..write('scrollOffsetX: $scrollOffsetX, ')
           ..write('scrollOffsetY: $scrollOffsetY, ')
-          ..write('selectedCells: $selectedCells, ')
           ..write('bestSortFound: $bestSortFound, ')
           ..write('bestDistFound: $bestDistFound, ')
           ..write('cursors: $cursors, ')
@@ -1344,9 +1218,6 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
           ..write('analysisResult: $analysisResult, ')
           ..write('sortInProgress: $sortInProgress, ')
           ..write('toApplyNextBestSort: $toApplyNextBestSort, ')
-          ..write(
-            'toAlwaysApplyCurrentBestSort: $toAlwaysApplyCurrentBestSort, ',
-          )
           ..write('analysisDone: $analysisDone')
           ..write(')'))
         .toString();
@@ -3459,7 +3330,6 @@ typedef $$SheetDataTablesTableCreateCompanionBuilder =
       required SelectionData selectionHistory,
       required double scrollOffsetX,
       required double scrollOffsetY,
-      required Set<CellPosition> selectedCells,
       required List<int> bestSortFound,
       required List<int> bestDistFound,
       required List<int> cursors,
@@ -3469,7 +3339,6 @@ typedef $$SheetDataTablesTableCreateCompanionBuilder =
       required AnalysisResult analysisResult,
       required bool sortInProgress,
       required bool toApplyNextBestSort,
-      required bool toAlwaysApplyCurrentBestSort,
       required bool analysisDone,
     });
 typedef $$SheetDataTablesTableUpdateCompanionBuilder =
@@ -3485,7 +3354,6 @@ typedef $$SheetDataTablesTableUpdateCompanionBuilder =
       Value<SelectionData> selectionHistory,
       Value<double> scrollOffsetX,
       Value<double> scrollOffsetY,
-      Value<Set<CellPosition>> selectedCells,
       Value<List<int>> bestSortFound,
       Value<List<int>> bestDistFound,
       Value<List<int>> cursors,
@@ -3495,7 +3363,6 @@ typedef $$SheetDataTablesTableUpdateCompanionBuilder =
       Value<AnalysisResult> analysisResult,
       Value<bool> sortInProgress,
       Value<bool> toApplyNextBestSort,
-      Value<bool> toAlwaysApplyCurrentBestSort,
       Value<bool> analysisDone,
     });
 
@@ -3761,12 +3628,6 @@ class $$SheetDataTablesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnWithTypeConverterFilters<Set<CellPosition>, Set<CellPosition>, String>
-  get selectedCells => $composableBuilder(
-    column: $table.selectedCells,
-    builder: (column) => ColumnWithTypeConverterFilters(column),
-  );
-
   ColumnWithTypeConverterFilters<List<int>, List<int>, String>
   get bestSortFound => $composableBuilder(
     column: $table.bestSortFound,
@@ -3819,11 +3680,6 @@ class $$SheetDataTablesTableFilterComposer
 
   ColumnFilters<bool> get toApplyNextBestSort => $composableBuilder(
     column: $table.toApplyNextBestSort,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get toAlwaysApplyCurrentBestSort => $composableBuilder(
-    column: $table.toAlwaysApplyCurrentBestSort,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4081,11 +3937,6 @@ class $$SheetDataTablesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get selectedCells => $composableBuilder(
-    column: $table.selectedCells,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get bestSortFound => $composableBuilder(
     column: $table.bestSortFound,
     builder: (column) => ColumnOrderings(column),
@@ -4128,11 +3979,6 @@ class $$SheetDataTablesTableOrderingComposer
 
   ColumnOrderings<bool> get toApplyNextBestSort => $composableBuilder(
     column: $table.toApplyNextBestSort,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get toAlwaysApplyCurrentBestSort => $composableBuilder(
-    column: $table.toAlwaysApplyCurrentBestSort,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4199,12 +4045,6 @@ class $$SheetDataTablesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumnWithTypeConverter<Set<CellPosition>, String>
-  get selectedCells => $composableBuilder(
-    column: $table.selectedCells,
-    builder: (column) => column,
-  );
-
   GeneratedColumnWithTypeConverter<List<int>, String> get bestSortFound =>
       $composableBuilder(
         column: $table.bestSortFound,
@@ -4248,11 +4088,6 @@ class $$SheetDataTablesTableAnnotationComposer
 
   GeneratedColumn<bool> get toApplyNextBestSort => $composableBuilder(
     column: $table.toApplyNextBestSort,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get toAlwaysApplyCurrentBestSort => $composableBuilder(
-    column: $table.toAlwaysApplyCurrentBestSort,
     builder: (column) => column,
   );
 
@@ -4497,7 +4332,6 @@ class $$SheetDataTablesTableTableManager
                 Value<SelectionData> selectionHistory = const Value.absent(),
                 Value<double> scrollOffsetX = const Value.absent(),
                 Value<double> scrollOffsetY = const Value.absent(),
-                Value<Set<CellPosition>> selectedCells = const Value.absent(),
                 Value<List<int>> bestSortFound = const Value.absent(),
                 Value<List<int>> bestDistFound = const Value.absent(),
                 Value<List<int>> cursors = const Value.absent(),
@@ -4507,7 +4341,6 @@ class $$SheetDataTablesTableTableManager
                 Value<AnalysisResult> analysisResult = const Value.absent(),
                 Value<bool> sortInProgress = const Value.absent(),
                 Value<bool> toApplyNextBestSort = const Value.absent(),
-                Value<bool> toAlwaysApplyCurrentBestSort = const Value.absent(),
                 Value<bool> analysisDone = const Value.absent(),
               }) => SheetDataTablesCompanion(
                 id: id,
@@ -4521,7 +4354,6 @@ class $$SheetDataTablesTableTableManager
                 selectionHistory: selectionHistory,
                 scrollOffsetX: scrollOffsetX,
                 scrollOffsetY: scrollOffsetY,
-                selectedCells: selectedCells,
                 bestSortFound: bestSortFound,
                 bestDistFound: bestDistFound,
                 cursors: cursors,
@@ -4531,7 +4363,6 @@ class $$SheetDataTablesTableTableManager
                 analysisResult: analysisResult,
                 sortInProgress: sortInProgress,
                 toApplyNextBestSort: toApplyNextBestSort,
-                toAlwaysApplyCurrentBestSort: toAlwaysApplyCurrentBestSort,
                 analysisDone: analysisDone,
               ),
           createCompanionCallback:
@@ -4547,7 +4378,6 @@ class $$SheetDataTablesTableTableManager
                 required SelectionData selectionHistory,
                 required double scrollOffsetX,
                 required double scrollOffsetY,
-                required Set<CellPosition> selectedCells,
                 required List<int> bestSortFound,
                 required List<int> bestDistFound,
                 required List<int> cursors,
@@ -4557,7 +4387,6 @@ class $$SheetDataTablesTableTableManager
                 required AnalysisResult analysisResult,
                 required bool sortInProgress,
                 required bool toApplyNextBestSort,
-                required bool toAlwaysApplyCurrentBestSort,
                 required bool analysisDone,
               }) => SheetDataTablesCompanion.insert(
                 id: id,
@@ -4571,7 +4400,6 @@ class $$SheetDataTablesTableTableManager
                 selectionHistory: selectionHistory,
                 scrollOffsetX: scrollOffsetX,
                 scrollOffsetY: scrollOffsetY,
-                selectedCells: selectedCells,
                 bestSortFound: bestSortFound,
                 bestDistFound: bestDistFound,
                 cursors: cursors,
@@ -4581,7 +4409,6 @@ class $$SheetDataTablesTableTableManager
                 analysisResult: analysisResult,
                 sortInProgress: sortInProgress,
                 toApplyNextBestSort: toApplyNextBestSort,
-                toAlwaysApplyCurrentBestSort: toAlwaysApplyCurrentBestSort,
                 analysisDone: analysisDone,
               ),
           withReferenceMapper: (p0) => p0

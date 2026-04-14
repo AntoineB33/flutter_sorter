@@ -46,6 +46,15 @@ class DriftLocalDataSource implements ILocalDataSource {
               title: item.newName != null
                   ? Value(item.newName!)
                   : Value.absent(),
+              lastOpened: item.lastOpened != null
+                  ? Value(item.lastOpened!)
+                  : Value.absent(),
+              usedRows: item.usedRows != null
+                  ? Value(item.usedRows!)
+                  : Value.absent(),
+              usedCols: item.usedCols != null
+                  ? Value(item.usedCols!)
+                  : Value.absent(),
               historyIndex: item.historyIndex != null
                   ? Value(item.historyIndex!)
                   : Value.absent(),
@@ -90,10 +99,6 @@ class DriftLocalDataSource implements ILocalDataSource {
                   : Value.absent(),
               toApplyNextBestSort: item.toApplyNextBestSort != null
                   ? Value(item.toApplyNextBestSort!)
-                  : Value.absent(),
-              toAlwaysApplyCurrentBestSort:
-                  item.toAlwaysApplyCurrentBestSort != null
-                  ? Value(item.toAlwaysApplyCurrentBestSort!)
                   : Value.absent(),
               analysisDone: item.analysisDone != null
                   ? Value(item.analysisDone!)
@@ -402,7 +407,6 @@ class DriftLocalDataSource implements ILocalDataSource {
           db.sheetDataTables.id,
           db.sheetDataTables.sortInProgress,
           db.sheetDataTables.toApplyNextBestSort,
-          db.sheetDataTables.toAlwaysApplyCurrentBestSort,
           db.sheetDataTables.analysisDone,
         ])
         ..where(db.sheetDataTables.sortInProgress.equals(true));

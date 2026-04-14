@@ -21,7 +21,6 @@ class SheetDataTables extends Table {
   TextColumn get selectionHistory => text().map(const SelectionDataConverter())();
   RealColumn get scrollOffsetX => real()();
   RealColumn get scrollOffsetY => real()();
-  TextColumn get selectedCells => text().map(const SetPointConverter())();
 
   TextColumn get bestSortFound => text().map(const ListIntConverter())();
   TextColumn get bestDistFound => text().map(const ListIntConverter())();
@@ -35,7 +34,6 @@ class SheetDataTables extends Table {
 
   BoolColumn get sortInProgress => boolean()();
   BoolColumn get toApplyNextBestSort => boolean()();
-  BoolColumn get toAlwaysApplyCurrentBestSort => boolean()();
   BoolColumn get analysisDone => boolean()();
 }
 

@@ -18,8 +18,8 @@ SelectionState _$SelectionStateFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$SelectionStateToJson(SelectionState instance) =>
     <String, dynamic>{
-      'primarySelection': instance.primarySelection,
-      'selectedCells': instance.selectedCells.toList(),
+      'primarySelection': instance.primarySelection.toJson(),
+      'selectedCells': instance.selectedCells.map((e) => e.toJson()).toList(),
     };
 
 SelectionData _$SelectionDataFromJson(Map<String, dynamic> json) =>
@@ -30,8 +30,9 @@ SelectionData _$SelectionDataFromJson(Map<String, dynamic> json) =>
       primSelHistoryId: (json['primSelHistoryId'] as num).toInt(),
     );
 
-Map<String, dynamic> _$SelectionDataToJson(SelectionData instance) =>
-    <String, dynamic>{
-      'selectionStates': instance.selectionStates,
-      'primSelHistoryId': instance.primSelHistoryId,
-    };
+Map<String, dynamic> _$SelectionDataToJson(
+  SelectionData instance,
+) => <String, dynamic>{
+  'selectionStates': instance.selectionStates.map((e) => e.toJson()).toList(),
+  'primSelHistoryId': instance.primSelHistoryId,
+};
