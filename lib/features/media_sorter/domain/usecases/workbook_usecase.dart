@@ -68,14 +68,13 @@ class WorkbookUsecase {
     final sheetDataUpdate = workbookRepository.addNewSheetId(0);
     final sheetId = sheetDataUpdate.sheetId;
     changeSet.addUpdate(sheetDataUpdate);
-    changeSet.addUpdate(sheetDataRepository.addNewSheet(sheetId, title));
+    changeSet.merge(sheetDataRepository.addNewSheet(sheetId, title));
     changeSet.merge(sortRepository.addSheetId(sheetId));
     changeSet.addUpdate(
       selectionRepository.setSelectionData(sheetId, SelectionData.empty()),
     );
     changeSet.addUpdate(gridRepository.setLayout(sheetId, LayoutData.empty()));
     changeSet.merge(historyRepository.addSheetId(sheetId));
-    changeSet.addUpdate(SheetDataUpdate(sheetId, true, lastOpened: DateTime.now()));
     saveRepository.save(changeSet);
   }
 

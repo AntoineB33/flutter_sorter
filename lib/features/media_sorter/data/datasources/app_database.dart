@@ -32,7 +32,23 @@ class AppDatabase extends _$AppDatabase {
 
   // You must bump this number whenever you change or add table definitions.
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+  
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (Migrator m) async {
+        await m.createAll();
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        // ⚠️ DEV ONLY: Wipes all data and recreates tables when version changes
+        for (final table in allTables) {
+          await m.drop(table);
+        }
+        await m.createAll();
+      },
+    );
+  }
 }
 
 // This function finds the right location to save the SQLite file on the device

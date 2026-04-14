@@ -255,13 +255,19 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  SheetDataUpdate addNewSheet(int sheetId, String title) {
+  ChangeSet addNewSheet(int sheetId, String title) {
     loadedSheetsCache.setSheet(sheetId, CoreSheetContent.empty(title));
-    return SheetDataUpdate(
+    final changeSet = ChangeSet();
+    changeSet.addUpdate(
+     SheetDataUpdate(
       sheetId,
       true,
       newName: title,
-    );
+      lastOpened: loadedSheetsCache.getSheet(sheetId).lastOpened,
+      usedRows: loadedSheetsCache.getSheet(sheetId).usedRows,
+      usedCols: loadedSheetsCache.getSheet(sheetId).usedCols,
+    ));
+    return changeSet;
   }
 
   @override

@@ -21,7 +21,7 @@ abstract class SheetDataRepository {
   ColumnTypeUpdate getColumnTypeUpdate(int colId, ColumnType newColumnType, int sheetId);
   Future<Either<Failure, Unit>> loadSheet(int sheetId);
   @useResult
-  SheetDataUpdate addNewSheet(int sheetId, String title);
+  ChangeSet addNewSheet(int sheetId, String title);
   @useResult
   ChangeSet update(IMap<String, UpdateUnit> updates, int sheetId);
 }
