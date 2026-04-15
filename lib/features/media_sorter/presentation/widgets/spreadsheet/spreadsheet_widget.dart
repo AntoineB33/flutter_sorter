@@ -16,6 +16,8 @@ import 'spreadsheet_components.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 
+enum ContextMenuAction { changeType, changeTypes }
+
 class SpreadsheetWidget extends StatefulWidget {
   final GridController gridController;
   final SelectionController selectionController;
@@ -339,32 +341,36 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
   }
 
   Future<void> _showTypeMenu(
+    ContextMenuAction action,
     BuildContext context,
     SpreadsheetCoordinator coordinator,
     SheetDataController sheetDataController,
     Offset position,
     int col,
   ) async {
-    final currentType = GetNames.getColumnType(
-      sheetDataController.getCurrentSheet().columnTypes,
-      col,
-    );
-    final List<PopupMenuEntry<dynamic>> items = ColumnType.values
-        .map<PopupMenuEntry<dynamic>>((entry) {
-          return CheckedPopupMenuItem<ColumnType>(
-            value: entry,
-            checked: entry == currentType,
-            child: Row(
-              children: [
-                Icon(Icons.circle, color: ColumnTypeX(entry).color, size: 12),
-                const SizedBox(width: 8),
-                Text(entry.name),
-              ],
-            ),
-          );
-        })
-        .toList();
-    items.add(const PopupMenuDivider());
+    final List<PopupMenuEntry<dynamic>> items = [];
+    if (action == ContextMenuAction.changeType) {
+      final currentType = GetNames.getColumnType(
+        sheetDataController.getCurrentSheet().columnTypes,
+        col,
+      );
+      items.addAll(ColumnType.values
+          .map<PopupMenuEntry<dynamic>>((entry) {
+            return CheckedPopupMenuItem<ColumnType>(
+              value: entry,
+              checked: entry == currentType,
+              child: Row(
+                children: [
+                  Icon(Icons.circle, color: ColumnTypeX(entry).color, size: 12),
+                  const SizedBox(width: 8),
+                  Text(entry.name),
+                ],
+              ),
+            );
+          })
+          .toList());
+      items.add(const PopupMenuDivider());
+    }
     items.add(
       const PopupMenuItem<String>(
         value: 'default_sequence',
@@ -406,16 +412,20 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
     Offset position,
     int col,
   ) async {
-    final List<PopupMenuEntry<String>> items = [];
+    final List<PopupMenuEntry<ContextMenuAction>> items = [];
     if (col > 0) {
       items.add(
-        const PopupMenuItem(value: 'change_type', child: Text('Change Type ▶')),
+        PopupMenuItem(value: ContextMenuAction.changeType, child: const Text('Change Type ▶')),
+      );
+    } else {
+      items.add(
+        PopupMenuItem(value: ContextMenuAction.changeTypes, child: const Text('Change Types ▶')),
       );
     }
     if (items.isEmpty) {
       return; // No items to show
     }
-    final result = await showMenu<String>(
+    final result = await showMenu<ContextMenuAction>(
       context: context,
       position: RelativeRect.fromLTRB(
         position.dx,
@@ -428,8 +438,9 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
 
     if (!context.mounted) return;
 
-    if (result == 'change_type') {
+    if (result == ContextMenuAction.changeType || result == ContextMenuAction.changeTypes) {
       await _showTypeMenu(
+        result!,
         context,
         coordinator,
         context.read<SheetDataController>(),

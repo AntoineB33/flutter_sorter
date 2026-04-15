@@ -7,6 +7,7 @@ import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/history_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
@@ -28,6 +29,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   final LoadedSheetsCache loadedSheetsCache;
   final SelectionCache selectionCache;
   final SortProgressCache sortProgressCache;
+  final AnalysisResultCache analysisResultCache;
   final WorkbookCache workbookCache;
   final LayoutCache layoutCache;
   final HistoryCache historyCache;
@@ -42,6 +44,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     this.loadedSheetsCache,
     this.selectionCache,
     this.sortProgressCache,
+    this.analysisResultCache,
     this.workbookCache,
     this.layoutCache,
     this.historyCache,
@@ -156,7 +159,11 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  ColumnTypeUpdate getColumnTypeUpdate(int colId, ColumnType newColumnType, int sheetId) {
+  ColumnTypeUpdate getColumnTypeUpdate(
+    int colId,
+    ColumnType newColumnType,
+    int sheetId,
+  ) {
     return ColumnTypeUpdate(
       sheetId,
       colId,
@@ -225,6 +232,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
           sortIndex: sheetData.sortIndex,
         );
         sortProgressCache.update(sheetId, sortProgression);
+        analysisResultCache.updateResults(sheetId, sheetData.analysisResult);
         final historyTable = await dataSource.getUpdateHistoriesEntities(
           sheetId,
         );
@@ -259,14 +267,15 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     loadedSheetsCache.setSheet(sheetId, CoreSheetContent.empty(title));
     final changeSet = ChangeSet();
     changeSet.addUpdate(
-     SheetDataUpdate(
-      sheetId,
-      true,
-      newName: title,
-      lastOpened: loadedSheetsCache.getSheet(sheetId).lastOpened,
-      usedRows: loadedSheetsCache.getSheet(sheetId).usedRows,
-      usedCols: loadedSheetsCache.getSheet(sheetId).usedCols,
-    ));
+      SheetDataUpdate(
+        sheetId,
+        true,
+        newName: title,
+        lastOpened: loadedSheetsCache.getSheet(sheetId).lastOpened,
+        usedRows: loadedSheetsCache.getSheet(sheetId).usedRows,
+        usedCols: loadedSheetsCache.getSheet(sheetId).usedCols,
+      ),
+    );
     return changeSet;
   }
 

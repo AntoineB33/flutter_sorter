@@ -110,12 +110,19 @@ class SortRepositoryImpl implements SortRepository {
     }
     if (resultB.changed) {
       analysisResultCache.updateResults(sheetId, resultB.result);
-      changeSet.addUpdate(SheetDataUpdate(sheetId, true, analysisResult: resultB.result));
+      changeSet.addUpdate(
+        SheetDataUpdate(sheetId, true, analysisResult: resultB.result),
+      );
     }
     if (!resultB.toFindValidSort) {
       return changeSet;
     }
-    changeSet.merge(_updateSortProgress(sheetId, SortProgressData.empty(resultB.result.validRowIndexes.length)));
+    changeSet.merge(
+      _updateSortProgress(
+        sheetId,
+        SortProgressData.empty(resultB.result.validRowIndexes.length),
+      ),
+    );
     return changeSet;
   }
 
@@ -170,19 +177,26 @@ class SortRepositoryImpl implements SortRepository {
   @useResult
   ChangeSet _updateResults(int sheetId, AnalysisResult newResult) {
     analysisResultCache.updateResults(sheetId, newResult);
-    return ChangeSet()..addUpdate(SheetDataUpdate(sheetId, true, analysisResult: newResult));
+    return ChangeSet()
+      ..addUpdate(SheetDataUpdate(sheetId, true, analysisResult: newResult));
   }
 
   @useResult
-  ChangeSet _updateSortStatus(int sheetId, SortStatus newStatus, sortInProgress) {
+  ChangeSet _updateSortStatus(
+    int sheetId,
+    SortStatus newStatus,
+    sortInProgress,
+  ) {
     sortStatusCache.updateSortStatus(sheetId, newStatus);
-    return ChangeSet()..addUpdate(SheetDataUpdate(
-      sheetId,
-      true,
-      sortInProgress: sortInProgress,
-      toApplyNextBestSort: newStatus.toApplyNextBestSort,
-      analysisDone: newStatus.analysisDone,
-    ));
+    return ChangeSet()..addUpdate(
+      SheetDataUpdate(
+        sheetId,
+        true,
+        sortInProgress: sortInProgress,
+        toApplyNextBestSort: newStatus.toApplyNextBestSort,
+        analysisDone: newStatus.analysisDone,
+      ),
+    );
   }
 
   @override
@@ -224,7 +238,13 @@ class SortRepositoryImpl implements SortRepository {
   @useResult
   UpdateUnit setSortedWithCurrentBestSort(int sheetId, bool value) {
     analysisResultCache.setSortedWithCurrentBestSort(sheetId, value);
-    return SheetDataUpdate(sheetId, true, analysisResult: analysisResultCache.getAnalysisResult(sheetId).merge(sortedWithCurrentBestSort: value));
+    return SheetDataUpdate(
+      sheetId,
+      true,
+      analysisResult: analysisResultCache
+          .getAnalysisResult(sheetId)
+          .merge(sortedWithCurrentBestSort: value),
+    );
   }
 
   @useResult
@@ -239,7 +259,9 @@ class SortRepositoryImpl implements SortRepository {
     return SheetDataUpdate(
       sheetId,
       true,
-      analysisResult: analysisResultCache.getAnalysisResult(sheetId).merge(bestSortPossibleFound: bestSortPossibleFound),
+      analysisResult: analysisResultCache
+          .getAnalysisResult(sheetId)
+          .merge(bestSortPossibleFound: bestSortPossibleFound),
     );
   }
 
@@ -254,7 +276,7 @@ class SortRepositoryImpl implements SortRepository {
             table.analysisDone,
           ),
       };
-      sortStatusCache.setSortStatus(sortStatusBySheet);
+      sortStatusCache.setAllSortStatus(sortStatusBySheet);
       return const Right(unit);
     } on CacheException catch (e) {
       return Left(DatabaseFailure(e.message));
@@ -282,7 +304,13 @@ class SortRepositoryImpl implements SortRepository {
   @useResult
   UpdateUnit setSortedWithValidSort(int sheetId, bool sorted) {
     analysisResultCache.setSortedWithValidSort(sheetId, sorted);
-    return SheetDataUpdate(sheetId, true, analysisResult: analysisResultCache.getAnalysisResult(sheetId).merge(sortedWithValidSort: sorted));
+    return SheetDataUpdate(
+      sheetId,
+      true,
+      analysisResult: analysisResultCache
+          .getAnalysisResult(sheetId)
+          .merge(sortedWithValidSort: sorted),
+    );
   }
 
   @override
@@ -335,7 +363,13 @@ class SortRepositoryImpl implements SortRepository {
 
   UpdateUnit setValidSortIsImpossible(int sheetId, bool impossible) {
     analysisResultCache.setValidSortIsImpossible(sheetId, impossible);
-    return SheetDataUpdate(sheetId, true, analysisResult: analysisResultCache.getAnalysisResult(sheetId).merge(validSortIsImpossible: impossible));
+    return SheetDataUpdate(
+      sheetId,
+      true,
+      analysisResult: analysisResultCache
+          .getAnalysisResult(sheetId)
+          .merge(validSortIsImpossible: impossible),
+    );
   }
 
   @override

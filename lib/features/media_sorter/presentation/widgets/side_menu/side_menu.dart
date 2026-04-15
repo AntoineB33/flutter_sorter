@@ -83,12 +83,6 @@ class _SideMenuState extends State<SideMenu> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Sheet Manager",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
           // --- Autocomplete Input Field ---
           _buildSheetAutocomplete(
             workbookController,
@@ -114,66 +108,57 @@ class _SideMenuState extends State<SideMenu> {
               ),
             ],
           ),
-
+          
           const SizedBox(height: 10),
-          // The horizontally scrollable area
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                // --- Toggle 1 ---
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Text('Find best sort'),
-                      const SizedBox(width: 8),
-                      Switch(
-                        value: sortController.isFindingBestSort(),
-                        onChanged: coordinator.findBestSortToggle,
-                      ),
-                    ],
-                  ),
-                ),
 
-                const SizedBox(width: 16), // Spacing between the toggles
-                // --- Toggle 2 ---
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min, // Compresses the column to fit its children
+            children: [
+              // --- Toggle 1 ---
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Transform.scale(
+                    scale: 0.7, // Keeps the switch small
+                    child: Switch(
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // Removes extra padding
+                      value: sortController.isFindingBestSort(),
+                      onChanged: coordinator.findBestSortToggle,
+                    ),
                   ),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'Find best sort',
+                    style: TextStyle(fontSize: 12),
                   ),
-                  child: Row(
-                    children: [
-                      const Text('Apply best sort automatically'),
-                      const SizedBox(width: 8),
-                      Switch(
-                        value: sortController.isCurrentBestSortAlwaysApplied(),
-                        onChanged:
-                            sortController.isAlwaysApplySortToggleLocked()
-                            ? null
-                            : coordinator.alwaysApplySortToggle,
-                      ),
-                    ],
-                  ),
-                ),
+                ],
+              ),
 
-                // You can add more toggles here, and the Row will continue to scroll horizontally
-              ],
-            ),
+              // --- Toggle 2 ---
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Transform.scale(
+                    scale: 0.7,
+                    child: Switch(
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      value: sortController.isCurrentBestSortAlwaysApplied(),
+                      onChanged: sortController.isAlwaysApplySortToggleLocked()
+                          ? null
+                          : coordinator.alwaysApplySortToggle,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'Apply best sort automatically',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ],
           ),
-
+          
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 10),

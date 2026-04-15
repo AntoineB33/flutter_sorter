@@ -67,7 +67,11 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   Future<void> _init() async {
-    await workbookController.clearAllData();
+    bool shouldClearData = false;
+    shouldClearData = true; // DEV ONLY: Clear all data on every app start to avoid issues with changing data models during development
+    if (shouldClearData == true) {
+      await workbookController.clearAllData();
+    }
     await workbookController.loadRecentSheetIds();
     await loadSheet(workbookController.currentSheetId);
     pageReady = true;

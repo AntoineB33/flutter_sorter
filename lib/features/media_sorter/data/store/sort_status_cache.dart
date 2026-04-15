@@ -36,7 +36,7 @@ class SortStatusCache {
     _sortStatusBySheet[sheetId] = newStatus;
   }
 
-  void setSortStatus(Map<int, SortStatus> statuses) {
+  void setAllSortStatus(Map<int, SortStatus> statuses) {
     _sortStatusBySheet
       ..clear()
       ..addAll(statuses);

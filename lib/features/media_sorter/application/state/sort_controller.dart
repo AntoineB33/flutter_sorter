@@ -111,7 +111,7 @@ class SortController extends ChangeNotifier {
     sortUseCase.setToAlwaysApplyBestSort(sheetId, toAlwaysApply);
   }
 
-  void loadSortStatus() {
-    sortUseCase.loadSortStatus();
+  Future<void> loadSortStatus() async {
+    await sortUseCase.loadSortStatus();
   }
 }

@@ -119,7 +119,7 @@ class SortUsecase {
     return sortRepository.sortTableWithCurrentBestSort(sheetId);
   }
 
-  void loadSortStatus() {
-    sortRepository.loadSortStatus();
+  Future<void> loadSortStatus() async {
+    await sortRepository.loadSortStatus();
   }
 }

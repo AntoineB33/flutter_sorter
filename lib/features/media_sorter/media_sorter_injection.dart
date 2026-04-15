@@ -61,6 +61,7 @@ Future<void> initMediaSorterDependencies() async {
     loadedSheetsCache,
     selectionCache,
     sortProgressCache,
+    analysisResultCache,
     workbookCache,
     layoutCache,
     historyCache,
