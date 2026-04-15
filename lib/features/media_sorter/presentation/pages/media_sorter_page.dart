@@ -8,10 +8,9 @@ import 'package:trying_flutter/features/media_sorter/media_sorter_injection.dart
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
+import 'package:trying_flutter/shared/widgets/resizable_overlay_widget.dart';
 import 'package:trying_flutter/shared/widgets/navigation_dropdown.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/widgets/side_menu/side_menu.dart';
-import 'package:trying_flutter/shared/widgets/overlapping_split_view.dart';
-import 'package:trying_flutter/shared/widgets/resizable_split_view.dart'; // Import the new widget
 import 'package:trying_flutter/features/media_sorter/presentation/widgets/spreadsheet/spreadsheet_widget.dart';
 
 class MediaSorterPage extends StatelessWidget {
@@ -41,19 +40,17 @@ class MediaSorterPage extends StatelessWidget {
             }
 
             // 3. Build the actual page once data is ready
-            return OverlappingSplitView(
-              menuWidth: 250,
-              leftSide: Text("Menu Content"),
-              rightSide: Text("Right Side Content"),
-              // leftSide: const SideMenu(),
-              // rightSide: SpreadsheetWidget(
-              //   slMediaSorter<GridController>(),
-              //   slMediaSorter<SelectionController>(),
-              //   slMediaSorter<WorkbookController>(),
-              //   slMediaSorter<SheetDataController>(),
-              //   slMediaSorter<TreeController>(),
-              //   slMediaSorter<SpreadsheetCoordinator>(),
-              // ),
+            return ResizableOverlayWidget(
+              initialRightWidth: 200,
+              leftWidget: const SideMenu(),
+              rightWidget: SpreadsheetWidget(
+                slMediaSorter<GridController>(),
+                slMediaSorter<SelectionController>(),
+                slMediaSorter<WorkbookController>(),
+                slMediaSorter<SheetDataController>(),
+                slMediaSorter<TreeController>(),
+                slMediaSorter<SpreadsheetCoordinator>(),
+              ),
             );
           },
         ),
