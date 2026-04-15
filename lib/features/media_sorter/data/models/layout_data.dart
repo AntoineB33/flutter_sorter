@@ -1,3 +1,5 @@
+import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
+
 class LayoutData {
   List<double> rowsBottomPos;
   List<double> colRightPos;
@@ -25,8 +27,8 @@ class LayoutData {
       colRightPos: [],
       rowsManuallyAdjustedHeight: [],
       colsManuallyAdjustedWidth: [],
-      colHeaderHeight: 0,
-      rowHeaderWidth: 0,
+      colHeaderHeight: PageConstants.defaultColHeaderHeight,
+      rowHeaderWidth: PageConstants.defaultRowHeaderWidth,
       scrollOffsetX: 0,
       scrollOffsetY: 0,
     );

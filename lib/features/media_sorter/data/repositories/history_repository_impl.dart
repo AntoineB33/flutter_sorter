@@ -143,10 +143,11 @@ class HistoryRepositoryImpl implements HistoryRepository {
         primSelHistoryId: selectionData.primSelHistoryId - 1,
       );
     }
+    selectionCache.setSelectionData(currentSheetId, selectionData);
     return SheetDataUpdate(
       currentSheetId,
       true,
-      selectionHistory: selectionCache.getSelectionData(currentSheetId),
+      selectionHistory: selectionData,
     );
   }
 

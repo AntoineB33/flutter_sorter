@@ -176,14 +176,12 @@ class GridController extends ChangeNotifier {
     }
     double? row0TopToScreenBottomHeight =
         (heightViewport != null || heightPixels != null)
-        ? heightPixels ??
-              layout.scrollOffsetX +
+        ? (heightPixels ?? layout.scrollOffsetX) +
                   (heightViewport ?? this.row0TopToScreenBottomHeight)
         : null;
     double? colALeftToScreenRightWidth =
         (widthViewport != null || widthPixels != null)
-        ? widthPixels ??
-              layout.scrollOffsetY +
+        ? (widthPixels ?? layout.scrollOffsetY) +
                   (widthViewport ?? this.colALeftToScreenRightWidth)
         : null;
     if (row0TopToScreenBottomHeight != null) {

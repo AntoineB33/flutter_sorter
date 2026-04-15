@@ -60,6 +60,6 @@ use case must be the one to create the update units
 at startup : py install --update 3 
 
 infinite dimensions update history
-performant multiple cell selection
+selected cells must become other selected cells, and selection ranges must be added
 remove from cache when too much loaded
 CellUpdate prevValue should be handled automatically (also for column and sheet name, colHeaderHeight, rowHeaderWidth)

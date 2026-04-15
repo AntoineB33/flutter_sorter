@@ -105,11 +105,34 @@ class DriftLocalDataSource implements ILocalDataSource {
                   : Value.absent(),
             );
             if (item.addOtherwiseRemove) {
-              batch.insert(
-                db.sheetDataTables,
-                companion,
-                mode: InsertMode.insertOrReplace,
-              );
+              // 1. Check if all required fields are present
+              final hasAllRequiredFields = item.newName != null &&
+                  item.lastOpened != null &&
+                  item.historyIndex != null &&
+                  item.colHeaderHeight != null &&
+                  item.rowHeaderWidth != null &&
+                  item.scrollOffsetX != null &&
+                  item.scrollOffsetY != null &&
+                  item.sortIndex != null &&
+                  item.sortInProgress != null &&
+                  item.toApplyNextBestSort != null &&
+                  item.analysisDone != null;
+
+              if (hasAllRequiredFields) {
+                // 2. If we have a complete set of data, we can safely insert or replace
+                batch.insert(
+                  db.sheetDataTables,
+                  companion,
+                  mode: InsertMode.insertOrReplace,
+                );
+              } else {
+                // 3. If we only have partial data (like just selectionHistory), we MUST update.
+                // Note: If the row doesn't exist, this simply updates nothing.
+                batch.update(
+                  db.sheetDataTables,
+                  companion,
+                );
+              }
             } else {
               batch.delete(db.sheetDataTables, companion);
             }
