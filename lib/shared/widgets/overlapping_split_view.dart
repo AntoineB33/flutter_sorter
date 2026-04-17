@@ -29,6 +29,7 @@ class _OverlappingSplitViewState extends State<OverlappingSplitView> {
   @override
   Widget build(BuildContext context) {
     return Stack(
+      fit: StackFit.expand,
       children: [
         // 1. Background Layer: The static menu
         // Since this width never changes, your text will never wrap or overflow.
@@ -52,8 +53,11 @@ class _OverlappingSplitViewState extends State<OverlappingSplitView> {
                 onHorizontalDragUpdate: (details) {
                   setState(() {
                     _currentOffset += details.delta.dx;
-                    // Clamp between 0 (fully covering) and menuWidth (fully open)
-                    _currentOffset = _currentOffset.clamp(0.0, widget.menuWidth);
+                    // Get the total width of the screen/parent
+                    double maxWidth = MediaQuery.of(context).size.width; 
+                    
+                    // Clamp between 0 and the full screen width
+                    _currentOffset = _currentOffset.clamp(0.0, maxWidth);
                   });
                 },
                 child: MouseRegion(

@@ -1,15 +1,15 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sort_progress_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sort_progress_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sort_status.dart';
 
 abstract class SortRepository {
+  Map<int, SortStatus> get sortStatusBySheet;
   bool isReordering(int sheetId);
   bool getAnalysisDone(int sheetId);
   bool getBestSortPossibleFound(int sheetId);
-  AnalysisResult getAnalysisResult(int sheetId);
   @useResult
   Future<void> analyze(int sheetId);
   Future<Either<Failure, void>> loadSortStatus();
@@ -39,5 +39,6 @@ abstract class SortRepository {
   void removeSortStatus(int sheetId);
   @useResult
   ChangeSet addSheetId(int sheetId);
-  void setFindingBestSort(int sheetId, bool value);
+  @useResult
+  ChangeSet setFindingBestSort(int sheetId, bool value);
 }

@@ -1,4 +1,4 @@
-import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
 
 class SelectionCache {
   final Map<int, SelectionData> _selections = {};

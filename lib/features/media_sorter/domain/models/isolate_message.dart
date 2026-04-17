@@ -1,7 +1,7 @@
 import 'dart:isolate';
 
-import 'package:trying_flutter/features/media_sorter/data/models/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/core_sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
 
 class IsolateMessage {
   final SendPort sendPort;

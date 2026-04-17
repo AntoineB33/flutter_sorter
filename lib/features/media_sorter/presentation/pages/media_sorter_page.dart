@@ -11,7 +11,6 @@ import 'package:trying_flutter/features/media_sorter/application/state/workbook_
 import 'package:trying_flutter/shared/widgets/navigation_dropdown.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/widgets/side_menu/side_menu.dart';
 import 'package:trying_flutter/shared/widgets/overlapping_split_view.dart';
-import 'package:trying_flutter/shared/widgets/resizable_split_view.dart'; // Import the new widget
 import 'package:trying_flutter/features/media_sorter/presentation/widgets/spreadsheet/spreadsheet_widget.dart';
 
 class MediaSorterPage extends StatelessWidget {
@@ -43,17 +42,15 @@ class MediaSorterPage extends StatelessWidget {
             // 3. Build the actual page once data is ready
             return OverlappingSplitView(
               menuWidth: 250,
-              leftSide: Text("Menu Content"),
-              rightSide: Text("Right Side Content"),
-              // leftSide: const SideMenu(),
-              // rightSide: SpreadsheetWidget(
-              //   slMediaSorter<GridController>(),
-              //   slMediaSorter<SelectionController>(),
-              //   slMediaSorter<WorkbookController>(),
-              //   slMediaSorter<SheetDataController>(),
-              //   slMediaSorter<TreeController>(),
-              //   slMediaSorter<SpreadsheetCoordinator>(),
-              // ),
+              leftSide: SideMenu(),
+              rightSide: SpreadsheetWidget(
+                slMediaSorter<GridController>(),
+                slMediaSorter<SelectionController>(),
+                slMediaSorter<WorkbookController>(),
+                slMediaSorter<SheetDataController>(),
+                slMediaSorter<TreeController>(),
+                slMediaSorter<SpreadsheetCoordinator>(),
+              ),
             );
           },
         ),

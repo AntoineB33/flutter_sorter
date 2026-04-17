@@ -1,6 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/attribute.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/attribute.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 
 part 'node_struct.g.dart';
 
@@ -85,14 +85,10 @@ class NodeStruct {
       hideIfEmpty.hashCode ^
       startOpen.hashCode;
 
-  factory NodeStruct.fromJson(Map<String, dynamic> json) => _$NodeStructFromJson(json);
+  factory NodeStruct.fromJson(Map<String, dynamic> json) =>
+      _$NodeStructFromJson(json);
 
   Map<String, dynamic> toJson() => _$NodeStructToJson(this);
 }
 
-enum OnTapAction {
-  selectCell,
-  selectAttribute,
-  cycle,
-  defaultAction,
-}
+enum OnTapAction { selectCell, selectAttribute, cycle, defaultAction }

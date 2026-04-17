@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sort_progress_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sort_progress_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/helpers/calculation_service.dart';
 import 'dart:async';
 
@@ -18,12 +19,9 @@ class SortController extends ChangeNotifier {
   late StreamSubscription _subscription;
 
   int get currentSheetId => workbookUsecase.currentSheetId;
+  Map<int, SortStatus> get sortStatusBySheet => sortUseCase.sortStatusBySheet;
 
   SortController(this.sheetDataUsecase, this.sortUseCase, this.workbookUsecase);
-
-  List<int> getRecentSheetIds() {
-    return workbookUsecase.getRecentSheetIds();
-  }
 
   @override
   void dispose() {

@@ -1,7 +1,7 @@
 import 'package:meta/meta.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sort_progress_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sort_progress_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
@@ -17,6 +17,7 @@ class SortUsecase {
   final SelectionRepository selectionRepository;
 
   int get currentSheetId => workbookRepository.currentSheetId;
+  Map<int, SortStatus> get sortStatusBySheet => sortRepository.sortStatusBySheet;
 
   SortUsecase(
     this.saveRepository,
@@ -55,10 +56,8 @@ class SortUsecase {
   }
 
   void setFindingBestSort(int sheetId, bool value) {
-    sortRepository.setFindingBestSort(sheetId, value);
-    saveRepository.saveUpdate(
-      SheetDataUpdate(sheetId, true, analysisResult: sortRepository.getAnalysisResult(sheetId).merge(isFindingBestSort: value)),
-    );
+    final result = sortRepository.setFindingBestSort(sheetId, value);
+    saveRepository.save(result);
   }
 
   void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {

@@ -1,8 +1,8 @@
 import 'dart:isolate';
 import 'dart:math';
 
-import 'package:trying_flutter/features/media_sorter/data/models/sort_progress_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sorting_rule.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sort_progress_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sorting_rule.dart';
 
 class CalculationDatasource {
   

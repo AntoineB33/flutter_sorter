@@ -1,7 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 
 abstract class WorkbookRepository {
   int get currentSheetId;

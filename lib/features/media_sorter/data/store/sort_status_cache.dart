@@ -1,5 +1,5 @@
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sort_status.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sort_status.dart';
 
 class SortStatusCache {
   final Map<int, SortStatus> _sortStatusBySheet = {};

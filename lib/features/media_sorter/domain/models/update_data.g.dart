@@ -24,33 +24,12 @@ SheetDataUpdate _$SheetDataUpdateFromJson(
   lastOpened: json['lastOpened'] == null
       ? null
       : DateTime.parse(json['lastOpened'] as String),
-  usedRows: (json['usedRows'] as List<dynamic>?)
-      ?.map((e) => (e as num).toInt())
-      .toList(),
-  usedCols: (json['usedCols'] as List<dynamic>?)
-      ?.map((e) => (e as num).toInt())
-      .toList(),
   historyIndex: (json['historyIndex'] as num?)?.toInt(),
-  colHeaderHeight: (json['colHeaderHeight'] as num?)?.toDouble(),
-  prevColHeaderHeight: (json['prevColHeaderHeight'] as num?)?.toDouble(),
-  rowHeaderWidth: (json['rowHeaderWidth'] as num?)?.toDouble(),
-  prevRowHeaderWidth: (json['prevRowHeaderWidth'] as num?)?.toDouble(),
   selectionHistory: json['selectionHistory'] == null
       ? null
       : SelectionData.fromJson(
           json['selectionHistory'] as Map<String, dynamic>,
         ),
-  scrollOffsetX: (json['scrollOffsetX'] as num?)?.toDouble(),
-  scrollOffsetY: (json['scrollOffsetY'] as num?)?.toDouble(),
-  bestSortFound: (json['bestSortFound'] as List<dynamic>?)
-      ?.map((e) => (e as num).toInt())
-      .toList(),
-  bestDistFound: (json['bestDistFound'] as List<dynamic>?)
-      ?.map((e) => (e as num).toInt())
-      .toList(),
-  cursors: (json['cursors'] as List<dynamic>?)
-      ?.map((e) => (e as num).toInt())
-      .toList(),
   possibleInts: (json['possibleInts'] as List<dynamic>?)
       ?.map((e) => (e as List<dynamic>).map((e) => (e as num).toInt()).toList())
       .toList(),
@@ -68,10 +47,6 @@ SheetDataUpdate _$SheetDataUpdateFromJson(
   analysisResult: json['analysisResult'] == null
       ? null
       : AnalysisResult.fromJson(json['analysisResult'] as Map<String, dynamic>),
-  sortInProgress: json['sortInProgress'] as bool?,
-  toApplyNextBestSort: json['toApplyNextBestSort'] as bool?,
-  toAlwaysApplyCurrentBestSort: json['toAlwaysApplyCurrentBestSort'] as bool?,
-  analysisDone: json['analysisDone'] as bool?,
 );
 
 Map<String, dynamic> _$SheetDataUpdateToJson(SheetDataUpdate instance) =>
@@ -81,27 +56,12 @@ Map<String, dynamic> _$SheetDataUpdateToJson(SheetDataUpdate instance) =>
       'newName': instance.newName,
       'prevName': instance.prevName,
       'lastOpened': instance.lastOpened?.toIso8601String(),
-      'usedRows': instance.usedRows,
-      'usedCols': instance.usedCols,
-      'colHeaderHeight': instance.colHeaderHeight,
-      'prevColHeaderHeight': instance.prevColHeaderHeight,
-      'rowHeaderWidth': instance.rowHeaderWidth,
-      'prevRowHeaderWidth': instance.prevRowHeaderWidth,
-      'scrollOffsetX': instance.scrollOffsetX,
-      'scrollOffsetY': instance.scrollOffsetY,
       'historyIndex': instance.historyIndex,
       'selectionHistory': instance.selectionHistory?.toJson(),
-      'bestSortFound': instance.bestSortFound,
-      'bestDistFound': instance.bestDistFound,
-      'cursors': instance.cursors,
       'possibleInts': instance.possibleInts,
       'validAreas': instance.validAreas,
       'sortIndex': instance.sortIndex,
       'analysisResult': instance.analysisResult?.toJson(),
-      'sortInProgress': instance.sortInProgress,
-      'toApplyNextBestSort': instance.toApplyNextBestSort,
-      'toAlwaysApplyCurrentBestSort': instance.toAlwaysApplyCurrentBestSort,
-      'analysisDone': instance.analysisDone,
     };
 
 CellUpdate _$CellUpdateFromJson(Map<String, dynamic> json) => CellUpdate(

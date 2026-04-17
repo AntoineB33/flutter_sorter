@@ -1,14 +1,14 @@
 import 'dart:convert';
 
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:drift/drift.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 
-@DataClassName('SheetDataEntity')
+@UseRowClass(SheetDataUpdate)
 class SheetDataTables extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get title => text()();
@@ -33,6 +33,7 @@ class SheetDataTables extends Table {
       text().map(const AnalysisResultConverter())();
 
   BoolColumn get sortInProgress => boolean()();
+  BoolColumn get toAlwaysApplyCurrentBestSort => boolean()();
   BoolColumn get toApplyNextBestSort => boolean()();
   BoolColumn get analysisDone => boolean()();
 }

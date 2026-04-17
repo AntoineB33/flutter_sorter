@@ -1,4 +1,3 @@
-
 import 'package:json_annotation/json_annotation.dart';
 
 part 'attribute.g.dart';
@@ -39,8 +38,8 @@ class Attribute {
   @override
   int get hashCode => Object.hash(name, rowId, colId);
 
-  factory Attribute.fromJson(Map<String, dynamic> json) => 
+  factory Attribute.fromJson(Map<String, dynamic> json) =>
       _$AttributeFromJson(json);
-  
+
   Map<String, dynamic> toJson() => _$AttributeToJson(this);
 }

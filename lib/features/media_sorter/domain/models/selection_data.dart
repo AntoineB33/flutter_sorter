@@ -1,5 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 
 part 'selection_data.g.dart';
 
@@ -15,7 +15,8 @@ class SelectionState {
     selectedCells: {CellPosition(0, 0)},
   );
 
-  factory SelectionState.fromJson(Map<String, dynamic> json) => _$SelectionStateFromJson(json);
+  factory SelectionState.fromJson(Map<String, dynamic> json) =>
+      _$SelectionStateFromJson(json);
 
   Map<String, dynamic> toJson() => _$SelectionStateToJson(this);
   // ignore: unused_element
@@ -46,7 +47,8 @@ class SelectionData {
     );
   }
 
-  factory SelectionData.fromJson(Map<String, dynamic> json) => _$SelectionDataFromJson(json);
+  factory SelectionData.fromJson(Map<String, dynamic> json) =>
+      _$SelectionDataFromJson(json);
 
   Map<String, dynamic> toJson() => _$SelectionDataToJson(this);
   // ignore: unused_element

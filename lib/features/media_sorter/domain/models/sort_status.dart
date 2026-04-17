@@ -7,19 +7,13 @@ class SortStatus {
   final bool toApplyNextBestSort;
   final bool analysisDone;
 
-  SortStatus(
-    this.toApplyNextBestSort,
-    this.analysisDone,
-  );
+  SortStatus(this.toApplyNextBestSort, this.analysisDone);
 
   factory SortStatus.initial() {
     return SortStatus(false, false);
   }
 
-  SortStatus copyWith({
-    bool? toApplyNextBestSort,
-    bool? analysisDone,
-  }) {
+  SortStatus copyWith({bool? toApplyNextBestSort, bool? analysisDone}) {
     return SortStatus(
       toApplyNextBestSort ?? this.toApplyNextBestSort,
       analysisDone ?? this.analysisDone,

@@ -1,4 +1,4 @@
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 
 class HistoryData {
   List<UpdateData> updateHistories;

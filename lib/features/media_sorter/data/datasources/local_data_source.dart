@@ -1,9 +1,9 @@
 import 'package:drift/native.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sheet_data_table.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 import 'package:drift/drift.dart';
 
 class SheetIdAndLastOpened {
@@ -34,6 +34,10 @@ class DriftLocalDataSource implements ILocalDataSource {
   final AppDatabase db;
 
   DriftLocalDataSource(this.db);
+  
+  Value<T> _nullableToValue<T>(T? itemField) {
+    return itemField != null ? Value(itemField) : const Value.absent();
+  }
 
   @override
   Future<void> batchInsertOrUpdate(List<UpdateUnit> items) async {
@@ -41,6 +45,84 @@ class DriftLocalDataSource implements ILocalDataSource {
       for (final item in items) {
         switch (item) {
           case SheetDataUpdate():
+            List<int>? usedRows;
+            List<int>? usedCols;
+
+            List<int>? bestSortFound;
+            List<int>? bestDistFound;
+            List<int>? cursors;
+
+            double? colHeaderHeight;
+            double? rowHeaderWidth;
+            double? scrollOffsetX;
+            double? scrollOffsetY;
+
+            bool? sortInProgress;
+            bool? toApplyNextBestSort;
+            bool? toAlwaysApplyCurrentBestSort;
+            bool? analysisDone;
+
+  
+            for (final field in item.listIntFields.keys) {
+              switch (field) {
+                case SheetDataUpdateFieldListInt.usedRows:
+                  usedRows = item.listIntFields[SheetDataUpdateFieldListInt.usedRows]!;
+                  break;
+                case SheetDataUpdateFieldListInt.usedCols:
+                  usedCols = item.listIntFields[SheetDataUpdateFieldListInt.usedCols]!;
+                  break;
+                case SheetDataUpdateFieldListInt.bestSortFound:
+                  bestSortFound = item.listIntFields[SheetDataUpdateFieldListInt.bestSortFound]!;
+                  break;
+                case SheetDataUpdateFieldListInt.bestDistFound:
+                  bestDistFound = item.listIntFields[SheetDataUpdateFieldListInt.bestDistFound]!;
+                  break;
+                case SheetDataUpdateFieldListInt.cursors:
+                  cursors = item.listIntFields[SheetDataUpdateFieldListInt.cursors]!;
+                  break;
+              }
+            }
+
+            for (final field in item.doubleFields.keys) {
+              switch (field) {
+                case SheetDataUpdateFieldDouble.rowHeaderWidth:
+                  rowHeaderWidth = item.doubleFields[SheetDataUpdateFieldDouble.rowHeaderWidth]!;
+                  break;
+                case SheetDataUpdateFieldDouble.prevRowHeaderWidth:
+                  // field used for history
+                  break;
+                case SheetDataUpdateFieldDouble.colHeaderHeight:
+                  colHeaderHeight = item.doubleFields[SheetDataUpdateFieldDouble.colHeaderHeight]!;
+                  break;
+                case SheetDataUpdateFieldDouble.prevColHeaderHeight:
+                  // field used for history
+                  break;
+                case SheetDataUpdateFieldDouble.scrollOffsetX:
+                  scrollOffsetX = item.doubleFields[SheetDataUpdateFieldDouble.scrollOffsetX]!;
+                  break;
+                case SheetDataUpdateFieldDouble.scrollOffsetY:
+                  scrollOffsetY = item.doubleFields[SheetDataUpdateFieldDouble.scrollOffsetY]!;
+                  break;
+              }
+            }
+
+            for (final field in item.boolFields.keys) {
+              switch (field) {
+                case SheetDataUpdateFieldBool.sortInProgress:
+                  sortInProgress = item.boolFields[SheetDataUpdateFieldBool.sortInProgress]!;
+                  break;
+                case SheetDataUpdateFieldBool.toApplyNextBestSort:
+                  toApplyNextBestSort = item.boolFields[SheetDataUpdateFieldBool.toApplyNextBestSort]!;
+                  break;
+                case SheetDataUpdateFieldBool.toAlwaysApplyCurrentBestSort:
+                  toAlwaysApplyCurrentBestSort = item.boolFields[SheetDataUpdateFieldBool.toAlwaysApplyCurrentBestSort]!;
+                  break;
+                case SheetDataUpdateFieldBool.analysisDone:
+                  analysisDone = item.boolFields[SheetDataUpdateFieldBool.analysisDone]!;
+                  break;
+              }
+            }
+
             final companion = SheetDataTablesCompanion(
               id: Value(item.sheetId),
               title: item.newName != null
@@ -49,39 +131,21 @@ class DriftLocalDataSource implements ILocalDataSource {
               lastOpened: item.lastOpened != null
                   ? Value(item.lastOpened!)
                   : Value.absent(),
-              usedRows: item.usedRows != null
-                  ? Value(item.usedRows!)
-                  : Value.absent(),
-              usedCols: item.usedCols != null
-                  ? Value(item.usedCols!)
-                  : Value.absent(),
+              usedRows: _nullableToValue(usedRows),
+              usedCols: _nullableToValue(usedCols),
               historyIndex: item.historyIndex != null
                   ? Value(item.historyIndex!)
                   : Value.absent(),
-              colHeaderHeight: item.colHeaderHeight != null
-                  ? Value(item.colHeaderHeight!)
-                  : Value.absent(),
-              rowHeaderWidth: item.rowHeaderWidth != null
-                  ? Value(item.rowHeaderWidth!)
-                  : Value.absent(),
+              colHeaderHeight: _nullableToValue(colHeaderHeight),
+              rowHeaderWidth: _nullableToValue(rowHeaderWidth),
               selectionHistory: item.selectionHistory != null
                   ? Value(item.selectionHistory!)
                   : Value.absent(),
-              scrollOffsetX: item.scrollOffsetX != null
-                  ? Value(item.scrollOffsetX!)
-                  : Value.absent(),
-              scrollOffsetY: item.scrollOffsetY != null
-                  ? Value(item.scrollOffsetY!)
-                  : Value.absent(),
-              bestSortFound: item.bestSortFound != null
-                  ? Value(item.bestSortFound!)
-                  : Value.absent(),
-              bestDistFound: item.bestDistFound != null
-                  ? Value(item.bestDistFound!)
-                  : Value.absent(),
-              cursors: item.cursors != null
-                  ? Value(item.cursors!)
-                  : Value.absent(),
+              scrollOffsetX: _nullableToValue(scrollOffsetX),
+              scrollOffsetY: _nullableToValue(scrollOffsetY),
+              bestSortFound: _nullableToValue(bestSortFound),
+              bestDistFound: _nullableToValue(bestDistFound),
+              cursors: _nullableToValue(cursors),
               possibleInts: item.possibleInts != null
                   ? Value(item.possibleInts!)
                   : Value.absent(),
@@ -94,29 +158,15 @@ class DriftLocalDataSource implements ILocalDataSource {
               analysisResult: item.analysisResult != null
                   ? Value(item.analysisResult!)
                   : Value.absent(),
-              sortInProgress: item.sortInProgress != null
-                  ? Value(item.sortInProgress!)
-                  : Value.absent(),
-              toApplyNextBestSort: item.toApplyNextBestSort != null
-                  ? Value(item.toApplyNextBestSort!)
-                  : Value.absent(),
-              analysisDone: item.analysisDone != null
-                  ? Value(item.analysisDone!)
-                  : Value.absent(),
+              sortInProgress: _nullableToValue(sortInProgress),
+              toApplyNextBestSort: _nullableToValue(toApplyNextBestSort),
+              analysisDone: _nullableToValue(analysisDone),
+              toAlwaysApplyCurrentBestSort: _nullableToValue(toAlwaysApplyCurrentBestSort),
             );
             if (item.addOtherwiseRemove) {
               // 1. Check if all required fields are present
-              final hasAllRequiredFields = item.newName != null &&
-                  item.lastOpened != null &&
-                  item.historyIndex != null &&
-                  item.colHeaderHeight != null &&
-                  item.rowHeaderWidth != null &&
-                  item.scrollOffsetX != null &&
-                  item.scrollOffsetY != null &&
-                  item.sortIndex != null &&
-                  item.sortInProgress != null &&
-                  item.toApplyNextBestSort != null &&
-                  item.analysisDone != null;
+              final hasAllRequiredFields = item.toJson().values.every((value) => value != null);
+
 
               if (hasAllRequiredFields) {
                 // 2. If we have a complete set of data, we can safely insert or replace

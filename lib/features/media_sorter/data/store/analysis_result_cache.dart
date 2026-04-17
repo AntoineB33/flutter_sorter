@@ -1,6 +1,6 @@
-import 'package:trying_flutter/features/media_sorter/data/models/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sorting_rule.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sorting_rule.dart';
 
 class AnalysisResultCache {
   final Map<int, AnalysisResult> _analysisResults = {};
