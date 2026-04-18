@@ -8,9 +8,10 @@ import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.d
 import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 
+sealed class AppTable extends Table {}
 
 @DataClassName('SheetDataEntity')
-class SheetDataTables extends Table {
+class SheetDataTables extends AppTable {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get title => text()();
   DateTimeColumn get lastOpened => dateTime()();

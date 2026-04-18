@@ -4,7 +4,7 @@ part of 'app_database.dart';
 
 // ignore_for_file: type=lint
 class $SheetDataTablesTable extends SheetDataTables
-    with TableInfo<$SheetDataTablesTable, SheetDataUpdate> {
+    with TableInfo<$SheetDataTablesTable, SheetDataEntity> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -288,7 +288,7 @@ class $SheetDataTablesTable extends SheetDataTables
   static const String $name = 'sheet_data_tables';
   @override
   VerificationContext validateIntegrity(
-    Insertable<SheetDataUpdate> instance, {
+    Insertable<SheetDataEntity> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -425,9 +425,17 @@ class $SheetDataTablesTable extends SheetDataTables
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  SheetDataUpdate map(Map<String, dynamic> data, {String? tablePrefix}) {
+  SheetDataEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return SheetDataUpdate(
+    return SheetDataEntity(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
       lastOpened: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_opened'],
@@ -515,13 +523,13 @@ class $SheetDataTablesTable extends SheetDataTables
         DriftSqlType.bool,
         data['${effectivePrefix}sort_in_progress'],
       )!,
-      toApplyNextBestSort: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}to_apply_next_best_sort'],
-      )!,
       toAlwaysApplyCurrentBestSort: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}to_always_apply_current_best_sort'],
+      )!,
+      toApplyNextBestSort: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}to_apply_next_best_sort'],
       )!,
       analysisDone: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
@@ -555,7 +563,412 @@ class $SheetDataTablesTable extends SheetDataTables
       const AnalysisResultConverter();
 }
 
-class SheetDataTablesCompanion extends UpdateCompanion<SheetDataUpdate> {
+class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
+  final int id;
+  final String title;
+  final DateTime lastOpened;
+  final List<int> usedRows;
+  final List<int> usedCols;
+  final int historyIndex;
+  final double colHeaderHeight;
+  final double rowHeaderWidth;
+  final SelectionData selectionHistory;
+  final double scrollOffsetX;
+  final double scrollOffsetY;
+  final List<int> bestSortFound;
+  final List<int> bestDistFound;
+  final List<int> cursors;
+  final List<List<int>> possibleInts;
+  final List<List<List<int>>> validAreas;
+  final int sortIndex;
+  final AnalysisResult analysisResult;
+  final bool sortInProgress;
+  final bool toAlwaysApplyCurrentBestSort;
+  final bool toApplyNextBestSort;
+  final bool analysisDone;
+  const SheetDataEntity({
+    required this.id,
+    required this.title,
+    required this.lastOpened,
+    required this.usedRows,
+    required this.usedCols,
+    required this.historyIndex,
+    required this.colHeaderHeight,
+    required this.rowHeaderWidth,
+    required this.selectionHistory,
+    required this.scrollOffsetX,
+    required this.scrollOffsetY,
+    required this.bestSortFound,
+    required this.bestDistFound,
+    required this.cursors,
+    required this.possibleInts,
+    required this.validAreas,
+    required this.sortIndex,
+    required this.analysisResult,
+    required this.sortInProgress,
+    required this.toAlwaysApplyCurrentBestSort,
+    required this.toApplyNextBestSort,
+    required this.analysisDone,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['title'] = Variable<String>(title);
+    map['last_opened'] = Variable<DateTime>(lastOpened);
+    {
+      map['used_rows'] = Variable<String>(
+        $SheetDataTablesTable.$converterusedRows.toSql(usedRows),
+      );
+    }
+    {
+      map['used_cols'] = Variable<String>(
+        $SheetDataTablesTable.$converterusedCols.toSql(usedCols),
+      );
+    }
+    map['history_index'] = Variable<int>(historyIndex);
+    map['col_header_height'] = Variable<double>(colHeaderHeight);
+    map['row_header_width'] = Variable<double>(rowHeaderWidth);
+    {
+      map['selection_history'] = Variable<String>(
+        $SheetDataTablesTable.$converterselectionHistory.toSql(
+          selectionHistory,
+        ),
+      );
+    }
+    map['scroll_offset_x'] = Variable<double>(scrollOffsetX);
+    map['scroll_offset_y'] = Variable<double>(scrollOffsetY);
+    {
+      map['best_sort_found'] = Variable<String>(
+        $SheetDataTablesTable.$converterbestSortFound.toSql(bestSortFound),
+      );
+    }
+    {
+      map['best_dist_found'] = Variable<String>(
+        $SheetDataTablesTable.$converterbestDistFound.toSql(bestDistFound),
+      );
+    }
+    {
+      map['cursors'] = Variable<String>(
+        $SheetDataTablesTable.$convertercursors.toSql(cursors),
+      );
+    }
+    {
+      map['possible_ints'] = Variable<String>(
+        $SheetDataTablesTable.$converterpossibleInts.toSql(possibleInts),
+      );
+    }
+    {
+      map['valid_areas'] = Variable<String>(
+        $SheetDataTablesTable.$convertervalidAreas.toSql(validAreas),
+      );
+    }
+    map['sort_index'] = Variable<int>(sortIndex);
+    {
+      map['analysis_result'] = Variable<String>(
+        $SheetDataTablesTable.$converteranalysisResult.toSql(analysisResult),
+      );
+    }
+    map['sort_in_progress'] = Variable<bool>(sortInProgress);
+    map['to_always_apply_current_best_sort'] = Variable<bool>(
+      toAlwaysApplyCurrentBestSort,
+    );
+    map['to_apply_next_best_sort'] = Variable<bool>(toApplyNextBestSort);
+    map['analysis_done'] = Variable<bool>(analysisDone);
+    return map;
+  }
+
+  SheetDataTablesCompanion toCompanion(bool nullToAbsent) {
+    return SheetDataTablesCompanion(
+      id: Value(id),
+      title: Value(title),
+      lastOpened: Value(lastOpened),
+      usedRows: Value(usedRows),
+      usedCols: Value(usedCols),
+      historyIndex: Value(historyIndex),
+      colHeaderHeight: Value(colHeaderHeight),
+      rowHeaderWidth: Value(rowHeaderWidth),
+      selectionHistory: Value(selectionHistory),
+      scrollOffsetX: Value(scrollOffsetX),
+      scrollOffsetY: Value(scrollOffsetY),
+      bestSortFound: Value(bestSortFound),
+      bestDistFound: Value(bestDistFound),
+      cursors: Value(cursors),
+      possibleInts: Value(possibleInts),
+      validAreas: Value(validAreas),
+      sortIndex: Value(sortIndex),
+      analysisResult: Value(analysisResult),
+      sortInProgress: Value(sortInProgress),
+      toAlwaysApplyCurrentBestSort: Value(toAlwaysApplyCurrentBestSort),
+      toApplyNextBestSort: Value(toApplyNextBestSort),
+      analysisDone: Value(analysisDone),
+    );
+  }
+
+  factory SheetDataEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SheetDataEntity(
+      id: serializer.fromJson<int>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      lastOpened: serializer.fromJson<DateTime>(json['lastOpened']),
+      usedRows: serializer.fromJson<List<int>>(json['usedRows']),
+      usedCols: serializer.fromJson<List<int>>(json['usedCols']),
+      historyIndex: serializer.fromJson<int>(json['historyIndex']),
+      colHeaderHeight: serializer.fromJson<double>(json['colHeaderHeight']),
+      rowHeaderWidth: serializer.fromJson<double>(json['rowHeaderWidth']),
+      selectionHistory: serializer.fromJson<SelectionData>(
+        json['selectionHistory'],
+      ),
+      scrollOffsetX: serializer.fromJson<double>(json['scrollOffsetX']),
+      scrollOffsetY: serializer.fromJson<double>(json['scrollOffsetY']),
+      bestSortFound: serializer.fromJson<List<int>>(json['bestSortFound']),
+      bestDistFound: serializer.fromJson<List<int>>(json['bestDistFound']),
+      cursors: serializer.fromJson<List<int>>(json['cursors']),
+      possibleInts: serializer.fromJson<List<List<int>>>(json['possibleInts']),
+      validAreas: serializer.fromJson<List<List<List<int>>>>(
+        json['validAreas'],
+      ),
+      sortIndex: serializer.fromJson<int>(json['sortIndex']),
+      analysisResult: serializer.fromJson<AnalysisResult>(
+        json['analysisResult'],
+      ),
+      sortInProgress: serializer.fromJson<bool>(json['sortInProgress']),
+      toAlwaysApplyCurrentBestSort: serializer.fromJson<bool>(
+        json['toAlwaysApplyCurrentBestSort'],
+      ),
+      toApplyNextBestSort: serializer.fromJson<bool>(
+        json['toApplyNextBestSort'],
+      ),
+      analysisDone: serializer.fromJson<bool>(json['analysisDone']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'title': serializer.toJson<String>(title),
+      'lastOpened': serializer.toJson<DateTime>(lastOpened),
+      'usedRows': serializer.toJson<List<int>>(usedRows),
+      'usedCols': serializer.toJson<List<int>>(usedCols),
+      'historyIndex': serializer.toJson<int>(historyIndex),
+      'colHeaderHeight': serializer.toJson<double>(colHeaderHeight),
+      'rowHeaderWidth': serializer.toJson<double>(rowHeaderWidth),
+      'selectionHistory': serializer.toJson<SelectionData>(selectionHistory),
+      'scrollOffsetX': serializer.toJson<double>(scrollOffsetX),
+      'scrollOffsetY': serializer.toJson<double>(scrollOffsetY),
+      'bestSortFound': serializer.toJson<List<int>>(bestSortFound),
+      'bestDistFound': serializer.toJson<List<int>>(bestDistFound),
+      'cursors': serializer.toJson<List<int>>(cursors),
+      'possibleInts': serializer.toJson<List<List<int>>>(possibleInts),
+      'validAreas': serializer.toJson<List<List<List<int>>>>(validAreas),
+      'sortIndex': serializer.toJson<int>(sortIndex),
+      'analysisResult': serializer.toJson<AnalysisResult>(analysisResult),
+      'sortInProgress': serializer.toJson<bool>(sortInProgress),
+      'toAlwaysApplyCurrentBestSort': serializer.toJson<bool>(
+        toAlwaysApplyCurrentBestSort,
+      ),
+      'toApplyNextBestSort': serializer.toJson<bool>(toApplyNextBestSort),
+      'analysisDone': serializer.toJson<bool>(analysisDone),
+    };
+  }
+
+  SheetDataEntity copyWith({
+    int? id,
+    String? title,
+    DateTime? lastOpened,
+    List<int>? usedRows,
+    List<int>? usedCols,
+    int? historyIndex,
+    double? colHeaderHeight,
+    double? rowHeaderWidth,
+    SelectionData? selectionHistory,
+    double? scrollOffsetX,
+    double? scrollOffsetY,
+    List<int>? bestSortFound,
+    List<int>? bestDistFound,
+    List<int>? cursors,
+    List<List<int>>? possibleInts,
+    List<List<List<int>>>? validAreas,
+    int? sortIndex,
+    AnalysisResult? analysisResult,
+    bool? sortInProgress,
+    bool? toAlwaysApplyCurrentBestSort,
+    bool? toApplyNextBestSort,
+    bool? analysisDone,
+  }) => SheetDataEntity(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    lastOpened: lastOpened ?? this.lastOpened,
+    usedRows: usedRows ?? this.usedRows,
+    usedCols: usedCols ?? this.usedCols,
+    historyIndex: historyIndex ?? this.historyIndex,
+    colHeaderHeight: colHeaderHeight ?? this.colHeaderHeight,
+    rowHeaderWidth: rowHeaderWidth ?? this.rowHeaderWidth,
+    selectionHistory: selectionHistory ?? this.selectionHistory,
+    scrollOffsetX: scrollOffsetX ?? this.scrollOffsetX,
+    scrollOffsetY: scrollOffsetY ?? this.scrollOffsetY,
+    bestSortFound: bestSortFound ?? this.bestSortFound,
+    bestDistFound: bestDistFound ?? this.bestDistFound,
+    cursors: cursors ?? this.cursors,
+    possibleInts: possibleInts ?? this.possibleInts,
+    validAreas: validAreas ?? this.validAreas,
+    sortIndex: sortIndex ?? this.sortIndex,
+    analysisResult: analysisResult ?? this.analysisResult,
+    sortInProgress: sortInProgress ?? this.sortInProgress,
+    toAlwaysApplyCurrentBestSort:
+        toAlwaysApplyCurrentBestSort ?? this.toAlwaysApplyCurrentBestSort,
+    toApplyNextBestSort: toApplyNextBestSort ?? this.toApplyNextBestSort,
+    analysisDone: analysisDone ?? this.analysisDone,
+  );
+  SheetDataEntity copyWithCompanion(SheetDataTablesCompanion data) {
+    return SheetDataEntity(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      lastOpened: data.lastOpened.present
+          ? data.lastOpened.value
+          : this.lastOpened,
+      usedRows: data.usedRows.present ? data.usedRows.value : this.usedRows,
+      usedCols: data.usedCols.present ? data.usedCols.value : this.usedCols,
+      historyIndex: data.historyIndex.present
+          ? data.historyIndex.value
+          : this.historyIndex,
+      colHeaderHeight: data.colHeaderHeight.present
+          ? data.colHeaderHeight.value
+          : this.colHeaderHeight,
+      rowHeaderWidth: data.rowHeaderWidth.present
+          ? data.rowHeaderWidth.value
+          : this.rowHeaderWidth,
+      selectionHistory: data.selectionHistory.present
+          ? data.selectionHistory.value
+          : this.selectionHistory,
+      scrollOffsetX: data.scrollOffsetX.present
+          ? data.scrollOffsetX.value
+          : this.scrollOffsetX,
+      scrollOffsetY: data.scrollOffsetY.present
+          ? data.scrollOffsetY.value
+          : this.scrollOffsetY,
+      bestSortFound: data.bestSortFound.present
+          ? data.bestSortFound.value
+          : this.bestSortFound,
+      bestDistFound: data.bestDistFound.present
+          ? data.bestDistFound.value
+          : this.bestDistFound,
+      cursors: data.cursors.present ? data.cursors.value : this.cursors,
+      possibleInts: data.possibleInts.present
+          ? data.possibleInts.value
+          : this.possibleInts,
+      validAreas: data.validAreas.present
+          ? data.validAreas.value
+          : this.validAreas,
+      sortIndex: data.sortIndex.present ? data.sortIndex.value : this.sortIndex,
+      analysisResult: data.analysisResult.present
+          ? data.analysisResult.value
+          : this.analysisResult,
+      sortInProgress: data.sortInProgress.present
+          ? data.sortInProgress.value
+          : this.sortInProgress,
+      toAlwaysApplyCurrentBestSort: data.toAlwaysApplyCurrentBestSort.present
+          ? data.toAlwaysApplyCurrentBestSort.value
+          : this.toAlwaysApplyCurrentBestSort,
+      toApplyNextBestSort: data.toApplyNextBestSort.present
+          ? data.toApplyNextBestSort.value
+          : this.toApplyNextBestSort,
+      analysisDone: data.analysisDone.present
+          ? data.analysisDone.value
+          : this.analysisDone,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SheetDataEntity(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('lastOpened: $lastOpened, ')
+          ..write('usedRows: $usedRows, ')
+          ..write('usedCols: $usedCols, ')
+          ..write('historyIndex: $historyIndex, ')
+          ..write('colHeaderHeight: $colHeaderHeight, ')
+          ..write('rowHeaderWidth: $rowHeaderWidth, ')
+          ..write('selectionHistory: $selectionHistory, ')
+          ..write('scrollOffsetX: $scrollOffsetX, ')
+          ..write('scrollOffsetY: $scrollOffsetY, ')
+          ..write('bestSortFound: $bestSortFound, ')
+          ..write('bestDistFound: $bestDistFound, ')
+          ..write('cursors: $cursors, ')
+          ..write('possibleInts: $possibleInts, ')
+          ..write('validAreas: $validAreas, ')
+          ..write('sortIndex: $sortIndex, ')
+          ..write('analysisResult: $analysisResult, ')
+          ..write('sortInProgress: $sortInProgress, ')
+          ..write(
+            'toAlwaysApplyCurrentBestSort: $toAlwaysApplyCurrentBestSort, ',
+          )
+          ..write('toApplyNextBestSort: $toApplyNextBestSort, ')
+          ..write('analysisDone: $analysisDone')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    title,
+    lastOpened,
+    usedRows,
+    usedCols,
+    historyIndex,
+    colHeaderHeight,
+    rowHeaderWidth,
+    selectionHistory,
+    scrollOffsetX,
+    scrollOffsetY,
+    bestSortFound,
+    bestDistFound,
+    cursors,
+    possibleInts,
+    validAreas,
+    sortIndex,
+    analysisResult,
+    sortInProgress,
+    toAlwaysApplyCurrentBestSort,
+    toApplyNextBestSort,
+    analysisDone,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SheetDataEntity &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.lastOpened == this.lastOpened &&
+          other.usedRows == this.usedRows &&
+          other.usedCols == this.usedCols &&
+          other.historyIndex == this.historyIndex &&
+          other.colHeaderHeight == this.colHeaderHeight &&
+          other.rowHeaderWidth == this.rowHeaderWidth &&
+          other.selectionHistory == this.selectionHistory &&
+          other.scrollOffsetX == this.scrollOffsetX &&
+          other.scrollOffsetY == this.scrollOffsetY &&
+          other.bestSortFound == this.bestSortFound &&
+          other.bestDistFound == this.bestDistFound &&
+          other.cursors == this.cursors &&
+          other.possibleInts == this.possibleInts &&
+          other.validAreas == this.validAreas &&
+          other.sortIndex == this.sortIndex &&
+          other.analysisResult == this.analysisResult &&
+          other.sortInProgress == this.sortInProgress &&
+          other.toAlwaysApplyCurrentBestSort ==
+              this.toAlwaysApplyCurrentBestSort &&
+          other.toApplyNextBestSort == this.toApplyNextBestSort &&
+          other.analysisDone == this.analysisDone);
+}
+
+class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
   final Value<int> id;
   final Value<String> title;
   final Value<DateTime> lastOpened;
@@ -646,7 +1059,7 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataUpdate> {
        toAlwaysApplyCurrentBestSort = Value(toAlwaysApplyCurrentBestSort),
        toApplyNextBestSort = Value(toApplyNextBestSort),
        analysisDone = Value(analysisDone);
-  static Insertable<SheetDataUpdate> custom({
+  static Insertable<SheetDataEntity> custom({
     Expression<int>? id,
     Expression<String>? title,
     Expression<DateTime>? lastOpened,
@@ -3029,7 +3442,7 @@ typedef $$SheetDataTablesTableUpdateCompanionBuilder =
 
 final class $$SheetDataTablesTableReferences
     extends
-        BaseReferences<_$AppDatabase, $SheetDataTablesTable, SheetDataUpdate> {
+        BaseReferences<_$AppDatabase, $SheetDataTablesTable, SheetDataEntity> {
   $$SheetDataTablesTableReferences(
     super.$_db,
     super.$_table,
@@ -3964,14 +4377,14 @@ class $$SheetDataTablesTableTableManager
         RootTableManager<
           _$AppDatabase,
           $SheetDataTablesTable,
-          SheetDataUpdate,
+          SheetDataEntity,
           $$SheetDataTablesTableFilterComposer,
           $$SheetDataTablesTableOrderingComposer,
           $$SheetDataTablesTableAnnotationComposer,
           $$SheetDataTablesTableCreateCompanionBuilder,
           $$SheetDataTablesTableUpdateCompanionBuilder,
-          (SheetDataUpdate, $$SheetDataTablesTableReferences),
-          SheetDataUpdate,
+          (SheetDataEntity, $$SheetDataTablesTableReferences),
+          SheetDataEntity,
           PrefetchHooks Function({
             bool sheetCellsTableRefs,
             bool sheetColumnTypesTableRefs,
@@ -4127,7 +4540,7 @@ class $$SheetDataTablesTableTableManager
                     return [
                       if (sheetCellsTableRefs)
                         await $_getPrefetchedData<
-                          SheetDataUpdate,
+                          SheetDataEntity,
                           $SheetDataTablesTable,
                           SheetCellEntity
                         >(
@@ -4148,7 +4561,7 @@ class $$SheetDataTablesTableTableManager
                         ),
                       if (sheetColumnTypesTableRefs)
                         await $_getPrefetchedData<
-                          SheetDataUpdate,
+                          SheetDataEntity,
                           $SheetDataTablesTable,
                           SheetColumnTypeEntity
                         >(
@@ -4169,7 +4582,7 @@ class $$SheetDataTablesTableTableManager
                         ),
                       if (updateHistoriesTableRefs)
                         await $_getPrefetchedData<
-                          SheetDataUpdate,
+                          SheetDataEntity,
                           $SheetDataTablesTable,
                           UpdateHistoriesEntity
                         >(
@@ -4190,7 +4603,7 @@ class $$SheetDataTablesTableTableManager
                         ),
                       if (rowsBottomPosTableRefs)
                         await $_getPrefetchedData<
-                          SheetDataUpdate,
+                          SheetDataEntity,
                           $SheetDataTablesTable,
                           RowsBottomPosEntity
                         >(
@@ -4211,7 +4624,7 @@ class $$SheetDataTablesTableTableManager
                         ),
                       if (colRightPosTableRefs)
                         await $_getPrefetchedData<
-                          SheetDataUpdate,
+                          SheetDataEntity,
                           $SheetDataTablesTable,
                           ColRightPosEntity
                         >(
@@ -4232,7 +4645,7 @@ class $$SheetDataTablesTableTableManager
                         ),
                       if (rowsManuallyAdjustedHeightTableRefs)
                         await $_getPrefetchedData<
-                          SheetDataUpdate,
+                          SheetDataEntity,
                           $SheetDataTablesTable,
                           RowsManuallyAdjustedHeightEntity
                         >(
@@ -4253,7 +4666,7 @@ class $$SheetDataTablesTableTableManager
                         ),
                       if (colsManuallyAdjustedWidthTableRefs)
                         await $_getPrefetchedData<
-                          SheetDataUpdate,
+                          SheetDataEntity,
                           $SheetDataTablesTable,
                           ColsManuallyAdjustedWidthEntity
                         >(
@@ -4284,14 +4697,14 @@ typedef $$SheetDataTablesTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $SheetDataTablesTable,
-      SheetDataUpdate,
+      SheetDataEntity,
       $$SheetDataTablesTableFilterComposer,
       $$SheetDataTablesTableOrderingComposer,
       $$SheetDataTablesTableAnnotationComposer,
       $$SheetDataTablesTableCreateCompanionBuilder,
       $$SheetDataTablesTableUpdateCompanionBuilder,
-      (SheetDataUpdate, $$SheetDataTablesTableReferences),
-      SheetDataUpdate,
+      (SheetDataEntity, $$SheetDataTablesTableReferences),
+      SheetDataEntity,
       PrefetchHooks Function({
         bool sheetCellsTableRefs,
         bool sheetColumnTypesTableRefs,

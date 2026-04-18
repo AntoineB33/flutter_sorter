@@ -6,7 +6,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/sheet_data_table.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 import 'package:drift/drift.dart';
@@ -23,7 +23,7 @@ abstract class ILocalDataSource {
   void saveUpdate(UpdateUnit update);
   void save(ChangeSet updates);
   void dispose();
-  Future<void> batchInsertOrUpdate(List<UpdateCompanion> items);
+  Future<void> batchInsertOrUpdate(List<UpdateCompanion<UpdateUnit>> items);
   Future<List<SheetIdAndLastOpened>> getSheetIdAndLastOpened();
   Future<SheetDataUpdate> getSheetDataEntity(int sheetId);
   Future<List<SheetCellEntity>> getSheetCellEntities(int sheetId);
@@ -37,6 +37,57 @@ abstract class ILocalDataSource {
   getColsManuallyAdjustedWidthEntities(int sheetId);
   Future<List<SortStatusData>> getSortStatus();
   Future<void> clearAllData();
+}
+
+enum DataBaseOperationType { insert, update, delete }
+
+class syncRequest {
+  final UpdateCompanion<UpdateUnit> companion;
+  final DataBaseOperationType dataBaseOperationType;
+
+  syncRequest(this.companion, this.dataBaseOperationType);
+
+  syncRequest merge(syncRequest other) {
+    if (other.dataBaseOperationType == DataBaseOperationType.delete) {
+      return syncRequest(other.companion, DataBaseOperationType.delete);
+    } else {
+      UpdateCompanion<UpdateUnit> companion = this.companion;
+      DataBaseOperationType dataBaseOperationType;
+      if (this.dataBaseOperationType == DataBaseOperationType.delete) {
+        companion = other.companion;
+        if (other.dataBaseOperationType != DataBaseOperationType.insert) {
+          throw Exception(
+              "Invalid merge: cannot merge a delete with a non-insert operation");
+        }
+        dataBaseOperationType = DataBaseOperationType.insert;
+      } else {
+        // For updates, we merge the maps. New values override old ones.
+        final mergedMap = Map<String, Expression>.from(this.companion.toColumns(false))
+          ..addAll(other.companion.toColumns(false));
+        companion = RawValuesInsertable(mergedMap) as UpdateCompanion<UpdateUnit>;
+        if (this.dataBaseOperationType == DataBaseOperationType.insert) {
+          dataBaseOperationType = DataBaseOperationType.insert;
+        } else {
+          if (other.dataBaseOperationType == DataBaseOperationType.insert) {
+            throw Exception(
+                "Invalid merge: cannot merge an update with an insert operation");
+          }
+          dataBaseOperationType = DataBaseOperationType.update;
+        }
+      }
+      return syncRequest(companion, dataBaseOperationType);
+    }
+  }
+
+  String getKey() {
+    switch(companion) {
+      case SheetDataTablesCompanion():
+        return "SheetDataTables:${(companion as SheetDataTablesCompanion).id.value}";
+      case SheetCellsTableCompanion():
+        return "SheetCellsTable:${companion.sheetId.value}-${companion.row.value}-${companion.col.value}";
+    }
+    return "";
+  }
 }
 
 class DriftLocalDataSource with WidgetsBindingObserver implements ILocalDataSource {
@@ -136,7 +187,7 @@ class DriftLocalDataSource with WidgetsBindingObserver implements ILocalDataSour
   }
 
   @override
-  Future<void> batchInsertOrUpdate(List<UpdateCompanion> items) async {
+  Future<void> batchInsertOrUpdate(List<UpdateCompanion<UpdateUnit>> items) async {
     await db.batch((batch) {
       for (final companion in items) {
         final expressions = companion.toColumns(false);
