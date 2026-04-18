@@ -27,7 +27,7 @@ class SheetDataController extends ChangeNotifier {
     return sheetDataUsecase.getSheet(currentSheetId);
   }
 
-  Future<Either<Failure, IMap<String, UpdateUnit>>> paste() {
+  Future<Either<Failure, IMap<String, SyncRequest>>> paste() {
     return sheetDataUsecase.paste();
   }
 
@@ -40,8 +40,15 @@ class SheetDataController extends ChangeNotifier {
   }
 
   @useResult
-  ColumnTypeUpdate getCurrentSheetColumnTypeUpdate(int colId, ColumnType newColumnType) {
-    return sheetDataUsecase.getColumnTypeUpdate(colId, newColumnType, currentSheetId);
+  ColumnTypeUpdate getCurrentSheetColumnTypeUpdate(
+    int colId,
+    ColumnType newColumnType,
+  ) {
+    return sheetDataUsecase.getColumnTypeUpdate(
+      colId,
+      newColumnType,
+      currentSheetId,
+    );
   }
 
   @useResult
@@ -50,7 +57,7 @@ class SheetDataController extends ChangeNotifier {
   }
 
   void applyUpdatesNoSort(
-    IMap<String, UpdateUnit> updates,
+    IMap<String, SyncRequest> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,

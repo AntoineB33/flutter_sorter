@@ -13,7 +13,7 @@ Functions in repositories that make updates to save locally :
 
   @override
   @useResult
-  ChangeSet updateFunction(int sheetId, IMap<String, UpdateUnit> updates) {
+  ChangeSet updateFunction(int sheetId, IMap<String, SyncRequest> updates) {
 
 
 

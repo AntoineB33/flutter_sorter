@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:drift/native.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Table;
 import 'package:rxdart/rxdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
@@ -20,12 +20,12 @@ class SheetIdAndLastOpened {
 }
 
 abstract class ILocalDataSource {
-  void saveUpdate(UpdateUnit update);
+  void saveUpdate(SyncRequest update);
   void save(ChangeSet updates);
   void dispose();
-  Future<void> batchInsertOrUpdate(List<UpdateCompanion<UpdateUnit>> items);
+  Future<void> batchInsertOrUpdate(List<SyncRequest> syncRequests);
   Future<List<SheetIdAndLastOpened>> getSheetIdAndLastOpened();
-  Future<SheetDataUpdate> getSheetDataEntity(int sheetId);
+  Future<SheetDataEntity> getSheetDataEntity(int sheetId);
   Future<List<SheetCellEntity>> getSheetCellEntities(int sheetId);
   Future<List<SheetColumnTypeEntity>> getSheetColumnTypeEntities(int sheetId);
   Future<List<UpdateHistoriesEntity>> getUpdateHistoriesEntities(int sheetId);
@@ -41,73 +41,74 @@ abstract class ILocalDataSource {
 
 enum DataBaseOperationType { insert, update, delete }
 
-class syncRequest {
-  final UpdateCompanion<UpdateUnit> companion;
+class SyncRequest {
+  final DbCompanionWrapper companion;
   final DataBaseOperationType dataBaseOperationType;
 
-  syncRequest(this.companion, this.dataBaseOperationType);
+  SyncRequest(this.companion, this.dataBaseOperationType);
 
-  syncRequest merge(syncRequest other) {
+  SyncRequest merge(SyncRequest other) {
     if (other.dataBaseOperationType == DataBaseOperationType.delete) {
-      return syncRequest(other.companion, DataBaseOperationType.delete);
+      return SyncRequest(other.companion, DataBaseOperationType.delete);
     } else {
-      UpdateCompanion<UpdateUnit> companion = this.companion;
+      DbCompanionWrapper companion = this.companion;
       DataBaseOperationType dataBaseOperationType;
       if (this.dataBaseOperationType == DataBaseOperationType.delete) {
         companion = other.companion;
         if (other.dataBaseOperationType != DataBaseOperationType.insert) {
           throw Exception(
-              "Invalid merge: cannot merge a delete with a non-insert operation");
+            "Invalid merge: cannot merge a delete with a non-insert operation",
+          );
         }
         dataBaseOperationType = DataBaseOperationType.insert;
       } else {
         // For updates, we merge the maps. New values override old ones.
-        final mergedMap = Map<String, Expression>.from(this.companion.toColumns(false))
-          ..addAll(other.companion.toColumns(false));
-        companion = RawValuesInsertable(mergedMap) as UpdateCompanion<UpdateUnit>;
+        final mergedMap = Map<String, Expression>.from(
+          this.companion.companion.toColumns(false),
+        )..addAll(other.companion.companion.toColumns(false));
+        companion = RawValuesInsertable(mergedMap) as DbCompanionWrapper;
         if (this.dataBaseOperationType == DataBaseOperationType.insert) {
           dataBaseOperationType = DataBaseOperationType.insert;
         } else {
           if (other.dataBaseOperationType == DataBaseOperationType.insert) {
             throw Exception(
-                "Invalid merge: cannot merge an update with an insert operation");
+              "Invalid merge: cannot merge an update with an insert operation",
+            );
           }
           dataBaseOperationType = DataBaseOperationType.update;
         }
       }
-      return syncRequest(companion, dataBaseOperationType);
+      return SyncRequest(companion, dataBaseOperationType);
     }
   }
 
   String getKey() {
-    switch(companion) {
-      case SheetDataTablesCompanion():
-        return "SheetDataTables:${(companion as SheetDataTablesCompanion).id.value}";
-      case SheetCellsTableCompanion():
-        return "SheetCellsTable:${companion.sheetId.value}-${companion.row.value}-${companion.col.value}";
+    switch (companion) {
+      case SheetDataWrapper():
+        return "SheetDataTables:${(companion as SheetDataWrapper).companion.id.value}";
+      case SheetCellWrapper():
+        final cellCompanion = (companion as SheetCellWrapper).companion;
+        return "SheetCellsTable:${cellCompanion.sheetId.value}-${cellCompanion.row.value}-${cellCompanion.col.value}";
     }
-    return "";
   }
 }
 
-class DriftLocalDataSource with WidgetsBindingObserver implements ILocalDataSource {
+class DriftLocalDataSource
+    with WidgetsBindingObserver
+    implements ILocalDataSource {
   final AppDatabase db;
 
-  
   final ILocalDataSource _localDataSource;
 
   // The Map acts as our cache. Using the entity's ID as the key
   // guarantees the "latest wins" behavior automatically.
-  final Map<String, UpdateUnit> _pendingSaves = {};
+  final Map<String, SyncRequest> _pendingSaves = {};
 
   // The trigger for our debounce logic
   final PublishSubject<void> _saveTrigger = PublishSubject<void>();
   StreamSubscription? _saveSubscription;
 
-  DriftLocalDataSource(
-    this.db,
-    this._localDataSource,
-  ) {
+  DriftLocalDataSource(this.db, this._localDataSource) {
     // Listen to app lifecycle changes (pause, background, etc.)
     WidgetsBinding.instance.addObserver(this);
 
@@ -120,7 +121,7 @@ class DriftLocalDataSource with WidgetsBindingObserver implements ILocalDataSour
   }
 
   @override
-  void saveUpdate(UpdateUnit update) {
+  void saveUpdate(SyncRequest update) {
     save(ChangeSet()..addUpdate(update));
   }
 
@@ -186,157 +187,38 @@ class DriftLocalDataSource with WidgetsBindingObserver implements ILocalDataSour
     return itemField != null ? Value(itemField) : const Value.absent();
   }
 
+  void _executeBatchOperation<T extends Table, D>(
+    Batch batch,
+    TableInfo<T, D> table,
+    SyncRequest syncRequest,
+  ) {
+    switch (syncRequest.dataBaseOperationType) {
+      case DataBaseOperationType.delete:
+        batch.delete(table, syncRequest.companion.companion);
+        break;
+      case DataBaseOperationType.insert:
+        batch.insert(
+          table,
+          syncRequest.companion.companion,
+          mode: InsertMode.insertOrReplace,
+        );
+        break;
+      case DataBaseOperationType.update:
+        batch.update(table, syncRequest.companion.companion);
+        break;
+    }
+  }
+
   @override
-  Future<void> batchInsertOrUpdate(List<UpdateCompanion<UpdateUnit>> items) async {
+  Future<void> batchInsertOrUpdate(List<SyncRequest> syncRequests) async {
     await db.batch((batch) {
-      for (final companion in items) {
-        final expressions = companion.toColumns(false);
-        final presentCount = expressions.length;
-        switch (companion) {
-          case SheetDataTablesCompanion():
-            final totalColumns = db.sheetDataTables.$columns.length;
-
-            // 1. DELETE: Only 1 field is present, and we verify it is the ID.
-            if (presentCount == 1 && companion.id.present) {
-              batch.delete(db.sheetDataTables, companion);
-            } 
-            // 2. INSERT OR REPLACE: All fields are present.
-            else if (presentCount == totalColumns) {
-              batch.insert(
-                db.sheetDataTables,
-                companion,
-                mode: InsertMode.insertOrReplace,
-              );
-            } 
-            // 3. PARTIAL UPDATE: Some fields are missing.
-            else {
-              batch.update(db.sheetDataTables, companion);
-            }
+      for (final syncRequest in syncRequests) {
+        switch (syncRequest.companion) {
+          case SheetDataWrapper():
+            _executeBatchOperation(batch, db.sheetDataTables, syncRequest);
             break;
-          case SheetCellsTableCompanion():
-            final totalColumns = db.sheetCellsTable.$columns.length;
-
-            // 1. DELETE: Only the identifying fields are present (sheetId, rowId, colId).
-            if (presentCount == 3 && companion.sheetId.present && companion.row.present && companion.col.present) {
-              batch.delete(db.sheetCellsTable, companion);
-            }
-
-            // 2. INSERT OR REPLACE: All fields are present.
-            else if (presentCount == totalColumns) {
-              batch.insert(
-                db.sheetCellsTable,
-                companion,
-                mode: InsertMode.insertOrReplace,
-              );
-            }
-            // 3. PARTIAL UPDATE: Some fields are missing.
-            else {
-              batch.update(db.sheetCellsTable, companion);
-            }
-            break;
-          case ColumnTypeUpdate():
-            final companion = SheetColumnTypesTableCompanion(
-              sheetId: Value(companion.sheetId),
-              columnIndex: Value(companion.colId),
-              columnType: Value(companion.newColumnType),
-            );
-            if (companion.newColumnType != ColumnType.attributes) {
-              batch.insert(
-                db.sheetColumnTypesTable,
-                companion,
-                mode: InsertMode.insertOrReplace,
-              );
-            } else {
-              batch.delete(db.sheetColumnTypesTable, companion);
-            }
-            break;
-          case UpdateData():
-            UpdateData updateData = companion;
-            if (updateData.addOtherwiseRemove) {
-              batch.insert(
-                db.updateHistoriesTable,
-                UpdateHistoriesTableCompanion(
-                  timestamp: Value(updateData.timestamp),
-                  chronoId: Value(updateData.chronoId),
-                  updates: Value(updateData.updates),
-                ),
-                mode: InsertMode.insertOrReplace,
-              );
-            } else {
-              batch.delete(
-                db.updateHistoriesTable,
-                UpdateHistoriesTableCompanion(
-                  timestamp: Value(updateData.timestamp),
-                  chronoId: Value(updateData.chronoId),
-                ),
-              );
-            }
-            break;
-          case RowsBottomPosUpdate():
-            final companion = RowsBottomPosTableCompanion(
-              sheetId: Value(companion.sheetId),
-              rowIndex: Value(companion.rowIndex),
-              bottomPos: companion.newBottomPos != null
-                  ? Value(companion.newBottomPos!)
-                  : Value.absent(),
-            );
-            if (companion.newBottomPos != null) {
-              batch.insert(
-                db.rowsBottomPosTable,
-                companion,
-                mode: InsertMode.insertOrReplace,
-              );
-            } else {
-              batch.delete(db.rowsBottomPosTable, companion);
-            }
-            break;
-          case ColRightPosUpdate():
-            final companion = ColRightPosTableCompanion(
-              sheetId: Value(companion.sheetId),
-              colIndex: Value(companion.colIndex),
-              rightPos: Value(companion.newRightPos),
-            );
-            if (companion.addOtherwiseRemove) {
-              batch.insert(
-                db.colRightPosTable,
-                companion,
-                mode: InsertMode.insertOrReplace,
-              );
-            } else {
-              batch.delete(db.colRightPosTable, companion);
-            }
-            break;
-          case RowsManuallyAdjustedHeightUpdate():
-            final companion = RowsManuallyAdjustedHeightTableCompanion(
-              sheetId: Value(companion.sheetId),
-              rowIndex: Value(companion.rowIndex),
-              manuallyAdjusted: Value(companion.manuallyAdjusted),
-            );
-            if (companion.addOtherwiseRemove) {
-              batch.insert(
-                db.rowsManuallyAdjustedHeightTable,
-                companion,
-                mode: InsertMode.insertOrReplace,
-              );
-            } else {
-              batch.delete(db.rowsManuallyAdjustedHeightTable, companion);
-            }
-            break;
-          case ColsManuallyAdjustedWidthUpdate():
-            final companion = ColsManuallyAdjustedWidthTableCompanion(
-              sheetId: Value(companion.sheetId),
-              colIndex: Value(companion.colIndex),
-              manuallyAdjusted: Value(companion.manuallyAdjusted),
-            );
-            if (companion.addOtherwiseRemove) {
-              batch.insert(
-                db.colsManuallyAdjustedWidthTable,
-                companion,
-                mode: InsertMode.insertOrReplace,
-              );
-            } else {
-              batch.delete(db.colsManuallyAdjustedWidthTable, companion);
-            }
+          case SheetCellWrapper():
+            _executeBatchOperation(batch, db.sheetCellsTable, syncRequest);
             break;
         }
       }
@@ -367,7 +249,7 @@ class DriftLocalDataSource with WidgetsBindingObserver implements ILocalDataSour
   }
 
   @override
-  Future<SheetDataUpdate> getSheetDataEntity(int sheetId) async {
+  Future<SheetDataEntity> getSheetDataEntity(int sheetId) async {
     try {
       final query = db.select(db.sheetDataTables)
         ..where((table) => table.id.equals(sheetId));

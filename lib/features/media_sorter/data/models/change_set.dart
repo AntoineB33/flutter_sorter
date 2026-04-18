@@ -1,13 +1,13 @@
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 
 class ChangeSet {
-  final Map<String, UpdateUnit> _changes;
+  final Map<String, SyncRequest> _changes;
 
-  ChangeSet({IMap<String, UpdateUnit>? initialChanges})
+  ChangeSet({IMap<String, SyncRequest>? initialChanges})
     : _changes = initialChanges?.unlock ?? {};
 
-  void addUpdate(UpdateUnit update) => _changes.update(
+  void addUpdate(SyncRequest update) => _changes.update(
     update.getKey(),
     (existing) => existing.merge(update),
     ifAbsent: () => update,
@@ -19,6 +19,6 @@ class ChangeSet {
     }
   }
 
-  IMap<String, UpdateUnit> toMap() => _changes.lock;
+  IMap<String, SyncRequest> toMap() => _changes.lock;
   bool get hasChanges => _changes.isNotEmpty;
 }

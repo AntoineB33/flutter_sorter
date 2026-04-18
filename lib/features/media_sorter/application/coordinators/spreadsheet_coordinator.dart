@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/sort_progress_data.dart';
@@ -68,7 +69,8 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   Future<void> _init() async {
     bool shouldClearData = false;
-    shouldClearData = true; // DEV ONLY: Clear all data on every app start to avoid issues with changing data models during development
+    shouldClearData =
+        true; // DEV ONLY: Clear all data on every app start to avoid issues with changing data models during development
     if (shouldClearData == true) {
       await workbookController.clearAllData();
     }
@@ -132,7 +134,13 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   void setCellContent(String newValue) {
     int rowId = primarySelectedCellX;
     int colId = primarySelectedCellY;
-    final cellUpdate = CellUpdate(currentSheetId, rowId, colId, newValue, sheetDataController.getCellContentCurrentSheet(rowId, colId));
+    final cellUpdate = CellUpdate(
+      currentSheetId,
+      rowId,
+      colId,
+      newValue,
+      sheetDataController.getCellContentCurrentSheet(rowId, colId),
+    );
     Map<String, UpdateUnit> updates = {cellUpdate.getKey(): cellUpdate};
     applyUpdatesAndSort(
       updates.lock,
@@ -144,7 +152,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyUpdatesAndSort(
-    IMap<String, UpdateUnit> updates,
+    IMap<String, SyncRequest> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromSort,
@@ -210,7 +218,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyUpdatesNoSort(
-    IMap<String, UpdateUnit> updates,
+    IMap<String, SyncRequest> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,
@@ -434,11 +442,23 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void applyDefaultColumnSequence() {
     final updatesLst = [
-      sheetDataController.getCurrentSheetColumnTypeUpdate(1, ColumnType.dependencies),
-      sheetDataController.getCurrentSheetColumnTypeUpdate(2, ColumnType.dependencies),
-      sheetDataController.getCurrentSheetColumnTypeUpdate(3, ColumnType.dependencies),
+      sheetDataController.getCurrentSheetColumnTypeUpdate(
+        1,
+        ColumnType.dependencies,
+      ),
+      sheetDataController.getCurrentSheetColumnTypeUpdate(
+        2,
+        ColumnType.dependencies,
+      ),
+      sheetDataController.getCurrentSheetColumnTypeUpdate(
+        3,
+        ColumnType.dependencies,
+      ),
       sheetDataController.getCurrentSheetColumnTypeUpdate(7, ColumnType.urls),
-      sheetDataController.getCurrentSheetColumnTypeUpdate(8, ColumnType.dependencies),
+      sheetDataController.getCurrentSheetColumnTypeUpdate(
+        8,
+        ColumnType.dependencies,
+      ),
     ];
     Map<String, UpdateUnit> updates = {
       for (var update in updatesLst) update.getKey(): update,
@@ -464,7 +484,10 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void setColumnType(int col, ColumnType type) {
-    final update = sheetDataController.getCurrentSheetColumnTypeUpdate(col, type);
+    final update = sheetDataController.getCurrentSheetColumnTypeUpdate(
+      col,
+      type,
+    );
     final updates = {update.getKey(): update};
     applyUpdatesAndSort(updates.lock, currentSheetId, false, false, false);
   }

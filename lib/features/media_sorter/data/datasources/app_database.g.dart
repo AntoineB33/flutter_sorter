@@ -1943,7 +1943,7 @@ class $UpdateHistoriesTableTable extends UpdateHistoriesTable
     ),
   );
   @override
-  late final GeneratedColumnWithTypeConverter<IMap<String, UpdateUnit>, String>
+  late final GeneratedColumnWithTypeConverter<IMap<String, SyncRequest>, String>
   updates =
       GeneratedColumn<String>(
         'updates',
@@ -1951,7 +1951,7 @@ class $UpdateHistoriesTableTable extends UpdateHistoriesTable
         false,
         type: DriftSqlType.string,
         requiredDuringInsert: true,
-      ).withConverter<IMap<String, UpdateUnit>>(
+      ).withConverter<IMap<String, SyncRequest>>(
         $UpdateHistoriesTableTable.$converterupdates,
       );
   @override
@@ -2027,7 +2027,7 @@ class $UpdateHistoriesTableTable extends UpdateHistoriesTable
     return $UpdateHistoriesTableTable(attachedDatabase, alias);
   }
 
-  static TypeConverter<IMap<String, UpdateUnit>, String> $converterupdates =
+  static TypeConverter<IMap<String, SyncRequest>, String> $converterupdates =
       const UpdateUnitMapConverter();
 }
 
@@ -2036,7 +2036,7 @@ class UpdateHistoriesEntity extends DataClass
   final DateTime timestamp;
   final int chronoId;
   final int sheetId;
-  final IMap<String, UpdateUnit> updates;
+  final IMap<String, SyncRequest> updates;
   const UpdateHistoriesEntity({
     required this.timestamp,
     required this.chronoId,
@@ -2075,7 +2075,7 @@ class UpdateHistoriesEntity extends DataClass
       timestamp: serializer.fromJson<DateTime>(json['timestamp']),
       chronoId: serializer.fromJson<int>(json['chronoId']),
       sheetId: serializer.fromJson<int>(json['sheetId']),
-      updates: serializer.fromJson<IMap<String, UpdateUnit>>(json['updates']),
+      updates: serializer.fromJson<IMap<String, SyncRequest>>(json['updates']),
     );
   }
   @override
@@ -2085,7 +2085,7 @@ class UpdateHistoriesEntity extends DataClass
       'timestamp': serializer.toJson<DateTime>(timestamp),
       'chronoId': serializer.toJson<int>(chronoId),
       'sheetId': serializer.toJson<int>(sheetId),
-      'updates': serializer.toJson<IMap<String, UpdateUnit>>(updates),
+      'updates': serializer.toJson<IMap<String, SyncRequest>>(updates),
     };
   }
 
@@ -2093,7 +2093,7 @@ class UpdateHistoriesEntity extends DataClass
     DateTime? timestamp,
     int? chronoId,
     int? sheetId,
-    IMap<String, UpdateUnit>? updates,
+    IMap<String, SyncRequest>? updates,
   }) => UpdateHistoriesEntity(
     timestamp: timestamp ?? this.timestamp,
     chronoId: chronoId ?? this.chronoId,
@@ -2137,7 +2137,7 @@ class UpdateHistoriesTableCompanion
   final Value<DateTime> timestamp;
   final Value<int> chronoId;
   final Value<int> sheetId;
-  final Value<IMap<String, UpdateUnit>> updates;
+  final Value<IMap<String, SyncRequest>> updates;
   final Value<int> rowid;
   const UpdateHistoriesTableCompanion({
     this.timestamp = const Value.absent(),
@@ -2150,7 +2150,7 @@ class UpdateHistoriesTableCompanion
     required DateTime timestamp,
     required int chronoId,
     required int sheetId,
-    required IMap<String, UpdateUnit> updates,
+    required IMap<String, SyncRequest> updates,
     this.rowid = const Value.absent(),
   }) : timestamp = Value(timestamp),
        chronoId = Value(chronoId),
@@ -2176,7 +2176,7 @@ class UpdateHistoriesTableCompanion
     Value<DateTime>? timestamp,
     Value<int>? chronoId,
     Value<int>? sheetId,
-    Value<IMap<String, UpdateUnit>>? updates,
+    Value<IMap<String, SyncRequest>>? updates,
     Value<int>? rowid,
   }) {
     return UpdateHistoriesTableCompanion(
@@ -5341,7 +5341,7 @@ typedef $$UpdateHistoriesTableTableCreateCompanionBuilder =
       required DateTime timestamp,
       required int chronoId,
       required int sheetId,
-      required IMap<String, UpdateUnit> updates,
+      required IMap<String, SyncRequest> updates,
       Value<int> rowid,
     });
 typedef $$UpdateHistoriesTableTableUpdateCompanionBuilder =
@@ -5349,7 +5349,7 @@ typedef $$UpdateHistoriesTableTableUpdateCompanionBuilder =
       Value<DateTime> timestamp,
       Value<int> chronoId,
       Value<int> sheetId,
-      Value<IMap<String, UpdateUnit>> updates,
+      Value<IMap<String, SyncRequest>> updates,
       Value<int> rowid,
     });
 
@@ -5409,8 +5409,8 @@ class $$UpdateHistoriesTableTableFilterComposer
   );
 
   ColumnWithTypeConverterFilters<
-    IMap<String, UpdateUnit>,
-    IMap<String, UpdateUnit>,
+    IMap<String, SyncRequest>,
+    IMap<String, SyncRequest>,
     String
   >
   get updates => $composableBuilder(
@@ -5505,7 +5505,7 @@ class $$UpdateHistoriesTableTableAnnotationComposer
   GeneratedColumn<int> get chronoId =>
       $composableBuilder(column: $table.chronoId, builder: (column) => column);
 
-  GeneratedColumnWithTypeConverter<IMap<String, UpdateUnit>, String>
+  GeneratedColumnWithTypeConverter<IMap<String, SyncRequest>, String>
   get updates =>
       $composableBuilder(column: $table.updates, builder: (column) => column);
 
@@ -5572,7 +5572,7 @@ class $$UpdateHistoriesTableTableTableManager
                 Value<DateTime> timestamp = const Value.absent(),
                 Value<int> chronoId = const Value.absent(),
                 Value<int> sheetId = const Value.absent(),
-                Value<IMap<String, UpdateUnit>> updates = const Value.absent(),
+                Value<IMap<String, SyncRequest>> updates = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => UpdateHistoriesTableCompanion(
                 timestamp: timestamp,
@@ -5586,7 +5586,7 @@ class $$UpdateHistoriesTableTableTableManager
                 required DateTime timestamp,
                 required int chronoId,
                 required int sheetId,
-                required IMap<String, UpdateUnit> updates,
+                required IMap<String, SyncRequest> updates,
                 Value<int> rowid = const Value.absent(),
               }) => UpdateHistoriesTableCompanion.insert(
                 timestamp: timestamp,

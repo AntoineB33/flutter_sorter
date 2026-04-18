@@ -9,7 +9,7 @@ abstract class GridRepository {
   @useResult
   ChangeSet adjustRowHeightAfterUpdate(
     int sheetId,
-    IMap<String, UpdateUnit> updateData,
+    IMap<String, SyncRequest> updateData,
   );
   double getRowHeight(int sheetId, int rowId);
   int minRows(int sheetId, int rowCount, double height);

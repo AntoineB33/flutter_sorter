@@ -68,7 +68,7 @@ class GridController extends ChangeNotifier {
 
   void adjustRowHeightAfterUpdate(
     int sheetId,
-    IMap<String, UpdateUnit> updateData,
+    IMap<String, SyncRequest> updateData,
   ) {
     gridUsecase.adjustRowHeightAfterUpdate(sheetId, updateData);
   }
@@ -177,12 +177,12 @@ class GridController extends ChangeNotifier {
     double? row0TopToScreenBottomHeight =
         (heightViewport != null || heightPixels != null)
         ? (heightPixels ?? layout.scrollOffsetX) +
-                  (heightViewport ?? this.row0TopToScreenBottomHeight)
+              (heightViewport ?? this.row0TopToScreenBottomHeight)
         : null;
     double? colALeftToScreenRightWidth =
         (widthViewport != null || widthPixels != null)
         ? (widthPixels ?? layout.scrollOffsetY) +
-                  (widthViewport ?? this.colALeftToScreenRightWidth)
+              (widthViewport ?? this.colALeftToScreenRightWidth)
         : null;
     if (row0TopToScreenBottomHeight != null) {
       this.row0TopToScreenBottomHeight = row0TopToScreenBottomHeight;

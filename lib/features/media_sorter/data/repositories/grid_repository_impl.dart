@@ -157,7 +157,7 @@ class GridRepositoryImpl implements GridRepository {
   @override
   ChangeSet adjustRowHeightAfterUpdate(
     int sheetId,
-    IMap<String, UpdateUnit> updates,
+    IMap<String, SyncRequest> updates,
   ) {
     final ChangeSet changeSet = ChangeSet(initialChanges: updates);
     final layout = layoutCache.getLayout(sheetId);
@@ -296,6 +296,13 @@ class GridRepositoryImpl implements GridRepository {
   @override
   SheetDataUpdate setLayout(int sheetId, LayoutData layoutData) {
     layoutCache.setLayout(sheetId, layoutData);
-    return SheetDataUpdate(sheetId, true, colHeaderHeight: layoutData.colHeaderHeight, rowHeaderWidth: layoutData.rowHeaderWidth, scrollOffsetX: layoutData.scrollOffsetX, scrollOffsetY: layoutData.scrollOffsetY);
+    return SheetDataUpdate(
+      sheetId,
+      true,
+      colHeaderHeight: layoutData.colHeaderHeight,
+      rowHeaderWidth: layoutData.rowHeaderWidth,
+      scrollOffsetX: layoutData.scrollOffsetX,
+      scrollOffsetY: layoutData.scrollOffsetY,
+    );
   }
 }

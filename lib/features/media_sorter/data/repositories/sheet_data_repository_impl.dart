@@ -120,7 +120,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  Future<Either<Failure, IMap<String, UpdateUnit>>> pasteSelection() async {
+  Future<Either<Failure, IMap<String, SyncRequest>>> pasteSelection() async {
     final text = await _clipboardService.getText();
     if (text == null) return Left(ClipboardEmptyFailure());
     // if contains "
@@ -301,7 +301,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  ChangeSet update(IMap<String, UpdateUnit> updates, int sheetId) {
+  ChangeSet update(IMap<String, SyncRequest> updates, int sheetId) {
     return loadedSheetsCache.update(updates, sheetId);
   }
 }

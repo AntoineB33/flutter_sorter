@@ -109,7 +109,7 @@ class LoadedSheetsCache {
   }
 
   @useResult
-  ChangeSet update(IMap<String, UpdateUnit> updates, int sheetId) {
+  ChangeSet update(IMap<String, SyncRequest> updates, int sheetId) {
     final changeSet = ChangeSet();
     for (var update in updates.values) {
       switch (update) {

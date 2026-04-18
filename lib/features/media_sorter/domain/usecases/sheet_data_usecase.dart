@@ -44,8 +44,16 @@ class SheetDataUsecase {
   }
 
   @useResult
-  ColumnTypeUpdate getColumnTypeUpdate(int colId, ColumnType newColumnType, int sheetId) {
-    return sheetDataRepository.getColumnTypeUpdate(colId, newColumnType, sheetId);
+  ColumnTypeUpdate getColumnTypeUpdate(
+    int colId,
+    ColumnType newColumnType,
+    int sheetId,
+  ) {
+    return sheetDataRepository.getColumnTypeUpdate(
+      colId,
+      newColumnType,
+      sheetId,
+    );
   }
 
   CoreSheetContent getSheet(int sheetId) {
@@ -53,7 +61,7 @@ class SheetDataUsecase {
   }
 
   void applyUpdatesNoSort(
-    IMap<String, UpdateUnit> updates,
+    IMap<String, SyncRequest> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,
@@ -73,7 +81,7 @@ class SheetDataUsecase {
     return sheetDataRepository.delete();
   }
 
-  Future<Either<Failure, IMap<String, UpdateUnit>>> paste() {
+  Future<Either<Failure, IMap<String, SyncRequest>>> paste() {
     return sheetDataRepository.pasteSelection();
   }
 

@@ -8,7 +8,7 @@ abstract class HistoryRepository {
   UpdateData? moveInUpdateHistory(int direction);
   @useResult
   ChangeSet commitHistory(
-    IMap<String, UpdateUnit> updates,
+    IMap<String, SyncRequest> updates,
     int sheetId,
     bool isFromEditing,
   );

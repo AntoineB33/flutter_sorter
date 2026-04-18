@@ -63,7 +63,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
 
   @override
   ChangeSet commitHistory(
-    IMap<String, UpdateUnit> updates,
+    IMap<String, SyncRequest> updates,
     int sheetId,
     bool isFromEditing,
   ) {
@@ -156,7 +156,9 @@ class HistoryRepositoryImpl implements HistoryRepository {
     final historyData = HistoryData.empty();
     historyCache.setUpdateHistories(sheetId, historyData);
     final changeSet = ChangeSet();
-    changeSet.addUpdate(SheetDataUpdate(sheetId, true, historyIndex: historyData.historyIndex));
+    changeSet.addUpdate(
+      SheetDataUpdate(sheetId, true, historyIndex: historyData.historyIndex),
+    );
     return changeSet;
   }
 

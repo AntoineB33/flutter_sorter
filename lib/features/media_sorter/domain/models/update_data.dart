@@ -272,7 +272,7 @@ class UpdateData extends UpdateUnit {
   final DateTime timestamp;
   final int chronoId;
   final int sheetId;
-  final IMap<String, UpdateUnit> updates;
+  final IMap<String, SyncRequest> updates;
   bool addOtherwiseRemove;
   UpdateData(
     this.chronoId,

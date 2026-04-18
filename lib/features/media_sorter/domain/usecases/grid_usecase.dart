@@ -38,7 +38,7 @@ class GridUsecase {
 
   void adjustRowHeightAfterUpdate(
     int sheetId,
-    IMap<String, UpdateUnit> updateData,
+    IMap<String, SyncRequest> updateData,
   ) {
     saveRepository.save(
       gridRepository.adjustRowHeightAfterUpdate(sheetId, updateData),

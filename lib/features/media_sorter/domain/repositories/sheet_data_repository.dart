@@ -15,13 +15,17 @@ abstract class SheetDataRepository {
   @useResult
   ChangeSet delete();
   Future<void> copySelectionToClipboard();
-  Future<Either<Failure, IMap<String, UpdateUnit>>> pasteSelection();
+  Future<Either<Failure, IMap<String, SyncRequest>>> pasteSelection();
   String getCellContent(CellPosition cell, int sheetId);
   @useResult
-  ColumnTypeUpdate getColumnTypeUpdate(int colId, ColumnType newColumnType, int sheetId);
+  ColumnTypeUpdate getColumnTypeUpdate(
+    int colId,
+    ColumnType newColumnType,
+    int sheetId,
+  );
   Future<Either<Failure, Unit>> loadSheet(int sheetId);
   @useResult
   ChangeSet addNewSheet(int sheetId, String title);
   @useResult
-  ChangeSet update(IMap<String, UpdateUnit> updates, int sheetId);
+  ChangeSet update(IMap<String, SyncRequest> updates, int sheetId);
 }

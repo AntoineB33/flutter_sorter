@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:drift/drift.dart';
@@ -8,10 +9,24 @@ import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.d
 import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 
-sealed class AppTable extends Table {}
+sealed class DbCompanionWrapper {
+  UpdateCompanion<DataClass> get companion;
+}
+
+class SheetDataWrapper extends DbCompanionWrapper {
+  @override
+  final SheetDataTablesCompanion companion;
+  SheetDataWrapper(this.companion);
+}
+
+class SheetCellWrapper extends DbCompanionWrapper {
+  @override
+  final SheetCellsTableCompanion companion;
+  SheetCellWrapper(this.companion);
+}
 
 @DataClassName('SheetDataEntity')
-class SheetDataTables extends AppTable {
+class SheetDataTables extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get title => text()();
   DateTimeColumn get lastOpened => dateTime()();
@@ -20,7 +35,8 @@ class SheetDataTables extends AppTable {
   IntColumn get historyIndex => integer()();
   RealColumn get colHeaderHeight => real()();
   RealColumn get rowHeaderWidth => real()();
-  TextColumn get selectionHistory => text().map(const SelectionDataConverter())();
+  TextColumn get selectionHistory =>
+      text().map(const SelectionDataConverter())();
   RealColumn get scrollOffsetX => real()();
   RealColumn get scrollOffsetY => real()();
 
@@ -74,11 +90,11 @@ class SheetColumnTypesTable extends Table {
 }
 
 class UpdateUnitMapConverter
-    extends TypeConverter<IMap<String, UpdateUnit>, String> {
+    extends TypeConverter<IMap<String, SyncRequest>, String> {
   const UpdateUnitMapConverter();
 
   @override
-  IMap<String, UpdateUnit> fromSql(String fromDb) {
+  IMap<String, SyncRequest> fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as Map<String, dynamic>;
     return decoded.map((key, value) {
       return MapEntry(key, UpdateUnit.fromJson(value as Map<String, dynamic>));
@@ -86,7 +102,7 @@ class UpdateUnitMapConverter
   }
 
   @override
-  String toSql(IMap<String, UpdateUnit> value) {
+  String toSql(IMap<String, SyncRequest> value) {
     final encoded = value.map((key, val) => MapEntry(key, val.toJson()));
     return jsonEncode(encoded);
   }

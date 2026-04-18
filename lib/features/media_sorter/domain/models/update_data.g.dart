@@ -109,7 +109,7 @@ const _$ColumnTypeEnumMap = {
 UpdateData _$UpdateDataFromJson(Map<String, dynamic> json) => UpdateData(
   (json['chronoId'] as num).toInt(),
   (json['sheetId'] as num).toInt(),
-  IMap<String, UpdateUnit>.fromJson(
+  IMap<String, SyncRequest>.fromJson(
     json['updates'] as Map<String, dynamic>,
     (value) => value as String,
     (value) => UpdateUnit.fromJson(value as Map<String, dynamic>),
