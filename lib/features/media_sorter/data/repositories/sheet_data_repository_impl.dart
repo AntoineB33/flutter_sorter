@@ -128,7 +128,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       return Left(ClipboardUnsupportedCharactersFailure());
     }
 
-    final Map<String, UpdateUnit> updates = {};
+    final Map<String, SyncRequest> updates = {};
     final rows = text.split('\n');
     int startRow = selectionCache.primarySelectedCellX(currentSheetId);
     int startCol = selectionCache.primarySelectedCellY(currentSheetId);

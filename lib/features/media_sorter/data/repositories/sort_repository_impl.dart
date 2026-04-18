@@ -616,7 +616,7 @@ class SortRepositoryImpl implements SortRepository {
         }
       }
     }
-    final Map<String, UpdateUnit> updates = {};
+    final Map<String, SyncRequest> updates = {};
     for (CellPosition pos in sortedTable.keys) {
       final cellUpdate = CellUpdate(
         sheetId,

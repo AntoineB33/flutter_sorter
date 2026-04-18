@@ -5,7 +5,6 @@ import 'package:trying_flutter/features/media_sorter/data/datasources/app_databa
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/grid_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/history_repository_impl.dart';
-import 'package:trying_flutter/features/media_sorter/data/repositories/local_data_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/selection_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/sheet_data_repository_impl.dart';
 import 'package:trying_flutter/features/media_sorter/data/repositories/sort_repository_impl.dart';
@@ -43,7 +42,7 @@ Future<void> initMediaSorterDependencies() async {
 
   AppDatabase database = AppDatabase();
 
-  DriftLocalDataSource saveDataSource = DriftLocalDataSource(database);
+  DriftLocalDataSource saveDataSource = DriftLocalDataSource(database, isolateReceivePortsCache);
 
   LoadedSheetsCache loadedSheetsCache = LoadedSheetsCache();
   SortStatusCache sortStatusCache = SortStatusCache(loadedSheetsCache);

@@ -11,7 +11,6 @@ import 'package:trying_flutter/features/media_sorter/data/datasources/local_data
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/sort_progress_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/selection_controller.dart';
@@ -132,6 +131,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void setCellContent(String newValue) {
+    sheetDataController.setCellContent(newValue);
     int rowId = primarySelectedCellX;
     int colId = primarySelectedCellY;
     final cellUpdate = CellUpdate(
@@ -141,7 +141,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
       newValue,
       sheetDataController.getCellContentCurrentSheet(rowId, colId),
     );
-    Map<String, UpdateUnit> updates = {cellUpdate.getKey(): cellUpdate};
+    Map<String, SyncRequest> updates = {cellUpdate.getKey(): cellUpdate};
     applyUpdatesAndSort(
       updates.lock,
       currentSheetId,
@@ -460,7 +460,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
         ColumnType.dependencies,
       ),
     ];
-    Map<String, UpdateUnit> updates = {
+    Map<String, SyncRequest> updates = {
       for (var update in updatesLst) update.getKey(): update,
     };
     applyUpdatesAndSort(updates.lock, currentSheetId, false, false, false);

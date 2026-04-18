@@ -88,4 +88,17 @@ class SheetDataUsecase {
   Future<void> copyToClipboard() {
     return sheetDataRepository.copySelectionToClipboard();
   }
+
+  void setCellContent(String newValue, int sheetId) {
+    final int rowId = selectionRepository.primarySelectedCellX;
+    final int colId = selectionRepository.primarySelectedCellY;
+    final CellUpdate cellUpdate = CellUpdate(
+      CellPosition(rowId, colId),
+      newValue,
+    );
+    applyUpdatesNoSort(
+      IMap<String, SyncRequest>({cellUpdate.getKey(): cellUpdate}),
+      sheetId,
+      false,
+      true,
 }

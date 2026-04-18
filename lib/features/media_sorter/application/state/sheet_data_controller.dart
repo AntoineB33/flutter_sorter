@@ -69,4 +69,8 @@ class SheetDataController extends ChangeNotifier {
       isFromEditing,
     );
   }
+
+  void setCellContent(String newValue) {
+    sheetDataUsecase.setCellContent(newValue, currentSheetId);
+  }
 }
