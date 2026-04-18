@@ -1,10 +1,16 @@
+import 'dart:async';
+
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 import 'package:drift/drift.dart';
+import 'package:trying_flutter/utils/logger.dart';
 
 class SheetIdAndLastOpened {
   final int sheetId;
@@ -14,9 +20,12 @@ class SheetIdAndLastOpened {
 }
 
 abstract class ILocalDataSource {
-  Future<void> batchInsertOrUpdate(List<UpdateUnit> items);
+  void saveUpdate(UpdateUnit update);
+  void save(ChangeSet updates);
+  void dispose();
+  Future<void> batchInsertOrUpdate(List<UpdateCompanion> items);
   Future<List<SheetIdAndLastOpened>> getSheetIdAndLastOpened();
-  Future<SheetDataEntity> getSheetDataEntity(int sheetId);
+  Future<SheetDataUpdate> getSheetDataEntity(int sheetId);
   Future<List<SheetCellEntity>> getSheetCellEntities(int sheetId);
   Future<List<SheetColumnTypeEntity>> getSheetColumnTypeEntities(int sheetId);
   Future<List<UpdateHistoriesEntity>> getUpdateHistoriesEntities(int sheetId);
@@ -30,188 +39,157 @@ abstract class ILocalDataSource {
   Future<void> clearAllData();
 }
 
-class DriftLocalDataSource implements ILocalDataSource {
+class DriftLocalDataSource with WidgetsBindingObserver implements ILocalDataSource {
   final AppDatabase db;
 
-  DriftLocalDataSource(this.db);
   
+  final ILocalDataSource _localDataSource;
+
+  // The Map acts as our cache. Using the entity's ID as the key
+  // guarantees the "latest wins" behavior automatically.
+  final Map<String, UpdateUnit> _pendingSaves = {};
+
+  // The trigger for our debounce logic
+  final PublishSubject<void> _saveTrigger = PublishSubject<void>();
+  StreamSubscription? _saveSubscription;
+
+  DriftLocalDataSource(
+    this.db,
+    this._localDataSource,
+  ) {
+    // Listen to app lifecycle changes (pause, background, etc.)
+    WidgetsBinding.instance.addObserver(this);
+
+    // Set up the debounce listener
+    _saveSubscription = _saveTrigger
+        .debounceTime(
+          const Duration(milliseconds: 500),
+        ) // Adjust time as needed
+        .listen((_) => _flushToDatabase());
+  }
+
+  @override
+  void saveUpdate(UpdateUnit update) {
+    save(ChangeSet()..addUpdate(update));
+  }
+
+  @override
+  void save(ChangeSet updates) {
+    for (var update in updates.toMap().values) {
+      _pendingSaves.update(
+        update.getKey(),
+        (existing) => existing.merge(update),
+        ifAbsent: () => update,
+      );
+      _saveTrigger.add(null);
+    }
+  }
+
+  /// Takes the current cache, clears it, and writes to Drift
+  Future<void> _flushToDatabase() async {
+    if (_pendingSaves.isEmpty) return;
+
+    // 1. Extract the items AND clear the map synchronously.
+    // Doing this immediately prevents asynchronous race conditions where
+    // a Use Case might add a new item while the DB is busy writing.
+    final itemsToSave = _pendingSaves.values.toList();
+    _pendingSaves.clear();
+
+    // 2. Write to the database
+    try {
+      await _localDataSource.batchInsertOrUpdate(itemsToSave);
+    } catch (e) {
+      // ERROR HANDLING: If the save fails, we return the items to the cache.
+      // We use putIfAbsent so we don't accidentally overwrite newer edits
+      // that a user might have made while the DB was failing.
+      for (var item in itemsToSave) {
+        _pendingSaves.putIfAbsent(item.getKey(), () => item);
+      }
+      logger.e("Database save failed. Items returned to cache. Error: $e");
+    }
+  }
+
+  /// App Lifecycle Hook
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // If the user minimizes the app or it gets killed, force a save immediately.
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached ||
+        state == AppLifecycleState.hidden) {
+      logger.i("App going to background! Forcing emergency flush...");
+      _flushToDatabase();
+    }
+  }
+
+  /// Clean up when the repository is destroyed
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _saveSubscription?.cancel();
+    _saveTrigger.close();
+    // Do one final flush just in case
+    _flushToDatabase();
+  }
+
   Value<T> _nullableToValue<T>(T? itemField) {
     return itemField != null ? Value(itemField) : const Value.absent();
   }
 
   @override
-  Future<void> batchInsertOrUpdate(List<UpdateUnit> items) async {
+  Future<void> batchInsertOrUpdate(List<UpdateCompanion> items) async {
     await db.batch((batch) {
-      for (final item in items) {
-        switch (item) {
-          case SheetDataUpdate():
-            List<int>? usedRows;
-            List<int>? usedCols;
+      for (final companion in items) {
+        final expressions = companion.toColumns(false);
+        final presentCount = expressions.length;
+        switch (companion) {
+          case SheetDataTablesCompanion():
+            final totalColumns = db.sheetDataTables.$columns.length;
 
-            List<int>? bestSortFound;
-            List<int>? bestDistFound;
-            List<int>? cursors;
-
-            double? colHeaderHeight;
-            double? rowHeaderWidth;
-            double? scrollOffsetX;
-            double? scrollOffsetY;
-
-            bool? sortInProgress;
-            bool? toApplyNextBestSort;
-            bool? toAlwaysApplyCurrentBestSort;
-            bool? analysisDone;
-
-  
-            for (final field in item.listIntFields.keys) {
-              switch (field) {
-                case SheetDataUpdateFieldListInt.usedRows:
-                  usedRows = item.listIntFields[SheetDataUpdateFieldListInt.usedRows]!;
-                  break;
-                case SheetDataUpdateFieldListInt.usedCols:
-                  usedCols = item.listIntFields[SheetDataUpdateFieldListInt.usedCols]!;
-                  break;
-                case SheetDataUpdateFieldListInt.bestSortFound:
-                  bestSortFound = item.listIntFields[SheetDataUpdateFieldListInt.bestSortFound]!;
-                  break;
-                case SheetDataUpdateFieldListInt.bestDistFound:
-                  bestDistFound = item.listIntFields[SheetDataUpdateFieldListInt.bestDistFound]!;
-                  break;
-                case SheetDataUpdateFieldListInt.cursors:
-                  cursors = item.listIntFields[SheetDataUpdateFieldListInt.cursors]!;
-                  break;
-              }
-            }
-
-            for (final field in item.doubleFields.keys) {
-              switch (field) {
-                case SheetDataUpdateFieldDouble.rowHeaderWidth:
-                  rowHeaderWidth = item.doubleFields[SheetDataUpdateFieldDouble.rowHeaderWidth]!;
-                  break;
-                case SheetDataUpdateFieldDouble.prevRowHeaderWidth:
-                  // field used for history
-                  break;
-                case SheetDataUpdateFieldDouble.colHeaderHeight:
-                  colHeaderHeight = item.doubleFields[SheetDataUpdateFieldDouble.colHeaderHeight]!;
-                  break;
-                case SheetDataUpdateFieldDouble.prevColHeaderHeight:
-                  // field used for history
-                  break;
-                case SheetDataUpdateFieldDouble.scrollOffsetX:
-                  scrollOffsetX = item.doubleFields[SheetDataUpdateFieldDouble.scrollOffsetX]!;
-                  break;
-                case SheetDataUpdateFieldDouble.scrollOffsetY:
-                  scrollOffsetY = item.doubleFields[SheetDataUpdateFieldDouble.scrollOffsetY]!;
-                  break;
-              }
-            }
-
-            for (final field in item.boolFields.keys) {
-              switch (field) {
-                case SheetDataUpdateFieldBool.sortInProgress:
-                  sortInProgress = item.boolFields[SheetDataUpdateFieldBool.sortInProgress]!;
-                  break;
-                case SheetDataUpdateFieldBool.toApplyNextBestSort:
-                  toApplyNextBestSort = item.boolFields[SheetDataUpdateFieldBool.toApplyNextBestSort]!;
-                  break;
-                case SheetDataUpdateFieldBool.toAlwaysApplyCurrentBestSort:
-                  toAlwaysApplyCurrentBestSort = item.boolFields[SheetDataUpdateFieldBool.toAlwaysApplyCurrentBestSort]!;
-                  break;
-                case SheetDataUpdateFieldBool.analysisDone:
-                  analysisDone = item.boolFields[SheetDataUpdateFieldBool.analysisDone]!;
-                  break;
-              }
-            }
-
-            final companion = SheetDataTablesCompanion(
-              id: Value(item.sheetId),
-              title: item.newName != null
-                  ? Value(item.newName!)
-                  : Value.absent(),
-              lastOpened: item.lastOpened != null
-                  ? Value(item.lastOpened!)
-                  : Value.absent(),
-              usedRows: _nullableToValue(usedRows),
-              usedCols: _nullableToValue(usedCols),
-              historyIndex: item.historyIndex != null
-                  ? Value(item.historyIndex!)
-                  : Value.absent(),
-              colHeaderHeight: _nullableToValue(colHeaderHeight),
-              rowHeaderWidth: _nullableToValue(rowHeaderWidth),
-              selectionHistory: item.selectionHistory != null
-                  ? Value(item.selectionHistory!)
-                  : Value.absent(),
-              scrollOffsetX: _nullableToValue(scrollOffsetX),
-              scrollOffsetY: _nullableToValue(scrollOffsetY),
-              bestSortFound: _nullableToValue(bestSortFound),
-              bestDistFound: _nullableToValue(bestDistFound),
-              cursors: _nullableToValue(cursors),
-              possibleInts: item.possibleInts != null
-                  ? Value(item.possibleInts!)
-                  : Value.absent(),
-              validAreas: item.validAreas != null
-                  ? Value(item.validAreas!)
-                  : Value.absent(),
-              sortIndex: item.sortIndex != null
-                  ? Value(item.sortIndex!)
-                  : Value.absent(),
-              analysisResult: item.analysisResult != null
-                  ? Value(item.analysisResult!)
-                  : Value.absent(),
-              sortInProgress: _nullableToValue(sortInProgress),
-              toApplyNextBestSort: _nullableToValue(toApplyNextBestSort),
-              analysisDone: _nullableToValue(analysisDone),
-              toAlwaysApplyCurrentBestSort: _nullableToValue(toAlwaysApplyCurrentBestSort),
-            );
-            if (item.addOtherwiseRemove) {
-              // 1. Check if all required fields are present
-              final hasAllRequiredFields = item.toJson().values.every((value) => value != null);
-
-
-              if (hasAllRequiredFields) {
-                // 2. If we have a complete set of data, we can safely insert or replace
-                batch.insert(
-                  db.sheetDataTables,
-                  companion,
-                  mode: InsertMode.insertOrReplace,
-                );
-              } else {
-                // 3. If we only have partial data (like just selectionHistory), we MUST update.
-                // Note: If the row doesn't exist, this simply updates nothing.
-                batch.update(
-                  db.sheetDataTables,
-                  companion,
-                );
-              }
-            } else {
+            // 1. DELETE: Only 1 field is present, and we verify it is the ID.
+            if (presentCount == 1 && companion.id.present) {
               batch.delete(db.sheetDataTables, companion);
+            } 
+            // 2. INSERT OR REPLACE: All fields are present.
+            else if (presentCount == totalColumns) {
+              batch.insert(
+                db.sheetDataTables,
+                companion,
+                mode: InsertMode.insertOrReplace,
+              );
+            } 
+            // 3. PARTIAL UPDATE: Some fields are missing.
+            else {
+              batch.update(db.sheetDataTables, companion);
             }
             break;
-          case CellUpdate():
-            // Create a companion object mapped to your SheetCells table
-            final companion = SheetCellsTableCompanion(
-              sheetId: Value(item.sheetId),
-              row: Value(item.rowId),
-              col: Value(item.colId),
-              content: Value(item.newValue),
-            );
-            if (item.newValue.isNotEmpty) {
+          case SheetCellsTableCompanion():
+            final totalColumns = db.sheetCellsTable.$columns.length;
+
+            // 1. DELETE: Only the identifying fields are present (sheetId, rowId, colId).
+            if (presentCount == 3 && companion.sheetId.present && companion.row.present && companion.col.present) {
+              batch.delete(db.sheetCellsTable, companion);
+            }
+
+            // 2. INSERT OR REPLACE: All fields are present.
+            else if (presentCount == totalColumns) {
               batch.insert(
                 db.sheetCellsTable,
                 companion,
                 mode: InsertMode.insertOrReplace,
               );
-            } else {
-              batch.delete(db.sheetCellsTable, companion);
+            }
+            // 3. PARTIAL UPDATE: Some fields are missing.
+            else {
+              batch.update(db.sheetCellsTable, companion);
             }
             break;
           case ColumnTypeUpdate():
             final companion = SheetColumnTypesTableCompanion(
-              sheetId: Value(item.sheetId),
-              columnIndex: Value(item.colId),
-              columnType: Value(item.newColumnType),
+              sheetId: Value(companion.sheetId),
+              columnIndex: Value(companion.colId),
+              columnType: Value(companion.newColumnType),
             );
-            if (item.newColumnType != ColumnType.attributes) {
+            if (companion.newColumnType != ColumnType.attributes) {
               batch.insert(
                 db.sheetColumnTypesTable,
                 companion,
@@ -222,7 +200,7 @@ class DriftLocalDataSource implements ILocalDataSource {
             }
             break;
           case UpdateData():
-            UpdateData updateData = item;
+            UpdateData updateData = companion;
             if (updateData.addOtherwiseRemove) {
               batch.insert(
                 db.updateHistoriesTable,
@@ -245,13 +223,13 @@ class DriftLocalDataSource implements ILocalDataSource {
             break;
           case RowsBottomPosUpdate():
             final companion = RowsBottomPosTableCompanion(
-              sheetId: Value(item.sheetId),
-              rowIndex: Value(item.rowIndex),
-              bottomPos: item.newBottomPos != null
-                  ? Value(item.newBottomPos!)
+              sheetId: Value(companion.sheetId),
+              rowIndex: Value(companion.rowIndex),
+              bottomPos: companion.newBottomPos != null
+                  ? Value(companion.newBottomPos!)
                   : Value.absent(),
             );
-            if (item.newBottomPos != null) {
+            if (companion.newBottomPos != null) {
               batch.insert(
                 db.rowsBottomPosTable,
                 companion,
@@ -263,11 +241,11 @@ class DriftLocalDataSource implements ILocalDataSource {
             break;
           case ColRightPosUpdate():
             final companion = ColRightPosTableCompanion(
-              sheetId: Value(item.sheetId),
-              colIndex: Value(item.colIndex),
-              rightPos: Value(item.newRightPos),
+              sheetId: Value(companion.sheetId),
+              colIndex: Value(companion.colIndex),
+              rightPos: Value(companion.newRightPos),
             );
-            if (item.addOtherwiseRemove) {
+            if (companion.addOtherwiseRemove) {
               batch.insert(
                 db.colRightPosTable,
                 companion,
@@ -279,11 +257,11 @@ class DriftLocalDataSource implements ILocalDataSource {
             break;
           case RowsManuallyAdjustedHeightUpdate():
             final companion = RowsManuallyAdjustedHeightTableCompanion(
-              sheetId: Value(item.sheetId),
-              rowIndex: Value(item.rowIndex),
-              manuallyAdjusted: Value(item.manuallyAdjusted),
+              sheetId: Value(companion.sheetId),
+              rowIndex: Value(companion.rowIndex),
+              manuallyAdjusted: Value(companion.manuallyAdjusted),
             );
-            if (item.addOtherwiseRemove) {
+            if (companion.addOtherwiseRemove) {
               batch.insert(
                 db.rowsManuallyAdjustedHeightTable,
                 companion,
@@ -295,11 +273,11 @@ class DriftLocalDataSource implements ILocalDataSource {
             break;
           case ColsManuallyAdjustedWidthUpdate():
             final companion = ColsManuallyAdjustedWidthTableCompanion(
-              sheetId: Value(item.sheetId),
-              colIndex: Value(item.colIndex),
-              manuallyAdjusted: Value(item.manuallyAdjusted),
+              sheetId: Value(companion.sheetId),
+              colIndex: Value(companion.colIndex),
+              manuallyAdjusted: Value(companion.manuallyAdjusted),
             );
-            if (item.addOtherwiseRemove) {
+            if (companion.addOtherwiseRemove) {
               batch.insert(
                 db.colsManuallyAdjustedWidthTable,
                 companion,
@@ -338,7 +316,7 @@ class DriftLocalDataSource implements ILocalDataSource {
   }
 
   @override
-  Future<SheetDataEntity> getSheetDataEntity(int sheetId) async {
+  Future<SheetDataUpdate> getSheetDataEntity(int sheetId) async {
     try {
       final query = db.select(db.sheetDataTables)
         ..where((table) => table.id.equals(sheetId));

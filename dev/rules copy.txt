@@ -4,7 +4,7 @@ Controller --> holds a pointer to UseCase
 
 UseCase --> holds a pointer to Repository Interface
 
-Repository Impl --> holds pointers to ILocalDataSource
+Repository Impl --> holds pointers to LocalDataSource and RemoteDataSource
 
 
 
