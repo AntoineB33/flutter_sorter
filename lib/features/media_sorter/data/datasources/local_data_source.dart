@@ -7,11 +7,10 @@ import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 import 'package:drift/drift.dart';
 import 'package:trying_flutter/utils/logger.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/sync_request.dart';
 
 class SheetIdAndLastOpened {
   final int sheetId;
@@ -69,15 +68,15 @@ class DriftLocalDataSource
 
   @override
   void saveUpdate(SyncRequest update) {
-    save(ChangeSet()..addUpdate(update));
+    save(ChangeSetImpl()..addUpdate(update as SyncRequestImpl));
   }
 
   @override
   void save(ChangeSet updates) {
-    for (var update in updates.toMap().values) {
+    for (final update in updates.toMap().values) {
       _pendingSaves.update(
-        update.getKey(),
-        (existing) => existing.merge(update),
+        (update as SyncRequestImpl).getKey(),
+        (existing) => (existing as SyncRequestImpl).merge(update),
         ifAbsent: () => update,
       );
       _saveTrigger.add(null);

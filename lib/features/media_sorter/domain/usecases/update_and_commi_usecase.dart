@@ -11,13 +11,13 @@ class UpdateAndCommiUsecase {
   );
 
   void setCellContent(String newValue, int sheetId) {
-    final update = sheetDataUsecase.getCellContentUpdate(newValue, sheetId);
+    final update = sheetDataUsecase.setCellContent(newValue, sheetId);
     sheetDataUsecase.applyUpdatesNoSort(
       IMap<String, SyncRequest>({update.id: update}),
       sheetId,
       false,
       true,
     );
-    historyUsecase.addToHistory(update, sheetId);
+    historyUsecase.commitHistory(update, sheetId);
   }
 }

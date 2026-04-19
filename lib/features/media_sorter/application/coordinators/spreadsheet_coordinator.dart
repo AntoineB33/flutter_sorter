@@ -433,12 +433,12 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyDefaultColumnSequence() {
-    final updates = setColumnType(1, ColumnType.dependencies);
-    updates.merge(setColumnType(2, ColumnType.dependencies));
-    updates.merge(setColumnType(3, ColumnType.dependencies));
-    updates.merge(setColumnType(7, ColumnType.urls));
-    updates.merge(setColumnType(8, ColumnType.dependencies));
-    applyUpdatesAndSort(updates.lock, currentSheetId, false, false, false);
+    final updates = sheetDataController.setColumnType(1, ColumnType.dependencies);
+    updates.merge(sheetDataController.setColumnType(2, ColumnType.dependencies));
+    updates.merge(sheetDataController.setColumnType(3, ColumnType.dependencies));
+    updates.merge(sheetDataController.setColumnType(7, ColumnType.urls));
+    updates.merge(sheetDataController.setColumnType(8, ColumnType.dependencies));
+    applyUpdatesAndSort(updates.toMap(), currentSheetId, false, false, false);
   }
 
   void onCellSave(bool moveUp) {
