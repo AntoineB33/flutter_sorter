@@ -162,17 +162,12 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  ColumnTypeUpdate getColumnTypeUpdate(
+  ChangeSet setColumnType(
     int colId,
     ColumnType newColumnType,
     int sheetId,
   ) {
-    return ColumnTypeUpdate(
-      sheetId,
-      colId,
-      newColumnType,
-      loadedSheetsCache.getColumnType(sheetId, colId),
-    );
+    loadedSheetsCache.setColumnType(sheetId, colId, newColumnType);
   }
 
   @override

@@ -433,28 +433,11 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyDefaultColumnSequence() {
-    final updatesLst = [
-      sheetDataController.getCurrentSheetColumnTypeUpdate(
-        1,
-        ColumnType.dependencies,
-      ),
-      sheetDataController.getCurrentSheetColumnTypeUpdate(
-        2,
-        ColumnType.dependencies,
-      ),
-      sheetDataController.getCurrentSheetColumnTypeUpdate(
-        3,
-        ColumnType.dependencies,
-      ),
-      sheetDataController.getCurrentSheetColumnTypeUpdate(7, ColumnType.urls),
-      sheetDataController.getCurrentSheetColumnTypeUpdate(
-        8,
-        ColumnType.dependencies,
-      ),
-    ];
-    Map<String, SyncRequest> updates = {
-      for (var update in updatesLst) update.getKey(): update,
-    };
+    final updates = setColumnType(1, ColumnType.dependencies);
+    updates.merge(setColumnType(2, ColumnType.dependencies));
+    updates.merge(setColumnType(3, ColumnType.dependencies));
+    updates.merge(setColumnType(7, ColumnType.urls));
+    updates.merge(setColumnType(8, ColumnType.dependencies));
     applyUpdatesAndSort(updates.lock, currentSheetId, false, false, false);
   }
 
@@ -476,10 +459,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void setColumnType(int col, ColumnType type) {
-    final update = sheetDataController.getCurrentSheetColumnTypeUpdate(
-      col,
-      type,
-    );
+    final updates = sheetDataController.setColumnType(col, type);
     applyUpdatesAndSort(updates.toMap(), currentSheetId, false, false, false);
   }
 

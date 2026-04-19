@@ -45,16 +45,8 @@ class SheetDataUsecase {
   }
 
   @useResult
-  ColumnTypeUpdate getColumnTypeUpdate(
-    int colId,
-    ColumnType newColumnType,
-    int sheetId,
-  ) {
-    return sheetDataRepository.getColumnTypeUpdate(
-      colId,
-      newColumnType,
-      sheetId,
-    );
+  ChangeSet setColumnType(int colId, ColumnType newColumnType, int sheetId) {
+    return sheetDataRepository.setColumnType(colId, newColumnType, sheetId);
   }
 
   CoreSheetContent getSheet(int sheetId) {

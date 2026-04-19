@@ -1,6 +1,8 @@
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 

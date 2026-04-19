@@ -41,15 +41,8 @@ class SheetDataController extends ChangeNotifier {
   }
 
   @useResult
-  ChangeSet getCurrentSheetColumnTypeUpdate(
-    int colId,
-    ColumnType newColumnType,
-  ) {
-    return sheetDataUsecase.getColumnTypeUpdate(
-      colId,
-      newColumnType,
-      currentSheetId,
-    );
+  ChangeSet setColumnType(int colId, ColumnType newColumnType) {
+    return sheetDataUsecase.setColumnType(colId, newColumnType, currentSheetId);
   }
 
   @useResult

@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
@@ -109,29 +110,19 @@ class LoadedSheetsCache {
   }
 
   @useResult
-  ChangeSet update(IMap<String, SyncRequest> updates, int sheetId) {
-    final changeSet = ChangeSet();
-    for (var update in updates.values) {
-      switch (update) {
-        case CellUpdate():
-          changeSet.merge(_updateCell(sheetId, update));
-          break;
-        case ColumnTypeUpdate():
-          _setColumnType(sheetId, update);
-          break;
-        case SheetDataUpdate():
-          if (update.newName != null) {
-            _loadedSheetsData[sheetId]!.title = update.newName!;
-          }
-          break;
-        default:
-          break;
-      }
-    }
-    return changeSet;
+  ChangeSet renameSheet(int sheetId, String newName) {
+    _loadedSheetsData[sheetId]!.title = newName;
+    return ChangeSetImpl()
+      ..addUpdate(
+        SheetDataUpdate(
+          sheetId,
+          true,
+          title: newName,
+        ),
+      );
   }
 
-  void _setColumnType(int sheetId, ColumnTypeUpdate update) {
+  void setColumnType(int sheetId, ColumnTypeUpdate update) {
     int col = update.colId;
     ColumnType type = update.newColumnType;
     final sheet = _loadedSheetsData[sheetId]!;

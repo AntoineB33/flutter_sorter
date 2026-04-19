@@ -79,6 +79,12 @@ class SheetCellWrapper extends DbCompanionWrapper {
   SheetCellWrapper(this.companion);
 }
 
+class HistoryWrapper extends DbCompanionWrapper {
+  @override
+  final UpdateHistoriesTableCompanion companion;
+  HistoryWrapper(this.companion);
+}
+
 @DataClassName('SheetDataEntity')
 class SheetDataTables extends Table {
   IntColumn get id => integer().autoIncrement()();
