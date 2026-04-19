@@ -92,71 +92,83 @@ class _SideMenuState extends State<SideMenu> {
 
           const SizedBox(height: 10),
 
-          Row(
-            children: [
-              ElevatedButton(
-                onPressed: sortController.isReorderBetterButtonLocked()
-                    ? null
-                    : coordinator.reorderBetterButton,
-                child: const Text("Find better sort"),
-              ),
-              const SizedBox(width: 16),
-              Text(
-                sortController.isSortedWithValidSort()
-                    ? "Sorted"
-                    : "Not Sorted",
-              ),
-            ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            // Prevents the user from manually scrolling the hidden text back into view
+            physics: const NeverScrollableScrollPhysics(), 
+            child: Row(
+              children: [
+                ElevatedButton(
+                  onPressed: sortController.isReorderBetterButtonLocked()
+                      ? null
+                      : coordinator.reorderBetterButton,
+                  child: const Text("Find better sort"),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  sortController.isSortedWithValidSort()
+                      ? "Sorted"
+                      : "Not Sorted",
+                  // Ensuring the text itself never tries to wrap down
+                  softWrap: false, 
+                ),
+              ],
+            ),
           ),
           
           const SizedBox(height: 10),
-
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min, // Compresses the column to fit its children
-            children: [
-              // --- Toggle 1 ---
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Transform.scale(
-                    scale: 0.7, // Keeps the switch small
-                    child: Switch(
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // Removes extra padding
-                      value: sortController.isFindingBestSort(),
-                      onChanged: coordinator.findBestSortToggle,
+SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const NeverScrollableScrollPhysics(), // Prevents manual scrolling
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min, 
+              children: [
+                // --- Toggle 1 ---
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Transform.scale(
+                      scale: 0.7, 
+                      child: Switch(
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, 
+                        value: sortController.isFindingBestSort(),
+                        onChanged: coordinator.findBestSortToggle,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    'Find best sort',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                ],
-              ),
-
-              // --- Toggle 2 ---
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Transform.scale(
-                    scale: 0.7,
-                    child: Switch(
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      value: sortController.isCurrentBestSortAlwaysApplied(),
-                      onChanged: sortController.isAlwaysApplySortToggleLocked()
-                          ? null
-                          : coordinator.alwaysApplySortToggle,
+                    const SizedBox(width: 4),
+                    const Text(
+                      'Find best sort',
+                      style: TextStyle(fontSize: 12),
+                      softWrap: false, // Ensures text doesn't try to wrap to a new line
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    'Apply best sort automatically',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+
+                // --- Toggle 2 ---
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Transform.scale(
+                      scale: 0.7,
+                      child: Switch(
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        value: sortController.isCurrentBestSortAlwaysApplied(),
+                        onChanged: sortController.isAlwaysApplySortToggleLocked()
+                            ? null
+                            : coordinator.alwaysApplySortToggle,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Text(
+                      'Apply best sort automatically',
+                      style: TextStyle(fontSize: 12),
+                      softWrap: false, // Ensures text doesn't try to wrap to a new line
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
           
           const SizedBox(height: 20),
