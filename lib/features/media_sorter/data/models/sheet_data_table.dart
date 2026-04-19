@@ -3,22 +3,22 @@ import 'dart:convert';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:drift/drift.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/sync_request.dart';
 
 
-class SyncRequest {
+class SyncRequestImpl implements SyncRequest {
   final DbCompanionWrapper companion;
   final DataBaseOperationType dataBaseOperationType;
 
-  SyncRequest(this.companion, this.dataBaseOperationType);
+  SyncRequestImpl(this.companion, this.dataBaseOperationType);
 
-  SyncRequest merge(SyncRequest other) {
+  SyncRequestImpl merge(SyncRequestImpl other) {
     if (other.dataBaseOperationType == DataBaseOperationType.delete) {
-      return SyncRequest(other.companion, DataBaseOperationType.delete);
+      return SyncRequestImpl(other.companion, DataBaseOperationType.delete);
     } else {
       DbCompanionWrapper companion = this.companion;
       DataBaseOperationType dataBaseOperationType;

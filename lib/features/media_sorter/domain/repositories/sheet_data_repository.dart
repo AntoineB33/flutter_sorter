@@ -28,4 +28,6 @@ abstract class SheetDataRepository {
   ChangeSet addNewSheet(int sheetId, String title);
   @useResult
   ChangeSet update(IMap<String, SyncRequest> updates, int sheetId);
+  @useResult
+  ChangeSet setCellContent(String newValue, int sheetId);
 }

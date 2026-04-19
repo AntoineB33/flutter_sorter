@@ -8,6 +8,7 @@ import 'package:trying_flutter/features/media_sorter/application/state/history_c
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/sort_progress_data.dart';
@@ -131,19 +132,9 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void setCellContent(String newValue) {
-    sheetDataController.setCellContent(newValue);
-    int rowId = primarySelectedCellX;
-    int colId = primarySelectedCellY;
-    final cellUpdate = CellUpdate(
-      currentSheetId,
-      rowId,
-      colId,
-      newValue,
-      sheetDataController.getCellContentCurrentSheet(rowId, colId),
-    );
-    Map<String, SyncRequest> updates = {cellUpdate.getKey(): cellUpdate};
+    final changeSet = sheetDataController.setCellContent(newValue);
     applyUpdatesAndSort(
-      updates.lock,
+      changeSet.toMap(),
       currentSheetId,
       false,
       false,

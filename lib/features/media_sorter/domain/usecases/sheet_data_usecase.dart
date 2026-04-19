@@ -4,6 +4,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
@@ -89,16 +90,8 @@ class SheetDataUsecase {
     return sheetDataRepository.copySelectionToClipboard();
   }
 
-  void setCellContent(String newValue, int sheetId) {
-    final int rowId = selectionRepository.primarySelectedCellX;
-    final int colId = selectionRepository.primarySelectedCellY;
-    final CellUpdate cellUpdate = CellUpdate(
-      CellPosition(rowId, colId),
-      newValue,
-    );
-    applyUpdatesNoSort(
-      IMap<String, SyncRequest>({cellUpdate.getKey(): cellUpdate}),
-      sheetId,
-      false,
-      true,
+  @useResult
+  ChangeSet setCellContent(String newValue, int sheetId) {
+    return sheetDataRepository.setCellContent(newValue, sheetId);
+  }
 }

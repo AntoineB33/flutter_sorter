@@ -5,6 +5,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
@@ -70,7 +71,8 @@ class SheetDataController extends ChangeNotifier {
     );
   }
 
-  void setCellContent(String newValue) {
-    sheetDataUsecase.setCellContent(newValue, currentSheetId);
+  @useResult
+  ChangeSet setCellContent(String newValue) {
+    return sheetDataUsecase.setCellContent(newValue, currentSheetId);
   }
 }
