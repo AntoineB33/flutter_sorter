@@ -41,7 +41,7 @@ class SheetDataController extends ChangeNotifier {
   }
 
   @useResult
-  ColumnTypeUpdate getCurrentSheetColumnTypeUpdate(
+  ChangeSet getCurrentSheetColumnTypeUpdate(
     int colId,
     ColumnType newColumnType,
   ) {

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
@@ -47,7 +48,7 @@ class SyncRequestImpl implements SyncRequest {
           dataBaseOperationType = DataBaseOperationType.update;
         }
       }
-      return SyncRequest(companion, dataBaseOperationType);
+      return SyncRequestImpl(companion, dataBaseOperationType);
     }
   }
 
@@ -142,21 +143,18 @@ class SheetColumnTypesTable extends Table {
   Set<Column> get primaryKey => {sheetId, columnIndex};
 }
 
-class UpdateUnitMapConverter
-    extends TypeConverter<IMap<String, SyncRequest>, String> {
-  const UpdateUnitMapConverter();
+class ChangeSetMapConverter extends TypeConverter<ChangeSetImpl, String> {
+  const ChangeSetMapConverter();
 
   @override
-  IMap<String, SyncRequest> fromSql(String fromDb) {
+  ChangeSetImpl fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as Map<String, dynamic>;
-    return decoded.map((key, value) {
-      return MapEntry(key, SyncRequest.fromJson(value as Map<String, dynamic>));
-    }).lock;
+    return ChangeSetImpl.fromJson(decoded);
   }
 
   @override
-  String toSql(IMap<String, SyncRequest> value) {
-    final encoded = value.map((key, val) => MapEntry(key, val.toJson()));
+  String toSql(ChangeSetImpl value) {
+    final encoded = value.toJson();
     return jsonEncode(encoded);
   }
 }
@@ -166,7 +164,7 @@ class UpdateHistoriesTable extends Table {
   DateTimeColumn get timestamp => dateTime()();
   IntColumn get chronoId => integer()();
   IntColumn get sheetId => integer().references(SheetDataTables, #id)();
-  TextColumn get updates => text().map(const UpdateUnitMapConverter())();
+  TextColumn get updates => text().map(const ChangeSetMapConverter())();
 
   @override
   Set<Column> get primaryKey => {timestamp, chronoId};

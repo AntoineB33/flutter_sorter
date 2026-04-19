@@ -25,5 +25,12 @@ class ChangeSetImpl implements ChangeSet {
 
   @override
   IMap<String, SyncRequest> toMap() => _changes.lock;
+  @override
   bool get hasChanges => _changes.isNotEmpty;
+
+  factory ChangeSetImpl.fromJson(Map<String, dynamic> json) =>
+      _$ChangeSetImplFromJson(json);
+  Map<String, dynamic> toJson() => _$ChangeSetImplToJson(this);
+  // ignore: unused_element
+  static void _keepLinterHappy() => ChangeSetImpl().toJson();
 }

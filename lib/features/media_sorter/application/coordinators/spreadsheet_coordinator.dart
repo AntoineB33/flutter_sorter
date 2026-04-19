@@ -8,6 +8,7 @@ import 'package:trying_flutter/features/media_sorter/application/state/history_c
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
@@ -331,10 +332,10 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void moveInUpdateHistory(int direction) {
     final updateData = historyController.moveInUpdateHistory(direction);
-    if (updateData != null) {
+    if (updateData.toMap().isNotEmpty) {
       applyUpdatesAndSort(
-        updateData.updates,
-        updateData.sheetId,
+        updateData.toMap(),
+        currentSheetId,
         true,
         false,
         false,
@@ -479,8 +480,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
       col,
       type,
     );
-    final updates = {update.getKey(): update};
-    applyUpdatesAndSort(updates.lock, currentSheetId, false, false, false);
+    applyUpdatesAndSort(updates.toMap(), currentSheetId, false, false, false);
   }
 
   void createSheetByName(String name) {
