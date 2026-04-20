@@ -1,11 +1,13 @@
 import 'package:collection/collection.dart';
+import 'package:drift/drift.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:meta/meta.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 
 class LoadedSheetsCache {
   final Map<int, CoreSheetContent> _loadedSheetsData = {};
@@ -51,14 +53,14 @@ class LoadedSheetsCache {
     _loadedSheetsData[sheetId] = sheetData;
   }
 
-  @useResult
-  ChangeSet _updateCell(int sheetId, CellUpdate update) {
-    final changeSet = ChangeSet();
+  
+  List<SyncRequestImpl> _updateCell(int sheetId, SheetCellsTableCompanion update) {
+    List<SyncRequestImpl> changeSet = [];
     _loadedSheetsData[sheetId]!.cells[CellPosition(
-          update.rowId,
-          update.colId,
+          update.row.value,
+          update.col.value,
         )] =
-        update.newValue;
+        update.content.value;
     final usedRows = _loadedSheetsData[sheetId]!.usedRows;
     final usedCols = _loadedSheetsData[sheetId]!.usedCols;
     List<int>? newUsedRows;
@@ -109,17 +111,11 @@ class LoadedSheetsCache {
     return changeSet;
   }
 
-  @useResult
+  
   ChangeSet renameSheet(int sheetId, String newName) {
     _loadedSheetsData[sheetId]!.title = newName;
     return ChangeSetImpl()
-      ..addUpdate(
-        SheetDataUpdate(
-          sheetId,
-          true,
-          title: newName,
-        ),
-      );
+      ..addUpdate(SheetDataUpdate(sheetId, true, title: newName));
   }
 
   void setColumnType(int sheetId, ColumnTypeUpdate update) {

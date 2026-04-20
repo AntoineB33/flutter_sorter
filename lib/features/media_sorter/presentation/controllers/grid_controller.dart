@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/material.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/grid_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/selection_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data_usecase.dart';
@@ -68,7 +68,7 @@ class GridController extends ChangeNotifier {
 
   void adjustRowHeightAfterUpdate(
     int sheetId,
-    IMap<String, SyncRequest> updateData,
+    List<SyncRequest> updateData,
   ) {
     gridUsecase.adjustRowHeightAfterUpdate(sheetId, updateData);
   }

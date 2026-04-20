@@ -8,7 +8,6 @@ import 'package:trying_flutter/features/media_sorter/data/datasources/app_databa
 import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:drift/drift.dart';
 import 'package:trying_flutter/utils/logger.dart';
 
@@ -23,7 +22,6 @@ abstract class ILocalDataSource {
   void saveUpdate(SyncRequest update);
   void save(ChangeSet updates);
   void dispose();
-  Future<void> batchInsertOrUpdate(List<SyncRequest> syncRequests);
   Future<List<SheetIdAndLastOpened>> getSheetIdAndLastOpened();
   Future<SheetDataEntity> getSheetDataEntity(int sheetId);
   Future<List<SheetCellEntity>> getSheetCellEntities(int sheetId);
@@ -44,17 +42,15 @@ class DriftLocalDataSource
     implements ILocalDataSource {
   final AppDatabase db;
 
-  final ILocalDataSource _localDataSource;
-
   // The Map acts as our cache. Using the entity's ID as the key
   // guarantees the "latest wins" behavior automatically.
-  final Map<String, SyncRequest> _pendingSaves = {};
+  final Map<String, SyncRequestImpl> _pendingSaves = {};
 
   // The trigger for our debounce logic
   final PublishSubject<void> _saveTrigger = PublishSubject<void>();
   StreamSubscription? _saveSubscription;
 
-  DriftLocalDataSource(this.db, this._localDataSource) {
+  DriftLocalDataSource(this.db) {
     // Listen to app lifecycle changes (pause, background, etc.)
     WidgetsBinding.instance.addObserver(this);
 
@@ -95,13 +91,16 @@ class DriftLocalDataSource
 
     // 2. Write to the database
     try {
-      await _localDataSource.batchInsertOrUpdate(itemsToSave);
+      await _batchInsertOrUpdate(itemsToSave);
     } catch (e) {
       // ERROR HANDLING: If the save fails, we return the items to the cache.
       // We use putIfAbsent so we don't accidentally overwrite newer edits
       // that a user might have made while the DB was failing.
       for (var item in itemsToSave) {
-        _pendingSaves.putIfAbsent(item.getKey(), () => item);
+        _pendingSaves.putIfAbsent(
+          (item as SyncRequestImpl).getKey(),
+          () => item,
+        );
       }
       logger.e("Database save failed. Items returned to cache. Error: $e");
     }
@@ -136,7 +135,7 @@ class DriftLocalDataSource
   void _executeBatchOperation<T extends Table, D>(
     Batch batch,
     TableInfo<T, D> table,
-    SyncRequest syncRequest,
+    SyncRequestImpl syncRequest,
   ) {
     switch (syncRequest.dataBaseOperationType) {
       case DataBaseOperationType.delete:
@@ -156,7 +155,7 @@ class DriftLocalDataSource
   }
 
   @override
-  Future<void> batchInsertOrUpdate(List<SyncRequest> syncRequests) async {
+  Future<void> _batchInsertOrUpdate(List<SyncRequestImpl> syncRequests) async {
     await db.batch((batch) {
       for (final syncRequest in syncRequests) {
         switch (syncRequest.companion) {
@@ -165,6 +164,29 @@ class DriftLocalDataSource
             break;
           case SheetCellWrapper():
             _executeBatchOperation(batch, db.sheetCellsTable, syncRequest);
+            break;
+          case HistoryWrapper():
+            _executeBatchOperation(batch, db.updateHistoriesTable, syncRequest);
+            break;
+          case RowHeightWrapper():
+            _executeBatchOperation(batch, db.rowsBottomPosTable, syncRequest);
+            break;
+          case ColWidthWrapper():
+            _executeBatchOperation(batch, db.colRightPosTable, syncRequest);
+            break;
+          case RowsManuallyAdjustedHeightWrapper():
+            _executeBatchOperation(
+              batch,
+              db.rowsManuallyAdjustedHeightTable,
+              syncRequest,
+            );
+            break;
+          case ColsManuallyAdjustedWidthWrapper():
+            _executeBatchOperation(
+              batch,
+              db.colsManuallyAdjustedWidthTable,
+              syncRequest,
+            );
             break;
         }
       }
@@ -175,12 +197,15 @@ class DriftLocalDataSource
   Future<List<SheetIdAndLastOpened>> getSheetIdAndLastOpened() async {
     try {
       final query = db.selectOnly(db.sheetDataTables)
-        ..addColumns([db.sheetDataTables.id, db.sheetDataTables.lastOpened]);
+        ..addColumns([
+          db.sheetDataTables.sheetId,
+          db.sheetDataTables.lastOpened,
+        ]);
       final result = await query.get();
       return result
           .map(
             (row) => SheetIdAndLastOpened(
-              row.read(db.sheetDataTables.id)!,
+              row.read(db.sheetDataTables.sheetId)!,
               row.read(db.sheetDataTables.lastOpened)!,
             ),
           )
@@ -198,7 +223,7 @@ class DriftLocalDataSource
   Future<SheetDataEntity> getSheetDataEntity(int sheetId) async {
     try {
       final query = db.select(db.sheetDataTables)
-        ..where((table) => table.id.equals(sheetId));
+        ..where((table) => table.sheetId.equals(sheetId));
       final coreSheetContents = await query.getSingleOrNull();
       if (coreSheetContents == null) {
         throw CacheException("Sheet with id $sheetId not found");
@@ -334,7 +359,7 @@ class DriftLocalDataSource
     try {
       final query = db.selectOnly(db.sheetDataTables)
         ..addColumns([
-          db.sheetDataTables.id,
+          db.sheetDataTables.sheetId,
           db.sheetDataTables.sortInProgress,
           db.sheetDataTables.toApplyNextBestSort,
           db.sheetDataTables.analysisDone,
@@ -344,7 +369,7 @@ class DriftLocalDataSource
       return result
           .map(
             (row) => SortStatusData(
-              sheetId: row.read(db.sheetDataTables.id)!,
+              sheetId: row.read(db.sheetDataTables.sheetId)!,
               toApplyNextBestSort:
                   row.read(db.sheetDataTables.toApplyNextBestSort) ?? false,
               analysisDone: row.read(db.sheetDataTables.analysisDone) ?? false,

@@ -57,7 +57,7 @@ class SortController extends ChangeNotifier {
     return sortUseCase.willNextBestSortBeApplied(sheetId);
   }
 
-  @useResult
+  
   ChangeSet sortTableWithCurrentBestSort(int sheetId) {
     return sortUseCase.sortTableWithCurrentBestSort(sheetId);
   }

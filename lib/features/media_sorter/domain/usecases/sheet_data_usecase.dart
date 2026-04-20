@@ -3,14 +3,13 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
@@ -21,7 +20,7 @@ class SheetDataUsecase {
   final GridRepository gridRepository;
   final SelectionRepository selectionRepository;
   final HistoryRepository historyRepository;
-  final SaveRepository saveRepository;
+  final ILocalDataSource saveRepository;
 
   SheetDataUsecase(
     this.sheetDataRepository,
@@ -44,8 +43,8 @@ class SheetDataUsecase {
     return sheetDataRepository.getCellContent(CellPosition(row, col), sheetId);
   }
 
-  @useResult
-  ChangeSet setColumnType(int colId, ColumnType newColumnType, int sheetId) {
+  
+  List<SyncRequest> setColumnType(int colId, ColumnType newColumnType, int sheetId) {
     return sheetDataRepository.setColumnType(colId, newColumnType, sheetId);
   }
 
@@ -54,27 +53,26 @@ class SheetDataUsecase {
   }
 
   void applyUpdatesNoSort(
-    IMap<String, SyncRequest> updates,
+    List<SyncRequest> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,
   ) {
-    ChangeSet changeSet = ChangeSet(initialChanges: updates);
     if (!isFromHistory) {
-      changeSet.merge(
+      updates.addAll(
         historyRepository.commitHistory(updates, sheetId, isFromEditing),
       );
     }
-    changeSet.merge(sheetDataRepository.update(updates, sheetId));
-    saveRepository.save(changeSet);
+    updates.addAll(sheetDataRepository.update(updates, sheetId));
+    saveRepository.save(updates);
   }
 
-  @useResult
-  ChangeSet delete() {
+  
+  List<SyncRequest> delete() {
     return sheetDataRepository.delete();
   }
 
-  Future<Either<Failure, IMap<String, SyncRequest>>> paste() {
+  Future<Either<Failure, List<SyncRequest>>> paste() {
     return sheetDataRepository.pasteSelection();
   }
 
@@ -82,7 +80,7 @@ class SheetDataUsecase {
     return sheetDataRepository.copySelectionToClipboard();
   }
 
-  @useResult
+  
   ChangeSet setCellContent(String newValue, int sheetId) {
     return sheetDataRepository.setCellContent(newValue, sheetId);
   }

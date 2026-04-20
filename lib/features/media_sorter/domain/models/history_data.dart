@@ -1,7 +1,7 @@
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 
 class HistoryData {
-  List<UpdateData> updateHistories;
+  List<SyncRequest> updateHistories;
   int historyIndex;
 
   HistoryData({

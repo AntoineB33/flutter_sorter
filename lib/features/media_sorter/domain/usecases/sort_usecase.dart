@@ -17,7 +17,8 @@ class SortUsecase {
   final SelectionRepository selectionRepository;
 
   int get currentSheetId => workbookRepository.currentSheetId;
-  Map<int, SortStatus> get sortStatusBySheet => sortRepository.sortStatusBySheet;
+  Map<int, SortStatus> get sortStatusBySheet =>
+      sortRepository.sortStatusBySheet;
 
   SortUsecase(
     this.saveRepository,
@@ -61,7 +62,10 @@ class SortUsecase {
   }
 
   void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
-    final update = sortRepository.setToAlwaysApplyBestSort(sheetId, toAlwaysApply);
+    final update = sortRepository.setToAlwaysApplyBestSort(
+      sheetId,
+      toAlwaysApply,
+    );
     saveRepository.save(update);
   }
 
@@ -113,7 +117,7 @@ class SortUsecase {
     sortRepository.setSortedWithCurrentBestSort(sheetId, value);
   }
 
-  @useResult
+  
   ChangeSet sortTableWithCurrentBestSort(int sheetId) {
     return sortRepository.sortTableWithCurrentBestSort(sheetId);
   }

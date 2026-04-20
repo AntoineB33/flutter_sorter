@@ -1,5 +1,5 @@
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 
 abstract class TreeRepository {
   NodeStruct get errorRoot;

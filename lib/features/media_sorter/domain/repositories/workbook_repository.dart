@@ -1,7 +1,6 @@
 import 'package:fpdart/fpdart.dart';
-import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 
 abstract class WorkbookRepository {
   int get currentSheetId;
@@ -9,6 +8,6 @@ abstract class WorkbookRepository {
   List<int> getRecentSheetIds();
   Future<Either<Failure, void>> clearAllData();
   Future<Either<Failure, void>> loadRecentSheetIds();
-  @useResult
-  SheetDataUpdate addNewSheetId(int index);
+  
+  List<SyncRequest> addNewSheetId(int index);
 }

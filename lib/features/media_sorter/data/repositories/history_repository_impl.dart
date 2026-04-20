@@ -46,7 +46,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
     return updateData;
   }
 
-  @useResult
+  
   ChangeSet _removeLastHistoryBcEdit() {
     UpdateData lastUpdateData = historyData.updateHistories.last;
     lastUpdateData.addOtherwiseRemove = false;

@@ -1,14 +1,16 @@
 import 'dart:math';
 
+import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/layout_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
@@ -155,18 +157,22 @@ class GridRepositoryImpl implements GridRepository {
   }
 
   @override
-  ChangeSet adjustRowHeightAfterUpdate(
+  List<SyncRequest> adjustRowHeightAfterUpdate(
     int sheetId,
-    IMap<String, SyncRequest> updates,
+    List<SyncRequest> updates,
   ) {
-    final ChangeSet changeSet = ChangeSet(initialChanges: updates);
     final layout = layoutCache.getLayout(sheetId);
-    for (var update in updates.values) {
-      if (update is CellUpdate) {
-        final int row = update.rowId;
-        final int col = update.colId;
-        final String newValue = update.newValue;
-        final String prevValue = update.prevValue;
+    for (var update in updates) {
+      if ((update as SyncRequestImpl).companion is SheetCellWrapper) {
+        final companion = update.companion as SheetCellWrapper;
+        final int row = companion.companion.row.value;
+        final int col = companion.companion.col.value;
+        final String newValue = companion.companion.content.value;
+        final String prevValue = loadedSheetsCache.getCellContent(
+          sheetId,
+          row,
+          col,
+        );
 
         if (row >= layout.rowsBottomPos.length && row >= rowCount(sheetId)) {
           break;
@@ -190,10 +196,15 @@ class GridRepositoryImpl implements GridRepository {
                 : layout.rowsBottomPos[i - 1] +
                       GetDefaultSizes.getDefaultRowHeight();
             changeSet.addUpdate(
-              RowsBottomPosUpdate(
-                sheetId,
-                i,
-                newBottomPos: layout.rowsBottomPos[i],
+              SyncRequestImpl(
+                RowHeightWrapper(
+                  RowsBottomPosTableCompanion(
+                    sheetId: Value(sheetId),
+                    rowIndex: Value(i),
+                    bottomPos: Value(layout.rowsBottomPos[i]),
+                  ),
+                ),
+                DataBaseOperationType.update,
               ),
             );
           }
@@ -230,10 +241,15 @@ class GridRepositoryImpl implements GridRepository {
                   for (int r = row; r < layout.rowsBottomPos.length; r++) {
                     layout.rowsBottomPos[r] -= heightDiff;
                     changeSet.addUpdate(
-                      RowsBottomPosUpdate(
-                        sheetId,
-                        r,
-                        newBottomPos: layout.rowsBottomPos[r],
+                      SyncRequestImpl(
+                        RowHeightWrapper(
+                          RowsBottomPosTableCompanion(
+                            sheetId: Value(sheetId),
+                            rowIndex: Value(r),
+                            bottomPos: Value(layout.rowsBottomPos[r]),
+                          ),
+                        ),
+                        DataBaseOperationType.update,
                       ),
                     );
                   }
@@ -254,7 +270,15 @@ class GridRepositoryImpl implements GridRepository {
                       i < layout.rowsBottomPos.length;
                       i++
                     ) {
-                      changeSet.addUpdate(RowsBottomPosUpdate(sheetId, i));
+                      changeSet.addUpdate(SyncRequestImpl(
+                        RowHeightWrapper(
+                          RowsBottomPosTableCompanion(
+                            sheetId: Value(sheetId),
+                            rowIndex: Value(i),
+                          ),
+                        ),
+                        DataBaseOperationType.delete,
+                      ));
                     }
                     layout.rowsBottomPos = layout.rowsBottomPos.sublist(
                       0,
@@ -268,10 +292,15 @@ class GridRepositoryImpl implements GridRepository {
               for (int r = row; r < layout.rowsBottomPos.length; r++) {
                 layout.rowsBottomPos[r] = layout.rowsBottomPos[r] + heightDiff;
                 changeSet.addUpdate(
-                  RowsBottomPosUpdate(
-                    sheetId,
-                    r,
-                    newBottomPos: layout.rowsBottomPos[r],
+                  SyncRequestImpl(
+                    RowHeightWrapper(
+                      RowsBottomPosTableCompanion(
+                        sheetId: Value(sheetId),
+                        rowIndex: Value(r),
+                        bottomPos: Value(layout.rowsBottomPos[r]),
+                      ),
+                    ),
+                    DataBaseOperationType.update,
                   ),
                 );
               }
@@ -284,7 +313,17 @@ class GridRepositoryImpl implements GridRepository {
                   GetDefaultSizes.getDefaultRowHeight() &&
               row > 0) {
             layout.rowsBottomPos.removeLast();
-            changeSet.addUpdate(RowsBottomPosUpdate(sheetId, i));
+            changeSet.addUpdate(
+              SyncRequestImpl(
+                RowHeightWrapper(
+                  RowsBottomPosTableCompanion(
+                    sheetId: Value(sheetId),
+                    rowIndex: Value(i),
+                  ),
+                ),
+                DataBaseOperationType.delete,
+              ),
+            );
             i--;
           }
         }
@@ -294,15 +333,20 @@ class GridRepositoryImpl implements GridRepository {
   }
 
   @override
-  SheetDataUpdate setLayout(int sheetId, LayoutData layoutData) {
+  ChangeSet setLayout(int sheetId, LayoutData layoutData) {
     layoutCache.setLayout(sheetId, layoutData);
-    return SheetDataUpdate(
-      sheetId,
-      true,
-      colHeaderHeight: layoutData.colHeaderHeight,
-      rowHeaderWidth: layoutData.rowHeaderWidth,
-      scrollOffsetX: layoutData.scrollOffsetX,
-      scrollOffsetY: layoutData.scrollOffsetY,
+    final changeSet =  ChangeSetImpl();
+    changeSet.addUpdate(
+      SyncRequestImpl(
+        SheetDataWrapper(
+          SheetDataTableCompanion(
+            sheetId: Value(sheetId),
+            layoutData: Value(layoutData),
+          ),
+        ),
+        DataBaseOperationType.update,
+      ),
     );
+    return changeSet;
   }
 }

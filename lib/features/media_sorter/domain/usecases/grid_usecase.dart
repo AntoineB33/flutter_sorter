@@ -1,14 +1,13 @@
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/layout_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/tree_repository.dart';
 
 class GridUsecase {
   final GridRepository gridRepository;
   final TreeRepository treeRepository;
-  final SaveRepository saveRepository;
+  final ILocalDataSource saveRepository;
 
   GridUsecase(this.gridRepository, this.treeRepository, this.saveRepository);
 
@@ -38,7 +37,7 @@ class GridUsecase {
 
   void adjustRowHeightAfterUpdate(
     int sheetId,
-    IMap<String, SyncRequest> updateData,
+    List<SyncRequest> updateData,
   ) {
     saveRepository.save(
       gridRepository.adjustRowHeightAfterUpdate(sheetId, updateData),

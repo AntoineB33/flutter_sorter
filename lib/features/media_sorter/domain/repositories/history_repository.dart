@@ -1,23 +1,18 @@
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:meta/meta.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 
 abstract class HistoryRepository {
-  UpdateData? moveInUpdateHistory(int direction);
-  @useResult
-  ChangeSet commitHistory(
-    IMap<String, SyncRequest> updates,
+  List<SyncRequest> moveInUpdateHistory(int direction);
+  
+  List<SyncRequest> commitHistory(
+    List<SyncRequest> updates,
     int sheetId,
     bool isFromEditing,
   );
-  @useResult
-  ChangeSet stopEditing(bool escape);
-  @useResult
-  UpdateUnit commitSelection(SelectionState selectionState);
-  @useResult
-  ChangeSet addSheetId(int sheetId);
+  
+  List<SyncRequest> stopEditing(bool escape);
+  
+  List<SyncRequest> commitSelection(SelectionState selectionState);
+  
+  List<SyncRequest> addSheetId(int sheetId);
 }

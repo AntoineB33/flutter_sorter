@@ -1,7 +1,7 @@
+import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
@@ -12,7 +12,7 @@ class SelectionUsecase {
   final GridRepository gridRepository;
   final HistoryRepository historyRepository;
   final WorkbookRepository workbookRepository;
-  final SaveRepository saveRepository;
+  final ILocalDataSource saveRepository;
 
   int get primarySelectedCellX => selectionRepository.primarySelectedCellX;
   int get primarySelectedCellY => selectionRepository.primarySelectedCellY;
@@ -30,7 +30,7 @@ class SelectionUsecase {
   void selectAll() {
     final selectionState = selectionRepository.selectAll();
     final result = historyRepository.commitSelection(selectionState);
-    saveRepository.saveUpdate(result);
+    saveRepository.save(result);
   }
 
   SelectionState getSelectionState(int sheetId) {
@@ -41,6 +41,6 @@ class SelectionUsecase {
     final selectionState =
         selectionRepository.setPrimarySelection(row, col, keepSelection);
     final result = historyRepository.commitSelection(selectionState);
-    saveRepository.saveUpdate(result);
+    saveRepository.save(result);
   }
 }

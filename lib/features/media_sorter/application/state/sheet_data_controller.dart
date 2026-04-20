@@ -27,7 +27,7 @@ class SheetDataController extends ChangeNotifier {
     return sheetDataUsecase.getSheet(currentSheetId);
   }
 
-  Future<Either<Failure, IMap<String, SyncRequest>>> paste() {
+  Future<Either<Failure, List<SyncRequest>>> paste() {
     return sheetDataUsecase.paste();
   }
 
@@ -39,18 +39,18 @@ class SheetDataController extends ChangeNotifier {
     return sheetDataUsecase.getCellContent(row, col, currentSheetId);
   }
 
-  @useResult
+  
   ChangeSet setColumnType(int colId, ColumnType newColumnType) {
     return sheetDataUsecase.setColumnType(colId, newColumnType, currentSheetId);
   }
 
-  @useResult
-  ChangeSet delete() {
+  
+  List<SyncRequest> delete() {
     return sheetDataUsecase.delete();
   }
 
   void applyUpdatesNoSort(
-    IMap<String, SyncRequest> updates,
+    List<SyncRequest> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,
@@ -63,7 +63,7 @@ class SheetDataController extends ChangeNotifier {
     );
   }
 
-  @useResult
+  
   ChangeSet setCellContent(String newValue) {
     return sheetDataUsecase.setCellContent(newValue, currentSheetId);
   }

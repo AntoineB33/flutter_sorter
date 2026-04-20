@@ -1,6 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/attribute.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 
 part 'node_struct.g.dart';
 

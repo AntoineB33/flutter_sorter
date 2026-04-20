@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:drift/drift.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
@@ -56,9 +59,18 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   }
 
   @override
-  SheetDataUpdate addNewSheetId(int index) {
+  List<SyncRequest> addNewSheetId(int index) {
     workbookCache.addSheetId(_getNewSheetId(), index);
-    return SheetDataUpdate(workbookCache.currentSheetId, true);
+    return [
+      SyncRequestImpl(
+        SheetDataWrapper(
+          SheetDataTablesCompanion(
+            sheetId: Value(workbookCache.currentSheetId),
+          )
+        ),
+        DataBaseOperationType.insert,
+      ),
+    ];
   }
 
   @override

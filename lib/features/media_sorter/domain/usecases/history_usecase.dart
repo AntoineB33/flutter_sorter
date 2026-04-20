@@ -1,14 +1,14 @@
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 
 class HistoryUsecase {
   final HistoryRepository historyRepository;
-  final SaveRepository saveRepository;
+  final ILocalDataSource saveRepository;
 
   HistoryUsecase(this.historyRepository, this.saveRepository);
 
-  UpdateData? moveInUpdateHistory(int direction) {
+  List<SyncRequest> moveInUpdateHistory(int direction) {
     return historyRepository.moveInUpdateHistory(direction);
   }
 

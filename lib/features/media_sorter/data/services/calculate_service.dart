@@ -1,3 +1,4 @@
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
 import 'dart:collection';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
@@ -8,7 +9,6 @@ import 'package:trying_flutter/features/media_sorter/domain/constants/spreadshee
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/sorting_rule.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 
 class Cols {
   final List<int> colIndexes = [];

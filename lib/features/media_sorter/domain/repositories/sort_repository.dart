@@ -1,7 +1,6 @@
 import 'package:fpdart/fpdart.dart';
-import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/sort_status.dart';
 
@@ -10,7 +9,7 @@ abstract class SortRepository {
   bool isReordering(int sheetId);
   bool getAnalysisDone(int sheetId);
   bool getBestSortPossibleFound(int sheetId);
-  @useResult
+  
   Future<void> analyze(int sheetId);
   Future<Either<Failure, void>> loadSortStatus();
   bool getToApplyOnce(int sheetId);
@@ -20,25 +19,25 @@ abstract class SortRepository {
   void setToApplyOnce(int sheetId, bool toApplyOnce);
   void setSortedWithCurrentBestSort(int sheetId, bool value);
   bool isSortedWithValidSort(int sheetId);
-  @useResult
-  ChangeSet handleSortProgressDataMsg(
+  
+  List<SyncRequest> handleSortProgressDataMsg(
     SortProgressDataMsg sortProgressDataMsg,
     int sheetId,
   );
   bool stopLoop(SortProgressDataMsg sortProgressDataMsg, int sheetId);
-  @useResult
-  ChangeSet sortTableWithCurrentBestSort(int sheetId);
+  
+  List<SyncRequest> sortTableWithCurrentBestSort(int sheetId);
   Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId);
   bool betterSortNotImpossible(int sheetId);
   bool isCurrentBestSortAlwaysApplied(int sheetId);
   bool isReorderBetterButtonLocked();
   bool sortedWithCurrentBestSort(int sheetId);
-  @useResult
-  ChangeSet setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply);
-  @useResult
+  
+  List<SyncRequest> setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply);
+  
   void removeSortStatus(int sheetId);
-  @useResult
-  ChangeSet addSheetId(int sheetId);
-  @useResult
-  ChangeSet setFindingBestSort(int sheetId, bool value);
+  
+  List<SyncRequest> addSheetId(int sheetId);
+  
+  List<SyncRequest> setFindingBestSort(int sheetId, bool value);
 }

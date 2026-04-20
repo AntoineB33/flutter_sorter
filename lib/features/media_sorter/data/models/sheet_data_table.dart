@@ -1,16 +1,15 @@
 import 'dart:convert';
-
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'package:json_annotation/json_annotation.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:drift/drift.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
 
-
+@JsonSerializable(explicitToJson: true)
 class SyncRequestImpl implements SyncRequest {
   final DbCompanionWrapper companion;
   final DataBaseOperationType dataBaseOperationType;
@@ -52,15 +51,16 @@ class SyncRequestImpl implements SyncRequest {
     }
   }
 
-  String getKey() {
-    switch (companion) {
-      case SheetDataWrapper():
-        return "SheetDataTables:${(companion as SheetDataWrapper).companion.id.value}";
-      case SheetCellWrapper():
-        final cellCompanion = (companion as SheetCellWrapper).companion;
-        return "SheetCellsTable:${cellCompanion.sheetId.value}-${cellCompanion.row.value}-${cellCompanion.col.value}";
-    }
-  }
+  factory SyncRequestImpl.fromJson(Map<String, dynamic> json) =>
+      _$SyncRequestImplFromJson(json);
+  Map<String, dynamic> toJson() => _$SyncRequestImplToJson(this);
+  // ignore: unused_element
+  static void _keepLinterHappy() => SyncRequestImpl(
+        SheetDataWrapper(
+          SheetDataTablesCompanion(),
+        ),
+        DataBaseOperationType.insert,
+      ).toJson();
 }
 
 sealed class DbCompanionWrapper {
@@ -85,9 +85,33 @@ class HistoryWrapper extends DbCompanionWrapper {
   HistoryWrapper(this.companion);
 }
 
+class RowHeightWrapper extends DbCompanionWrapper {
+  @override
+  final RowsBottomPosTableCompanion companion;
+  RowHeightWrapper(this.companion);
+}
+
+class ColWidthWrapper extends DbCompanionWrapper {
+  @override
+  final ColRightPosTableCompanion companion;
+  ColWidthWrapper(this.companion);
+}
+
+class RowsManuallyAdjustedHeightWrapper extends DbCompanionWrapper {
+  @override
+  final RowsManuallyAdjustedHeightTableCompanion companion;
+  RowsManuallyAdjustedHeightWrapper(this.companion);
+}
+
+class ColsManuallyAdjustedWidthWrapper extends DbCompanionWrapper {
+  @override
+  final ColsManuallyAdjustedWidthTableCompanion companion;
+  ColsManuallyAdjustedWidthWrapper(this.companion);
+}
+
 @DataClassName('SheetDataEntity')
 class SheetDataTables extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  IntColumn get sheetId => integer().autoIncrement()();
   TextColumn get title => text()();
   DateTimeColumn get lastOpened => dateTime()();
   TextColumn get usedRows => text().map(const ListIntConverter())();
@@ -149,18 +173,18 @@ class SheetColumnTypesTable extends Table {
   Set<Column> get primaryKey => {sheetId, columnIndex};
 }
 
-class ChangeSetMapConverter extends TypeConverter<ChangeSetImpl, String> {
-  const ChangeSetMapConverter();
+class ListSyncRequestMapConverter extends TypeConverter<List<SyncRequest>, String> {
+  const ListSyncRequestMapConverter();
 
   @override
-  ChangeSetImpl fromSql(String fromDb) {
-    final decoded = jsonDecode(fromDb) as Map<String, dynamic>;
-    return ChangeSetImpl.fromJson(decoded);
+  List<SyncRequest> fromSql(String fromDb) {
+    final decoded = jsonDecode(fromDb) as List<dynamic>;
+    return decoded.map((e) => SyncRequestImpl.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   @override
-  String toSql(ChangeSetImpl value) {
-    final encoded = value.toJson();
+  String toSql(List<SyncRequest> value) {
+    final encoded = value.map((e) => e.toJson()).toList();
     return jsonEncode(encoded);
   }
 }

@@ -1,13 +1,11 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
-import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
@@ -120,7 +118,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void delete() {
     final updates = sheetDataController.delete();
-    applyUpdatesAndSort(updates.toMap(), currentSheetId, false, false, false);
+    applyUpdatesAndSort(updates, currentSheetId, false, false, false);
   }
 
   void paste() async {
@@ -144,7 +142,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyUpdatesAndSort(
-    IMap<String, SyncRequest> updates,
+    List<SyncRequest> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromSort,
@@ -210,7 +208,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyUpdatesNoSort(
-    IMap<String, SyncRequest> updates,
+    List<SyncRequest> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,
@@ -332,9 +330,9 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void moveInUpdateHistory(int direction) {
     final updateData = historyController.moveInUpdateHistory(direction);
-    if (updateData.toMap().isNotEmpty) {
+    if (updateData.isNotEmpty) {
       applyUpdatesAndSort(
-        updateData.toMap(),
+        updateData,
         currentSheetId,
         true,
         false,

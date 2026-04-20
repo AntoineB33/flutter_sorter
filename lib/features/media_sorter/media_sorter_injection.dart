@@ -42,7 +42,10 @@ Future<void> initMediaSorterDependencies() async {
 
   AppDatabase database = AppDatabase();
 
-  DriftLocalDataSource saveDataSource = DriftLocalDataSource(database, isolateReceivePortsCache);
+  ILocalDataSource localDataSource = DriftLocalDataSource(database);
+
+
+  DriftLocalDataSource saveDataSource = DriftLocalDataSource(database);
 
   LoadedSheetsCache loadedSheetsCache = LoadedSheetsCache();
   SortStatusCache sortStatusCache = SortStatusCache(loadedSheetsCache);
@@ -87,11 +90,15 @@ Future<void> initMediaSorterDependencies() async {
     selectionCache,
     historyCache,
   );
-  LocalDataRepositoryImpl saveRepository = LocalDataRepositoryImpl(
+  SortRepositoryImpl saveRepository = SortRepositoryImpl(
     saveDataSource,
+    analysisResultCache,
     loadedSheetsCache,
-    layoutCache,
+    sortProgressCache,
+    sortStatusCache,
+      isolateReceivePortsCache,
     selectionCache,
+    workbookCache,
   );
   WorkbookRepositoryImpl workbookRepository = WorkbookRepositoryImpl(
     saveDataSource,
@@ -131,12 +138,12 @@ Future<void> initMediaSorterDependencies() async {
   );
   HistoryUsecase historyUsecase = HistoryUsecase(
     historyRepository,
-    saveRepository,
+    localDataSource,
   );
   GridUsecase gridUsecase = GridUsecase(
     gridRepository,
     treeRepository,
-    saveRepository,
+    localDataSource,
   );
   SelectionUsecase selectionUsecase = SelectionUsecase(
     selectionRepository,
@@ -144,7 +151,7 @@ Future<void> initMediaSorterDependencies() async {
     gridRepository,
     historyRepository,
     workbookRepository,
-    saveRepository,
+    localDataSource,
   );
   TreeUsecase treeUsecase = TreeUsecase(treeRepository);
   SheetDataUsecase sheetDataUsecase = SheetDataUsecase(
@@ -153,7 +160,7 @@ Future<void> initMediaSorterDependencies() async {
     gridRepository,
     selectionRepository,
     historyRepository,
-    saveRepository,
+    localDataSource,
   );
 
   SortController sortController = SortController(
@@ -215,8 +222,8 @@ Future<void> initMediaSorterDependencies() async {
   );
   slMediaSorter.registerLazySingleton<SheetDataUsecase>(() => sheetDataUsecase);
 
-  slMediaSorter.registerLazySingleton<LocalDataRepositoryImpl>(
-    () => saveRepository,
+  slMediaSorter.registerLazySingleton<DriftLocalDataSource>(
+    () => saveDataSource,
     dispose: (repo) => repo.dispose(),
   );
   slMediaSorter.registerLazySingleton<SelectionRepositoryImpl>(
