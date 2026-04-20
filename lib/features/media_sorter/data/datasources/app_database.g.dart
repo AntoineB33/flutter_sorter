@@ -1939,14 +1939,17 @@ class $UpdateHistoriesTableTable extends UpdateHistoriesTable
     requiredDuringInsert: true,
   );
   @override
-  late final GeneratedColumnWithTypeConverter<dynamic, String> updates =
+  late final GeneratedColumnWithTypeConverter<List<SyncRequest>, String>
+  updates =
       GeneratedColumn<String>(
         'updates',
         aliasedName,
         false,
         type: DriftSqlType.string,
         requiredDuringInsert: true,
-      ).withConverter<dynamic>($UpdateHistoriesTableTable.$converterupdates);
+      ).withConverter<List<SyncRequest>>(
+        $UpdateHistoriesTableTable.$converterupdates,
+      );
   @override
   List<GeneratedColumn> get $columns => [timestamp, chronoId, sheetId, updates];
   @override
@@ -2020,8 +2023,8 @@ class $UpdateHistoriesTableTable extends UpdateHistoriesTable
     return $UpdateHistoriesTableTable(attachedDatabase, alias);
   }
 
-  static TypeConverter<dynamic, String> $converterupdates =
-      const ChangeSetMapConverter();
+  static TypeConverter<List<SyncRequest>, String> $converterupdates =
+      const ListSyncRequestMapConverter();
 }
 
 class UpdateHistoriesEntity extends DataClass
@@ -2029,12 +2032,12 @@ class UpdateHistoriesEntity extends DataClass
   final DateTime timestamp;
   final int chronoId;
   final int sheetId;
-  final dynamic updates;
+  final List<SyncRequest> updates;
   const UpdateHistoriesEntity({
     required this.timestamp,
     required this.chronoId,
     required this.sheetId,
-    this.updates,
+    required this.updates,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2042,7 +2045,7 @@ class UpdateHistoriesEntity extends DataClass
     map['timestamp'] = Variable<DateTime>(timestamp);
     map['chrono_id'] = Variable<int>(chronoId);
     map['sheet_id'] = Variable<int>(sheetId);
-    if (!nullToAbsent || updates != null) {
+    {
       map['updates'] = Variable<String>(
         $UpdateHistoriesTableTable.$converterupdates.toSql(updates),
       );
@@ -2055,9 +2058,7 @@ class UpdateHistoriesEntity extends DataClass
       timestamp: Value(timestamp),
       chronoId: Value(chronoId),
       sheetId: Value(sheetId),
-      updates: updates == null && nullToAbsent
-          ? const Value.absent()
-          : Value(updates),
+      updates: Value(updates),
     );
   }
 
@@ -2070,7 +2071,7 @@ class UpdateHistoriesEntity extends DataClass
       timestamp: serializer.fromJson<DateTime>(json['timestamp']),
       chronoId: serializer.fromJson<int>(json['chronoId']),
       sheetId: serializer.fromJson<int>(json['sheetId']),
-      updates: serializer.fromJson<dynamic>(json['updates']),
+      updates: serializer.fromJson<List<SyncRequest>>(json['updates']),
     );
   }
   @override
@@ -2080,7 +2081,7 @@ class UpdateHistoriesEntity extends DataClass
       'timestamp': serializer.toJson<DateTime>(timestamp),
       'chronoId': serializer.toJson<int>(chronoId),
       'sheetId': serializer.toJson<int>(sheetId),
-      'updates': serializer.toJson<dynamic>(updates),
+      'updates': serializer.toJson<List<SyncRequest>>(updates),
     };
   }
 
@@ -2088,12 +2089,12 @@ class UpdateHistoriesEntity extends DataClass
     DateTime? timestamp,
     int? chronoId,
     int? sheetId,
-    Value<dynamic> updates = const Value.absent(),
+    List<SyncRequest>? updates,
   }) => UpdateHistoriesEntity(
     timestamp: timestamp ?? this.timestamp,
     chronoId: chronoId ?? this.chronoId,
     sheetId: sheetId ?? this.sheetId,
-    updates: updates.present ? updates.value : this.updates,
+    updates: updates ?? this.updates,
   );
   UpdateHistoriesEntity copyWithCompanion(UpdateHistoriesTableCompanion data) {
     return UpdateHistoriesEntity(
@@ -2132,7 +2133,7 @@ class UpdateHistoriesTableCompanion
   final Value<DateTime> timestamp;
   final Value<int> chronoId;
   final Value<int> sheetId;
-  final Value<dynamic> updates;
+  final Value<List<SyncRequest>> updates;
   final Value<int> rowid;
   const UpdateHistoriesTableCompanion({
     this.timestamp = const Value.absent(),
@@ -2145,7 +2146,7 @@ class UpdateHistoriesTableCompanion
     required DateTime timestamp,
     required int chronoId,
     required int sheetId,
-    required dynamic updates,
+    required List<SyncRequest> updates,
     this.rowid = const Value.absent(),
   }) : timestamp = Value(timestamp),
        chronoId = Value(chronoId),
@@ -2171,7 +2172,7 @@ class UpdateHistoriesTableCompanion
     Value<DateTime>? timestamp,
     Value<int>? chronoId,
     Value<int>? sheetId,
-    Value<dynamic>? updates,
+    Value<List<SyncRequest>>? updates,
     Value<int>? rowid,
   }) {
     return UpdateHistoriesTableCompanion(
@@ -4325,7 +4326,7 @@ typedef $$UpdateHistoriesTableTableCreateCompanionBuilder =
       required DateTime timestamp,
       required int chronoId,
       required int sheetId,
-      required dynamic updates,
+      required List<SyncRequest> updates,
       Value<int> rowid,
     });
 typedef $$UpdateHistoriesTableTableUpdateCompanionBuilder =
@@ -4333,7 +4334,7 @@ typedef $$UpdateHistoriesTableTableUpdateCompanionBuilder =
       Value<DateTime> timestamp,
       Value<int> chronoId,
       Value<int> sheetId,
-      Value<dynamic> updates,
+      Value<List<SyncRequest>> updates,
       Value<int> rowid,
     });
 
@@ -4361,11 +4362,11 @@ class $$UpdateHistoriesTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnWithTypeConverterFilters<dynamic, dynamic, String> get updates =>
-      $composableBuilder(
-        column: $table.updates,
-        builder: (column) => ColumnWithTypeConverterFilters(column),
-      );
+  ColumnWithTypeConverterFilters<List<SyncRequest>, List<SyncRequest>, String>
+  get updates => $composableBuilder(
+    column: $table.updates,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
 }
 
 class $$UpdateHistoriesTableTableOrderingComposer
@@ -4416,7 +4417,7 @@ class $$UpdateHistoriesTableTableAnnotationComposer
   GeneratedColumn<int> get sheetId =>
       $composableBuilder(column: $table.sheetId, builder: (column) => column);
 
-  GeneratedColumnWithTypeConverter<dynamic, String> get updates =>
+  GeneratedColumnWithTypeConverter<List<SyncRequest>, String> get updates =>
       $composableBuilder(column: $table.updates, builder: (column) => column);
 }
 
@@ -4466,7 +4467,7 @@ class $$UpdateHistoriesTableTableTableManager
                 Value<DateTime> timestamp = const Value.absent(),
                 Value<int> chronoId = const Value.absent(),
                 Value<int> sheetId = const Value.absent(),
-                Value<dynamic> updates = const Value.absent(),
+                Value<List<SyncRequest>> updates = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => UpdateHistoriesTableCompanion(
                 timestamp: timestamp,
@@ -4480,7 +4481,7 @@ class $$UpdateHistoriesTableTableTableManager
                 required DateTime timestamp,
                 required int chronoId,
                 required int sheetId,
-                required dynamic updates,
+                required List<SyncRequest> updates,
                 Value<int> rowid = const Value.absent(),
               }) => UpdateHistoriesTableCompanion.insert(
                 timestamp: timestamp,

@@ -83,8 +83,19 @@ class HistoryRepositoryImpl implements HistoryRepository {
     int sheetId,
     bool isFromEditing,
   ) {
-    final updateData = UpdateData(chronoIdCounter++, sheetId, updates, true);
-    final changeSet = ChangeSetImpl(initialChanges: updates);
+    List<SyncRequest> changeSet = [];
+    changeSet.add(
+      SyncRequestImpl(
+        HistoryWrapper(
+          UpdateHistoriesTableCompanion(
+            chronoId: Value(chronoIdCounter++),
+            sheetId: Value(currentSheetId),
+            updates: Value(updates)
+          ),
+        ),
+        DataBaseOperationType.delete,
+      )
+    );
     if (isFromEditing) {
       if (isLastChangeInSameEditingMode) {
         CellUpdate cellUpdate = updates.values.first as CellUpdate;

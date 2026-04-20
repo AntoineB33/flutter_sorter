@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:json_annotation/json_annotation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
@@ -31,8 +31,17 @@ class SyncRequestImpl implements SyncRequest {
       ).toJson();
 }
 
+@JsonSerializable(explicitToJson: true)
 sealed class DbCompanionWrapper {
   UpdateCompanion<DataClass> get companion;
+
+  factory DbCompanionWrapper.fromJson(Map<String, dynamic> json) =>
+      _$DbCompanionWrapperFromJson(json);
+  Map<String, dynamic> toJson() => _$DbCompanionWrapperToJson(this);
+  // ignore: unused_element
+  static void _keepLinterHappy() => SheetDataWrapper(
+        SheetDataTablesCompanion(),
+      ).toJson();
 }
 
 class SheetDataWrapper extends DbCompanionWrapper {
@@ -141,18 +150,18 @@ class SheetColumnTypesTable extends Table {
   Set<Column> get primaryKey => {sheetId, columnIndex};
 }
 
-class ListListSyncRequestMapConverter extends TypeConverter<List<List<SyncRequest>>, String> {
-  const ListListSyncRequestMapConverter();
+class ListSyncRequestMapConverter extends TypeConverter<List<SyncRequest>, String> {
+  const ListSyncRequestMapConverter();
 
   @override
-  List<List<SyncRequest>> fromSql(String fromDb) {
+  List<SyncRequest> fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as List<dynamic>;
-    return decoded.map((e) => (e as List<dynamic>).map((v) => SyncRequestImpl.fromJson(v as Map<String, dynamic>)).toList()).toList();
+    return decoded.map((e) => SyncRequestImpl.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   @override
-  String toSql(List<List<SyncRequest>> value) {
-    final encoded = value.map((e) => e.map((v) => (v as SyncRequestImpl).toJson()).toList()).toList();
+  String toSql(List<SyncRequest> value) {
+    final encoded = value.map((e) => (e as SyncRequestImpl).toJson()).toList();
     return jsonEncode(encoded);
   }
 }
@@ -162,7 +171,7 @@ class UpdateHistoriesTable extends Table {
   DateTimeColumn get timestamp => dateTime()();
   IntColumn get chronoId => integer()();
   IntColumn get sheetId => integer().references(SheetDataTables, #id)();
-  TextColumn get updates => text().map(const ListListSyncRequestMapConverter())();
+  TextColumn get updates => text().map(const ListSyncRequestMapConverter())();
 
   @override
   Set<Column> get primaryKey => {timestamp, chronoId};
