@@ -133,7 +133,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   void setCellContent(String newValue) {
     final changeSet = sheetDataController.setCellContent(newValue);
     applyUpdatesAndSort(
-      changeSet.toMap(),
+      changeSet,
       currentSheetId,
       false,
       false,
@@ -175,7 +175,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void alwaysApplySortToggle(bool toAlwaysApply) {
     if (!sortController.sortedWithCurrentBestSort(currentSheetId)) {
-      sortTableWithCurrentBestSort(currentSheetId);
+      _sortTableWithCurrentBestSort(currentSheetId);
     }
     sortController.setToAlwaysApplyBestSort(currentSheetId, toAlwaysApply);
   }
@@ -191,7 +191,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     );
     if (sortProgressDataMsg.newBestSortFound) {
       if (sortController.willNextBestSortBeApplied(sheetId)) {
-        sortTableWithCurrentBestSort(sheetId);
+        _sortTableWithCurrentBestSort(sheetId);
       } else {
         sortController.setSortedWithCurrentBestSort(sheetId, false);
       }
@@ -199,9 +199,9 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     return stopLoop;
   }
 
-  void sortTableWithCurrentBestSort(int sheetId) {
+  void _sortTableWithCurrentBestSort(int sheetId) {
     final updates = sortController.sortTableWithCurrentBestSort(sheetId);
-    applyUpdatesNoSort(updates.toMap(), sheetId, false, false);
+    applyUpdatesNoSort(updates, sheetId, false, false);
     if (sortController.getToApplyOnce(sheetId)) {
       sortController.setToApplyOnce(sheetId, false);
     }
@@ -297,7 +297,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void reorderBetterButton() {
     if (!sortController.sortedWithCurrentBestSort(currentSheetId)) {
-      sortTableWithCurrentBestSort(currentSheetId);
+      _sortTableWithCurrentBestSort(currentSheetId);
     } else {
       sortController.setToApplyOnce(currentSheetId, true);
       if (!sortController.isCalculating(currentSheetId)) {
@@ -432,11 +432,11 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void applyDefaultColumnSequence() {
     final updates = sheetDataController.setColumnType(1, ColumnType.dependencies);
-    updates.merge(sheetDataController.setColumnType(2, ColumnType.dependencies));
-    updates.merge(sheetDataController.setColumnType(3, ColumnType.dependencies));
-    updates.merge(sheetDataController.setColumnType(7, ColumnType.urls));
-    updates.merge(sheetDataController.setColumnType(8, ColumnType.dependencies));
-    applyUpdatesAndSort(updates.toMap(), currentSheetId, false, false, false);
+    updates.addAll(sheetDataController.setColumnType(2, ColumnType.dependencies));
+    updates.addAll(sheetDataController.setColumnType(3, ColumnType.dependencies));
+    updates.addAll(sheetDataController.setColumnType(7, ColumnType.urls));
+    updates.addAll(sheetDataController.setColumnType(8, ColumnType.dependencies));
+    applyUpdatesAndSort(updates, currentSheetId, false, false, false);
   }
 
   void onCellSave(bool moveUp) {
@@ -458,7 +458,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void setColumnType(int col, ColumnType type) {
     final updates = sheetDataController.setColumnType(col, type);
-    applyUpdatesAndSort(updates.toMap(), currentSheetId, false, false, false);
+    applyUpdatesAndSort(updates, currentSheetId, false, false, false);
   }
 
   void createSheetByName(String name) {

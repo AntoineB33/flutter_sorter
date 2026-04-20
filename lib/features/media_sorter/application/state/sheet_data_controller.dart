@@ -1,10 +1,7 @@
 import 'dart:async';
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
@@ -40,7 +37,7 @@ class SheetDataController extends ChangeNotifier {
   }
 
   
-  ChangeSet setColumnType(int colId, ColumnType newColumnType) {
+  List<SyncRequest> setColumnType(int colId, ColumnType newColumnType) {
     return sheetDataUsecase.setColumnType(colId, newColumnType, currentSheetId);
   }
 
@@ -64,7 +61,7 @@ class SheetDataController extends ChangeNotifier {
   }
 
   
-  ChangeSet setCellContent(String newValue) {
+  List<SyncRequest> setCellContent(String newValue) {
     return sheetDataUsecase.setCellContent(newValue, currentSheetId);
   }
 }

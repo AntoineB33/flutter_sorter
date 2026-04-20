@@ -81,7 +81,7 @@ class SheetDataUsecase {
   }
 
   
-  ChangeSet setCellContent(String newValue, int sheetId) {
+  List<SyncRequest> setCellContent(String newValue, int sheetId) {
     return sheetDataRepository.setCellContent(newValue, sheetId);
   }
 }

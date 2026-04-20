@@ -208,10 +208,10 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         final layoutDataTable = LayoutData(
           rowsBottomPos: rowsBottomPos.map((pos) => pos.bottomPos).toList(),
           colRightPos: colRightPos.map((pos) => pos.rightPos).toList(),
-          rowsManuallyAdjustedHeight: rowsManuallyAdjustedHeightTable
+          rowsManuallyAdjusted: rowsManuallyAdjustedHeightTable
               .map((pos) => pos.manuallyAdjusted)
               .toList(),
-          colsManuallyAdjustedWidth: colManuallyAdjustedWidthTable
+          colsManuallyAdjusted: colManuallyAdjustedWidthTable
               .map((pos) => pos.manuallyAdjusted)
               .toList(),
           colHeaderHeight: sheetData.colHeaderHeight,

@@ -15,4 +15,8 @@ class HistoryUsecase {
   void stopEditing(bool escape) {
     saveRepository.save(historyRepository.stopEditing(escape));
   }
+
+  void commitHistory(List<SyncRequest> updates, int sheetId, bool isFromEditing) {
+    saveRepository.save(historyRepository.commitHistory(updates, sheetId, isFromEditing));
+  }
 }

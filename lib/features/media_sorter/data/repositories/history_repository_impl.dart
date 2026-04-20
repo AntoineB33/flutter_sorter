@@ -1,6 +1,7 @@
+import 'package:drift/drift.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:meta/meta.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
@@ -11,7 +12,6 @@ import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.d
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 
 class HistoryRepositoryImpl implements HistoryRepository {
@@ -35,11 +35,11 @@ class HistoryRepositoryImpl implements HistoryRepository {
   );
 
   @override
-  UpdateData? moveInUpdateHistory(int direction) {
+  List<SyncRequest> moveInUpdateHistory(int direction) {
     if (historyData.historyIndex + direction < 0 ||
         historyData.historyIndex + direction >=
             historyData.updateHistories.length) {
-      return null;
+      return [];
     }
     historyData.historyIndex += direction;
     final updateData = historyData.updateHistories[historyData.historyIndex];
@@ -47,25 +47,39 @@ class HistoryRepositoryImpl implements HistoryRepository {
   }
 
   
-  ChangeSet _removeLastHistoryBcEdit() {
-    UpdateData lastUpdateData = historyData.updateHistories.last;
-    lastUpdateData.addOtherwiseRemove = false;
+  List<SyncRequest> _removeLastHistoryBcEdit() {
+    final lastUpdateData = historyData.updateHistories.last.first as SyncRequestImpl;
+    List<SyncRequest> changeSet = [];
+    changeSet.add(
+      SyncRequestImpl(
+        HistoryWrapper(
+          UpdateHistoriesTableCompanion(
+            chronoId: Value(chronoIdCounter++),
+            sheetId: Value(currentSheetId),
+          ),
+        ),
+        DataBaseOperationType.delete,
+      )
+    );
     historyData.updateHistories.removeAt(historyData.historyIndex);
     historyData.historyIndex--;
-    ChangeSet changeSet = ChangeSet();
-    changeSet.addUpdate(lastUpdateData);
-    final historyChg = SheetDataUpdate(
-      currentSheetId,
-      true,
-      historyIndex: historyData.historyIndex,
+    changeSet.add(
+      SyncRequestImpl(
+        SheetDataWrapper(
+          SheetDataTablesCompanion(
+            sheetId: Value(currentSheetId),
+            historyIndex: Value(historyData.historyIndex),
+          ),
+        ),
+        DataBaseOperationType.update,
+      )
     );
-    changeSet.addUpdate(historyChg);
     return changeSet;
   }
 
   @override
-  ChangeSet commitHistory(
-    IMap<String, SyncRequest> updates,
+  List<SyncRequest> commitHistory(
+    List<SyncRequest> updates,
     int sheetId,
     bool isFromEditing,
   ) {

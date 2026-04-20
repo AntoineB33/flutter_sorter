@@ -9,47 +9,15 @@ import 'package:drift/drift.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
 
+part 'sheet_data_table.freezed.dart';
+
+@freezed
 @JsonSerializable(explicitToJson: true)
 class SyncRequestImpl implements SyncRequest {
   final DbCompanionWrapper companion;
   final DataBaseOperationType dataBaseOperationType;
 
   SyncRequestImpl(this.companion, this.dataBaseOperationType);
-
-  SyncRequestImpl merge(SyncRequestImpl other) {
-    if (other.dataBaseOperationType == DataBaseOperationType.delete) {
-      return SyncRequestImpl(other.companion, DataBaseOperationType.delete);
-    } else {
-      DbCompanionWrapper companion = this.companion;
-      DataBaseOperationType dataBaseOperationType;
-      if (this.dataBaseOperationType == DataBaseOperationType.delete) {
-        companion = other.companion;
-        if (other.dataBaseOperationType != DataBaseOperationType.insert) {
-          throw Exception(
-            "Invalid merge: cannot merge a delete with a non-insert operation",
-          );
-        }
-        dataBaseOperationType = DataBaseOperationType.insert;
-      } else {
-        // For updates, we merge the maps. New values override old ones.
-        final mergedMap = Map<String, Expression>.from(
-          this.companion.companion.toColumns(false),
-        )..addAll(other.companion.companion.toColumns(false));
-        companion = RawValuesInsertable(mergedMap) as DbCompanionWrapper;
-        if (this.dataBaseOperationType == DataBaseOperationType.insert) {
-          dataBaseOperationType = DataBaseOperationType.insert;
-        } else {
-          if (other.dataBaseOperationType == DataBaseOperationType.insert) {
-            throw Exception(
-              "Invalid merge: cannot merge an update with an insert operation",
-            );
-          }
-          dataBaseOperationType = DataBaseOperationType.update;
-        }
-      }
-      return SyncRequestImpl(companion, dataBaseOperationType);
-    }
-  }
 
   factory SyncRequestImpl.fromJson(Map<String, dynamic> json) =>
       _$SyncRequestImplFromJson(json);
@@ -173,18 +141,18 @@ class SheetColumnTypesTable extends Table {
   Set<Column> get primaryKey => {sheetId, columnIndex};
 }
 
-class ListSyncRequestMapConverter extends TypeConverter<List<SyncRequest>, String> {
-  const ListSyncRequestMapConverter();
+class ListListSyncRequestMapConverter extends TypeConverter<List<List<SyncRequest>>, String> {
+  const ListListSyncRequestMapConverter();
 
   @override
-  List<SyncRequest> fromSql(String fromDb) {
+  List<List<SyncRequest>> fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as List<dynamic>;
-    return decoded.map((e) => SyncRequestImpl.fromJson(e as Map<String, dynamic>)).toList();
+    return decoded.map((e) => (e as List<dynamic>).map((v) => SyncRequestImpl.fromJson(v as Map<String, dynamic>)).toList()).toList();
   }
 
   @override
-  String toSql(List<SyncRequest> value) {
-    final encoded = value.map((e) => e.toJson()).toList();
+  String toSql(List<List<SyncRequest>> value) {
+    final encoded = value.map((e) => e.map((v) => (v as SyncRequestImpl).toJson()).toList()).toList();
     return jsonEncode(encoded);
   }
 }
@@ -194,7 +162,7 @@ class UpdateHistoriesTable extends Table {
   DateTimeColumn get timestamp => dateTime()();
   IntColumn get chronoId => integer()();
   IntColumn get sheetId => integer().references(SheetDataTables, #id)();
-  TextColumn get updates => text().map(const ChangeSetMapConverter())();
+  TextColumn get updates => text().map(const ListListSyncRequestMapConverter())();
 
   @override
   Set<Column> get primaryKey => {timestamp, chronoId};

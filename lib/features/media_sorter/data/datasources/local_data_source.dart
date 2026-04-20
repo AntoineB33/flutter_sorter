@@ -5,7 +5,6 @@ import 'package:flutter/material.dart' hide Table;
 import 'package:rxdart/rxdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:drift/drift.dart';
@@ -19,8 +18,7 @@ class SheetIdAndLastOpened {
 }
 
 abstract class ILocalDataSource {
-  void saveUpdate(SyncRequest update);
-  void save(ChangeSet updates);
+  void save(List<SyncRequest> updates);
   void dispose();
   Future<List<SheetIdAndLastOpened>> getSheetIdAndLastOpened();
   Future<SheetDataEntity> getSheetDataEntity(int sheetId);
@@ -44,7 +42,7 @@ class DriftLocalDataSource
 
   // The Map acts as our cache. Using the entity's ID as the key
   // guarantees the "latest wins" behavior automatically.
-  final Map<String, SyncRequestImpl> _pendingSaves = {};
+  final List<SyncRequestImpl> _pendingSaves = [];
 
   // The trigger for our debounce logic
   final PublishSubject<void> _saveTrigger = PublishSubject<void>();
@@ -63,18 +61,9 @@ class DriftLocalDataSource
   }
 
   @override
-  void saveUpdate(SyncRequest update) {
-    save(ChangeSetImpl()..addUpdate(update as SyncRequestImpl));
-  }
-
-  @override
-  void save(ChangeSet updates) {
-    for (final update in updates.toMap().values) {
-      _pendingSaves.update(
-        (update as SyncRequestImpl).getKey(),
-        (existing) => (existing as SyncRequestImpl).merge(update),
-        ifAbsent: () => update,
-      );
+  void save(List<SyncRequest> updates) {
+    _pendingSaves.addAll(updates as List<SyncRequestImpl>);
+    if (updates.isNotEmpty) {
       _saveTrigger.add(null);
     }
   }
@@ -86,7 +75,7 @@ class DriftLocalDataSource
     // 1. Extract the items AND clear the map synchronously.
     // Doing this immediately prevents asynchronous race conditions where
     // a Use Case might add a new item while the DB is busy writing.
-    final itemsToSave = _pendingSaves.values.toList();
+    final itemsToSave = _pendingSaves.toList();
     _pendingSaves.clear();
 
     // 2. Write to the database
@@ -96,12 +85,7 @@ class DriftLocalDataSource
       // ERROR HANDLING: If the save fails, we return the items to the cache.
       // We use putIfAbsent so we don't accidentally overwrite newer edits
       // that a user might have made while the DB was failing.
-      for (var item in itemsToSave) {
-        _pendingSaves.putIfAbsent(
-          (item as SyncRequestImpl).getKey(),
-          () => item,
-        );
-      }
+      _pendingSaves.addAll(itemsToSave);
       logger.e("Database save failed. Items returned to cache. Error: $e");
     }
   }
@@ -128,10 +112,6 @@ class DriftLocalDataSource
     _flushToDatabase();
   }
 
-  Value<T> _nullableToValue<T>(T? itemField) {
-    return itemField != null ? Value(itemField) : const Value.absent();
-  }
-
   void _executeBatchOperation<T extends Table, D>(
     Batch batch,
     TableInfo<T, D> table,
@@ -151,10 +131,46 @@ class DriftLocalDataSource
       case DataBaseOperationType.update:
         batch.update(table, syncRequest.companion.companion);
         break;
+      case DataBaseOperationType.deleteWhere:
+        // 1. Extract the explicitly set fields from the companion.
+        // The 'false' argument ensures we include Value(null) if explicitly set.
+        final presentColumns = syncRequest.companion.companion.toColumns(false);
+
+        // If the companion is completely empty, skip to prevent wiping the whole table.
+        if (presentColumns.isEmpty) return;
+
+        Expression<bool>? filter;
+
+        // 2. Iterate over the fields present in the companion.
+        for (final entry in presentColumns.entries) {
+          final columnName = entry.key;
+          final valueExpression = entry.value;
+
+          // 3. Look up the actual column object on the table.
+          final tableColumn = table.columnsByName[columnName];
+
+          if (tableColumn != null) {
+            // 4. Build the SQL equality expression: (tableColumn = value)
+            final condition = tableColumn.equalsExp(valueExpression);
+
+            // 5. Chain multiple conditions together using the bitwise AND operator (&),
+            // which Drift overrides to generate SQL's logical AND.
+            if (filter == null) {
+              filter = condition;
+            } else {
+              filter = filter & condition;
+            }
+          }
+        }
+
+        // 6. Apply the dynamic filter to the batch.
+        if (filter != null) {
+          batch.deleteWhere(table, (_) => filter!);
+        }
+        break;
     }
   }
 
-  @override
   Future<void> _batchInsertOrUpdate(List<SyncRequestImpl> syncRequests) async {
     await db.batch((batch) {
       for (final syncRequest in syncRequests) {
