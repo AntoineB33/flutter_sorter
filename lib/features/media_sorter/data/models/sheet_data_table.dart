@@ -14,34 +14,33 @@ part 'sheet_data_table.freezed.dart';
 @freezed
 @JsonSerializable(explicitToJson: true)
 class SyncRequestImpl implements SyncRequest {
-  final DbCompanionWrapper companion;
+  final DbCompanionWrapper companionWrapper;
   final DataBaseOperationType dataBaseOperationType;
 
-  SyncRequestImpl(this.companion, this.dataBaseOperationType);
+  SyncRequestImpl(this.companionWrapper, this.dataBaseOperationType);
 
   factory SyncRequestImpl.fromJson(Map<String, dynamic> json) =>
       _$SyncRequestImplFromJson(json);
   Map<String, dynamic> toJson() => _$SyncRequestImplToJson(this);
   // ignore: unused_element
   static void _keepLinterHappy() => SyncRequestImpl(
-        SheetDataWrapper(
-          SheetDataTablesCompanion(),
-        ),
-        DataBaseOperationType.insert,
-      ).toJson();
+    SheetDataWrapper(SheetDataTablesCompanion()),
+    DataBaseOperationType.insert,
+  ).toJson();
 }
 
 @JsonSerializable(explicitToJson: true)
 sealed class DbCompanionWrapper {
+  DbCompanionWrapper();
+
   UpdateCompanion<DataClass> get companion;
 
   factory DbCompanionWrapper.fromJson(Map<String, dynamic> json) =>
       _$DbCompanionWrapperFromJson(json);
   Map<String, dynamic> toJson() => _$DbCompanionWrapperToJson(this);
   // ignore: unused_element
-  static void _keepLinterHappy() => SheetDataWrapper(
-        SheetDataTablesCompanion(),
-      ).toJson();
+  static void _keepLinterHappy() =>
+      SheetDataWrapper(SheetDataTablesCompanion()).toJson();
 }
 
 class SheetDataWrapper extends DbCompanionWrapper {
@@ -125,7 +124,7 @@ class SheetCellsTable extends Table {
   // The position
   IntColumn get row => integer()();
   IntColumn get col => integer()();
-
+  
   // The content
   TextColumn get content => text()();
 
@@ -150,13 +149,16 @@ class SheetColumnTypesTable extends Table {
   Set<Column> get primaryKey => {sheetId, columnIndex};
 }
 
-class ListSyncRequestMapConverter extends TypeConverter<List<SyncRequest>, String> {
+class ListSyncRequestMapConverter
+    extends TypeConverter<List<SyncRequest>, String> {
   const ListSyncRequestMapConverter();
 
   @override
   List<SyncRequest> fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as List<dynamic>;
-    return decoded.map((e) => SyncRequestImpl.fromJson(e as Map<String, dynamic>)).toList();
+    return decoded
+        .map((e) => SyncRequestImpl.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   @override

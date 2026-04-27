@@ -162,11 +162,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  ChangeSet setColumnType(
-    int colId,
-    ColumnType newColumnType,
-    int sheetId,
-  ) {
+  changeList setColumnType(int colId, ColumnType newColumnType, int sheetId) {
     loadedSheetsCache.setColumnType(sheetId, colId, newColumnType);
   }
 
@@ -261,10 +257,10 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  ChangeSet addNewSheet(int sheetId, String title) {
+  changeList addNewSheet(int sheetId, String title) {
     loadedSheetsCache.setSheet(sheetId, CoreSheetContent.empty(title));
-    final changeSet = ChangeSet();
-    changeSet.addUpdate(
+    final changeList = changeList();
+    changeList.addUpdate(
       SheetDataUpdate(
         sheetId,
         true,
@@ -274,12 +270,12 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         usedCols: loadedSheetsCache.getSheet(sheetId).usedCols,
       ),
     );
-    return changeSet;
+    return changeList;
   }
 
   @override
-  ChangeSet delete() {
-    final updates = ChangeSet();
+  changeList delete() {
+    final updates = changeList();
     for (CellPosition cellPos
         in selectionCache.getSelectionState(currentSheetId).selectedCells) {
       final cellUpdate = CellUpdate(
@@ -299,12 +295,12 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  ChangeSet update(IMap<String, SyncRequest> updates, int sheetId) {
+  changeList update(IMap<String, SyncRequest> updates, int sheetId) {
     return loadedSheetsCache.update(updates, sheetId);
   }
 
   @override
-  ChangeSet setCellContent(String newValue, int sheetId) {
+  changeList setCellContent(String newValue, int sheetId) {
     final int rowId = selectionCache.primarySelectedCellX(sheetId);
     final int colId = selectionCache.primarySelectedCellY(sheetId);
     final syncRequest = SyncRequest(
@@ -318,6 +314,6 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       ),
       DataBaseOperationType.update,
     );
-    return ChangeSetImpl()..addUpdate(syncRequest);
+    return changeListImpl()..addUpdate(syncRequest);
   }
 }

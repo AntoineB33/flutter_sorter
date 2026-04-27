@@ -77,11 +77,11 @@ class SortUsecase {
     SortProgressDataMsg sortProgressDataMsg,
     int sheetId,
   ) {
-    ChangeSet changeSet = sortRepository.handleSortProgressDataMsg(
+    changeList changeList = sortRepository.handleSortProgressDataMsg(
       sortProgressDataMsg,
       sheetId,
     );
-    saveRepository.save(changeSet);
+    saveRepository.save(changeList);
     return sortRepository.stopLoop(sortProgressDataMsg, sheetId);
   }
 
@@ -117,8 +117,7 @@ class SortUsecase {
     sortRepository.setSortedWithCurrentBestSort(sheetId, value);
   }
 
-  
-  ChangeSet sortTableWithCurrentBestSort(int sheetId) {
+  changeList sortTableWithCurrentBestSort(int sheetId) {
     return sortRepository.sortTableWithCurrentBestSort(sheetId);
   }
 

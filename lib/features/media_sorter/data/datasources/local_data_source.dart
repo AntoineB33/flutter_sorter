@@ -119,22 +119,24 @@ class DriftLocalDataSource
   ) {
     switch (syncRequest.dataBaseOperationType) {
       case DataBaseOperationType.delete:
-        batch.delete(table, syncRequest.companion.companion);
+        batch.delete(table, syncRequest.companionWrapper.companion);
         break;
       case DataBaseOperationType.insert:
         batch.insert(
           table,
-          syncRequest.companion.companion,
+          syncRequest.companionWrapper.companion,
           mode: InsertMode.insertOrReplace,
         );
         break;
       case DataBaseOperationType.update:
-        batch.update(table, syncRequest.companion.companion);
+        batch.update(table, syncRequest.companionWrapper.companion);
         break;
       case DataBaseOperationType.deleteWhere:
         // 1. Extract the explicitly set fields from the companion.
         // The 'false' argument ensures we include Value(null) if explicitly set.
-        final presentColumns = syncRequest.companion.companion.toColumns(false);
+        final presentColumns = syncRequest.companionWrapper.companion.toColumns(
+          false,
+        );
 
         // If the companion is completely empty, skip to prevent wiping the whole table.
         if (presentColumns.isEmpty) return;
@@ -174,7 +176,7 @@ class DriftLocalDataSource
   Future<void> _batchInsertOrUpdate(List<SyncRequestImpl> syncRequests) async {
     await db.batch((batch) {
       for (final syncRequest in syncRequests) {
-        switch (syncRequest.companion) {
+        switch (syncRequest.companionWrapper) {
           case SheetDataWrapper():
             _executeBatchOperation(batch, db.sheetDataTables, syncRequest);
             break;

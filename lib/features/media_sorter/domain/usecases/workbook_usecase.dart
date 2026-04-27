@@ -65,18 +65,18 @@ class WorkbookUsecase {
   }
 
   void createSheetByName(String title) {
-    List<SyncRequest> changeSet = [];
+    List<SyncRequest> changeList = [];
     final sheetDataUpdate = workbookRepository.addNewSheetId(0);
     final sheetId = sheetDataUpdate.sheetId;
-    changeSet.addAll(sheetDataUpdate);
-    changeSet.merge(sheetDataRepository.addNewSheet(sheetId, title));
-    changeSet.merge(sortRepository.addSheetId(sheetId));
-    changeSet.addUpdate(
+    changeList.addAll(sheetDataUpdate);
+    changeList.merge(sheetDataRepository.addNewSheet(sheetId, title));
+    changeList.merge(sortRepository.addSheetId(sheetId));
+    changeList.addUpdate(
       selectionRepository.setSelectionData(sheetId, SelectionData.empty()),
     );
-    changeSet.addUpdate(gridRepository.setLayout(sheetId, LayoutData.empty()));
-    changeSet.merge(historyRepository.addSheetId(sheetId));
-    saveRepository.save(changeSet);
+    changeList.addUpdate(gridRepository.setLayout(sheetId, LayoutData.empty()));
+    changeList.merge(historyRepository.addSheetId(sheetId));
+    saveRepository.save(changeList);
   }
 
   Future<Either<Failure, Unit>> loadSheet(int sheetId) async {

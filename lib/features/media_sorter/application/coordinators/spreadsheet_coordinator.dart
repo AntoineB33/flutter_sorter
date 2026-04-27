@@ -131,9 +131,9 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void setCellContent(String newValue) {
-    final changeSet = sheetDataController.setCellContent(newValue);
+    final changeList = sheetDataController.setCellContent(newValue);
     applyUpdatesAndSort(
-      changeSet,
+      changeList,
       currentSheetId,
       false,
       false,
@@ -331,13 +331,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   void moveInUpdateHistory(int direction) {
     final updateData = historyController.moveInUpdateHistory(direction);
     if (updateData.isNotEmpty) {
-      applyUpdatesAndSort(
-        updateData,
-        currentSheetId,
-        true,
-        false,
-        false,
-      );
+      applyUpdatesAndSort(updateData, currentSheetId, true, false, false);
     }
   }
 
@@ -431,11 +425,20 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyDefaultColumnSequence() {
-    final updates = sheetDataController.setColumnType(1, ColumnType.dependencies);
-    updates.addAll(sheetDataController.setColumnType(2, ColumnType.dependencies));
-    updates.addAll(sheetDataController.setColumnType(3, ColumnType.dependencies));
+    final updates = sheetDataController.setColumnType(
+      1,
+      ColumnType.dependencies,
+    );
+    updates.addAll(
+      sheetDataController.setColumnType(2, ColumnType.dependencies),
+    );
+    updates.addAll(
+      sheetDataController.setColumnType(3, ColumnType.dependencies),
+    );
     updates.addAll(sheetDataController.setColumnType(7, ColumnType.urls));
-    updates.addAll(sheetDataController.setColumnType(8, ColumnType.dependencies));
+    updates.addAll(
+      sheetDataController.setColumnType(8, ColumnType.dependencies),
+    );
     applyUpdatesAndSort(updates, currentSheetId, false, false, false);
   }
 

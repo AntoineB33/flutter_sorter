@@ -46,11 +46,11 @@ class HistoryRepositoryImpl implements HistoryRepository {
     return updateData;
   }
 
-  
   List<SyncRequest> _removeLastHistoryBcEdit() {
-    final lastUpdateData = historyData.updateHistories.last.first as SyncRequestImpl;
-    List<SyncRequest> changeSet = [];
-    changeSet.add(
+    final lastUpdateData =
+        historyData.updateHistories.last.first as SyncRequestImpl;
+    List<SyncRequest> changeList = [];
+    changeList.add(
       SyncRequestImpl(
         HistoryWrapper(
           UpdateHistoriesTableCompanion(
@@ -59,11 +59,11 @@ class HistoryRepositoryImpl implements HistoryRepository {
           ),
         ),
         DataBaseOperationType.delete,
-      )
+      ),
     );
     historyData.updateHistories.removeAt(historyData.historyIndex);
     historyData.historyIndex--;
-    changeSet.add(
+    changeList.add(
       SyncRequestImpl(
         SheetDataWrapper(
           SheetDataTablesCompanion(
@@ -72,9 +72,9 @@ class HistoryRepositoryImpl implements HistoryRepository {
           ),
         ),
         DataBaseOperationType.update,
-      )
+      ),
     );
-    return changeSet;
+    return changeList;
   }
 
   @override
@@ -83,34 +83,30 @@ class HistoryRepositoryImpl implements HistoryRepository {
     int sheetId,
     bool isFromEditing,
   ) {
-    List<SyncRequest> changeSet = [];
-    changeSet.add(
+    List<SyncRequest> changeList = [];
+    changeList.add(
       SyncRequestImpl(
         HistoryWrapper(
           UpdateHistoriesTableCompanion(
             chronoId: Value(chronoIdCounter++),
             sheetId: Value(currentSheetId),
-            updates: Value(updates)
+            updates: Value(updates),
           ),
         ),
         DataBaseOperationType.delete,
-      )
+      ),
     );
     if (isFromEditing) {
       if (isLastChangeInSameEditingMode) {
-        CellUpdate cellUpdate = updates.values.first as CellUpdate;
-        UpdateData lastUpdateData = historyData.updateHistories.last;
-        CellUpdate prevCellUpdate =
-            lastUpdateData.updates.values.first as CellUpdate;
-        if (cellUpdate.newValue == prevCellUpdate.prevValue) {
+        final cellUpdate = ((updates.first as SyncRequestImpl).companionWrapper as SheetCellWrapper).companion;
+        final lastUpdateData = historyData.updateHistories.last;
+        final prevCellUpdate =
+            lastUpdateData.first as SyncRequestImpl;
+        if (loadedSheetsDataStore.getCellContent(sheetId, cellUpdate.row.value, cellUpdate.col.value) == (prevCellUpdate.companionWrapper as SheetCellWrapper).companion.content.value) {
           isLastChangeInSameEditingMode = false;
           return _removeLastHistoryBcEdit();
         }
-        lastUpdateData.addOtherwiseRemove = true;
-        changeSet.addUpdate(lastUpdateData);
-        changeSet.addUpdate(updateData);
-        historyData.updateHistories[historyData.historyIndex] = updateData;
-        return changeSet;
+        return [];
       }
       isLastChangeInSameEditingMode = true;
     }
@@ -121,7 +117,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
         i++
       ) {
         historyData.updateHistories[i].addOtherwiseRemove = false;
-        changeSet.addUpdate(historyData.updateHistories[i]);
+        changeList.addUpdate(historyData.updateHistories[i]);
       }
       historyData.updateHistories = historyData.updateHistories.sublist(
         0,
@@ -129,11 +125,11 @@ class HistoryRepositoryImpl implements HistoryRepository {
       );
     }
     historyData.updateHistories.add(updateData);
-    changeSet.addUpdate(updateData);
+    changeList.addUpdate(updateData);
     historyData.historyIndex++;
     if (historyData.historyIndex == SpreadsheetConstants.historyLimit) {
       historyData.updateHistories.first.addOtherwiseRemove = false;
-      changeSet.addUpdate(historyData.updateHistories.first);
+      changeList.addUpdate(historyData.updateHistories.first);
       historyData.updateHistories.removeAt(0);
       historyData.historyIndex--;
     }
@@ -142,8 +138,8 @@ class HistoryRepositoryImpl implements HistoryRepository {
       true,
       historyIndex: historyData.historyIndex,
     );
-    changeSet.addUpdate(historyChg);
-    return changeSet;
+    changeList.addUpdate(historyChg);
+    return changeList;
   }
 
   @override
@@ -179,23 +175,23 @@ class HistoryRepositoryImpl implements HistoryRepository {
   }
 
   @override
-  ChangeSet addSheetId(int sheetId) {
+  changeList addSheetId(int sheetId) {
     final historyData = HistoryData.empty();
     historyCache.setUpdateHistories(sheetId, historyData);
-    final changeSet = ChangeSet();
-    changeSet.addUpdate(
+    final changeList = changeList();
+    changeList.addUpdate(
       SheetDataUpdate(sheetId, true, historyIndex: historyData.historyIndex),
     );
-    return changeSet;
+    return changeList;
   }
 
   @override
-  ChangeSet stopEditing(bool escape) {
-    ChangeSet changeSet = ChangeSet();
+  changeList stopEditing(bool escape) {
+    changeList changeList = changeList();
     if (escape && isLastChangeInSameEditingMode) {
-      changeSet = _removeLastHistoryBcEdit();
+      changeList = _removeLastHistoryBcEdit();
     }
     isLastChangeInSameEditingMode = false;
-    return changeSet;
+    return changeList;
   }
 }

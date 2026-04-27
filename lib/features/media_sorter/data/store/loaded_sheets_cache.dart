@@ -53,9 +53,11 @@ class LoadedSheetsCache {
     _loadedSheetsData[sheetId] = sheetData;
   }
 
-  
-  List<SyncRequestImpl> _updateCell(int sheetId, SheetCellsTableCompanion update) {
-    List<SyncRequestImpl> changeSet = [];
+  List<SyncRequestImpl> _updateCell(
+    int sheetId,
+    SheetCellsTableCompanion update,
+  ) {
+    List<SyncRequestImpl> changeList = [];
     _loadedSheetsData[sheetId]!.cells[CellPosition(
           update.row.value,
           update.col.value,
@@ -99,7 +101,7 @@ class LoadedSheetsCache {
       }
     }
     if (newUsedRows != null || newUsedCols != null) {
-      changeSet.addUpdate(
+      changeList.addUpdate(
         SheetDataUpdate(
           sheetId,
           true,
@@ -108,13 +110,12 @@ class LoadedSheetsCache {
         ),
       );
     }
-    return changeSet;
+    return changeList;
   }
 
-  
-  ChangeSet renameSheet(int sheetId, String newName) {
+  changeList renameSheet(int sheetId, String newName) {
     _loadedSheetsData[sheetId]!.title = newName;
-    return ChangeSetImpl()
+    return changeListImpl()
       ..addUpdate(SheetDataUpdate(sheetId, true, title: newName));
   }
 
