@@ -29,11 +29,15 @@ class SyncRequestImpl implements SyncRequest {
   ).toJson();
 }
 
+
+
 @JsonSerializable(explicitToJson: true)
 sealed class DbCompanionWrapper {
   DbCompanionWrapper();
 
   UpdateCompanion<DataClass> get companion;
+
+  DbCompanionWrapper getHistoryUpdate();
 
   factory DbCompanionWrapper.fromJson(Map<String, dynamic> json) =>
       _$DbCompanionWrapperFromJson(json);
@@ -47,6 +51,15 @@ class SheetDataWrapper extends DbCompanionWrapper {
   @override
   final SheetDataTablesCompanion companion;
   SheetDataWrapper(this.companion);
+  @override
+  DbCompanionWrapper getHistoryUpdate() {
+    return SheetDataWrapper(
+      SheetDataTablesCompanion(
+        sheetId: companion.sheetId,
+        title: companion.title.present ? 
+      ),
+    );
+  }
 }
 
 class SheetCellWrapper extends DbCompanionWrapper {

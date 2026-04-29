@@ -84,6 +84,48 @@ class HistoryRepositoryImpl implements HistoryRepository {
     bool isFromEditing,
   ) {
     List<SyncRequest> changeList = [];
+    List<SyncRequest> historyUpdates = updates.map((e) {
+      switch((e as SyncRequestImpl).companionWrapper) {
+        case SheetCellWrapper():
+          final cellUpdate = (e.companionWrapper as SheetCellWrapper).companion;
+          return SyncRequestImpl(
+            SheetCellWrapper(
+              SheetCellsTableCompanion(
+                sheetId: Value(sheetId),
+                row: cellUpdate.row,
+                col: cellUpdate.col,
+                content: cellUpdate.content,
+                newValue: cellUpdate.newValue,
+              ),
+            ),
+            DataBaseOperationType.update,
+          );
+        case HistoryWrapper():
+          final historyUpdate = (e.companionWrapper as HistoryWrapper).companion;
+          return SyncRequestImpl(
+            HistoryWrapper(
+              UpdateHistoriesTableCompanion(
+                chronoId: Value(chronoIdCounter++),
+                sheetId: Value(sheetId),
+                updates: Value(historyUpdate.updates),
+              ),
+            ),
+            DataBaseOperationType.delete,
+          );
+        case SheetDataWrapper():
+          final sheetDataUpdate = (e.companionWrapper as SheetDataWrapper).companion;
+          return SyncRequestImpl(
+            SheetDataWrapper(
+              SheetDataTablesCompanion(
+                sheetId: Value(sheetId),
+                historyIndex: Value(sheetDataUpdate.historyIndex),
+              ),
+            ),
+            DataBaseOperationType.update,
+          );
+        default:
+      return e;
+    }).toList();
     changeList.add(
       SyncRequestImpl(
         HistoryWrapper(
