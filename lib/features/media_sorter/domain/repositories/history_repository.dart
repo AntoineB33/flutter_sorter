@@ -3,12 +3,12 @@ import 'package:trying_flutter/features/media_sorter/domain/models/change_set.da
 import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
 
 abstract class HistoryRepository {
-  List<SyncRequest> moveInUpdateHistory(int direction);
+  List<SyncRequest> moveInUpdateHistory(HistoryType historyType, int direction);
 
   List<SyncRequestWithoutHist> commitHistory(
-    List<SyncRequestWithHistImpl> updates,
+    List<SyncRequestWithHist> updates,
     int sheetId,
-    bool isFromEditingMode,
+    HistoryType historyType,
     bool sameHistIdFromLast,
   );
 

@@ -95,18 +95,50 @@ class $SheetDataTablesTable extends SheetDataTables
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _primarySelectionXMeta = const VerificationMeta(
+    'primarySelectionX',
+  );
   @override
-  late final GeneratedColumnWithTypeConverter<SelectionData, String>
-  selectionHistory =
+  late final GeneratedColumn<int> primarySelectionX = GeneratedColumn<int>(
+    'primary_selection_x',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _primarySelectionYMeta = const VerificationMeta(
+    'primarySelectionY',
+  );
+  @override
+  late final GeneratedColumn<int> primarySelectionY = GeneratedColumn<int>(
+    'primary_selection_y',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<Set<CellPosition>, String>
+  selectedCells =
       GeneratedColumn<String>(
-        'selection_history',
+        'selected_cells',
         aliasedName,
         false,
         type: DriftSqlType.string,
         requiredDuringInsert: true,
-      ).withConverter<SelectionData>(
-        $SheetDataTablesTable.$converterselectionHistory,
+      ).withConverter<Set<CellPosition>>(
+        $SheetDataTablesTable.$converterselectedCells,
       );
+  static const VerificationMeta _selectionHistoryIdMeta =
+      const VerificationMeta('selectionHistoryId');
+  @override
+  late final GeneratedColumn<int> selectionHistoryId = GeneratedColumn<int>(
+    'selection_history_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _scrollOffsetXMeta = const VerificationMeta(
     'scrollOffsetX',
   );
@@ -268,7 +300,10 @@ class $SheetDataTablesTable extends SheetDataTables
     historyIndex,
     colHeaderHeight,
     rowHeaderWidth,
-    selectionHistory,
+    primarySelectionX,
+    primarySelectionY,
+    selectedCells,
+    selectionHistoryId,
     scrollOffsetX,
     scrollOffsetY,
     bestSortFound,
@@ -349,6 +384,39 @@ class $SheetDataTablesTable extends SheetDataTables
       );
     } else if (isInserting) {
       context.missing(_rowHeaderWidthMeta);
+    }
+    if (data.containsKey('primary_selection_x')) {
+      context.handle(
+        _primarySelectionXMeta,
+        primarySelectionX.isAcceptableOrUnknown(
+          data['primary_selection_x']!,
+          _primarySelectionXMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_primarySelectionXMeta);
+    }
+    if (data.containsKey('primary_selection_y')) {
+      context.handle(
+        _primarySelectionYMeta,
+        primarySelectionY.isAcceptableOrUnknown(
+          data['primary_selection_y']!,
+          _primarySelectionYMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_primarySelectionYMeta);
+    }
+    if (data.containsKey('selection_history_id')) {
+      context.handle(
+        _selectionHistoryIdMeta,
+        selectionHistoryId.isAcceptableOrUnknown(
+          data['selection_history_id']!,
+          _selectionHistoryIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_selectionHistoryIdMeta);
     }
     if (data.containsKey('scroll_offset_x')) {
       context.handle(
@@ -469,13 +537,24 @@ class $SheetDataTablesTable extends SheetDataTables
         DriftSqlType.double,
         data['${effectivePrefix}row_header_width'],
       )!,
-      selectionHistory: $SheetDataTablesTable.$converterselectionHistory
-          .fromSql(
-            attachedDatabase.typeMapping.read(
-              DriftSqlType.string,
-              data['${effectivePrefix}selection_history'],
-            )!,
-          ),
+      primarySelectionX: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}primary_selection_x'],
+      )!,
+      primarySelectionY: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}primary_selection_y'],
+      )!,
+      selectedCells: $SheetDataTablesTable.$converterselectedCells.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}selected_cells'],
+        )!,
+      ),
+      selectionHistoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}selection_history_id'],
+      )!,
       scrollOffsetX: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}scroll_offset_x'],
@@ -552,8 +631,8 @@ class $SheetDataTablesTable extends SheetDataTables
       const ListIntConverter();
   static TypeConverter<List<int>, String> $converterusedCols =
       const ListIntConverter();
-  static TypeConverter<SelectionData, String> $converterselectionHistory =
-      const SelectionDataConverter();
+  static TypeConverter<Set<CellPosition>, String> $converterselectedCells =
+      const SetCellPositionConverter();
   static TypeConverter<List<int>, String> $converterbestSortFound =
       const ListIntConverter();
   static TypeConverter<List<int>, String> $converterbestDistFound =
@@ -577,7 +656,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
   final int historyIndex;
   final double colHeaderHeight;
   final double rowHeaderWidth;
-  final SelectionData selectionHistory;
+  final int primarySelectionX;
+  final int primarySelectionY;
+  final Set<CellPosition> selectedCells;
+  final int selectionHistoryId;
   final double scrollOffsetX;
   final double scrollOffsetY;
   final List<int> bestSortFound;
@@ -600,7 +682,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     required this.historyIndex,
     required this.colHeaderHeight,
     required this.rowHeaderWidth,
-    required this.selectionHistory,
+    required this.primarySelectionX,
+    required this.primarySelectionY,
+    required this.selectedCells,
+    required this.selectionHistoryId,
     required this.scrollOffsetX,
     required this.scrollOffsetY,
     required this.bestSortFound,
@@ -634,13 +719,14 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     map['history_index'] = Variable<int>(historyIndex);
     map['col_header_height'] = Variable<double>(colHeaderHeight);
     map['row_header_width'] = Variable<double>(rowHeaderWidth);
+    map['primary_selection_x'] = Variable<int>(primarySelectionX);
+    map['primary_selection_y'] = Variable<int>(primarySelectionY);
     {
-      map['selection_history'] = Variable<String>(
-        $SheetDataTablesTable.$converterselectionHistory.toSql(
-          selectionHistory,
-        ),
+      map['selected_cells'] = Variable<String>(
+        $SheetDataTablesTable.$converterselectedCells.toSql(selectedCells),
       );
     }
+    map['selection_history_id'] = Variable<int>(selectionHistoryId);
     map['scroll_offset_x'] = Variable<double>(scrollOffsetX);
     map['scroll_offset_y'] = Variable<double>(scrollOffsetY);
     {
@@ -693,7 +779,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       historyIndex: Value(historyIndex),
       colHeaderHeight: Value(colHeaderHeight),
       rowHeaderWidth: Value(rowHeaderWidth),
-      selectionHistory: Value(selectionHistory),
+      primarySelectionX: Value(primarySelectionX),
+      primarySelectionY: Value(primarySelectionY),
+      selectedCells: Value(selectedCells),
+      selectionHistoryId: Value(selectionHistoryId),
       scrollOffsetX: Value(scrollOffsetX),
       scrollOffsetY: Value(scrollOffsetY),
       bestSortFound: Value(bestSortFound),
@@ -724,9 +813,12 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       historyIndex: serializer.fromJson<int>(json['historyIndex']),
       colHeaderHeight: serializer.fromJson<double>(json['colHeaderHeight']),
       rowHeaderWidth: serializer.fromJson<double>(json['rowHeaderWidth']),
-      selectionHistory: serializer.fromJson<SelectionData>(
-        json['selectionHistory'],
+      primarySelectionX: serializer.fromJson<int>(json['primarySelectionX']),
+      primarySelectionY: serializer.fromJson<int>(json['primarySelectionY']),
+      selectedCells: serializer.fromJson<Set<CellPosition>>(
+        json['selectedCells'],
       ),
+      selectionHistoryId: serializer.fromJson<int>(json['selectionHistoryId']),
       scrollOffsetX: serializer.fromJson<double>(json['scrollOffsetX']),
       scrollOffsetY: serializer.fromJson<double>(json['scrollOffsetY']),
       bestSortFound: serializer.fromJson<List<int>>(json['bestSortFound']),
@@ -762,7 +854,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       'historyIndex': serializer.toJson<int>(historyIndex),
       'colHeaderHeight': serializer.toJson<double>(colHeaderHeight),
       'rowHeaderWidth': serializer.toJson<double>(rowHeaderWidth),
-      'selectionHistory': serializer.toJson<SelectionData>(selectionHistory),
+      'primarySelectionX': serializer.toJson<int>(primarySelectionX),
+      'primarySelectionY': serializer.toJson<int>(primarySelectionY),
+      'selectedCells': serializer.toJson<Set<CellPosition>>(selectedCells),
+      'selectionHistoryId': serializer.toJson<int>(selectionHistoryId),
       'scrollOffsetX': serializer.toJson<double>(scrollOffsetX),
       'scrollOffsetY': serializer.toJson<double>(scrollOffsetY),
       'bestSortFound': serializer.toJson<List<int>>(bestSortFound),
@@ -790,7 +885,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     int? historyIndex,
     double? colHeaderHeight,
     double? rowHeaderWidth,
-    SelectionData? selectionHistory,
+    int? primarySelectionX,
+    int? primarySelectionY,
+    Set<CellPosition>? selectedCells,
+    int? selectionHistoryId,
     double? scrollOffsetX,
     double? scrollOffsetY,
     List<int>? bestSortFound,
@@ -813,7 +911,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     historyIndex: historyIndex ?? this.historyIndex,
     colHeaderHeight: colHeaderHeight ?? this.colHeaderHeight,
     rowHeaderWidth: rowHeaderWidth ?? this.rowHeaderWidth,
-    selectionHistory: selectionHistory ?? this.selectionHistory,
+    primarySelectionX: primarySelectionX ?? this.primarySelectionX,
+    primarySelectionY: primarySelectionY ?? this.primarySelectionY,
+    selectedCells: selectedCells ?? this.selectedCells,
+    selectionHistoryId: selectionHistoryId ?? this.selectionHistoryId,
     scrollOffsetX: scrollOffsetX ?? this.scrollOffsetX,
     scrollOffsetY: scrollOffsetY ?? this.scrollOffsetY,
     bestSortFound: bestSortFound ?? this.bestSortFound,
@@ -847,9 +948,18 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
       rowHeaderWidth: data.rowHeaderWidth.present
           ? data.rowHeaderWidth.value
           : this.rowHeaderWidth,
-      selectionHistory: data.selectionHistory.present
-          ? data.selectionHistory.value
-          : this.selectionHistory,
+      primarySelectionX: data.primarySelectionX.present
+          ? data.primarySelectionX.value
+          : this.primarySelectionX,
+      primarySelectionY: data.primarySelectionY.present
+          ? data.primarySelectionY.value
+          : this.primarySelectionY,
+      selectedCells: data.selectedCells.present
+          ? data.selectedCells.value
+          : this.selectedCells,
+      selectionHistoryId: data.selectionHistoryId.present
+          ? data.selectionHistoryId.value
+          : this.selectionHistoryId,
       scrollOffsetX: data.scrollOffsetX.present
           ? data.scrollOffsetX.value
           : this.scrollOffsetX,
@@ -899,7 +1009,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           ..write('historyIndex: $historyIndex, ')
           ..write('colHeaderHeight: $colHeaderHeight, ')
           ..write('rowHeaderWidth: $rowHeaderWidth, ')
-          ..write('selectionHistory: $selectionHistory, ')
+          ..write('primarySelectionX: $primarySelectionX, ')
+          ..write('primarySelectionY: $primarySelectionY, ')
+          ..write('selectedCells: $selectedCells, ')
+          ..write('selectionHistoryId: $selectionHistoryId, ')
           ..write('scrollOffsetX: $scrollOffsetX, ')
           ..write('scrollOffsetY: $scrollOffsetY, ')
           ..write('bestSortFound: $bestSortFound, ')
@@ -929,7 +1042,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
     historyIndex,
     colHeaderHeight,
     rowHeaderWidth,
-    selectionHistory,
+    primarySelectionX,
+    primarySelectionY,
+    selectedCells,
+    selectionHistoryId,
     scrollOffsetX,
     scrollOffsetY,
     bestSortFound,
@@ -956,7 +1072,10 @@ class SheetDataEntity extends DataClass implements Insertable<SheetDataEntity> {
           other.historyIndex == this.historyIndex &&
           other.colHeaderHeight == this.colHeaderHeight &&
           other.rowHeaderWidth == this.rowHeaderWidth &&
-          other.selectionHistory == this.selectionHistory &&
+          other.primarySelectionX == this.primarySelectionX &&
+          other.primarySelectionY == this.primarySelectionY &&
+          other.selectedCells == this.selectedCells &&
+          other.selectionHistoryId == this.selectionHistoryId &&
           other.scrollOffsetX == this.scrollOffsetX &&
           other.scrollOffsetY == this.scrollOffsetY &&
           other.bestSortFound == this.bestSortFound &&
@@ -982,7 +1101,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
   final Value<int> historyIndex;
   final Value<double> colHeaderHeight;
   final Value<double> rowHeaderWidth;
-  final Value<SelectionData> selectionHistory;
+  final Value<int> primarySelectionX;
+  final Value<int> primarySelectionY;
+  final Value<Set<CellPosition>> selectedCells;
+  final Value<int> selectionHistoryId;
   final Value<double> scrollOffsetX;
   final Value<double> scrollOffsetY;
   final Value<List<int>> bestSortFound;
@@ -1005,7 +1127,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     this.historyIndex = const Value.absent(),
     this.colHeaderHeight = const Value.absent(),
     this.rowHeaderWidth = const Value.absent(),
-    this.selectionHistory = const Value.absent(),
+    this.primarySelectionX = const Value.absent(),
+    this.primarySelectionY = const Value.absent(),
+    this.selectedCells = const Value.absent(),
+    this.selectionHistoryId = const Value.absent(),
     this.scrollOffsetX = const Value.absent(),
     this.scrollOffsetY = const Value.absent(),
     this.bestSortFound = const Value.absent(),
@@ -1029,7 +1154,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     required int historyIndex,
     required double colHeaderHeight,
     required double rowHeaderWidth,
-    required SelectionData selectionHistory,
+    required int primarySelectionX,
+    required int primarySelectionY,
+    required Set<CellPosition> selectedCells,
+    required int selectionHistoryId,
     required double scrollOffsetX,
     required double scrollOffsetY,
     required List<int> bestSortFound,
@@ -1050,7 +1178,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
        historyIndex = Value(historyIndex),
        colHeaderHeight = Value(colHeaderHeight),
        rowHeaderWidth = Value(rowHeaderWidth),
-       selectionHistory = Value(selectionHistory),
+       primarySelectionX = Value(primarySelectionX),
+       primarySelectionY = Value(primarySelectionY),
+       selectedCells = Value(selectedCells),
+       selectionHistoryId = Value(selectionHistoryId),
        scrollOffsetX = Value(scrollOffsetX),
        scrollOffsetY = Value(scrollOffsetY),
        bestSortFound = Value(bestSortFound),
@@ -1073,7 +1204,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Expression<int>? historyIndex,
     Expression<double>? colHeaderHeight,
     Expression<double>? rowHeaderWidth,
-    Expression<String>? selectionHistory,
+    Expression<int>? primarySelectionX,
+    Expression<int>? primarySelectionY,
+    Expression<String>? selectedCells,
+    Expression<int>? selectionHistoryId,
     Expression<double>? scrollOffsetX,
     Expression<double>? scrollOffsetY,
     Expression<String>? bestSortFound,
@@ -1097,7 +1231,11 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       if (historyIndex != null) 'history_index': historyIndex,
       if (colHeaderHeight != null) 'col_header_height': colHeaderHeight,
       if (rowHeaderWidth != null) 'row_header_width': rowHeaderWidth,
-      if (selectionHistory != null) 'selection_history': selectionHistory,
+      if (primarySelectionX != null) 'primary_selection_x': primarySelectionX,
+      if (primarySelectionY != null) 'primary_selection_y': primarySelectionY,
+      if (selectedCells != null) 'selected_cells': selectedCells,
+      if (selectionHistoryId != null)
+        'selection_history_id': selectionHistoryId,
       if (scrollOffsetX != null) 'scroll_offset_x': scrollOffsetX,
       if (scrollOffsetY != null) 'scroll_offset_y': scrollOffsetY,
       if (bestSortFound != null) 'best_sort_found': bestSortFound,
@@ -1125,7 +1263,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     Value<int>? historyIndex,
     Value<double>? colHeaderHeight,
     Value<double>? rowHeaderWidth,
-    Value<SelectionData>? selectionHistory,
+    Value<int>? primarySelectionX,
+    Value<int>? primarySelectionY,
+    Value<Set<CellPosition>>? selectedCells,
+    Value<int>? selectionHistoryId,
     Value<double>? scrollOffsetX,
     Value<double>? scrollOffsetY,
     Value<List<int>>? bestSortFound,
@@ -1149,7 +1290,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
       historyIndex: historyIndex ?? this.historyIndex,
       colHeaderHeight: colHeaderHeight ?? this.colHeaderHeight,
       rowHeaderWidth: rowHeaderWidth ?? this.rowHeaderWidth,
-      selectionHistory: selectionHistory ?? this.selectionHistory,
+      primarySelectionX: primarySelectionX ?? this.primarySelectionX,
+      primarySelectionY: primarySelectionY ?? this.primarySelectionY,
+      selectedCells: selectedCells ?? this.selectedCells,
+      selectionHistoryId: selectionHistoryId ?? this.selectionHistoryId,
       scrollOffsetX: scrollOffsetX ?? this.scrollOffsetX,
       scrollOffsetY: scrollOffsetY ?? this.scrollOffsetY,
       bestSortFound: bestSortFound ?? this.bestSortFound,
@@ -1198,12 +1342,21 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
     if (rowHeaderWidth.present) {
       map['row_header_width'] = Variable<double>(rowHeaderWidth.value);
     }
-    if (selectionHistory.present) {
-      map['selection_history'] = Variable<String>(
-        $SheetDataTablesTable.$converterselectionHistory.toSql(
-          selectionHistory.value,
+    if (primarySelectionX.present) {
+      map['primary_selection_x'] = Variable<int>(primarySelectionX.value);
+    }
+    if (primarySelectionY.present) {
+      map['primary_selection_y'] = Variable<int>(primarySelectionY.value);
+    }
+    if (selectedCells.present) {
+      map['selected_cells'] = Variable<String>(
+        $SheetDataTablesTable.$converterselectedCells.toSql(
+          selectedCells.value,
         ),
       );
+    }
+    if (selectionHistoryId.present) {
+      map['selection_history_id'] = Variable<int>(selectionHistoryId.value);
     }
     if (scrollOffsetX.present) {
       map['scroll_offset_x'] = Variable<double>(scrollOffsetX.value);
@@ -1280,7 +1433,10 @@ class SheetDataTablesCompanion extends UpdateCompanion<SheetDataEntity> {
           ..write('historyIndex: $historyIndex, ')
           ..write('colHeaderHeight: $colHeaderHeight, ')
           ..write('rowHeaderWidth: $rowHeaderWidth, ')
-          ..write('selectionHistory: $selectionHistory, ')
+          ..write('primarySelectionX: $primarySelectionX, ')
+          ..write('primarySelectionY: $primarySelectionY, ')
+          ..write('selectedCells: $selectedCells, ')
+          ..write('selectionHistoryId: $selectionHistoryId, ')
           ..write('scrollOffsetX: $scrollOffsetX, ')
           ..write('scrollOffsetY: $scrollOffsetY, ')
           ..write('bestSortFound: $bestSortFound, ')
@@ -1951,7 +2107,22 @@ class $UpdateHistoriesTableTable extends UpdateHistoriesTable
         $UpdateHistoriesTableTable.$converterupdates,
       );
   @override
-  List<GeneratedColumn> get $columns => [timestamp, chronoId, sheetId, updates];
+  late final GeneratedColumnWithTypeConverter<HistoryType, String> type =
+      GeneratedColumn<String>(
+        'type',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<HistoryType>($UpdateHistoriesTableTable.$convertertype);
+  @override
+  List<GeneratedColumn> get $columns => [
+    timestamp,
+    chronoId,
+    sheetId,
+    updates,
+    type,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2015,6 +2186,12 @@ class $UpdateHistoriesTableTable extends UpdateHistoriesTable
           data['${effectivePrefix}updates'],
         )!,
       ),
+      type: $UpdateHistoriesTableTable.$convertertype.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}type'],
+        )!,
+      ),
     );
   }
 
@@ -2025,6 +2202,8 @@ class $UpdateHistoriesTableTable extends UpdateHistoriesTable
 
   static TypeConverter<List<SyncRequest>, String> $converterupdates =
       const ListSyncRequestMapConverter();
+  static TypeConverter<HistoryType, String> $convertertype =
+      const HistoryChangeTypeConverter();
 }
 
 class UpdateHistoriesEntity extends DataClass
@@ -2033,11 +2212,13 @@ class UpdateHistoriesEntity extends DataClass
   final int chronoId;
   final int sheetId;
   final List<SyncRequest> updates;
+  final HistoryType type;
   const UpdateHistoriesEntity({
     required this.timestamp,
     required this.chronoId,
     required this.sheetId,
     required this.updates,
+    required this.type,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2050,6 +2231,11 @@ class UpdateHistoriesEntity extends DataClass
         $UpdateHistoriesTableTable.$converterupdates.toSql(updates),
       );
     }
+    {
+      map['type'] = Variable<String>(
+        $UpdateHistoriesTableTable.$convertertype.toSql(type),
+      );
+    }
     return map;
   }
 
@@ -2059,6 +2245,7 @@ class UpdateHistoriesEntity extends DataClass
       chronoId: Value(chronoId),
       sheetId: Value(sheetId),
       updates: Value(updates),
+      type: Value(type),
     );
   }
 
@@ -2072,6 +2259,7 @@ class UpdateHistoriesEntity extends DataClass
       chronoId: serializer.fromJson<int>(json['chronoId']),
       sheetId: serializer.fromJson<int>(json['sheetId']),
       updates: serializer.fromJson<List<SyncRequest>>(json['updates']),
+      type: serializer.fromJson<HistoryType>(json['type']),
     );
   }
   @override
@@ -2082,6 +2270,7 @@ class UpdateHistoriesEntity extends DataClass
       'chronoId': serializer.toJson<int>(chronoId),
       'sheetId': serializer.toJson<int>(sheetId),
       'updates': serializer.toJson<List<SyncRequest>>(updates),
+      'type': serializer.toJson<HistoryType>(type),
     };
   }
 
@@ -2090,11 +2279,13 @@ class UpdateHistoriesEntity extends DataClass
     int? chronoId,
     int? sheetId,
     List<SyncRequest>? updates,
+    HistoryType? type,
   }) => UpdateHistoriesEntity(
     timestamp: timestamp ?? this.timestamp,
     chronoId: chronoId ?? this.chronoId,
     sheetId: sheetId ?? this.sheetId,
     updates: updates ?? this.updates,
+    type: type ?? this.type,
   );
   UpdateHistoriesEntity copyWithCompanion(UpdateHistoriesTableCompanion data) {
     return UpdateHistoriesEntity(
@@ -2102,6 +2293,7 @@ class UpdateHistoriesEntity extends DataClass
       chronoId: data.chronoId.present ? data.chronoId.value : this.chronoId,
       sheetId: data.sheetId.present ? data.sheetId.value : this.sheetId,
       updates: data.updates.present ? data.updates.value : this.updates,
+      type: data.type.present ? data.type.value : this.type,
     );
   }
 
@@ -2111,13 +2303,14 @@ class UpdateHistoriesEntity extends DataClass
           ..write('timestamp: $timestamp, ')
           ..write('chronoId: $chronoId, ')
           ..write('sheetId: $sheetId, ')
-          ..write('updates: $updates')
+          ..write('updates: $updates, ')
+          ..write('type: $type')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(timestamp, chronoId, sheetId, updates);
+  int get hashCode => Object.hash(timestamp, chronoId, sheetId, updates, type);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2125,7 +2318,8 @@ class UpdateHistoriesEntity extends DataClass
           other.timestamp == this.timestamp &&
           other.chronoId == this.chronoId &&
           other.sheetId == this.sheetId &&
-          other.updates == this.updates);
+          other.updates == this.updates &&
+          other.type == this.type);
 }
 
 class UpdateHistoriesTableCompanion
@@ -2134,12 +2328,14 @@ class UpdateHistoriesTableCompanion
   final Value<int> chronoId;
   final Value<int> sheetId;
   final Value<List<SyncRequest>> updates;
+  final Value<HistoryType> type;
   final Value<int> rowid;
   const UpdateHistoriesTableCompanion({
     this.timestamp = const Value.absent(),
     this.chronoId = const Value.absent(),
     this.sheetId = const Value.absent(),
     this.updates = const Value.absent(),
+    this.type = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   UpdateHistoriesTableCompanion.insert({
@@ -2147,16 +2343,19 @@ class UpdateHistoriesTableCompanion
     required int chronoId,
     required int sheetId,
     required List<SyncRequest> updates,
+    required HistoryType type,
     this.rowid = const Value.absent(),
   }) : timestamp = Value(timestamp),
        chronoId = Value(chronoId),
        sheetId = Value(sheetId),
-       updates = Value(updates);
+       updates = Value(updates),
+       type = Value(type);
   static Insertable<UpdateHistoriesEntity> custom({
     Expression<DateTime>? timestamp,
     Expression<int>? chronoId,
     Expression<int>? sheetId,
     Expression<String>? updates,
+    Expression<String>? type,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2164,6 +2363,7 @@ class UpdateHistoriesTableCompanion
       if (chronoId != null) 'chrono_id': chronoId,
       if (sheetId != null) 'sheet_id': sheetId,
       if (updates != null) 'updates': updates,
+      if (type != null) 'type': type,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2173,6 +2373,7 @@ class UpdateHistoriesTableCompanion
     Value<int>? chronoId,
     Value<int>? sheetId,
     Value<List<SyncRequest>>? updates,
+    Value<HistoryType>? type,
     Value<int>? rowid,
   }) {
     return UpdateHistoriesTableCompanion(
@@ -2180,6 +2381,7 @@ class UpdateHistoriesTableCompanion
       chronoId: chronoId ?? this.chronoId,
       sheetId: sheetId ?? this.sheetId,
       updates: updates ?? this.updates,
+      type: type ?? this.type,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2201,6 +2403,11 @@ class UpdateHistoriesTableCompanion
         $UpdateHistoriesTableTable.$converterupdates.toSql(updates.value),
       );
     }
+    if (type.present) {
+      map['type'] = Variable<String>(
+        $UpdateHistoriesTableTable.$convertertype.toSql(type.value),
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2214,6 +2421,7 @@ class UpdateHistoriesTableCompanion
           ..write('chronoId: $chronoId, ')
           ..write('sheetId: $sheetId, ')
           ..write('updates: $updates, ')
+          ..write('type: $type, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3383,7 +3591,10 @@ typedef $$SheetDataTablesTableCreateCompanionBuilder =
       required int historyIndex,
       required double colHeaderHeight,
       required double rowHeaderWidth,
-      required SelectionData selectionHistory,
+      required int primarySelectionX,
+      required int primarySelectionY,
+      required Set<CellPosition> selectedCells,
+      required int selectionHistoryId,
       required double scrollOffsetX,
       required double scrollOffsetY,
       required List<int> bestSortFound,
@@ -3408,7 +3619,10 @@ typedef $$SheetDataTablesTableUpdateCompanionBuilder =
       Value<int> historyIndex,
       Value<double> colHeaderHeight,
       Value<double> rowHeaderWidth,
-      Value<SelectionData> selectionHistory,
+      Value<int> primarySelectionX,
+      Value<int> primarySelectionY,
+      Value<Set<CellPosition>> selectedCells,
+      Value<int> selectionHistoryId,
       Value<double> scrollOffsetX,
       Value<double> scrollOffsetY,
       Value<List<int>> bestSortFound,
@@ -3475,10 +3689,25 @@ class $$SheetDataTablesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnWithTypeConverterFilters<SelectionData, SelectionData, String>
-  get selectionHistory => $composableBuilder(
-    column: $table.selectionHistory,
+  ColumnFilters<int> get primarySelectionX => $composableBuilder(
+    column: $table.primarySelectionX,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get primarySelectionY => $composableBuilder(
+    column: $table.primarySelectionY,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<Set<CellPosition>, Set<CellPosition>, String>
+  get selectedCells => $composableBuilder(
+    column: $table.selectedCells,
     builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<int> get selectionHistoryId => $composableBuilder(
+    column: $table.selectionHistoryId,
+    builder: (column) => ColumnFilters(column),
   );
 
   ColumnFilters<double> get scrollOffsetX => $composableBuilder(
@@ -3606,8 +3835,23 @@ class $$SheetDataTablesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get selectionHistory => $composableBuilder(
-    column: $table.selectionHistory,
+  ColumnOrderings<int> get primarySelectionX => $composableBuilder(
+    column: $table.primarySelectionX,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get primarySelectionY => $composableBuilder(
+    column: $table.primarySelectionY,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get selectedCells => $composableBuilder(
+    column: $table.selectedCells,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get selectionHistoryId => $composableBuilder(
+    column: $table.selectionHistoryId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3718,9 +3962,24 @@ class $$SheetDataTablesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumnWithTypeConverter<SelectionData, String>
-  get selectionHistory => $composableBuilder(
-    column: $table.selectionHistory,
+  GeneratedColumn<int> get primarySelectionX => $composableBuilder(
+    column: $table.primarySelectionX,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get primarySelectionY => $composableBuilder(
+    column: $table.primarySelectionY,
+    builder: (column) => column,
+  );
+
+  GeneratedColumnWithTypeConverter<Set<CellPosition>, String>
+  get selectedCells => $composableBuilder(
+    column: $table.selectedCells,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get selectionHistoryId => $composableBuilder(
+    column: $table.selectionHistoryId,
     builder: (column) => column,
   );
 
@@ -3836,7 +4095,10 @@ class $$SheetDataTablesTableTableManager
                 Value<int> historyIndex = const Value.absent(),
                 Value<double> colHeaderHeight = const Value.absent(),
                 Value<double> rowHeaderWidth = const Value.absent(),
-                Value<SelectionData> selectionHistory = const Value.absent(),
+                Value<int> primarySelectionX = const Value.absent(),
+                Value<int> primarySelectionY = const Value.absent(),
+                Value<Set<CellPosition>> selectedCells = const Value.absent(),
+                Value<int> selectionHistoryId = const Value.absent(),
                 Value<double> scrollOffsetX = const Value.absent(),
                 Value<double> scrollOffsetY = const Value.absent(),
                 Value<List<int>> bestSortFound = const Value.absent(),
@@ -3859,7 +4121,10 @@ class $$SheetDataTablesTableTableManager
                 historyIndex: historyIndex,
                 colHeaderHeight: colHeaderHeight,
                 rowHeaderWidth: rowHeaderWidth,
-                selectionHistory: selectionHistory,
+                primarySelectionX: primarySelectionX,
+                primarySelectionY: primarySelectionY,
+                selectedCells: selectedCells,
+                selectionHistoryId: selectionHistoryId,
                 scrollOffsetX: scrollOffsetX,
                 scrollOffsetY: scrollOffsetY,
                 bestSortFound: bestSortFound,
@@ -3884,7 +4149,10 @@ class $$SheetDataTablesTableTableManager
                 required int historyIndex,
                 required double colHeaderHeight,
                 required double rowHeaderWidth,
-                required SelectionData selectionHistory,
+                required int primarySelectionX,
+                required int primarySelectionY,
+                required Set<CellPosition> selectedCells,
+                required int selectionHistoryId,
                 required double scrollOffsetX,
                 required double scrollOffsetY,
                 required List<int> bestSortFound,
@@ -3907,7 +4175,10 @@ class $$SheetDataTablesTableTableManager
                 historyIndex: historyIndex,
                 colHeaderHeight: colHeaderHeight,
                 rowHeaderWidth: rowHeaderWidth,
-                selectionHistory: selectionHistory,
+                primarySelectionX: primarySelectionX,
+                primarySelectionY: primarySelectionY,
+                selectedCells: selectedCells,
+                selectionHistoryId: selectionHistoryId,
                 scrollOffsetX: scrollOffsetX,
                 scrollOffsetY: scrollOffsetY,
                 bestSortFound: bestSortFound,
@@ -4327,6 +4598,7 @@ typedef $$UpdateHistoriesTableTableCreateCompanionBuilder =
       required int chronoId,
       required int sheetId,
       required List<SyncRequest> updates,
+      required HistoryType type,
       Value<int> rowid,
     });
 typedef $$UpdateHistoriesTableTableUpdateCompanionBuilder =
@@ -4335,6 +4607,7 @@ typedef $$UpdateHistoriesTableTableUpdateCompanionBuilder =
       Value<int> chronoId,
       Value<int> sheetId,
       Value<List<SyncRequest>> updates,
+      Value<HistoryType> type,
       Value<int> rowid,
     });
 
@@ -4367,6 +4640,12 @@ class $$UpdateHistoriesTableTableFilterComposer
     column: $table.updates,
     builder: (column) => ColumnWithTypeConverterFilters(column),
   );
+
+  ColumnWithTypeConverterFilters<HistoryType, HistoryType, String> get type =>
+      $composableBuilder(
+        column: $table.type,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
 }
 
 class $$UpdateHistoriesTableTableOrderingComposer
@@ -4397,6 +4676,11 @@ class $$UpdateHistoriesTableTableOrderingComposer
     column: $table.updates,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$UpdateHistoriesTableTableAnnotationComposer
@@ -4419,6 +4703,9 @@ class $$UpdateHistoriesTableTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<List<SyncRequest>, String> get updates =>
       $composableBuilder(column: $table.updates, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<HistoryType, String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
 }
 
 class $$UpdateHistoriesTableTableTableManager
@@ -4468,12 +4755,14 @@ class $$UpdateHistoriesTableTableTableManager
                 Value<int> chronoId = const Value.absent(),
                 Value<int> sheetId = const Value.absent(),
                 Value<List<SyncRequest>> updates = const Value.absent(),
+                Value<HistoryType> type = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => UpdateHistoriesTableCompanion(
                 timestamp: timestamp,
                 chronoId: chronoId,
                 sheetId: sheetId,
                 updates: updates,
+                type: type,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4482,12 +4771,14 @@ class $$UpdateHistoriesTableTableTableManager
                 required int chronoId,
                 required int sheetId,
                 required List<SyncRequest> updates,
+                required HistoryType type,
                 Value<int> rowid = const Value.absent(),
               }) => UpdateHistoriesTableCompanion.insert(
                 timestamp: timestamp,
                 chronoId: chronoId,
                 sheetId: sheetId,
                 updates: updates,
+                type: type,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

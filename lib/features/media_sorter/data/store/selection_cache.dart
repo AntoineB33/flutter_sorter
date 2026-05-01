@@ -5,6 +5,10 @@ import 'package:trying_flutter/features/media_sorter/domain/models/history_data.
 class SelectionCache {
   final Map<int, HistoryData> _selections = {};
 
+  HistoryData? operator [](int sheetId) => _selections[sheetId];
+  // ignore: unused_element
+  static void _keepLinterHappy() => SelectionCache()[0];
+
   HistoryUnit getSelectionState(int sheetId) {
     return getSelectionData(sheetId).updateHistories[getSelectionData(
       sheetId,

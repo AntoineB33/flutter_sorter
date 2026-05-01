@@ -161,8 +161,6 @@ class SheetCellsTable extends Table {
   IntColumn get row => integer()();
   IntColumn get col => integer()();
 
-  BoolColumn get editingModeHist => boolean()();
-
   // The content
   TextColumn get content => text()();
 
@@ -185,6 +183,26 @@ class SheetColumnTypesTable extends Table {
   // A sheet cannot have two different types defined for the same column index
   @override
   Set<Column> get primaryKey => {sheetId, columnIndex};
+}
+
+enum HistoryType {
+  selectionChange,
+  editModeChange,
+  other,
+}
+
+class HistoryChangeTypeConverter extends TypeConverter<HistoryType, String> {
+  const HistoryChangeTypeConverter();
+
+  @override
+  HistoryType fromSql(String fromDb) {
+    return HistoryType.values.firstWhere((e) => e.toString() == fromDb);
+  }
+
+  @override
+  String toSql(HistoryType value) {
+    return value.toString();
+  }
 }
 
 class ListSyncRequestMapConverter
@@ -216,6 +234,7 @@ class UpdateHistoriesTable extends Table {
   IntColumn get chronoId => integer()();
   IntColumn get sheetId => integer().references(SheetDataTables, #id)();
   TextColumn get updates => text().map(const ListSyncRequestMapConverter())();
+  TextColumn get type => text().map(const HistoryChangeTypeConverter())();
 
   @override
   Set<Column> get primaryKey => {timestamp, chronoId};

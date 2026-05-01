@@ -1,6 +1,8 @@
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
@@ -46,7 +48,7 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
-  SelectionState setPrimarySelection(int row, int col, bool keepSelection) {
+  List<SyncRequest> setPrimarySelection(int row, int col, bool keepSelection) {
     return SelectionState(primarySelection: CellPosition(row, col), selectedCells: keepSelection ? selectionState.selectedCells : {CellPosition(row, col)});
   }
 

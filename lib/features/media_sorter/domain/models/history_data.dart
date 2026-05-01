@@ -5,8 +5,9 @@ import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_tabl
 class HistoryUnit {
   final List<SyncRequestWithoutHistImpl> changeSet;
   final UpdateHistoriesTableCompanion timestamp;
+  final HistoryType historyType;
 
-  HistoryUnit({required this.changeSet, required this.timestamp});
+  HistoryUnit({required this.changeSet, required this.timestamp, required this.historyType});
 }
 
 @JsonSerializable(explicitToJson: true)

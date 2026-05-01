@@ -2,7 +2,9 @@ class SpreadsheetConstants {
   // Prevent instantiation
   const SpreadsheetConstants._();
 
-  static const int historyLimit = 100;
+  static const int historyLimitPerSheet = 100;
+  static const int editingModeHistoryLimit = 30;
+  static const int editingModesLimit = 30;
   static const int primSelHistoryLimit = 30;
 
   static const patternDistance =
