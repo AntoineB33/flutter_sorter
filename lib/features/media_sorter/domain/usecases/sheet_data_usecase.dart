@@ -41,13 +41,24 @@ class SheetDataUsecase {
     return sheetDataRepository.getCellContent(CellPosition(row, col), sheetId);
   }
 
-  
-  List<SyncRequest> setColumnType(int colId, ColumnType newColumnType, int sheetId) {
+  List<SyncRequest> setColumnType(
+    int colId,
+    ColumnType newColumnType,
+    int sheetId,
+  ) {
     return sheetDataRepository.setColumnType(colId, newColumnType, sheetId);
   }
 
   CoreSheetContent getSheet(int sheetId) {
     return sheetDataRepository.getSheet(sheetId);
+  }
+
+  List<SyncRequestWithoutHist> addHistoryRequest(
+    List<SyncRequestWithHist> updates,
+    int sheetId,
+    bool isFromEditing,
+  ) {
+    return historyRepository.commitHistory(updates, sheetId, isFromEditing);
   }
 
   void applyUpdatesNoSort(
@@ -57,15 +68,13 @@ class SheetDataUsecase {
     bool isFromEditing,
   ) {
     if (!isFromHistory) {
-      updates.addAll(
-        historyRepository.commitHistory(updates, sheetId, isFromEditing),
-      );
+      final result = historyRepository.commitHistory(updates, sheetId, isFromEditing);
+      updates..clear()..addAll(result);
     }
     updates.addAll(sheetDataRepository.update(updates, sheetId));
     saveRepository.save(updates);
   }
 
-  
   List<SyncRequest> delete() {
     return sheetDataRepository.delete();
   }
@@ -78,8 +87,7 @@ class SheetDataUsecase {
     return sheetDataRepository.copySelectionToClipboard();
   }
 
-  
-  List<SyncRequest> setCellContent(String newValue, int sheetId) {
-    return sheetDataRepository.setCellContent(newValue, sheetId);
+  List<SyncRequest> getCellUpdate(String newValue, int sheetId) {
+    return sheetDataRepository.getCellUpdate(newValue, sheetId);
   }
 }

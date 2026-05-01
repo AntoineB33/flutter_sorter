@@ -7,37 +7,64 @@ import 'package:trying_flutter/features/media_sorter/domain/models/change_set.da
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:drift/drift.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
 
 part 'sheet_data_table.freezed.dart';
 
 @freezed
 @JsonSerializable(explicitToJson: true)
-class SyncRequestImpl implements SyncRequest {
+class SyncRequestWithoutHistImpl implements SyncRequestWithoutHist {
   final DbCompanionWrapper companionWrapper;
   final DataBaseOperationType dataBaseOperationType;
 
-  SyncRequestImpl(this.companionWrapper, this.dataBaseOperationType);
+  SyncRequestWithoutHistImpl(this.companionWrapper, this.dataBaseOperationType);
 
-  factory SyncRequestImpl.fromJson(Map<String, dynamic> json) =>
+  factory SyncRequestWithoutHistImpl.fromJson(Map<String, dynamic> json) =>
       _$SyncRequestImplFromJson(json);
   Map<String, dynamic> toJson() => _$SyncRequestImplToJson(this);
   // ignore: unused_element
-  static void _keepLinterHappy() => SyncRequestImpl(
+  static void _keepLinterHappy() => SyncRequestWithoutHistImpl(
     SheetDataWrapper(SheetDataTablesCompanion()),
     DataBaseOperationType.insert,
   ).toJson();
 }
 
+@freezed
+@JsonSerializable(explicitToJson: true)
+class SyncRequestWithHistImpl implements SyncRequestWithHist {
+  final DbCompanionWrapperNotHistory companionWrapper;
+  final DbCompanionWrapperNotHistory historyCompW;
+  final DataBaseOperationType dataBaseOperationType;
 
+  SyncRequestWithHistImpl(
+    this.companionWrapper,
+    this.historyCompW,
+    this.dataBaseOperationType,
+  );
 
+  factory SyncRequestWithHistImpl.fromJson(Map<String, dynamic> json) =>
+      _$SyncRequestWithHistImplFromJson(json);
+  Map<String, dynamic> toJson() => _$SyncRequestWithHistImplToJson(this);
+  // ignore: unused_element
+  static void _keepLinterHappy() => SyncRequestWithHistImpl(
+    SheetDataWrapper(SheetDataTablesCompanion()),
+    SheetDataWrapper(SheetDataTablesCompanion()),
+    DataBaseOperationType.insert,
+  ).toJson();
+
+  SyncRequestWithoutHistImpl toSyncRequest() {
+    return SyncRequestWithoutHistImpl(
+      companionWrapper as DbCompanionWrapper,
+      dataBaseOperationType,
+    );
+  }
+}
+
+// wrapper stored in syncRequest to separate the domain (syncRequest) from the data layer (the companions)
 @JsonSerializable(explicitToJson: true)
 sealed class DbCompanionWrapper {
   DbCompanionWrapper();
 
   UpdateCompanion<DataClass> get companion;
-
-  DbCompanionWrapper getHistoryUpdate();
 
   factory DbCompanionWrapper.fromJson(Map<String, dynamic> json) =>
       _$DbCompanionWrapperFromJson(json);
@@ -47,22 +74,15 @@ sealed class DbCompanionWrapper {
       SheetDataWrapper(SheetDataTablesCompanion()).toJson();
 }
 
-class SheetDataWrapper extends DbCompanionWrapper {
+sealed class DbCompanionWrapperNotHistory extends DbCompanionWrapper {}
+
+class SheetDataWrapper extends DbCompanionWrapperNotHistory {
   @override
   final SheetDataTablesCompanion companion;
   SheetDataWrapper(this.companion);
-  @override
-  DbCompanionWrapper getHistoryUpdate() {
-    return SheetDataWrapper(
-      SheetDataTablesCompanion(
-        sheetId: companion.sheetId,
-        title: companion.title.present ? 
-      ),
-    );
-  }
 }
 
-class SheetCellWrapper extends DbCompanionWrapper {
+class SheetCellWrapper extends DbCompanionWrapperNotHistory {
   @override
   final SheetCellsTableCompanion companion;
   SheetCellWrapper(this.companion);
@@ -74,25 +94,25 @@ class HistoryWrapper extends DbCompanionWrapper {
   HistoryWrapper(this.companion);
 }
 
-class RowHeightWrapper extends DbCompanionWrapper {
+class RowHeightWrapper extends DbCompanionWrapperNotHistory {
   @override
   final RowsBottomPosTableCompanion companion;
   RowHeightWrapper(this.companion);
 }
 
-class ColWidthWrapper extends DbCompanionWrapper {
+class ColWidthWrapper extends DbCompanionWrapperNotHistory {
   @override
   final ColRightPosTableCompanion companion;
   ColWidthWrapper(this.companion);
 }
 
-class RowsManuallyAdjustedHeightWrapper extends DbCompanionWrapper {
+class RowsManuallyAdjustedHeightWrapper extends DbCompanionWrapperNotHistory {
   @override
   final RowsManuallyAdjustedHeightTableCompanion companion;
   RowsManuallyAdjustedHeightWrapper(this.companion);
 }
 
-class ColsManuallyAdjustedWidthWrapper extends DbCompanionWrapper {
+class ColsManuallyAdjustedWidthWrapper extends DbCompanionWrapperNotHistory {
   @override
   final ColsManuallyAdjustedWidthTableCompanion companion;
   ColsManuallyAdjustedWidthWrapper(this.companion);
@@ -108,8 +128,11 @@ class SheetDataTables extends Table {
   IntColumn get historyIndex => integer()();
   RealColumn get colHeaderHeight => real()();
   RealColumn get rowHeaderWidth => real()();
-  TextColumn get selectionHistory =>
-      text().map(const SelectionDataConverter())();
+  
+  IntColumn get primarySelectionX => integer()();
+  IntColumn get primarySelectionY => integer()();
+  TextColumn get selectedCells => text().map(const SetCellPositionConverter())();
+  IntColumn get selectionHistoryId => integer()();
   RealColumn get scrollOffsetX => real()();
   RealColumn get scrollOffsetY => real()();
 
@@ -137,7 +160,9 @@ class SheetCellsTable extends Table {
   // The position
   IntColumn get row => integer()();
   IntColumn get col => integer()();
-  
+
+  BoolColumn get editingModeHist => boolean()();
+
   // The content
   TextColumn get content => text()();
 
@@ -170,13 +195,17 @@ class ListSyncRequestMapConverter
   List<SyncRequest> fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as List<dynamic>;
     return decoded
-        .map((e) => SyncRequestImpl.fromJson(e as Map<String, dynamic>))
+        .map(
+          (e) => SyncRequestWithoutHistImpl.fromJson(e as Map<String, dynamic>),
+        )
         .toList();
   }
 
   @override
   String toSql(List<SyncRequest> value) {
-    final encoded = value.map((e) => (e as SyncRequestImpl).toJson()).toList();
+    final encoded = value
+        .map((e) => (e as SyncRequestWithoutHistImpl).toJson())
+        .toList();
     return jsonEncode(encoded);
   }
 }
@@ -250,22 +279,6 @@ class NodeStructListConverter extends TypeConverter<List<NodeStruct>, String> {
   }
 }
 
-class SelectionDataConverter extends TypeConverter<SelectionData, String> {
-  const SelectionDataConverter();
-
-  @override
-  SelectionData fromSql(String fromDb) {
-    final decoded = jsonDecode(fromDb) as Map<String, dynamic>;
-    return SelectionData.fromJson(decoded);
-  }
-
-  @override
-  String toSql(SelectionData value) {
-    final encoded = value.toJson();
-    return jsonEncode(encoded);
-  }
-}
-
 class SetPointConverter extends TypeConverter<Set<CellPosition>, String> {
   const SetPointConverter();
 
@@ -293,6 +306,38 @@ class ListPointConverter extends TypeConverter<List<CellPosition>, String> {
 
   @override
   String toSql(List<CellPosition> value) {
+    final encoded = value.map((e) => [e.rowId, e.colId]).toList();
+    return jsonEncode(encoded);
+  }
+}
+
+class CellPositionConverter extends TypeConverter<CellPosition, String> {
+  const CellPositionConverter();
+
+  @override
+  CellPosition fromSql(String fromDb) {
+    final decoded = jsonDecode(fromDb) as List<dynamic>;
+    return CellPosition(decoded[0] as int, decoded[1] as int);
+  }
+
+  @override
+  String toSql(CellPosition value) {
+    final encoded = [value.rowId, value.colId];
+    return jsonEncode(encoded);
+  }
+}
+
+class SetCellPositionConverter extends TypeConverter<Set<CellPosition>, String> {
+  const SetCellPositionConverter();
+
+  @override
+  Set<CellPosition> fromSql(String fromDb) {
+    final decoded = jsonDecode(fromDb) as List<dynamic>;
+    return decoded.map((e) => CellPosition(e[0] as int, e[1] as int)).toSet();
+  }
+
+  @override
+  String toSql(Set<CellPosition> value) {
     final encoded = value.map((e) => [e.rowId, e.colId]).toList();
     return jsonEncode(encoded);
   }

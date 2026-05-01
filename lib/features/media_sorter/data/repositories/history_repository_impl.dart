@@ -3,8 +3,11 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/sorting_progress_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/history_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
@@ -19,23 +22,34 @@ class HistoryRepositoryImpl implements HistoryRepository {
   final WorkbookCache workbookCache;
   final SelectionCache selectionCache;
   final HistoryCache historyCache;
+  final LayoutCache layoutCache;
+  final SortStatusCache sortStatusCache;
+  final SortProgressCache sortProgressCache;
+  final AnalysisResultCache analysisResultCache;
   int chronoIdCounter = 0;
+  int? lastChronoId;
+  DateTime? lastTimestamp;
   bool isLastChangeInSameEditingMode = false;
 
   int get currentSheetId => workbookCache.currentSheetId;
   CoreSheetContent get currentSheet =>
       loadedSheetsDataStore.getSheet(currentSheetId);
   HistoryData get historyData => historyCache[currentSheetId]!;
+  HistoryData get selectionHistoryData => selectionCache[currentSheetId]!;
 
   HistoryRepositoryImpl(
     this.loadedSheetsDataStore,
     this.workbookCache,
     this.selectionCache,
     this.historyCache,
+    this.layoutCache,
+    this.sortStatusCache,
+    this.sortProgressCache,
+    this.analysisResultCache,
   );
 
   @override
-  List<SyncRequest> moveInUpdateHistory(int direction) {
+  List<SyncRequestWithoutHistImpl> moveInUpdateHistory(int direction) {
     if (historyData.historyIndex + direction < 0 ||
         historyData.historyIndex + direction >=
             historyData.updateHistories.length) {
@@ -43,18 +57,20 @@ class HistoryRepositoryImpl implements HistoryRepository {
     }
     historyData.historyIndex += direction;
     final updateData = historyData.updateHistories[historyData.historyIndex];
-    return updateData;
+    return updateData.changeSet;
   }
 
-  List<SyncRequest> _removeLastHistoryBcEdit() {
-    final lastUpdateData =
-        historyData.updateHistories.last.first as SyncRequestImpl;
-    List<SyncRequest> changeList = [];
+  List<SyncRequestWithoutHistImpl> _removeLastHistoryBcEdit() {
+    final lastUpdateData = historyData.updateHistories.last.changeSet.first;
+    final lastUpdateCompanion =
+        lastUpdateData.companionWrapper as UpdateHistoriesTableCompanion;
+    List<SyncRequestWithoutHistImpl> changeList = [];
     changeList.add(
-      SyncRequestImpl(
+      SyncRequestWithoutHistImpl(
         HistoryWrapper(
           UpdateHistoriesTableCompanion(
-            chronoId: Value(chronoIdCounter++),
+            timestamp: Value(lastUpdateCompanion.timestamp.value),
+            chronoId: Value(lastUpdateCompanion.chronoId.value),
             sheetId: Value(currentSheetId),
           ),
         ),
@@ -64,7 +80,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
     historyData.updateHistories.removeAt(historyData.historyIndex);
     historyData.historyIndex--;
     changeList.add(
-      SyncRequestImpl(
+      SyncRequestWithoutHistImpl(
         SheetDataWrapper(
           SheetDataTablesCompanion(
             sheetId: Value(currentSheetId),
@@ -77,148 +93,128 @@ class HistoryRepositoryImpl implements HistoryRepository {
     return changeList;
   }
 
+  /* Updates the history cache and returns the changeList without the history 
+  information and with the history requests
+  */
   @override
-  List<SyncRequest> commitHistory(
-    List<SyncRequest> updates,
+  List<SyncRequestWithoutHist> commitHistory(
+    List<SyncRequestWithHistImpl> updates,
     int sheetId,
-    bool isFromEditing,
+    bool isFromEditingMode,
+    bool sameHistIdFromLast,
   ) {
-    List<SyncRequest> changeList = [];
-    List<SyncRequest> historyUpdates = updates.map((e) {
-      switch((e as SyncRequestImpl).companionWrapper) {
-        case SheetCellWrapper():
-          final cellUpdate = (e.companionWrapper as SheetCellWrapper).companion;
-          return SyncRequestImpl(
-            SheetCellWrapper(
-              SheetCellsTableCompanion(
-                sheetId: Value(sheetId),
-                row: cellUpdate.row,
-                col: cellUpdate.col,
-                content: cellUpdate.content,
-                newValue: cellUpdate.newValue,
-              ),
-            ),
-            DataBaseOperationType.update,
-          );
-        case HistoryWrapper():
-          final historyUpdate = (e.companionWrapper as HistoryWrapper).companion;
-          return SyncRequestImpl(
-            HistoryWrapper(
-              UpdateHistoriesTableCompanion(
-                chronoId: Value(chronoIdCounter++),
-                sheetId: Value(sheetId),
-                updates: Value(historyUpdate.updates),
-              ),
-            ),
-            DataBaseOperationType.delete,
-          );
-        case SheetDataWrapper():
-          final sheetDataUpdate = (e.companionWrapper as SheetDataWrapper).companion;
-          return SyncRequestImpl(
-            SheetDataWrapper(
-              SheetDataTablesCompanion(
-                sheetId: Value(sheetId),
-                historyIndex: Value(sheetDataUpdate.historyIndex),
-              ),
-            ),
-            DataBaseOperationType.update,
-          );
-        default:
-      return e;
+    List<SyncRequestWithoutHistImpl> historyChangeList = updates.map((update) {
+      final DataBaseOperationType histOper =
+          switch (update.dataBaseOperationType) {
+            DataBaseOperationType.insert => DataBaseOperationType.delete,
+            DataBaseOperationType.delete => DataBaseOperationType.insert,
+            DataBaseOperationType.update => DataBaseOperationType.update,
+            DataBaseOperationType.deleteWhere => DataBaseOperationType.insert,
+          };
+      return SyncRequestWithoutHistImpl(update.historyCompW, histOper);
     }).toList();
-    changeList.add(
-      SyncRequestImpl(
-        HistoryWrapper(
-          UpdateHistoriesTableCompanion(
-            chronoId: Value(chronoIdCounter++),
-            sheetId: Value(currentSheetId),
-            updates: Value(updates),
-          ),
-        ),
-        DataBaseOperationType.delete,
-      ),
-    );
-    if (isFromEditing) {
-      if (isLastChangeInSameEditingMode) {
-        final cellUpdate = ((updates.first as SyncRequestImpl).companionWrapper as SheetCellWrapper).companion;
-        final lastUpdateData = historyData.updateHistories.last;
-        final prevCellUpdate =
-            lastUpdateData.first as SyncRequestImpl;
-        if (loadedSheetsDataStore.getCellContent(sheetId, cellUpdate.row.value, cellUpdate.col.value) == (prevCellUpdate.companionWrapper as SheetCellWrapper).companion.content.value) {
-          isLastChangeInSameEditingMode = false;
-          return _removeLastHistoryBcEdit();
-        }
-        return [];
+
+    final 
+
+    List<SyncRequestWithoutHistImpl> changeList = [];
+    if (sameHistIdFromLast) {
+      if (lastTimestamp == null || lastChronoId == null) {
+        throw Exception(
+          'Last timestamp or chronoId is null while sameHistIdFromLast is true',
+        );
       }
-      isLastChangeInSameEditingMode = true;
+    } else {
+      lastTimestamp = DateTime.now();
+      lastChronoId = chronoIdCounter++;
     }
+    final historyReq = SyncRequestWithoutHistImpl(
+      HistoryWrapper(
+        UpdateHistoriesTableCompanion(
+          timestamp: Value(lastTimestamp!),
+          chronoId: Value(lastChronoId!),
+          sheetId: Value(sheetId),
+          updates: Value(historyChangeList),
+        ),
+      ),
+      DataBaseOperationType.insert,
+    );
+    changeList.add(historyReq);
+    final updateData = updates.map((update) {
+      return update.toSyncRequest();
+    }).toList();
+    changeList.addAll(updateData);
     if (historyData.historyIndex < historyData.updateHistories.length - 1) {
       for (
         int i = historyData.historyIndex + 1;
         i < historyData.updateHistories.length;
         i++
       ) {
-        historyData.updateHistories[i].addOtherwiseRemove = false;
-        changeList.addUpdate(historyData.updateHistories[i]);
+        changeList.add(
+          SyncRequestWithoutHistImpl(
+            HistoryWrapper(
+              UpdateHistoriesTableCompanion(
+                timestamp: Value(
+                  historyData.updateHistories[i].timestamp.timestamp.value,
+                ),
+                chronoId: Value(
+                  historyData.updateHistories[i].timestamp.chronoId.value,
+                ),
+                sheetId: Value(sheetId),
+              ),
+            ),
+            DataBaseOperationType.delete,
+          ),
+        );
       }
       historyData.updateHistories = historyData.updateHistories.sublist(
         0,
         historyData.historyIndex + 1,
       );
     }
-    historyData.updateHistories.add(updateData);
-    changeList.addUpdate(updateData);
+    historyData.updateHistories.add(
+      HistoryUnit(
+        changeSet: updateData,
+        timestamp: historyReq.companionWrapper as UpdateHistoriesTableCompanion,
+      ),
+    );
     historyData.historyIndex++;
     if (historyData.historyIndex == SpreadsheetConstants.historyLimit) {
-      historyData.updateHistories.first.addOtherwiseRemove = false;
-      changeList.addUpdate(historyData.updateHistories.first);
       historyData.updateHistories.removeAt(0);
+      changeList.add(
+        SyncRequestWithoutHistImpl(
+          HistoryWrapper(
+            UpdateHistoriesTableCompanion(
+              timestamp: Value(
+                historyData.updateHistories[0].timestamp.timestamp.value,
+              ),
+              chronoId: Value(
+                historyData.updateHistories[0].timestamp.chronoId.value,
+              ),
+              sheetId: Value(sheetId),
+            ),
+          ),
+          DataBaseOperationType.delete,
+        ),
+      );
       historyData.historyIndex--;
     }
-    final historyChg = SheetDataUpdate(
-      currentSheetId,
-      true,
-      historyIndex: historyData.historyIndex,
+    changeList.add(
+      SyncRequestWithoutHistImpl(
+        SheetDataWrapper(
+          SheetDataTablesCompanion(
+            sheetId: Value(sheetId),
+            historyIndex: Value(historyData.historyIndex),
+          ),
+        ),
+        DataBaseOperationType.update,
+      ),
     );
-    changeList.addUpdate(historyChg);
     return changeList;
   }
 
   @override
-  UpdateUnit commitSelection(SelectionState selectionState) {
-    var selectionData = selectionCache.getSelectionData(currentSheetId);
-    if (selectionData.primSelHistoryId <
-        selectionData.selectionStates.length - 1) {
-      final newPrimSelHistory = selectionData.selectionStates.sublist(
-        0,
-        selectionData.primSelHistoryId + 1,
-      );
-      selectionData.selectionStates
-        ..clear()
-        ..addAll(newPrimSelHistory);
-    }
-    selectionData.selectionStates.add(selectionState);
-    selectionData = selectionData.copyWith(
-      primSelHistoryId: selectionData.primSelHistoryId + 1,
-    );
-    const int primSelHistoryLimit = SpreadsheetConstants.primSelHistoryLimit;
-    if (selectionData.primSelHistoryId == primSelHistoryLimit) {
-      selectionData.selectionStates.removeAt(0);
-      selectionData = selectionData.copyWith(
-        primSelHistoryId: selectionData.primSelHistoryId - 1,
-      );
-    }
-    selectionCache.setSelectionData(currentSheetId, selectionData);
-    return SheetDataUpdate(
-      currentSheetId,
-      true,
-      selectionHistory: selectionData,
-    );
-  }
-
-  @override
   changeList addSheetId(int sheetId) {
-    final historyData = HistoryData.empty();
+    final historyData = HistoryData.empty(chronoIdCounter++);
     historyCache.setUpdateHistories(sheetId, historyData);
     final changeList = changeList();
     changeList.addUpdate(

@@ -1,14 +1,12 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/layout_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
@@ -22,7 +20,7 @@ class WorkbookUsecase {
   final SheetDataRepository sheetDataRepository;
   final GridRepository gridRepository;
   final HistoryRepository historyRepository;
-  final SaveRepository saveRepository;
+  final ILocalDataSource saveRepository;
 
   WorkbookUsecase(
     this.workbookRepository,
@@ -66,16 +64,14 @@ class WorkbookUsecase {
 
   void createSheetByName(String title) {
     List<SyncRequest> changeList = [];
-    final sheetDataUpdate = workbookRepository.addNewSheetId(0);
-    final sheetId = sheetDataUpdate.sheetId;
-    changeList.addAll(sheetDataUpdate);
-    changeList.merge(sheetDataRepository.addNewSheet(sheetId, title));
-    changeList.merge(sortRepository.addSheetId(sheetId));
-    changeList.addUpdate(
-      selectionRepository.setSelectionData(sheetId, SelectionData.empty()),
+    changeList.addAll(workbookRepository.addNewSheetId(0));
+    changeList.addAll(sheetDataRepository.addNewSheet(currentSheetId, title));
+    changeList.addAll(sortRepository.addSheetId(currentSheetId));
+    changeList.addAll(
+      selectionRepository.setSelectionData(currentSheetId, SelectionData.empty()),
     );
-    changeList.addUpdate(gridRepository.setLayout(sheetId, LayoutData.empty()));
-    changeList.merge(historyRepository.addSheetId(sheetId));
+    changeList.addAll(gridRepository.setLayout(currentSheetId, LayoutData.empty()));
+    changeList.addAll(historyRepository.addSheetId(currentSheetId));
     saveRepository.save(changeList);
   }
 

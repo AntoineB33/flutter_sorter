@@ -257,10 +257,10 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  changeList addNewSheet(int sheetId, String title) {
+  List<SyncRequest> addNewSheet(int sheetId, String title) {
     loadedSheetsCache.setSheet(sheetId, CoreSheetContent.empty(title));
-    final changeList = changeList();
-    changeList.addUpdate(
+    List<SyncRequest> changeList = [];
+    changeList.add(
       SheetDataUpdate(
         sheetId,
         true,
@@ -300,10 +300,10 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  changeList setCellContent(String newValue, int sheetId) {
+  List<SyncRequest> getCellUpdate(String newValue, int sheetId) {
     final int rowId = selectionCache.primarySelectedCellX(sheetId);
     final int colId = selectionCache.primarySelectedCellY(sheetId);
-    final syncRequest = SyncRequest(
+    final syncRequest = SyncRequestWithHistImpl(
       SheetCellWrapper(
         SheetCellsTableCompanion(
           sheetId: Value(sheetId),
@@ -312,8 +312,18 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
           content: Value(newValue),
         ),
       ),
+      SheetCellWrapper(
+        SheetCellsTableCompanion(
+          sheetId: Value(sheetId),
+          row: Value(rowId),
+          col: Value(colId),
+          content: Value(
+            loadedSheetsCache.getCellContent(sheetId, rowId, colId),
+          ),
+        ),
+      ),
       DataBaseOperationType.update,
     );
-    return changeListImpl()..addUpdate(syncRequest);
+    return [syncRequest];
   }
 }

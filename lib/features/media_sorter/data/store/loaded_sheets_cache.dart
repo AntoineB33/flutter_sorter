@@ -53,11 +53,11 @@ class LoadedSheetsCache {
     _loadedSheetsData[sheetId] = sheetData;
   }
 
-  List<SyncRequestImpl> _updateCell(
+  List<SyncRequestWithoutHistImpl> _updateCell(
     int sheetId,
     SheetCellsTableCompanion update,
   ) {
-    List<SyncRequestImpl> changeList = [];
+    List<SyncRequestWithoutHistImpl> changeList = [];
     _loadedSheetsData[sheetId]!.cells[CellPosition(
           update.row.value,
           update.col.value,

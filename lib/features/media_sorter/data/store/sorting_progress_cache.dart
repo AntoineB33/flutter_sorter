@@ -3,6 +3,10 @@ import 'package:trying_flutter/features/media_sorter/domain/models/sort_progress
 class SortProgressCache {
   final Map<int, SortProgressData> _dataBySheet = {};
 
+  bool sortInProgress(int sheetId) {
+    return _dataBySheet[sheetId] != null;
+  }
+
   bool isValidSortImpossible(int sheetId) {
     if (!_dataBySheet.containsKey(sheetId)) {
       return false;

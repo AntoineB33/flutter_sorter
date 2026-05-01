@@ -1,29 +1,39 @@
-import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
 
 class SelectionCache {
-  final Map<int, SelectionData> _selections = {};
+  final Map<int, HistoryData> _selections = {};
 
-  SelectionState getSelectionState(int sheetId) {
-    return getSelectionData(sheetId).selectionStates[getSelectionData(
+  HistoryUnit getSelectionState(int sheetId) {
+    return getSelectionData(sheetId).updateHistories[getSelectionData(
       sheetId,
-    ).primSelHistoryId];
+    ).historyIndex];
+  }
+
+  SheetDataTablesCompanion getCompanion(int sheetId) {
+    return (getSelectionState(sheetId).changeSet.first.companionWrapper
+            as SheetDataWrapper)
+        .companion;
   }
 
   int primarySelectedCellX(int sheetId) {
-    return getSelectionState(sheetId).primarySelection.rowId;
+    return getCompanion(sheetId)
+        .primarySelectionX.value;
   }
 
   int primarySelectedCellY(int sheetId) {
-    return getSelectionState(sheetId).primarySelection.colId;
+    return getCompanion(sheetId)
+        .primarySelectionY.value;
   }
 
-  Map<String, SelectionData> get selections => Map.unmodifiable(_selections);
+  Map<String, HistoryData> get selections => Map.unmodifiable(_selections);
 
-  SelectionData getSelectionData(int sheetId) {
-    return _selections[sheetId] ??= SelectionData.empty();
+  HistoryData getSelectionData(int sheetId) {
+    return _selections[sheetId] ??= HistoryData.empty();
   }
 
-  void setSelectionData(int sheetId, SelectionData selectionData) {
+  void setSelectionData(int sheetId, HistoryData selectionData) {
     _selections[sheetId] = selectionData;
   }
 }

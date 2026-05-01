@@ -131,7 +131,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void setCellContent(String newValue) {
-    final changeList = sheetDataController.setCellContent(newValue);
+    final changeList = sheetDataController.getCellUpdate(newValue);
     applyUpdatesAndSort(
       changeList,
       currentSheetId,

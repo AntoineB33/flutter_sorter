@@ -36,12 +36,10 @@ class SheetDataController extends ChangeNotifier {
     return sheetDataUsecase.getCellContent(row, col, currentSheetId);
   }
 
-  
   List<SyncRequest> setColumnType(int colId, ColumnType newColumnType) {
     return sheetDataUsecase.setColumnType(colId, newColumnType, currentSheetId);
   }
 
-  
   List<SyncRequest> delete() {
     return sheetDataUsecase.delete();
   }
@@ -60,8 +58,7 @@ class SheetDataController extends ChangeNotifier {
     );
   }
 
-  
-  List<SyncRequest> setCellContent(String newValue) {
-    return sheetDataUsecase.setCellContent(newValue, currentSheetId);
+  List<SyncRequest> getCellUpdate(String newValue) {
+    return sheetDataUsecase.getCellUpdate(newValue, currentSheetId);
   }
 }

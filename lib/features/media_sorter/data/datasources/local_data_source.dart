@@ -42,7 +42,7 @@ class DriftLocalDataSource
 
   // The Map acts as our cache. Using the entity's ID as the key
   // guarantees the "latest wins" behavior automatically.
-  final List<SyncRequestImpl> _pendingSaves = [];
+  final List<SyncRequestWithoutHistImpl> _pendingSaves = [];
 
   // The trigger for our debounce logic
   final PublishSubject<void> _saveTrigger = PublishSubject<void>();
@@ -62,7 +62,7 @@ class DriftLocalDataSource
 
   @override
   void save(List<SyncRequest> updates) {
-    _pendingSaves.addAll(updates as List<SyncRequestImpl>);
+    _pendingSaves.addAll(updates as List<SyncRequestWithoutHistImpl>);
     if (updates.isNotEmpty) {
       _saveTrigger.add(null);
     }
@@ -115,7 +115,7 @@ class DriftLocalDataSource
   void _executeBatchOperation<T extends Table, D>(
     Batch batch,
     TableInfo<T, D> table,
-    SyncRequestImpl syncRequest,
+    SyncRequestWithoutHistImpl syncRequest,
   ) {
     switch (syncRequest.dataBaseOperationType) {
       case DataBaseOperationType.delete:
@@ -173,7 +173,9 @@ class DriftLocalDataSource
     }
   }
 
-  Future<void> _batchInsertOrUpdate(List<SyncRequestImpl> syncRequests) async {
+  Future<void> _batchInsertOrUpdate(
+    List<SyncRequestWithoutHistImpl> syncRequests,
+  ) async {
     await db.batch((batch) {
       for (final syncRequest in syncRequests) {
         switch (syncRequest.companionWrapper) {

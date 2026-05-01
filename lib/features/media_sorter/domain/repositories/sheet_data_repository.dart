@@ -10,18 +10,22 @@ abstract class SheetDataRepository {
   int rowCount(int sheetId);
   int colCount(int sheetId);
   CoreSheetContent getSheet(int sheetId);
-  
+
   List<SyncRequest> delete();
   Future<void> copySelectionToClipboard();
   Future<Either<Failure, List<SyncRequest>>> pasteSelection();
   String getCellContent(CellPosition cell, int sheetId);
-  
-  List<SyncRequest> setColumnType(int colId, ColumnType newColumnType, int sheetId);
+
+  List<SyncRequest> setColumnType(
+    int colId,
+    ColumnType newColumnType,
+    int sheetId,
+  );
   Future<Either<Failure, Unit>> loadSheet(int sheetId);
-  
+
   List<SyncRequest> addNewSheet(int sheetId, String title);
-  
+
   List<SyncRequest> update(List<SyncRequest> updates, int sheetId);
-  
-  List<SyncRequest> setCellContent(String newValue, int sheetId);
+
+  List<SyncRequest> getCellUpdate(String newValue, int sheetId);
 }
