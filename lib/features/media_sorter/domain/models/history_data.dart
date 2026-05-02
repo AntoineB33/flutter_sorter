@@ -1,24 +1,12 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 
 enum HistoryType { selectionChange, editModeChange, other }
 
-class HistoryUnit {
-  final List<SyncRequestWithHist> changeSet;
-  final UpdateHistoriesTableCompanion timestamp;
-  final HistoryType historyType;
-
-  HistoryUnit({
-    required this.changeSet,
-    required this.timestamp,
-    required this.historyType,
-  });
-}
 
 @JsonSerializable(explicitToJson: true)
 class HistoryData {
-  List<HistoryUnit> updateHistories;
+  List<UpdateHistoriesEntity> updateHistories;
   int historyIndex;
 
   HistoryData({required this.updateHistories, required this.historyIndex});

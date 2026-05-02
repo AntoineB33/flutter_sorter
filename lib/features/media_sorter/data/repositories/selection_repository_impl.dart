@@ -26,7 +26,7 @@ class SelectionRepositoryImpl implements SelectionRepository {
     @override
   Set<CellPosition> get selectedCells =>
       _selectionCache.getSelectionState(currentSheetId).selectedCells.value;
-  List<HistoryUnit> get selection =>
+  List<UpdateHistoriesEntity> get selection =>
       _selectionCache.getSelectionData(currentSheetId).updateHistories;
   SheetDataTablesCompanion get selectionState =>
       _selectionCache.getSelectionState(currentSheetId);
@@ -60,21 +60,5 @@ class SelectionRepositoryImpl implements SelectionRepository {
         DataBaseOperationType.update,
       ),
     );
-  }
-
-  @override
-  SheetDataTablesCompanion getSelectionState(int sheetId) {
-    return _selectionCache.getSelectionState(sheetId);
-  }
-
-  @override
-  List<SyncRequest> setPrimarySelection(int row, int col, bool keepSelection) {
-    return SelectionState(primarySelection: CellPosition(row, col), selectedCells: keepSelection ? selectionState.selectedCells : {CellPosition(row, col)});
-  }
-
-  @override
-  void setSelectionData(int sheetId, HistoryData selectionData) {
-    _selectionCache.setSelectionData(sheetId, selectionData);
-    return SheetDataUpdate(sheetId, true, selectionHistory: selectionData);
   }
 }

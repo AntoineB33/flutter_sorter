@@ -165,9 +165,9 @@ class GridRepositoryImpl implements GridRepository {
     for (var update in currentChangeList.changeListWithHist) {
       if (update.companionWrapper is SheetCellWrapper) {
         final companion = update.companionWrapper as SheetCellWrapper;
-        final int row = companion.companion.row.value;
-        final int col = companion.companion.col.value;
-        final String newValue = companion.companion.content.value;
+        final int row = companion.insertable.row.value;
+        final int col = companion.insertable.col.value;
+        final String newValue = companion.insertable.content.value;
         final String prevValue = loadedSheetsCache.getCellContent(
           sheetId,
           row,
@@ -382,8 +382,12 @@ class GridRepositoryImpl implements GridRepository {
         SheetDataWrapper(
           SheetDataTablesCompanion(
             sheetId: Value(sheetId),
-            colHeaderHeight: Value(layoutCache.getLayout(sheetId).colHeaderHeight),
-            rowHeaderWidth: Value(layoutCache.getLayout(sheetId).rowHeaderWidth),
+            colHeaderHeight: Value(
+              layoutCache.getLayout(sheetId).colHeaderHeight,
+            ),
+            rowHeaderWidth: Value(
+              layoutCache.getLayout(sheetId).rowHeaderWidth,
+            ),
             scrollOffsetX: Value(layoutCache.getLayout(sheetId).scrollOffsetX),
             scrollOffsetY: Value(layoutCache.getLayout(sheetId).scrollOffsetY),
           ),

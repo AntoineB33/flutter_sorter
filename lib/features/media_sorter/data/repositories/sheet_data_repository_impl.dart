@@ -229,7 +229,13 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
           scrollOffsetY: sheetData.scrollOffsetY,
         );
         layoutCache.setLayout(sheetId, layoutDataTable);
-        selectionCache.setSelectionData(sheetId, sheetData.selectionHistory);
+        final selectHistories = await dataSource.getSelectHistoriesEntities(
+          sheetId,
+        );
+        selectionCache.setSelectionData(sheetId, HistoryData(
+          updateHistories: selectHistories,
+          historyIndex: sheetData.selectionHistoryId,
+        ));
         final sortProgression = SortProgressData(
           bestDistFound: sheetData.bestDistFound,
           bestSortFound: sheetData.bestSortFound,
@@ -246,17 +252,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         historyCache.setUpdateHistories(
           sheetId,
           HistoryData(
-            updateHistories: historyTable
-                .map(
-                  (e) => UpdateData(
-                    e.chronoId,
-                    sheetId,
-                    e.updates,
-                    true,
-                    timestamp: e.timestamp,
-                  ),
-                )
-                .toList(),
+            updateHistories: historyTable,
             historyIndex: sheetData.historyIndex,
           ),
         );

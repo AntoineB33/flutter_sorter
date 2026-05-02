@@ -60,11 +60,11 @@ class HistoryRepositoryImpl implements HistoryRepository {
     }
     var updateData = historyData.updateHistories[newHistoryIndex];
     if (historyType == HistoryType.editModeChange &&
-        updateData.historyType != HistoryType.editModeChange) {
+        updateData.type != HistoryType.editModeChange) {
       return;
     }
     if (historyType == HistoryType.other) {
-      while (updateData.historyType == HistoryType.editModeChange) {
+      while (updateData.type == HistoryType.editModeChange) {
         newHistoryIndex += direction;
         if (newHistoryIndex + direction < 0 ||
             newHistoryIndex + direction >= historyData.updateHistories.length) {
@@ -74,7 +74,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
     }
     updateData = historyData.updateHistories[newHistoryIndex];
     historyData.historyIndex = newHistoryIndex;
-    currentChangeList.changeListWithHist = updateData.changeSet.map((e) {
+    currentChangeList.changeListWithHist = updateData.updates.map((e) {
       var dataBaseOperationType = e.dataBaseOperationType;
       if (direction < 0) {
         dataBaseOperationType = switch (e.dataBaseOperationType) {
@@ -146,12 +146,13 @@ class HistoryRepositoryImpl implements HistoryRepository {
             HistoryWrapper(
               UpdateHistoriesTableCompanion(
                 timestamp: Value(
-                  historyCenter.updateHistories[i].timestamp.timestamp.value,
+                  historyCenter.updateHistories[i].timestamp,
                 ),
                 chronoId: Value(
-                  historyCenter.updateHistories[i].timestamp.chronoId.value,
+                  historyCenter.updateHistories[i].chronoId,
                 ),
                 sheetId: Value(sheetId),
+                type: Value(historyType),
               ),
             ),
             DataBaseOperationType.delete,
@@ -164,10 +165,12 @@ class HistoryRepositoryImpl implements HistoryRepository {
       );
     }
     historyCenter.updateHistories.add(
-      HistoryUnit(
-        changeSet: currentChangeList.changeListWithHist,
-        timestamp: historyReq.companionWrapper as UpdateHistoriesTableCompanion,
-        historyType: historyType,
+      UpdateHistoriesEntity(
+        sheetId: sheetId,
+        updates: currentChangeList.changeListWithHist,
+        timestamp: (historyReq.companionWrapper as UpdateHistoriesTableCompanion).timestamp.value,
+        chronoId: (historyReq.companionWrapper as UpdateHistoriesTableCompanion).chronoId.value,
+        type: historyType,
       ),
     );
     historyCenter.historyIndex++;
@@ -179,12 +182,13 @@ class HistoryRepositoryImpl implements HistoryRepository {
           HistoryWrapper(
             UpdateHistoriesTableCompanion(
               timestamp: Value(
-                historyCenter.updateHistories[0].timestamp.timestamp.value,
+                historyCenter.updateHistories[0].timestamp,
               ),
               chronoId: Value(
-                historyCenter.updateHistories[0].timestamp.chronoId.value,
+                historyCenter.updateHistories[0].chronoId,
               ),
               sheetId: Value(sheetId),
+              type: Value(historyType),
             ),
           ),
           DataBaseOperationType.delete,

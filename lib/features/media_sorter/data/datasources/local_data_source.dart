@@ -7,6 +7,7 @@ import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:drift/drift.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
 import 'package:trying_flutter/utils/logger.dart';
 
 class SheetIdAndLastOpened {
@@ -24,6 +25,7 @@ abstract class ILocalDataSource {
   Future<List<SheetCellEntity>> getSheetCellEntities(int sheetId);
   Future<List<SheetColumnTypeEntity>> getSheetColumnTypeEntities(int sheetId);
   Future<List<UpdateHistoriesEntity>> getUpdateHistoriesEntities(int sheetId);
+  Future<List<UpdateHistoriesEntity>> getSelectHistoriesEntities(int sheetId);
   Future<List<RowsBottomPosEntity>> getRowsBottomPosEntities(int sheetId);
   Future<List<ColRightPosEntity>> getColRightPosEntities(int sheetId);
   Future<List<RowsManuallyAdjustedHeightEntity>>
@@ -118,24 +120,23 @@ class DriftLocalDataSource
   ) {
     switch (syncRequest.dataBaseOperationType) {
       case DataBaseOperationType.delete:
-        batch.delete(table, syncRequest.companionWrapper.companion);
+        batch.delete(table, syncRequest.companionWrapper.insertable);
         break;
       case DataBaseOperationType.insert:
         batch.insert(
           table,
-          syncRequest.companionWrapper.companion,
+          syncRequest.companionWrapper.insertable,
           mode: InsertMode.insertOrReplace,
         );
         break;
       case DataBaseOperationType.update:
-        batch.update(table, syncRequest.companionWrapper.companion);
+        batch.update(table, syncRequest.companionWrapper.insertable);
         break;
       case DataBaseOperationType.deleteWhere:
         // 1. Extract the explicitly set fields from the companion.
         // The 'false' argument ensures we include Value(null) if explicitly set.
-        final presentColumns = syncRequest.companionWrapper.companion.toColumns(
-          false,
-        );
+        final presentColumns = syncRequest.companionWrapper.insertable
+            .toColumns(false);
 
         // If the companion is completely empty, skip to prevent wiping the whole table.
         if (presentColumns.isEmpty) return;
@@ -291,7 +292,11 @@ class DriftLocalDataSource
   ) async {
     try {
       final query = db.select(db.updateHistoriesTable)
-        ..where((table) => table.sheetId.equals(sheetId))
+        ..where(
+          (table) =>
+              table.sheetId.equals(sheetId) &
+              table.type.equals(HistoryType.selectionChange).not(),
+        )
         ..orderBy([
           (t) => OrderingTerm.asc(t.timestamp),
           (t) => OrderingTerm.asc(t.chronoId),
@@ -300,6 +305,32 @@ class DriftLocalDataSource
       return updateHistories;
     } on SqliteException catch (e) {
       throw CacheException('Failed to retrieve update histories: ${e.message}');
+    } catch (e) {
+      throw CacheException('An unknown database error occurred.');
+    }
+  }
+
+  @override
+  Future<List<UpdateHistoriesEntity>> getSelectHistoriesEntities(
+    int sheetId,
+  ) async {
+    try {
+      final query = db.select(db.updateHistoriesTable)
+        ..where(
+          (table) =>
+              table.sheetId.equals(sheetId) &
+              table.type.equals(HistoryType.selectionChange),
+        )
+        ..orderBy([
+          (t) => OrderingTerm.asc(t.timestamp),
+          (t) => OrderingTerm.asc(t.chronoId),
+        ]);
+      final selectHistories = await query.get();
+      return selectHistories;
+    } on SqliteException catch (e) {
+      throw CacheException(
+        'Failed to retrieve selection histories: ${e.message}',
+      );
     } catch (e) {
       throw CacheException('An unknown database error occurred.');
     }

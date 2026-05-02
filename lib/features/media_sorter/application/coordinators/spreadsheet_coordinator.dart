@@ -452,20 +452,22 @@ class SpreadsheetCoordinator extends ChangeNotifier {
         max(0, primarySelectedCellX - 1),
         primarySelectedCellY,
         false,
+        false
       );
     } else {
       setPrimarySelection(
         primarySelectedCellX + 1,
         primarySelectedCellY,
         false,
+        false,
       );
     }
-    selectionController.stopEditing(true);
+    selectionController.stopEditing();
   }
 
   void setColumnType(int col, ColumnType type) {
-    final updates = sheetDataController.setColumnType(col, type);
-    applyUpdatesAndSort(updates, currentSheetId, false, false, false);
+    sheetDataController.setColumnType(col, type);
+    applyUpdatesAndSort(currentSheetId, false, false, false);
   }
 
   void createSheetByName(String name) {

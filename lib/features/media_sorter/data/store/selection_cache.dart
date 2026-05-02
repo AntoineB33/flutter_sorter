@@ -1,4 +1,5 @@
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
 
 class SelectionCache {
@@ -11,7 +12,7 @@ class SelectionCache {
   SheetDataTablesCompanion getSelectionState(int sheetId) {
     return getSelectionData(sheetId).updateHistories[getSelectionData(
       sheetId,
-    ).historyIndex].changeSet.first.companionWrapper
+    ).historyIndex].updates.first.companionWrapper
         as SheetDataTablesCompanion;
   }
 
@@ -34,4 +35,5 @@ class SelectionCache {
   void setSelectionData(int sheetId, HistoryData selectionData) {
     _selections[sheetId] = selectionData;
   }
+
 }
