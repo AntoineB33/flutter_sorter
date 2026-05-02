@@ -5,6 +5,7 @@ import 'package:trying_flutter/features/media_sorter/domain/models/analysis_resu
 import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:drift/drift.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
 
 part 'sheet_data_table.freezed.dart';
@@ -187,8 +188,6 @@ class SheetColumnTypesTable extends Table {
   Set<Column> get primaryKey => {sheetId, columnIndex};
 }
 
-enum HistoryType { selectionChange, editModeChange, other }
-
 class HistoryChangeTypeConverter extends TypeConverter<HistoryType, String> {
   const HistoryChangeTypeConverter();
 
@@ -204,21 +203,21 @@ class HistoryChangeTypeConverter extends TypeConverter<HistoryType, String> {
 }
 
 class ListSyncRequestMapConverter
-    extends TypeConverter<List<SyncRequest>, String> {
+    extends TypeConverter<List<SyncRequestWithHist>, String> {
   const ListSyncRequestMapConverter();
 
   @override
-  List<SyncRequest> fromSql(String fromDb) {
+  List<SyncRequestWithHist> fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as List<dynamic>;
     return decoded
-        .map((e) => SyncRequestWithoutHist.fromJson(e as Map<String, dynamic>))
+        .map((e) => SyncRequestWithHist.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
   @override
-  String toSql(List<SyncRequest> value) {
+  String toSql(List<SyncRequestWithHist> value) {
     final encoded = value
-        .map((e) => (e as SyncRequestWithoutHist).toJson())
+        .map((e) => (e).toJson())
         .toList();
     return jsonEncode(encoded);
   }

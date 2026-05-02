@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/history_usecase.dart';
 
 // --- Manager Class ---
@@ -11,5 +12,9 @@ class HistoryController extends ChangeNotifier {
   
   List<SyncRequest> moveInUpdateHistory(int direction) {
     return historyUsecase.moveInUpdateHistory(direction);
+  }
+
+  void commitHistory(int sheetId, HistoryType type, bool sameHistIdFromLast) {
+    historyUsecase.commitHistory(sheetId, type, sameHistIdFromLast);
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/history_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/selection_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data_usecase.dart';
@@ -17,6 +18,8 @@ class SelectionController extends ChangeNotifier {
   int get currentSheetId => workbookUsecase.currentSheetId;
   int get primarySelectedCellX => selectionUsecase.primarySelectedCellX;
   int get primarySelectedCellY => selectionUsecase.primarySelectedCellY;
+  Set<CellPosition> get selectedCells =>
+      selectionUsecase.selectedCells;
 
   SelectionController(
     this.selectionUsecase,
@@ -27,10 +30,7 @@ class SelectionController extends ChangeNotifier {
   );
 
   bool isCellSelected(int row, int col) {
-    return selectionUsecase
-        .getSelectionState(currentSheetId)
-        .selectedCells
-        .any((cell) => cell.rowId == row && cell.colId == col);
+    return selectedCells.contains(CellPosition(row, col));
   }
 
   bool isPrimarySelectedCell(int row, int col) {
@@ -40,8 +40,7 @@ class SelectionController extends ChangeNotifier {
   bool isCellEditing(int row, int col) =>
       editingMode && primarySelectedCellX == row && primarySelectedCellY == col;
 
-  void stopEditing(bool escape) {
-    historyUsecase.stopEditing(escape);
+  void stopEditing() {
     editingMode = false;
     notifyListeners();
   }
@@ -61,10 +60,11 @@ class SelectionController extends ChangeNotifier {
 
   void selectAll() {
     selectionUsecase.selectAll();
+    notifyListeners();
   }
 
-  void setPrimarySelection(int row, int col, bool keepSelection, bool sameHistIdFromLast) {
-    selectionUsecase.setPrimarySelection(row, col, keepSelection, sameHistIdFromLast);
+  void setPrimarySelection(int row, int col, bool keepSelection) {
+    selectionUsecase.setPrimarySelection(row, col, keepSelection);
     notifyListeners();
   }
 }

@@ -1,15 +1,14 @@
-import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/layout_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/sync_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/tree_repository.dart';
 
 class GridUsecase {
   final GridRepository gridRepository;
   final TreeRepository treeRepository;
-  final ILocalDataSource saveRepository;
+  final SyncRepository syncRepository;
 
-  GridUsecase(this.gridRepository, this.treeRepository, this.saveRepository);
+  GridUsecase(this.gridRepository, this.treeRepository, this.syncRepository);
 
   LayoutData getLayout(int sheetId) {
     return gridRepository.getLayout(sheetId);
@@ -35,13 +34,9 @@ class GridUsecase {
     return gridRepository.getTargetTop(sheetId, rowId);
   }
 
-  void adjustRowHeightAfterUpdate(
-    int sheetId,
-    List<SyncRequest> updateData,
-  ) {
-    saveRepository.save(
-      gridRepository.adjustRowHeightAfterUpdate(sheetId, updateData),
-    );
+  void adjustRowHeightAfterUpdate() {
+    gridRepository.adjustRowHeightAfterUpdate();
+    syncRepository.save();
   }
 
   bool isRowValid(int rowId) {

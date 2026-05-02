@@ -17,7 +17,7 @@ class SheetIdAndLastOpened {
 }
 
 abstract class ILocalDataSource {
-  void save(List<SyncRequest> updates);
+  void save(List<SyncRequestWithoutHist> updates);
   void dispose();
   Future<List<SheetIdAndLastOpened>> getSheetIdAndLastOpened();
   Future<SheetDataEntity> getSheetDataEntity(int sheetId);

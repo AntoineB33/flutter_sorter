@@ -67,9 +67,8 @@ class GridController extends ChangeNotifier {
 
   void adjustRowHeightAfterUpdate(
     int sheetId,
-    List<SyncRequest> updateData,
   ) {
-    gridUsecase.adjustRowHeightAfterUpdate(sheetId, updateData);
+    gridUsecase.adjustRowHeightAfterUpdate(sheetId);
   }
 
   void scrollToCell() {

@@ -7,8 +7,8 @@ import 'package:trying_flutter/features/media_sorter/application/state/history_c
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
@@ -106,10 +106,16 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   void setPrimarySelection(
     int row,
     int col,
-    bool keepSelection, {
+    bool keepSelection,
+    bool sameHistIdFromLast, {
     bool scrollTo = true,
   }) {
-    selectionController.setPrimarySelection(row, col, keepSelection);
+    selectionController.setPrimarySelection(
+      row,
+      col,
+      keepSelection,
+      sameHistIdFromLast,
+    );
     treeController.updateMentionsContext();
     if (scrollTo) {
       gridController.scrollToCell();
@@ -117,23 +123,23 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void delete() {
-    final updates = sheetDataController.delete();
-    applyUpdatesAndSort(updates, currentSheetId, false, false, false);
+    sheetDataController.delete();
+    applyUpdatesAndSort(currentSheetId, false, false, false);
   }
 
   void paste() async {
     final result = await sheetDataController.paste();
     result.fold(
       (failure) => logger.e("The pasted text contains unsupported characters."),
-      (updates) =>
-          applyUpdatesAndSort(updates, currentSheetId, false, false, false),
+      (updates) => applyUpdatesAndSort(currentSheetId, false, false, false),
     );
   }
 
   void setCellContent(String newValue) {
-    final changeList = sheetDataController.getCellUpdate(newValue);
+    sheetDataController.setCellUpdate(
+      newValue,
+    );
     applyUpdatesAndSort(
-      changeList,
       currentSheetId,
       false,
       false,
@@ -142,13 +148,12 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyUpdatesAndSort(
-    List<SyncRequest> updates,
     int sheetId,
     bool isFromHistory,
     bool isFromSort,
     bool isFromEditing,
   ) {
-    applyUpdatesNoSort(updates, sheetId, isFromHistory, isFromEditing);
+    applyUpdatesNoSort(sheetId, isFromHistory, isFromEditing);
     if (!isFromSort) {
       launchCalculation(sheetId);
     }
@@ -200,26 +205,20 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void _sortTableWithCurrentBestSort(int sheetId) {
-    final updates = sortController.sortTableWithCurrentBestSort(sheetId);
-    applyUpdatesNoSort(updates, sheetId, false, false);
+    sortController.sortTableWithCurrentBestSort(sheetId);
+    applyUpdatesNoSort(sheetId, false, false);
     if (sortController.getToApplyOnce(sheetId)) {
       sortController.setToApplyOnce(sheetId, false);
     }
   }
 
-  void applyUpdatesNoSort(
-    List<SyncRequest> updates,
-    int sheetId,
-    bool isFromHistory,
-    bool isFromEditing,
-  ) {
+  void applyUpdatesNoSort(int sheetId, bool isFromHistory, bool isFromEditing) {
     sheetDataController.applyUpdatesNoSort(
-      updates,
       sheetId,
       isFromHistory,
       isFromEditing,
     );
-    gridController.adjustRowHeightAfterUpdate(currentSheetId, updates);
+    gridController.adjustRowHeightAfterUpdate(currentSheetId);
     updateTreeAndRowColCount();
     if (isFromEditing) {
       gridController.scrollToCell();
@@ -316,8 +315,13 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void selectAll() {
-    setPrimarySelection(0, 0, true);
+    setPrimarySelection(0, 0, true, false);
     selectionController.selectAll();
+    historyController.commitHistory(
+      currentSheetId,
+      HistoryType.selectionChange,
+      false,
+    );
   }
 
   void undo() {

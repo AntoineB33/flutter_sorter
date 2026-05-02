@@ -56,7 +56,7 @@ class SortController extends ChangeNotifier {
   }
 
   
-  List<SyncRequest> sortTableWithCurrentBestSort(int sheetId) {
+  void sortTableWithCurrentBestSort(int sheetId) {
     return sortUseCase.sortTableWithCurrentBestSort(sheetId);
   }
 

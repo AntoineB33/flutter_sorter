@@ -10,7 +10,7 @@ class SyncRepositoryImpl extends SyncRepository {
 
   @override
   void save() {
-    localDataSource.save(currentChangeList.changeList);
+    localDataSource.save(currentChangeList.changeListWithoutHist);
     currentChangeList.clear();
   }
 }

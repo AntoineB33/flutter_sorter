@@ -20,7 +20,6 @@ class WorkbookUsecase {
   final SheetDataRepository sheetDataRepository;
   final GridRepository gridRepository;
   final HistoryRepository historyRepository;
-  final ILocalDataSource saveRepository;
 
   WorkbookUsecase(
     this.workbookRepository,

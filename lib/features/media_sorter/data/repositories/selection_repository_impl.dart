@@ -1,17 +1,20 @@
+import 'package:drift/drift.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/current_change_list.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 
 class SelectionRepositoryImpl implements SelectionRepository {
   final SelectionCache _selectionCache;
   final LoadedSheetsCache _loadedSheetsCache;
   final WorkbookCache _workbookCache;
+
+  final CurrentChangeList currentChange;
 
   int get currentSheetId => _workbookCache.currentSheetId;
   @override
@@ -20,31 +23,47 @@ class SelectionRepositoryImpl implements SelectionRepository {
   @override
   int get primarySelectedCellY =>
       _selectionCache.primarySelectedCellY(currentSheetId);
-  List<SelectionState> get selection =>
-      _selectionCache.getSelectionData(currentSheetId).selectionStates;
-  SelectionState get selectionState =>
+    @override
+  Set<CellPosition> get selectedCells =>
+      _selectionCache.getSelectionState(currentSheetId).selectedCells.value;
+  List<HistoryUnit> get selection =>
+      _selectionCache.getSelectionData(currentSheetId).updateHistories;
+  SheetDataTablesCompanion get selectionState =>
       _selectionCache.getSelectionState(currentSheetId);
 
   SelectionRepositoryImpl(
     this._selectionCache,
     this._loadedSheetsCache,
     this._workbookCache,
+    this.currentChange,
   );
 
   @override
-  SelectionState selectAll() {
-    SelectionState selection = SelectionState.empty();
-    selection.selectedCells.clear();
+  void selectAll() {
+    SheetDataTablesCompanion companion = SheetDataTablesCompanion(
+      selectedCells: Value({}),
+    );
     for (int r = 0; r < _loadedSheetsCache.rowCount(currentSheetId); r++) {
       for (int c = 0; c < _loadedSheetsCache.colCount(currentSheetId); c++) {
-        selection.selectedCells.add(CellPosition(r, c));
+        companion.selectedCells.value.add(CellPosition(r, c));
       }
     }
-    return selection;
+    currentChange.changeListWithHist.add(
+      SyncRequestWithHist(
+        SheetDataWrapper(companion),
+        SheetDataWrapper(
+          SheetDataTablesCompanion(
+            sheetId: Value(currentSheetId),
+            selectedCells: Value(selectionState.selectedCells.value.toSet()),
+          ),
+        ),
+        DataBaseOperationType.update,
+      ),
+    );
   }
 
   @override
-  SelectionState getSelectionState(int sheetId) {
+  SheetDataTablesCompanion getSelectionState(int sheetId) {
     return _selectionCache.getSelectionState(sheetId);
   }
 

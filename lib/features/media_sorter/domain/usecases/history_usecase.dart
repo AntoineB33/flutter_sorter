@@ -1,22 +1,16 @@
-import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 
 class HistoryUsecase {
   final HistoryRepository historyRepository;
-  final ILocalDataSource saveRepository;
 
-  HistoryUsecase(this.historyRepository, this.saveRepository);
+  HistoryUsecase(this.historyRepository);
 
-  List<SyncRequest> moveInUpdateHistory(int direction) {
-    return historyRepository.moveInUpdateHistory(direction);
+  void moveInUpdateHistory(HistoryType historyType, int direction) {
+    historyRepository.moveInUpdateHistory(historyType, direction);
   }
 
-  void stopEditing(bool escape) {
-    saveRepository.save(historyRepository.stopEditing(escape));
-  }
-
-  void commitHistory(List<SyncRequest> updates, int sheetId, bool isFromEditing) {
-    saveRepository.save(historyRepository.commitHistory(updates, sheetId, isFromEditing));
+  void commitHistory(int sheetId, HistoryType type, bool sameHistIdFromLast) {
+    historyRepository.commitHistory(sheetId, type, sameHistIdFromLast);
   }
 }

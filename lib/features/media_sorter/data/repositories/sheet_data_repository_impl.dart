@@ -17,6 +17,7 @@ import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_ca
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sorting_progress_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
@@ -53,9 +54,8 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     this.historyCache,
     this.currentChangeList,
   );
-  HistoryData get selection =>
-      selectionCache.getSelectionData(currentSheetId);
-  HistoryUnit get selectionState =>
+  HistoryData get selection => selectionCache.getSelectionData(currentSheetId);
+  SheetDataTablesCompanion get selectionState =>
       selectionCache.getSelectionState(currentSheetId);
 
   @override
@@ -84,7 +84,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     int endRow = selectionCache.primarySelectedCellX(currentSheetId);
     int startCol = selectionCache.primarySelectedCellY(currentSheetId);
     int endCol = selectionCache.primarySelectedCellY(currentSheetId);
-    for (CellPosition cell in selectionState.selectedCells) {
+    for (CellPosition cell in selectionState.selectedCells.value) {
       if (cell.rowId < startRow) startRow = cell.rowId;
       if (cell.colId < startCol) startCol = cell.colId;
       if (cell.rowId > endRow) endRow = cell.rowId;
@@ -94,7 +94,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       endRow - startRow + 1,
       (_) => List.generate(endCol - startCol + 1, (_) => false),
     );
-    for (CellPosition cell in selectionState.selectedCells) {
+    for (CellPosition cell in selectionState.selectedCells.value) {
       selectedCellsTable[cell.rowId - startRow][cell.colId - startCol] = true;
     }
     if (!selectedCellsTable.every((row) => row.every((cell) => !cell))) {
@@ -124,15 +124,13 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  Future<Either<Failure, IMap<String, SyncRequest>>> pasteSelection() async {
+  Future<Either<Failure, Unit>> pasteSelection() async {
     final text = await _clipboardService.getText();
     if (text == null) return Left(ClipboardEmptyFailure());
     // if contains "
     if (text.contains('"')) {
       return Left(ClipboardUnsupportedCharactersFailure());
     }
-
-    final Map<String, SyncRequest> updates = {};
     final rows = text.split('\n');
     int startRow = selectionCache.primarySelectedCellX(currentSheetId);
     int startCol = selectionCache.primarySelectedCellY(currentSheetId);
@@ -140,21 +138,35 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       final columns = rows[r].split('\t');
       for (int c = 0; c < columns.length; c++) {
         String val = columns[c].replaceAll('\r', '');
-        final cellUpdate = CellUpdate(
-          currentSheetId,
-          startRow + r,
-          startCol + c,
-          val,
-          loadedSheetsCache.getCellContent(
-            currentSheetId,
-            startRow + r,
-            startCol + c,
+        final cellUpdate = SyncRequestWithHist(
+          SheetCellWrapper(
+            SheetCellsTableCompanion(
+              sheetId: Value(currentSheetId),
+              row: Value(startRow + r),
+              col: Value(startCol + c),
+              content: Value(val),
+            ),
           ),
+          SheetCellWrapper(
+            SheetCellsTableCompanion(
+              sheetId: Value(currentSheetId),
+              row: Value(startRow + r),
+              col: Value(startCol + c),
+              content: Value(
+                loadedSheetsCache.getCellContent(
+                  currentSheetId,
+                  startRow + r,
+                  startCol + c,
+                ),
+              ),
+            ),
+          ),
+          DataBaseOperationType.update,
         );
-        updates[cellUpdate.getKey()] = cellUpdate;
+        currentChangeList.changeListWithHist.add(cellUpdate);
       }
     }
-    return Right(updates.lock);
+    return Right(unit);
   }
 
   @override
@@ -163,7 +175,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  changeList setColumnType(int colId, ColumnType newColumnType, int sheetId) {
+  void setColumnType(int colId, ColumnType newColumnType, int sheetId) {
     loadedSheetsCache.setColumnType(sheetId, colId, newColumnType);
   }
 
@@ -275,35 +287,39 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  changeList delete() {
-    final updates = changeList();
+  void delete() {
     for (CellPosition cellPos
-        in selectionCache.getSelectionState(currentSheetId).selectedCells) {
-      final cellUpdate = CellUpdate(
-        currentSheetId,
-        cellPos.rowId,
-        cellPos.colId,
-        '',
-        loadedSheetsCache.getCellContent(
-          currentSheetId,
-          cellPos.rowId,
-          cellPos.colId,
+        in selectionCache.getSelectionState(currentSheetId).selectedCells.value) {
+      final cellUpdate = SyncRequestWithHist(
+        SheetCellWrapper(
+          SheetCellsTableCompanion(
+            sheetId: Value(currentSheetId),
+            row: Value(cellPos.rowId),
+            col: Value(cellPos.colId),
+          ),
         ),
+        SheetCellWrapper(
+          SheetCellsTableCompanion(
+            sheetId: Value(currentSheetId),
+            row: Value(cellPos.rowId),
+            col: Value(cellPos.colId),
+            content: Value(
+              loadedSheetsCache.getCellContent(
+                currentSheetId,
+                cellPos.rowId,
+                cellPos.colId,
+              ),
+            ),
+          ),
+        ),
+        DataBaseOperationType.delete,
       );
-      updates.addUpdate(cellUpdate);
+      currentChangeList.changeListWithHist.add(cellUpdate);
     }
-    return updates;
   }
 
   @override
-  void update() {
-    return loadedSheetsCache.update();
-  }
-
-  @override
-  void setCellUpdate(String newValue, int sheetId) {
-    final int rowId = selectionCache.primarySelectedCellX(sheetId);
-    final int colId = selectionCache.primarySelectedCellY(sheetId);
+  void setCellUpdate(int rowId, int colId, String newValue, int sheetId) {
     final syncRequest = SyncRequestWithHist(
       SheetCellWrapper(
         SheetCellsTableCompanion(

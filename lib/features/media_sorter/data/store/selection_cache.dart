@@ -1,5 +1,4 @@
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
 
 class SelectionCache {
@@ -9,25 +8,20 @@ class SelectionCache {
   // ignore: unused_element
   static void _keepLinterHappy() => SelectionCache()[0];
 
-  HistoryUnit getSelectionState(int sheetId) {
+  SheetDataTablesCompanion getSelectionState(int sheetId) {
     return getSelectionData(sheetId).updateHistories[getSelectionData(
       sheetId,
-    ).historyIndex];
-  }
-
-  SheetDataTablesCompanion getCompanion(int sheetId) {
-    return (getSelectionState(sheetId).changeSet.first.companionWrapper
-            as SheetDataWrapper)
-        .companion;
+    ).historyIndex].changeSet.first.companionWrapper
+        as SheetDataTablesCompanion;
   }
 
   int primarySelectedCellX(int sheetId) {
-    return getCompanion(sheetId)
+    return getSelectionState(sheetId)
         .primarySelectionX.value;
   }
 
   int primarySelectedCellY(int sheetId) {
-    return getCompanion(sheetId)
+    return getSelectionState(sheetId)
         .primarySelectionY.value;
   }
 

@@ -1,6 +1,5 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/sort_status.dart';
 
@@ -20,24 +19,24 @@ abstract class SortRepository {
   void setSortedWithCurrentBestSort(int sheetId, bool value);
   bool isSortedWithValidSort(int sheetId);
   
-  List<SyncRequest> handleSortProgressDataMsg(
+  void handleSortProgressDataMsg(
     SortProgressDataMsg sortProgressDataMsg,
     int sheetId,
   );
   bool stopLoop(SortProgressDataMsg sortProgressDataMsg, int sheetId);
   
-  List<SyncRequest> sortTableWithCurrentBestSort(int sheetId);
+  void sortTableWithCurrentBestSort(int sheetId);
   Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId);
   bool betterSortNotImpossible(int sheetId);
   bool isCurrentBestSortAlwaysApplied(int sheetId);
   bool isReorderBetterButtonLocked();
   bool sortedWithCurrentBestSort(int sheetId);
   
-  List<SyncRequest> setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply);
+  void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply);
   
   void removeSortStatus(int sheetId);
   
-  List<SyncRequest> addSheetId(int sheetId);
+  void addSheetId(int sheetId);
   
-  List<SyncRequest> setFindingBestSort(int sheetId, bool value);
+  void setFindingBestSort(int sheetId, bool value);
 }

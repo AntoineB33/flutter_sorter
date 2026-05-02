@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data_usecase.dart';
@@ -24,7 +23,7 @@ class SheetDataController extends ChangeNotifier {
     return sheetDataUsecase.getSheet(currentSheetId);
   }
 
-  Future<Either<Failure, List<SyncRequest>>> paste() {
+  Future<Either<Failure, Unit>> paste() {
     return sheetDataUsecase.paste();
   }
 
@@ -36,29 +35,19 @@ class SheetDataController extends ChangeNotifier {
     return sheetDataUsecase.getCellContent(row, col, currentSheetId);
   }
 
-  List<SyncRequest> setColumnType(int colId, ColumnType newColumnType) {
-    return sheetDataUsecase.setColumnType(colId, newColumnType, currentSheetId);
+  void setColumnType(int colId, ColumnType newColumnType) {
+    sheetDataUsecase.setColumnType(colId, newColumnType, currentSheetId);
   }
 
-  List<SyncRequest> delete() {
-    return sheetDataUsecase.delete();
+  void delete() {
+    sheetDataUsecase.delete();
   }
 
-  void applyUpdatesNoSort(
-    List<SyncRequest> updates,
-    int sheetId,
-    bool isFromHistory,
-    bool isFromEditing,
-  ) {
-    sheetDataUsecase.applyUpdatesNoSort(
-      updates,
-      sheetId,
-      isFromHistory,
-      isFromEditing,
-    );
+  void applyUpdatesNoSort(int sheetId, bool isFromHistory, bool isFromEditing) {
+    sheetDataUsecase.applyUpdatesNoSort(sheetId, isFromHistory, isFromEditing);
   }
 
-  List<SyncRequest> getCellUpdate(String newValue) {
-    return sheetDataUsecase.getCellUpdate(newValue, currentSheetId);
+  void setCellUpdate(String newValue) {
+    sheetDataUsecase.setCellUpdate(newValue);
   }
 }

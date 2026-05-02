@@ -1,7 +1,5 @@
 import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:meta/meta.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
@@ -52,12 +50,11 @@ class LoadedSheetsCache {
     _loadedSheetsData[sheetId] = sheetData;
   }
 
-  List<SyncRequestWithoutHist> _updateCell(
+  List<SyncRequestWithHist> updateCell(
     int sheetId,
     SheetCellsTableCompanion update,
     DataBaseOperationType operationType,
   ) {
-    List<SyncRequestWithoutHist> changeList = [];
     _loadedSheetsData[sheetId]!.cells[CellPosition(
           update.row.value,
           update.col.value,
@@ -69,11 +66,17 @@ class LoadedSheetsCache {
     List<int>? newUsedCols;
     if (operationType != DataBaseOperationType.delete) {
       if (!usedRows.contains(update.row.value)) {
-        usedRows.insert(lowerBound(usedRows, update.row.value), update.row.value);
+        usedRows.insert(
+          lowerBound(usedRows, update.row.value),
+          update.row.value,
+        );
         newUsedRows = usedRows;
       }
       if (!usedCols.contains(update.col.value)) {
-        usedCols.insert(lowerBound(usedCols, update.col.value), update.col.value);
+        usedCols.insert(
+          lowerBound(usedCols, update.col.value),
+          update.col.value,
+        );
         newUsedCols = usedCols;
       }
     } else {
@@ -100,33 +103,37 @@ class LoadedSheetsCache {
         newUsedRows = usedRows;
       }
     }
+    List<SyncRequestWithHist> changeList = [];
     if (newUsedRows != null || newUsedCols != null) {
-      changeList.addUpdate(
-        SheetDataUpdate(
-          sheetId,
-          true,
-          usedRows: newUsedRows,
-          usedCols: newUsedCols,
-        ),
+      changeList.add(
+        SyncRequestWithHist(
+          SheetDataWrapper(
+            SheetDataTablesCompanion(
+              sheetId: Value(sheetId),
+              usedRows: newUsedRows != null ? Value(newUsedRows) : Value.absent(),
+              usedCols: newUsedCols != null ? Value(newUsedCols) : Value.absent(),
+            ),
+          ),
+          SheetDataWrapper(
+            SheetDataTablesCompanion(
+              sheetId: Value(sheetId),
+              usedRows: newUsedRows != null ? Value(getSheet(sheetId).usedRows) : Value.absent(),
+              usedCols: newUsedCols != null ? Value(getSheet(sheetId).usedCols) : Value.absent(),
+            ),
+          ),
+          DataBaseOperationType.update,
+        )
       );
     }
     return changeList;
   }
 
-  changeList renameSheet(int sheetId, String newName) {
-    _loadedSheetsData[sheetId]!.title = newName;
-    return changeListImpl()
-      ..addUpdate(SheetDataUpdate(sheetId, true, title: newName));
-  }
-
-  void setColumnType(int sheetId, ColumnTypeUpdate update) {
-    int col = update.colId;
-    ColumnType type = update.newColumnType;
+  void setColumnType(int sheetId, int col, ColumnType newColumnType) {
     final sheet = _loadedSheetsData[sheetId]!;
-    if (type == ColumnType.attributes) {
+    if (newColumnType == ColumnType.attributes) {
       sheet.columnTypes.remove(col);
     } else {
-      sheet.columnTypes[col] = type;
+      sheet.columnTypes[col] = newColumnType;
     }
   }
 }
