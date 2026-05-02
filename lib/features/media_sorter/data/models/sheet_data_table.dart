@@ -3,26 +3,27 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:drift/drift.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
 
 part 'sheet_data_table.freezed.dart';
 
+enum DataBaseOperationType { insert, update, delete, deleteWhere }
+
 @freezed
 @JsonSerializable(explicitToJson: true)
-class SyncRequestWithoutHistImpl implements SyncRequestWithoutHist {
+class SyncRequestWithoutHist {
   final DbCompanionWrapper companionWrapper;
   final DataBaseOperationType dataBaseOperationType;
 
-  SyncRequestWithoutHistImpl(this.companionWrapper, this.dataBaseOperationType);
+  SyncRequestWithoutHist(this.companionWrapper, this.dataBaseOperationType);
 
-  factory SyncRequestWithoutHistImpl.fromJson(Map<String, dynamic> json) =>
+  factory SyncRequestWithoutHist.fromJson(Map<String, dynamic> json) =>
       _$SyncRequestImplFromJson(json);
   Map<String, dynamic> toJson() => _$SyncRequestImplToJson(this);
   // ignore: unused_element
-  static void _keepLinterHappy() => SyncRequestWithoutHistImpl(
+  static void _keepLinterHappy() => SyncRequestWithoutHist(
     SheetDataWrapper(SheetDataTablesCompanion()),
     DataBaseOperationType.insert,
   ).toJson();
@@ -30,29 +31,29 @@ class SyncRequestWithoutHistImpl implements SyncRequestWithoutHist {
 
 @freezed
 @JsonSerializable(explicitToJson: true)
-class SyncRequestWithHistImpl implements SyncRequestWithHist {
+class SyncRequestWithHist {
   final DbCompanionWrapperNotHistory companionWrapper;
   final DbCompanionWrapperNotHistory historyCompW;
   final DataBaseOperationType dataBaseOperationType;
 
-  SyncRequestWithHistImpl(
+  SyncRequestWithHist(
     this.companionWrapper,
     this.historyCompW,
     this.dataBaseOperationType,
   );
 
-  factory SyncRequestWithHistImpl.fromJson(Map<String, dynamic> json) =>
+  factory SyncRequestWithHist.fromJson(Map<String, dynamic> json) =>
       _$SyncRequestWithHistImplFromJson(json);
   Map<String, dynamic> toJson() => _$SyncRequestWithHistImplToJson(this);
   // ignore: unused_element
-  static void _keepLinterHappy() => SyncRequestWithHistImpl(
+  static void _keepLinterHappy() => SyncRequestWithHist(
     SheetDataWrapper(SheetDataTablesCompanion()),
     SheetDataWrapper(SheetDataTablesCompanion()),
     DataBaseOperationType.insert,
   ).toJson();
 
-  SyncRequestWithoutHistImpl toSyncRequest() {
-    return SyncRequestWithoutHistImpl(
+  SyncRequestWithoutHist toSyncRequest() {
+    return SyncRequestWithoutHist(
       companionWrapper as DbCompanionWrapper,
       dataBaseOperationType,
     );
@@ -128,10 +129,11 @@ class SheetDataTables extends Table {
   IntColumn get historyIndex => integer()();
   RealColumn get colHeaderHeight => real()();
   RealColumn get rowHeaderWidth => real()();
-  
+
   IntColumn get primarySelectionX => integer()();
   IntColumn get primarySelectionY => integer()();
-  TextColumn get selectedCells => text().map(const SetCellPositionConverter())();
+  TextColumn get selectedCells =>
+      text().map(const SetCellPositionConverter())();
   IntColumn get selectionHistoryId => integer()();
   RealColumn get scrollOffsetX => real()();
   RealColumn get scrollOffsetY => real()();
@@ -185,11 +187,7 @@ class SheetColumnTypesTable extends Table {
   Set<Column> get primaryKey => {sheetId, columnIndex};
 }
 
-enum HistoryType {
-  selectionChange,
-  editModeChange,
-  other,
-}
+enum HistoryType { selectionChange, editModeChange, other }
 
 class HistoryChangeTypeConverter extends TypeConverter<HistoryType, String> {
   const HistoryChangeTypeConverter();
@@ -213,16 +211,14 @@ class ListSyncRequestMapConverter
   List<SyncRequest> fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as List<dynamic>;
     return decoded
-        .map(
-          (e) => SyncRequestWithoutHistImpl.fromJson(e as Map<String, dynamic>),
-        )
+        .map((e) => SyncRequestWithoutHist.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
   @override
   String toSql(List<SyncRequest> value) {
     final encoded = value
-        .map((e) => (e as SyncRequestWithoutHistImpl).toJson())
+        .map((e) => (e as SyncRequestWithoutHist).toJson())
         .toList();
     return jsonEncode(encoded);
   }
@@ -346,7 +342,8 @@ class CellPositionConverter extends TypeConverter<CellPosition, String> {
   }
 }
 
-class SetCellPositionConverter extends TypeConverter<Set<CellPosition>, String> {
+class SetCellPositionConverter
+    extends TypeConverter<Set<CellPosition>, String> {
   const SetCellPositionConverter();
 
   @override

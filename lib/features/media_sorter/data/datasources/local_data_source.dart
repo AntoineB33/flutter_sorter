@@ -6,7 +6,6 @@ import 'package:rxdart/rxdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:drift/drift.dart';
 import 'package:trying_flutter/utils/logger.dart';
 
@@ -42,7 +41,7 @@ class DriftLocalDataSource
 
   // The Map acts as our cache. Using the entity's ID as the key
   // guarantees the "latest wins" behavior automatically.
-  final List<SyncRequestWithoutHistImpl> _pendingSaves = [];
+  final List<SyncRequestWithoutHist> _pendingSaves = [];
 
   // The trigger for our debounce logic
   final PublishSubject<void> _saveTrigger = PublishSubject<void>();
@@ -61,8 +60,8 @@ class DriftLocalDataSource
   }
 
   @override
-  void save(List<SyncRequest> updates) {
-    _pendingSaves.addAll(updates as List<SyncRequestWithoutHistImpl>);
+  void save(List<SyncRequestWithoutHist> updates) {
+    _pendingSaves.addAll(updates);
     if (updates.isNotEmpty) {
       _saveTrigger.add(null);
     }
@@ -115,7 +114,7 @@ class DriftLocalDataSource
   void _executeBatchOperation<T extends Table, D>(
     Batch batch,
     TableInfo<T, D> table,
-    SyncRequestWithoutHistImpl syncRequest,
+    SyncRequestWithoutHist syncRequest,
   ) {
     switch (syncRequest.dataBaseOperationType) {
       case DataBaseOperationType.delete:
@@ -174,7 +173,7 @@ class DriftLocalDataSource
   }
 
   Future<void> _batchInsertOrUpdate(
-    List<SyncRequestWithoutHistImpl> syncRequests,
+    List<SyncRequestWithoutHist> syncRequests,
   ) async {
     await db.batch((batch) {
       for (final syncRequest in syncRequests) {

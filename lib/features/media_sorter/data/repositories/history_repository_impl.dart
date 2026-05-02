@@ -3,6 +3,7 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:meta/meta.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/current_change_list.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
@@ -26,6 +27,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
   final SortStatusCache sortStatusCache;
   final SortProgressCache sortProgressCache;
   final AnalysisResultCache analysisResultCache;
+  final CurrentChangeList currentChangeList;
   int chronoIdCounter = 0;
   int? lastChronoId;
   DateTime? lastTimestamp;
@@ -45,42 +47,48 @@ class HistoryRepositoryImpl implements HistoryRepository {
     this.sortStatusCache,
     this.sortProgressCache,
     this.analysisResultCache,
+    this.currentChangeList,
   );
 
   @override
-  List<SyncRequestWithoutHistImpl> moveInUpdateHistory(HistoryType historyType, int direction) {
+  void moveInUpdateHistory(
+    HistoryType historyType,
+    int direction,
+  ) {
     int newHistoryIndex = historyData.historyIndex + direction;
     if (newHistoryIndex + direction < 0 ||
-        newHistoryIndex + direction >=
-            historyData.updateHistories.length) {
-      return [];
+        newHistoryIndex + direction >= historyData.updateHistories.length) {
+      currentChangeList.changeList = [];
+      return;
     }
     var updateData = historyData.updateHistories[newHistoryIndex];
-    if (historyType == HistoryType.editModeChange && updateData.historyType != HistoryType.editModeChange) {
-      return [];
+    if (historyType == HistoryType.editModeChange &&
+        updateData.historyType != HistoryType.editModeChange) {
+      currentChangeList.changeList = [];
+      return;
     }
     if (historyType == HistoryType.other) {
       while (updateData.historyType == HistoryType.editModeChange) {
         newHistoryIndex += direction;
         if (newHistoryIndex + direction < 0 ||
-            newHistoryIndex + direction >=
-                historyData.updateHistories.length) {
-          return [];
+            newHistoryIndex + direction >= historyData.updateHistories.length) {
+          currentChangeList.changeList = [];
+          return;
         }
       }
     }
     updateData = historyData.updateHistories[newHistoryIndex];
     historyData.historyIndex = newHistoryIndex;
-    return updateData.changeSet;
+    currentChangeList.changeList = updateData.changeSet;
   }
 
-  List<SyncRequestWithoutHistImpl> _removeLastHistoryBcEdit() {
+  List<SyncRequestWithoutHist> _removeLastHistoryBcEdit() {
     final lastUpdateData = historyData.updateHistories.last.changeSet.first;
     final lastUpdateCompanion =
         lastUpdateData.companionWrapper as UpdateHistoriesTableCompanion;
-    List<SyncRequestWithoutHistImpl> changeList = [];
+    List<SyncRequestWithoutHist> changeList = [];
     changeList.add(
-      SyncRequestWithoutHistImpl(
+      SyncRequestWithoutHist(
         HistoryWrapper(
           UpdateHistoriesTableCompanion(
             timestamp: Value(lastUpdateCompanion.timestamp.value),
@@ -94,7 +102,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
     historyData.updateHistories.removeAt(historyData.historyIndex);
     historyData.historyIndex--;
     changeList.add(
-      SyncRequestWithoutHistImpl(
+      SyncRequestWithoutHist(
         SheetDataWrapper(
           SheetDataTablesCompanion(
             sheetId: Value(currentSheetId),
@@ -117,8 +125,8 @@ class HistoryRepositoryImpl implements HistoryRepository {
     HistoryType historyType,
     bool sameHistIdFromLast,
   ) {
-    final updates = updatesI.map((e) => e as SyncRequestWithHistImpl).toList();
-    List<SyncRequestWithoutHistImpl> historyChangeList = updates.map((update) {
+    final updates = updatesI.map((e) => e as SyncRequestWithHist).toList();
+    List<SyncRequestWithoutHist> historyChangeList = updates.map((update) {
       final DataBaseOperationType histOper =
           switch (update.dataBaseOperationType) {
             DataBaseOperationType.insert => DataBaseOperationType.delete,
@@ -126,13 +134,13 @@ class HistoryRepositoryImpl implements HistoryRepository {
             DataBaseOperationType.update => DataBaseOperationType.update,
             DataBaseOperationType.deleteWhere => DataBaseOperationType.insert,
           };
-      return SyncRequestWithoutHistImpl(update.historyCompW, histOper);
+      return SyncRequestWithoutHist(update.historyCompW, histOper);
     }).toList();
     final updateData = updates.map((update) {
       return update.toSyncRequest();
     }).toList();
 
-    List<SyncRequestWithoutHistImpl> changeList = [];
+    List<SyncRequestWithoutHist> changeList = [];
     if (sameHistIdFromLast) {
       if (lastTimestamp == null || lastChronoId == null) {
         throw Exception(
@@ -143,7 +151,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
       lastTimestamp = DateTime.now();
       lastChronoId = chronoIdCounter++;
     }
-    final historyReq = SyncRequestWithoutHistImpl(
+    final historyReq = SyncRequestWithoutHist(
       HistoryWrapper(
         UpdateHistoriesTableCompanion(
           timestamp: Value(lastTimestamp!),
@@ -169,7 +177,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
         i++
       ) {
         changeList.add(
-          SyncRequestWithoutHistImpl(
+          SyncRequestWithoutHist(
             HistoryWrapper(
               UpdateHistoriesTableCompanion(
                 timestamp: Value(
@@ -197,10 +205,11 @@ class HistoryRepositoryImpl implements HistoryRepository {
       ),
     );
     historyCenter.historyIndex++;
-    if (historyCenter.historyIndex == SpreadsheetConstants.historyLimitPerSheet) {
+    if (historyCenter.historyIndex ==
+        SpreadsheetConstants.historyLimitPerSheet) {
       historyCenter.updateHistories.removeAt(0);
       changeList.add(
-        SyncRequestWithoutHistImpl(
+        SyncRequestWithoutHist(
           HistoryWrapper(
             UpdateHistoriesTableCompanion(
               timestamp: Value(
@@ -218,7 +227,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
       historyCenter.historyIndex--;
     }
     changeList.add(
-      SyncRequestWithoutHistImpl(
+      SyncRequestWithoutHist(
         SheetDataWrapper(
           SheetDataTablesCompanion(
             sheetId: Value(sheetId),

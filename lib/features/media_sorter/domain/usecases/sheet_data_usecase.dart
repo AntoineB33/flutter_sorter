@@ -68,8 +68,14 @@ class SheetDataUsecase {
     bool isFromEditing,
   ) {
     if (!isFromHistory) {
-      final result = historyRepository.commitHistory(updates, sheetId, isFromEditing);
-      updates..clear()..addAll(result);
+      final result = historyRepository.commitHistory(
+        updates,
+        sheetId,
+        isFromEditing,
+      );
+      updates
+        ..clear()
+        ..addAll(result);
     }
     updates.addAll(sheetDataRepository.update(updates, sheetId));
     saveRepository.save(updates);
@@ -88,6 +94,6 @@ class SheetDataUsecase {
   }
 
   List<SyncRequest> getCellUpdate(String newValue, int sheetId) {
-    return sheetDataRepository.getCellUpdate(newValue, sheetId);
+    return sheetDataRepository.setCellUpdate(newValue, sheetId);
   }
 }

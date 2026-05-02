@@ -3,6 +3,7 @@ import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
@@ -53,7 +54,7 @@ class SelectionRepositoryImpl implements SelectionRepository {
   }
 
   @override
-  SheetDataUpdate setSelectionData(int sheetId, SelectionData selectionData) {
+  void setSelectionData(int sheetId, HistoryData selectionData) {
     _selectionCache.setSelectionData(sheetId, selectionData);
     return SheetDataUpdate(sheetId, true, selectionHistory: selectionData);
   }

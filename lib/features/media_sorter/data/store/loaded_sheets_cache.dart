@@ -5,7 +5,6 @@ import 'package:meta/meta.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
 
@@ -53,11 +52,12 @@ class LoadedSheetsCache {
     _loadedSheetsData[sheetId] = sheetData;
   }
 
-  List<SyncRequestWithoutHistImpl> _updateCell(
+  List<SyncRequestWithoutHist> _updateCell(
     int sheetId,
     SheetCellsTableCompanion update,
+    DataBaseOperationType operationType,
   ) {
-    List<SyncRequestWithoutHistImpl> changeList = [];
+    List<SyncRequestWithoutHist> changeList = [];
     _loadedSheetsData[sheetId]!.cells[CellPosition(
           update.row.value,
           update.col.value,
@@ -67,36 +67,36 @@ class LoadedSheetsCache {
     final usedCols = _loadedSheetsData[sheetId]!.usedCols;
     List<int>? newUsedRows;
     List<int>? newUsedCols;
-    if (update.newValue.isNotEmpty) {
-      if (!usedRows.contains(update.rowId)) {
-        usedRows.insert(lowerBound(usedRows, update.rowId), update.rowId);
+    if (operationType != DataBaseOperationType.delete) {
+      if (!usedRows.contains(update.row.value)) {
+        usedRows.insert(lowerBound(usedRows, update.row.value), update.row.value);
         newUsedRows = usedRows;
       }
-      if (!usedCols.contains(update.colId)) {
-        usedCols.insert(lowerBound(usedCols, update.colId), update.colId);
+      if (!usedCols.contains(update.col.value)) {
+        usedCols.insert(lowerBound(usedCols, update.col.value), update.col.value);
         newUsedCols = usedCols;
       }
     } else {
       bool isRowUsed = false;
       for (int row in usedRows) {
-        if (getCellContent(sheetId, row, update.colId).isNotEmpty) {
+        if (getCellContent(sheetId, row, update.col.value).isNotEmpty) {
           isRowUsed = true;
           break;
         }
       }
       if (!isRowUsed) {
-        usedCols.remove(update.colId);
+        usedCols.remove(update.col.value);
         newUsedCols = usedCols;
       }
       bool isColUsed = false;
       for (int col in usedCols) {
-        if (getCellContent(sheetId, update.rowId, col).isNotEmpty) {
+        if (getCellContent(sheetId, update.row.value, col).isNotEmpty) {
           isColUsed = true;
           break;
         }
       }
       if (!isColUsed) {
-        usedRows.remove(update.rowId);
+        usedRows.remove(update.row.value);
         newUsedRows = usedRows;
       }
     }

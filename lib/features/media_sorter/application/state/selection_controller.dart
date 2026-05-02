@@ -63,8 +63,8 @@ class SelectionController extends ChangeNotifier {
     selectionUsecase.selectAll();
   }
 
-  void setPrimarySelection(int row, int col, bool keepSelection) {
-    selectionUsecase.setPrimarySelection(row, col, keepSelection);
+  void setPrimarySelection(int row, int col, bool keepSelection, bool sameHistIdFromLast) {
+    selectionUsecase.setPrimarySelection(row, col, keepSelection, sameHistIdFromLast);
     notifyListeners();
   }
 }

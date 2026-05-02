@@ -68,7 +68,7 @@ class SortRepositoryImpl implements SortRepository {
     sortProgressCache.update(sheetId, newProgressData);
     List<SyncRequest> changeList = [];
     changeList.add(
-      SyncRequestWithoutHistImpl(
+      SyncRequestWithoutHist(
         SheetDataWrapper(
           SheetDataTablesCompanion(
             sheetId: Value(sheetId),

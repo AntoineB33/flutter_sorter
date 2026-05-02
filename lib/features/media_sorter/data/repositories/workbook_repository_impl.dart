@@ -7,7 +7,6 @@ import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
@@ -59,17 +58,14 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   }
 
   @override
-  List<SyncRequestWithHistImpl> addNewSheetId(int index) {
+  List<SyncRequestWithHist> addNewSheetId(int index) {
     int newSheetId = _getNewSheetId();
     workbookCache.addSheetId(newSheetId, index);
-    final companionWrapper = 
-        SheetDataWrapper(
-          SheetDataTablesCompanion(
-            sheetId: Value(newSheetId),
-          )
-        );
+    final companionWrapper = SheetDataWrapper(
+      SheetDataTablesCompanion(sheetId: Value(newSheetId)),
+    );
     return [
-      SyncRequestWithHistImpl(
+      SyncRequestWithHist(
         companionWrapper,
         companionWrapper,
         DataBaseOperationType.insert,

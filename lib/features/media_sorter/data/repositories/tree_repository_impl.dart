@@ -7,10 +7,10 @@ import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.d
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/attribute.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/tree_repository.dart';
 import 'package:trying_flutter/utils/logger.dart';
 

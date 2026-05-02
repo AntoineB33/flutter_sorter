@@ -3,11 +3,15 @@ import 'package:trying_flutter/features/media_sorter/data/datasources/app_databa
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 
 class HistoryUnit {
-  final List<SyncRequestWithoutHistImpl> changeSet;
+  final List<SyncRequestWithoutHist> changeSet;
   final UpdateHistoriesTableCompanion timestamp;
   final HistoryType historyType;
 
-  HistoryUnit({required this.changeSet, required this.timestamp, required this.historyType});
+  HistoryUnit({
+    required this.changeSet,
+    required this.timestamp,
+    required this.historyType,
+  });
 }
 
 @JsonSerializable(explicitToJson: true)
@@ -21,8 +25,10 @@ class HistoryData {
     return HistoryData(updateHistories: [], historyIndex: -1);
   }
 
-  factory HistoryData.fromJson(Map<String, dynamic> json) => _$HistoryDataFromJson(json);
+  factory HistoryData.fromJson(Map<String, dynamic> json) =>
+      _$HistoryDataFromJson(json);
   Map<String, dynamic> toJson() => _$HistoryDataToJson(this);
   // ignore: unused_element
-  static void _keepLinterHappy() => HistoryData(updateHistories: [], historyIndex: 0).toJson();
+  static void _keepLinterHappy() =>
+      HistoryData(updateHistories: [], historyIndex: 0).toJson();
 }

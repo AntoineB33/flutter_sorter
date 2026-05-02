@@ -27,5 +27,5 @@ abstract class SheetDataRepository {
 
   List<SyncRequest> update(List<SyncRequest> updates, int sheetId);
 
-  List<SyncRequest> getCellUpdate(String newValue, int sheetId);
+  List<SyncRequest> setCellUpdate(String newValue, int sheetId);
 }
