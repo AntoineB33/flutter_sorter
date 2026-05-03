@@ -172,7 +172,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
           Value<Set<CellPosition>> selectedCells = currCpm.selectedCells.present ? selectionCache.getSelectionState(sheetId.value).selectedCells : Value.absent();
           Value<int> selectionHistoryId = currCpm.selectionHistoryId.present ? selectionCache.getSelectionState(sheetId.value).selectionHistoryId : Value.absent();
           Value<double> scrollOffsetX = currCpm.scrollOffsetX.present ? selectionCache.getSelectionState(sheetId.value).scrollOffsetX : Value.absent();
-          final scrollOffsetY = currCpm.scrollOffsetY.present ? Value(selectionCache.getSelectionState(sheetId.value).scrollOffsetY) : Value.absent();
+          Value<double> scrollOffsetY = currCpm.scrollOffsetY.present ? selectionCache.getSelectionState(sheetId.value).scrollOffsetY : Value.absent();
           final bestSortFound = currCpm.bestSortFound.present ? Value(sortProgressCache.getSortProgressData(sheetId.value).bestSortFound) : Value.absent();
           final bestDistFound = currCpm.bestDistFound.present ? Value(sortProgressCache.getSortProgressData(sheetId.value).bestDistFound) : Value.absent();
           final cursors = currCpm.cursors.present ? Value(sortProgressCache.getSortProgressData(sheetId.value).cursors) : Value.absent();
