@@ -1,4 +1,3 @@
-import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
 
 abstract class HistoryRepository {
@@ -6,7 +5,6 @@ abstract class HistoryRepository {
 
   void commitHistory(
     int sheetId,
-    HistoryType historyType,
     bool sameHistIdFromLast,
   );
 

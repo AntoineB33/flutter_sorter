@@ -58,14 +58,14 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   }
 
   @override
-  List<SyncRequestWithHist> addNewSheetId(int index) {
+  List<SyncRequestWithoutHist> addNewSheetId(int index) {
     int newSheetId = _getNewSheetId();
     workbookCache.addSheetId(newSheetId, index);
     final companionWrapper = SheetDataWrapper(
       SheetDataTablesCompanion(sheetId: Value(newSheetId)),
     );
     return [
-      SyncRequestWithHist(
+      SyncRequestWithoutHist(
         companionWrapper,
         companionWrapper,
         DataBaseOperationType.insert,

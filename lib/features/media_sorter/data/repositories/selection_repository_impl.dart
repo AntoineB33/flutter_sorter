@@ -23,7 +23,7 @@ class SelectionRepositoryImpl implements SelectionRepository {
   @override
   int get primarySelectedCellY =>
       _selectionCache.primarySelectedCellY(currentSheetId);
-    @override
+  @override
   Set<CellPosition> get selectedCells =>
       _selectionCache.getSelectionState(currentSheetId).selectedCells.value;
   List<UpdateHistoriesEntity> get selection =>
@@ -48,13 +48,24 @@ class SelectionRepositoryImpl implements SelectionRepository {
         companion.selectedCells.value.add(CellPosition(r, c));
       }
     }
-    currentChange.changeListWithHist.add(
-      SyncRequestWithHist(
-        SheetDataWrapper(companion),
-        SheetDataWrapper(
-          SheetDataTablesCompanion(
-            sheetId: Value(currentSheetId),
-            selectedCells: Value(selectionState.selectedCells.value.toSet()),
+    currentChange.addChange(HistoryType.selectionChange, SyncRequestWithoutHist(
+      SheetDataWrapper(companion),
+      DataBaseOperationType.update,
+    ));
+  }
+
+  @override
+  void setPrimarySelection(int row, int col, bool keepSelection) {
+    currentChange.addChange(HistoryType.selectionChange, SyncRequestWithoutHist(
+      SheetDataWrapper(
+        SheetDataTablesCompanion(
+          primarySelectionX: Value(row),
+          primarySelectionY: Value(col),
+            selectedCells: Value(
+              keepSelection
+                  ? (selectedCells..add(CellPosition(row, col)))
+                  : {CellPosition(row, col)},
+            ),
           ),
         ),
         DataBaseOperationType.update,

@@ -2095,7 +2095,10 @@ class $UpdateHistoriesTableTable extends UpdateHistoriesTable
     requiredDuringInsert: true,
   );
   @override
-  late final GeneratedColumnWithTypeConverter<List<SyncRequestWithHist>, String>
+  late final GeneratedColumnWithTypeConverter<
+    List<SyncRequestWithoutHist>,
+    String
+  >
   updates =
       GeneratedColumn<String>(
         'updates',
@@ -2103,7 +2106,7 @@ class $UpdateHistoriesTableTable extends UpdateHistoriesTable
         false,
         type: DriftSqlType.string,
         requiredDuringInsert: true,
-      ).withConverter<List<SyncRequestWithHist>>(
+      ).withConverter<List<SyncRequestWithoutHist>>(
         $UpdateHistoriesTableTable.$converterupdates,
       );
   @override
@@ -2200,7 +2203,7 @@ class $UpdateHistoriesTableTable extends UpdateHistoriesTable
     return $UpdateHistoriesTableTable(attachedDatabase, alias);
   }
 
-  static TypeConverter<List<SyncRequestWithHist>, String> $converterupdates =
+  static TypeConverter<List<SyncRequestWithoutHist>, String> $converterupdates =
       const ListSyncRequestMapConverter();
   static TypeConverter<HistoryType, String> $convertertype =
       const HistoryChangeTypeConverter();
@@ -2211,7 +2214,7 @@ class UpdateHistoriesEntity extends DataClass
   final DateTime timestamp;
   final int chronoId;
   final int sheetId;
-  final List<SyncRequestWithHist> updates;
+  final List<SyncRequestWithoutHist> updates;
   final HistoryType type;
   const UpdateHistoriesEntity({
     required this.timestamp,
@@ -2258,7 +2261,9 @@ class UpdateHistoriesEntity extends DataClass
       timestamp: serializer.fromJson<DateTime>(json['timestamp']),
       chronoId: serializer.fromJson<int>(json['chronoId']),
       sheetId: serializer.fromJson<int>(json['sheetId']),
-      updates: serializer.fromJson<List<SyncRequestWithHist>>(json['updates']),
+      updates: serializer.fromJson<List<SyncRequestWithoutHist>>(
+        json['updates'],
+      ),
       type: serializer.fromJson<HistoryType>(json['type']),
     );
   }
@@ -2269,7 +2274,7 @@ class UpdateHistoriesEntity extends DataClass
       'timestamp': serializer.toJson<DateTime>(timestamp),
       'chronoId': serializer.toJson<int>(chronoId),
       'sheetId': serializer.toJson<int>(sheetId),
-      'updates': serializer.toJson<List<SyncRequestWithHist>>(updates),
+      'updates': serializer.toJson<List<SyncRequestWithoutHist>>(updates),
       'type': serializer.toJson<HistoryType>(type),
     };
   }
@@ -2278,7 +2283,7 @@ class UpdateHistoriesEntity extends DataClass
     DateTime? timestamp,
     int? chronoId,
     int? sheetId,
-    List<SyncRequestWithHist>? updates,
+    List<SyncRequestWithoutHist>? updates,
     HistoryType? type,
   }) => UpdateHistoriesEntity(
     timestamp: timestamp ?? this.timestamp,
@@ -2327,7 +2332,7 @@ class UpdateHistoriesTableCompanion
   final Value<DateTime> timestamp;
   final Value<int> chronoId;
   final Value<int> sheetId;
-  final Value<List<SyncRequestWithHist>> updates;
+  final Value<List<SyncRequestWithoutHist>> updates;
   final Value<HistoryType> type;
   final Value<int> rowid;
   const UpdateHistoriesTableCompanion({
@@ -2342,7 +2347,7 @@ class UpdateHistoriesTableCompanion
     required DateTime timestamp,
     required int chronoId,
     required int sheetId,
-    required List<SyncRequestWithHist> updates,
+    required List<SyncRequestWithoutHist> updates,
     required HistoryType type,
     this.rowid = const Value.absent(),
   }) : timestamp = Value(timestamp),
@@ -2372,7 +2377,7 @@ class UpdateHistoriesTableCompanion
     Value<DateTime>? timestamp,
     Value<int>? chronoId,
     Value<int>? sheetId,
-    Value<List<SyncRequestWithHist>>? updates,
+    Value<List<SyncRequestWithoutHist>>? updates,
     Value<HistoryType>? type,
     Value<int>? rowid,
   }) {
@@ -4597,7 +4602,7 @@ typedef $$UpdateHistoriesTableTableCreateCompanionBuilder =
       required DateTime timestamp,
       required int chronoId,
       required int sheetId,
-      required List<SyncRequestWithHist> updates,
+      required List<SyncRequestWithoutHist> updates,
       required HistoryType type,
       Value<int> rowid,
     });
@@ -4606,7 +4611,7 @@ typedef $$UpdateHistoriesTableTableUpdateCompanionBuilder =
       Value<DateTime> timestamp,
       Value<int> chronoId,
       Value<int> sheetId,
-      Value<List<SyncRequestWithHist>> updates,
+      Value<List<SyncRequestWithoutHist>> updates,
       Value<HistoryType> type,
       Value<int> rowid,
     });
@@ -4636,8 +4641,8 @@ class $$UpdateHistoriesTableTableFilterComposer
   );
 
   ColumnWithTypeConverterFilters<
-    List<SyncRequestWithHist>,
-    List<SyncRequestWithHist>,
+    List<SyncRequestWithoutHist>,
+    List<SyncRequestWithoutHist>,
     String
   >
   get updates => $composableBuilder(
@@ -4705,7 +4710,7 @@ class $$UpdateHistoriesTableTableAnnotationComposer
   GeneratedColumn<int> get sheetId =>
       $composableBuilder(column: $table.sheetId, builder: (column) => column);
 
-  GeneratedColumnWithTypeConverter<List<SyncRequestWithHist>, String>
+  GeneratedColumnWithTypeConverter<List<SyncRequestWithoutHist>, String>
   get updates =>
       $composableBuilder(column: $table.updates, builder: (column) => column);
 
@@ -4759,7 +4764,8 @@ class $$UpdateHistoriesTableTableTableManager
                 Value<DateTime> timestamp = const Value.absent(),
                 Value<int> chronoId = const Value.absent(),
                 Value<int> sheetId = const Value.absent(),
-                Value<List<SyncRequestWithHist>> updates = const Value.absent(),
+                Value<List<SyncRequestWithoutHist>> updates =
+                    const Value.absent(),
                 Value<HistoryType> type = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => UpdateHistoriesTableCompanion(
@@ -4775,7 +4781,7 @@ class $$UpdateHistoriesTableTableTableManager
                 required DateTime timestamp,
                 required int chronoId,
                 required int sheetId,
-                required List<SyncRequestWithHist> updates,
+                required List<SyncRequestWithoutHist> updates,
                 required HistoryType type,
                 Value<int> rowid = const Value.absent(),
               }) => UpdateHistoriesTableCompanion.insert(

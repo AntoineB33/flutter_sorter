@@ -1,5 +1,4 @@
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
 
 class SelectionCache {

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart';
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
@@ -138,7 +137,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       final columns = rows[r].split('\t');
       for (int c = 0; c < columns.length; c++) {
         String val = columns[c].replaceAll('\r', '');
-        final cellUpdate = SyncRequestWithHist(
+        final cellUpdate = SyncRequestWithoutHist(
           SheetCellWrapper(
             SheetCellsTableCompanion(
               sheetId: Value(currentSheetId),
@@ -147,23 +146,9 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
               content: Value(val),
             ),
           ),
-          SheetCellWrapper(
-            SheetCellsTableCompanion(
-              sheetId: Value(currentSheetId),
-              row: Value(startRow + r),
-              col: Value(startCol + c),
-              content: Value(
-                loadedSheetsCache.getCellContent(
-                  currentSheetId,
-                  startRow + r,
-                  startCol + c,
-                ),
-              ),
-            ),
-          ),
           DataBaseOperationType.update,
         );
-        currentChangeList.changeListWithHist.add(cellUpdate);
+        currentChangeList.addChange(HistoryType.other, cellUpdate);
       }
     }
     return Right(unit);
@@ -204,6 +189,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
           columnTypes: columnTypeMap,
           usedRows: sheetData.usedRows,
           usedCols: sheetData.usedCols,
+          toAlwaysApplyCurrentBestSort: sheetData.toAlwaysApplyCurrentBestSort,
         );
         loadedSheetsCache.setSheet(sheetId, sheetDataTable);
         final rowsBottomPos = await dataSource.getRowsBottomPosEntities(
@@ -232,10 +218,13 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         final selectHistories = await dataSource.getSelectHistoriesEntities(
           sheetId,
         );
-        selectionCache.setSelectionData(sheetId, HistoryData(
-          updateHistories: selectHistories,
-          historyIndex: sheetData.selectionHistoryId,
-        ));
+        selectionCache.setSelectionData(
+          sheetId,
+          HistoryData(
+            updateHistories: selectHistories,
+            historyIndex: sheetData.selectionHistoryId,
+          ),
+        );
         final sortProgression = SortProgressData(
           bestDistFound: sheetData.bestDistFound,
           bestSortFound: sheetData.bestSortFound,
@@ -266,10 +255,9 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  List<SyncRequest> addNewSheet(int sheetId, String title) {
+  void addNewSheet(int sheetId, String title) {
     loadedSheetsCache.setSheet(sheetId, CoreSheetContent.empty(title));
-    List<SyncRequest> changeList = [];
-    changeList.add(
+    currentChangeList.addChange(HistoryType.other, SyncRequestWithoutHist(
       SheetDataUpdate(
         sheetId,
         true,
@@ -279,14 +267,16 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         usedCols: loadedSheetsCache.getSheet(sheetId).usedCols,
       ),
     );
-    return changeList;
   }
 
   @override
   void delete() {
     for (CellPosition cellPos
-        in selectionCache.getSelectionState(currentSheetId).selectedCells.value) {
-      final cellUpdate = SyncRequestWithHist(
+        in selectionCache
+            .getSelectionState(currentSheetId)
+            .selectedCells
+            .value) {
+      final cellUpdate = SyncRequestWithoutHist(
         SheetCellWrapper(
           SheetCellsTableCompanion(
             sheetId: Value(currentSheetId),
@@ -310,13 +300,13 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         ),
         DataBaseOperationType.delete,
       );
-      currentChangeList.changeListWithHist.add(cellUpdate);
+      currentChangeList.otherChanges.add(cellUpdate);
     }
   }
 
   @override
   void setCellUpdate(int rowId, int colId, String newValue, int sheetId) {
-    final syncRequest = SyncRequestWithHist(
+    final syncRequest = SyncRequestWithoutHist(
       SheetCellWrapper(
         SheetCellsTableCompanion(
           sheetId: Value(sheetId),
@@ -337,6 +327,6 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       ),
       DataBaseOperationType.update,
     );
-    currentChangeList.changeListWithHist = [syncRequest];
+    currentChangeList.otherChanges = [syncRequest];
   }
 }

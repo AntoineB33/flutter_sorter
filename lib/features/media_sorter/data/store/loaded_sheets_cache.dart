@@ -50,7 +50,7 @@ class LoadedSheetsCache {
     _loadedSheetsData[sheetId] = sheetData;
   }
 
-  List<SyncRequestWithHist> updateCell(
+  List<SyncRequestWithoutHist> updateCell(
     int sheetId,
     SheetCellsTableCompanion update,
     DataBaseOperationType operationType,
@@ -103,26 +103,34 @@ class LoadedSheetsCache {
         newUsedRows = usedRows;
       }
     }
-    List<SyncRequestWithHist> changeList = [];
+    List<SyncRequestWithoutHist> changeList = [];
     if (newUsedRows != null || newUsedCols != null) {
       changeList.add(
-        SyncRequestWithHist(
+        SyncRequestWithoutHist(
           SheetDataWrapper(
             SheetDataTablesCompanion(
               sheetId: Value(sheetId),
-              usedRows: newUsedRows != null ? Value(newUsedRows) : Value.absent(),
-              usedCols: newUsedCols != null ? Value(newUsedCols) : Value.absent(),
+              usedRows: newUsedRows != null
+                  ? Value(newUsedRows)
+                  : Value.absent(),
+              usedCols: newUsedCols != null
+                  ? Value(newUsedCols)
+                  : Value.absent(),
             ),
           ),
           SheetDataWrapper(
             SheetDataTablesCompanion(
               sheetId: Value(sheetId),
-              usedRows: newUsedRows != null ? Value(getSheet(sheetId).usedRows) : Value.absent(),
-              usedCols: newUsedCols != null ? Value(getSheet(sheetId).usedCols) : Value.absent(),
+              usedRows: newUsedRows != null
+                  ? Value(getSheet(sheetId).usedRows)
+                  : Value.absent(),
+              usedCols: newUsedCols != null
+                  ? Value(getSheet(sheetId).usedCols)
+                  : Value.absent(),
             ),
           ),
           DataBaseOperationType.update,
-        )
+        ),
       );
     }
     return changeList;

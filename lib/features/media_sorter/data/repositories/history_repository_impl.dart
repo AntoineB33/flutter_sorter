@@ -18,54 +18,6 @@ import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_co
 import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 
-
-// ---------------------------------------------------------
-// 1. Define Numbers as Types (Peano Arithmetic)
-// ---------------------------------------------------------
-sealed class Nat {}
-class Z extends Nat {}           // Represents 0
-class S<N extends Nat> extends Nat {} // Represents N + 1 (Successor)
-
-// ---------------------------------------------------------
-// 2. Phase 1: Counting Up
-// ---------------------------------------------------------
-class Phase1<N extends Nat> {
-  // Every time we call 'doA', we wrap the current type N in an S<N>.
-  // This increments our compile-time counter.
-  Phase1<S<N>> doA() {
-    return Phase1<S<N>>();
-  }
-
-  // Lock in the count and move to the second phase.
-  Phase2<N> transition() {
-    return Phase2<N>();
-  }
-}
-
-// ---------------------------------------------------------
-// 3. Phase 2: Base Class
-// ---------------------------------------------------------
-class Phase2<N extends Nat> {}
-
-// ---------------------------------------------------------
-// 4. Phase 2: Counting Down (The Magic)
-// ---------------------------------------------------------
-// This extension ONLY applies if N is greater than 0 (i.e., S<Prev>).
-// It "unwraps" one layer of S, effectively decrementing the counter.
-extension Phase2Decrement<Prev extends Nat> on Phase2<S<Prev>> {
-  Phase2<Prev> doB() {
-    return Phase2<Prev>();
-  }
-}
-
-// ---------------------------------------------------------
-// 5. Enforcing the End State
-// ---------------------------------------------------------
-// The 'finish' method ONLY exists if the counter has reached exactly 0.
-extension Phase2End on Phase2<Z> {
-  void finish() {}
-}
-
 class HistoryRepositoryImpl implements HistoryRepository {
   final ILocalDataSource localDataSource;
 
@@ -123,24 +75,24 @@ class HistoryRepositoryImpl implements HistoryRepository {
       }
     }
     updateData = historyData.updateHistories[newHistoryIndex];
-    currentChangeList.changeListWithHist = updateData.updates.map((e) {
-      var dataBaseOperationType = e.dataBaseOperationType;
-      if (direction < 0) {
-        dataBaseOperationType = switch (e.dataBaseOperationType) {
-          DataBaseOperationType.insert => DataBaseOperationType.delete,
-          DataBaseOperationType.delete => DataBaseOperationType.insert,
-          DataBaseOperationType.update => DataBaseOperationType.update,
-          DataBaseOperationType.deleteWhere =>
-            DataBaseOperationType.deleteWhere,
-        };
-      }
-      return SyncRequestWithHist(
-        direction < 0 ? e.companionWrapper : e.historyCompW,
-        direction < 0 ? e.historyCompW : e.companionWrapper,
-        dataBaseOperationType,
-      );
-    }).toList();
+    final currentChanges = currentChangeList.changes[updateData.type] ??= [];
+    currentChanges.addAll(updateData.updates);
+    currentChanges.add(
+      SyncRequestWithoutHist(
+        HistoryWrapper(
+          UpdateHistoriesTableCompanion(
+            timestamp: Value(updateData.timestamp),
+            chronoId: Value(updateData.chronoId),
+            sheetId: Value(updateData.sheetId),
+            updates: Value(reverseHistoryEntity(updateData.updates)),
+            type: Value(updateData.type),
+          ),
+        ),
+        DataBaseOperationType.update,
+      ),
+    );
     historyData.historyIndex = newHistoryIndex;
+    localDataSource.save(currentChanges);
   }
 
   List<SyncRequestWithoutHist> reverseHistoryEntity(
@@ -158,32 +110,114 @@ class HistoryRepositoryImpl implements HistoryRepository {
       DbCompanionWrapper newCmpWrp;
       switch (update.companionWrapper) {
         case SheetDataWrapper():
-          final currCpm = (update.companionWrapper as SheetDataWrapper).companion;
+          final currCpm =
+              (update.companionWrapper as SheetDataWrapper).companion;
           final sheetId = currCpm.sheetId;
-          Value<String> title = currCpm.title.present ? Value(loadedSheetsDataStore.getSheet(sheetId.value).title) : Value.absent();
-          Value<DateTime> lastOpened = currCpm.lastOpened.present ? Value(loadedSheetsDataStore.getSheet(sheetId.value).lastOpened) : Value.absent();
-          Value<List<int>> usedRows = currCpm.usedRows.present ? Value(loadedSheetsDataStore.getSheet(sheetId.value).usedRows) : Value.absent();
-          Value<List<int>> usedCols = currCpm.usedCols.present ? Value(loadedSheetsDataStore.getSheet(sheetId.value).usedCols) : Value.absent();
-          Value<int> historyIndex = currCpm.historyIndex.present ? Value(historyCache[sheetId.value]!.historyIndex) : Value.absent();
-          Value<double> colHeaderHeight = currCpm.colHeaderHeight.present ? Value(layoutCache.getLayout(sheetId.value).colHeaderHeight) : Value.absent();
-          Value<double> rowHeaderWidth = currCpm.rowHeaderWidth.present ? Value(layoutCache.getLayout(sheetId.value).rowHeaderWidth) : Value.absent();
-          Value<int> primarySelectionX = currCpm.primarySelectionX.present ? selectionCache.getSelectionState(sheetId.value).primarySelectionX : Value.absent();
-          Value<int> primarySelectionY = currCpm.primarySelectionY.present ? selectionCache.getSelectionState(sheetId.value).primarySelectionY : Value.absent();
-          Value<Set<CellPosition>> selectedCells = currCpm.selectedCells.present ? selectionCache.getSelectionState(sheetId.value).selectedCells : Value.absent();
-          Value<int> selectionHistoryId = currCpm.selectionHistoryId.present ? selectionCache.getSelectionState(sheetId.value).selectionHistoryId : Value.absent();
-          Value<double> scrollOffsetX = currCpm.scrollOffsetX.present ? selectionCache.getSelectionState(sheetId.value).scrollOffsetX : Value.absent();
-          Value<double> scrollOffsetY = currCpm.scrollOffsetY.present ? selectionCache.getSelectionState(sheetId.value).scrollOffsetY : Value.absent();
-          final bestSortFound = currCpm.bestSortFound.present ? Value(sortProgressCache.getSortProgressData(sheetId.value).bestSortFound) : Value.absent();
-          final bestDistFound = currCpm.bestDistFound.present ? Value(sortProgressCache.getSortProgressData(sheetId.value).bestDistFound) : Value.absent();
-          final cursors = currCpm.cursors.present ? Value(sortProgressCache.getSortProgressData(sheetId.value).cursors) : Value.absent();
-          final possibleInts = currCpm.possibleInts.present ? Value(sortProgressCache.getSortProgressData(sheetId.value).possibleIntsById) : Value.absent();
-          final validAreas = currCpm.validAreas.present ? Value(sortProgressCache.getSortProgressData(sheetId.value).validAreasById) : Value.absent();
-          final sortIndex = currCpm.sortIndex.present ? Value(sortProgressCache.getSortProgressData(sheetId.value).sortIndex) : Value.absent();
-          final analysisResult = currCpm.analysisResult.present ? Value(analysisResultCache.getAnalysisResult(sheetId.value)) : Value.absent();
-          final sortInProgress = currCpm.sortInProgress.present ? Value(sortProgressCache.sortInProgress(sheetId.value)) : Value.absent();
-          final toAlwaysApplyCurrentBestSort = currCpm.toAlwaysApplyCurrentBestSort.present ? Value(loadedSheetsDataStore.getSheet(sheetId.value).toAlwaysApplyCurrentBestSort) : Value.absent();
-          final toApplyNextBestSort = currCpm.toApplyNextBestSort.present ? Value(sortStatusCache.getToApplyOnce(sheetId.value)) : Value.absent();
-          final analysisDone = currCpm.analysisDone.present ? Value(sortStatusCache.getAnalysisDone(sheetId.value)) : Value.absent();
+          Value<String> title = currCpm.title.present
+              ? Value(loadedSheetsDataStore.getSheet(sheetId.value).title)
+              : Value.absent();
+          Value<DateTime> lastOpened = currCpm.lastOpened.present
+              ? Value(loadedSheetsDataStore.getSheet(sheetId.value).lastOpened)
+              : Value.absent();
+          Value<List<int>> usedRows = currCpm.usedRows.present
+              ? Value(loadedSheetsDataStore.getSheet(sheetId.value).usedRows)
+              : Value.absent();
+          Value<List<int>> usedCols = currCpm.usedCols.present
+              ? Value(loadedSheetsDataStore.getSheet(sheetId.value).usedCols)
+              : Value.absent();
+          Value<int> historyIndex = currCpm.historyIndex.present
+              ? Value(historyCache[sheetId.value]!.historyIndex)
+              : Value.absent();
+          Value<double> colHeaderHeight = currCpm.colHeaderHeight.present
+              ? Value(layoutCache.getLayout(sheetId.value).colHeaderHeight)
+              : Value.absent();
+          Value<double> rowHeaderWidth = currCpm.rowHeaderWidth.present
+              ? Value(layoutCache.getLayout(sheetId.value).rowHeaderWidth)
+              : Value.absent();
+          Value<int> primarySelectionX = currCpm.primarySelectionX.present
+              ? selectionCache
+                    .getSelectionState(sheetId.value)
+                    .primarySelectionX
+              : Value.absent();
+          Value<int> primarySelectionY = currCpm.primarySelectionY.present
+              ? selectionCache
+                    .getSelectionState(sheetId.value)
+                    .primarySelectionY
+              : Value.absent();
+          Value<Set<CellPosition>> selectedCells = currCpm.selectedCells.present
+              ? selectionCache.getSelectionState(sheetId.value).selectedCells
+              : Value.absent();
+          Value<int> selectionHistoryId = currCpm.selectionHistoryId.present
+              ? selectionCache
+                    .getSelectionState(sheetId.value)
+                    .selectionHistoryId
+              : Value.absent();
+          Value<double> scrollOffsetX = currCpm.scrollOffsetX.present
+              ? selectionCache.getSelectionState(sheetId.value).scrollOffsetX
+              : Value.absent();
+          Value<double> scrollOffsetY = currCpm.scrollOffsetY.present
+              ? selectionCache.getSelectionState(sheetId.value).scrollOffsetY
+              : Value.absent();
+          Value<List<int>> bestSortFound = currCpm.bestSortFound.present
+              ? Value(
+                  sortProgressCache
+                      .getSortProgressData(sheetId.value)
+                      .bestSortFound,
+                )
+              : Value.absent();
+          Value<List<int>> bestDistFound = currCpm.bestDistFound.present
+              ? Value(
+                  sortProgressCache
+                      .getSortProgressData(sheetId.value)
+                      .bestDistFound,
+                )
+              : Value.absent();
+          Value<List<int>> cursors = currCpm.cursors.present
+              ? Value(
+                  sortProgressCache.getSortProgressData(sheetId.value).cursors,
+                )
+              : Value.absent();
+          Value<List<List<int>>> possibleInts = currCpm.possibleInts.present
+              ? Value(
+                  sortProgressCache
+                      .getSortProgressData(sheetId.value)
+                      .possibleIntsById,
+                )
+              : Value.absent();
+          Value<List<List<List<int>>>> validAreas = currCpm.validAreas.present
+              ? Value(
+                  sortProgressCache
+                      .getSortProgressData(sheetId.value)
+                      .validAreasById,
+                )
+              : Value.absent();
+          Value<int> sortIndex = currCpm.sortIndex.present
+              ? Value(
+                  sortProgressCache
+                      .getSortProgressData(sheetId.value)
+                      .sortIndex,
+                )
+              : Value.absent();
+          Value<AnalysisResult> analysisResult = currCpm.analysisResult.present
+              ? Value(analysisResultCache.getAnalysisResult(sheetId.value))
+              : Value.absent();
+          Value<bool> sortInProgress = currCpm.sortInProgress.present
+              ? Value(sortProgressCache.sortInProgress(sheetId.value))
+              : Value.absent();
+          Value<bool> toAlwaysApplyCurrentBestSort =
+              currCpm.toAlwaysApplyCurrentBestSort.present
+              ? Value(
+                  loadedSheetsDataStore
+                      .getSheet(sheetId.value)
+                      .toAlwaysApplyCurrentBestSort,
+                )
+              : Value.absent();
+          Value<bool> toApplyNextBestSort = currCpm.toApplyNextBestSort.present
+              ? Value(sortStatusCache.getToApplyOnce(sheetId.value))
+              : Value.absent();
+          Value<bool> analysisDone = currCpm.analysisDone.present
+              ? Value(sortStatusCache.getAnalysisDone(sheetId.value))
+              : Value.absent();
           var newCmp = SheetDataTablesCompanion(
             sheetId: sheetId,
             title: title,
@@ -215,16 +249,26 @@ class HistoryRepositoryImpl implements HistoryRepository {
             SheetDataEntity(
               sheetId: sheetId.present ? sheetId.value : 0,
               title: title.present ? title.value : '',
-              lastOpened: lastOpend.present ? lastOpend.value : DateTime.now(),
+              lastOpened: lastOpened.present
+                  ? lastOpened.value
+                  : DateTime.now(),
               usedRows: usedRows.present ? usedRows.value : [],
               usedCols: usedCols.present ? usedCols.value : [],
               historyIndex: historyIndex.present ? historyIndex.value : 0,
-              colHeaderHeight: colHeaderHeight.present ? colHeaderHeight.value : 0,
+              colHeaderHeight: colHeaderHeight.present
+                  ? colHeaderHeight.value
+                  : 0,
               rowHeaderWidth: rowHeaderWidth.present ? rowHeaderWidth.value : 0,
-              primarySelectionX: primarySelectionX.present ? primarySelectionX.value : 0,
-              primarySelectionY: primarySelectionY.present ? primarySelectionY.value : 0,
+              primarySelectionX: primarySelectionX.present
+                  ? primarySelectionX.value
+                  : 0,
+              primarySelectionY: primarySelectionY.present
+                  ? primarySelectionY.value
+                  : 0,
               selectedCells: selectedCells.present ? selectedCells.value : {},
-              selectionHistoryId: selectionHistoryId.present ? selectionHistoryId.value : 0,
+              selectionHistoryId: selectionHistoryId.present
+                  ? selectionHistoryId.value
+                  : 0,
               scrollOffsetX: scrollOffsetX.present ? scrollOffsetX.value : 0,
               scrollOffsetY: scrollOffsetY.present ? scrollOffsetY.value : 0,
               bestSortFound: bestSortFound.present ? bestSortFound.value : [],
@@ -233,19 +277,88 @@ class HistoryRepositoryImpl implements HistoryRepository {
               possibleInts: possibleInts.present ? possibleInts.value : [],
               validAreas: validAreas.present ? validAreas.value : [],
               sortIndex: sortIndex.present ? sortIndex.value : 0,
-              analysisResult: analysisResult.present ? analysisResult.value : AnalysisResult.empty(),
-              sortInProgress: sortInProgress.present ? sortInProgress.value : false,
-              toAlwaysApplyCurrentBestSort: toAlwaysApplyCurrentBestSort.present ? toAlwaysApplyCurrentBestSort.value : false,
-              toApplyNextBestSort: toApplyNextBestSort.present ? toApplyNextBestSort.value : false,
+              analysisResult: analysisResult.present
+                  ? analysisResult.value
+                  : AnalysisResult.empty(),
+              sortInProgress: sortInProgress.present
+                  ? sortInProgress.value
+                  : false,
+              toAlwaysApplyCurrentBestSort: toAlwaysApplyCurrentBestSort.present
+                  ? toAlwaysApplyCurrentBestSort.value
+                  : false,
+              toApplyNextBestSort: toApplyNextBestSort.present
+                  ? toApplyNextBestSort.value
+                  : false,
               analysisDone: analysisDone.present ? analysisDone.value : false,
             );
           }
           if (true == false) {
             schemaCheck();
           }
-          newCmpWrp = SheetDataWrapper(
-            newCmp,
+          newCmpWrp = SheetDataWrapper(newCmp);
+        case HistoryWrapper():
+          throw Exception('HistoryWrapper reversal not implemented');
+        case SheetCellWrapper():
+          final currCpm =
+              (update.companionWrapper as SheetCellWrapper).companion;
+          final sheetId = currCpm.sheetId;
+          final row = currCpm.row;
+          final col = currCpm.col;
+          Value<String> content = currCpm.content.present
+              ? Value(
+                  loadedSheetsDataStore.getCellContent(
+                    sheetId.value,
+                    row.value,
+                    col.value,
+                  ),
+                )
+              : Value.absent();
+          var newCmp = SheetCellsTableCompanion(
+            sheetId: sheetId,
+            row: row,
+            col: col,
+            content: content,
           );
+          void schemaCheck() {
+            SheetCellEntity(
+              sheetId: sheetId.value,
+              row: row.value,
+              col: col.value,
+              content: content.present ? content.value : '',
+            );
+          }
+          if (true == false) {
+            schemaCheck();
+          }
+          newCmpWrp = SheetCellWrapper(newCmp);
+        case RowHeightWrapper():
+          final currCpm =
+              (update.companionWrapper as RowHeightWrapper).companion;
+          final sheetId = currCpm.sheetId;
+          final rowIndex = currCpm.rowIndex;
+          Value<double> bottomPos = currCpm.bottomPos.present
+              ? Value(
+                  layoutCache
+                      .getLayout(sheetId.value)
+                      .rowsBottomPos[rowIndex.value],
+                )
+              : Value.absent();
+          var newCmp = RowsBottomPosTableCompanion(
+            sheetId: sheetId,
+            rowIndex: rowIndex,
+            bottomPos: bottomPos,
+          );
+          void schemaCheck() {
+            RowsBottomPosEntity(
+              sheetId: sheetId.value,
+              rowIndex: rowIndex.value,
+              bottomPos: bottomPos.present ? bottomPos.value : 0,
+            );
+          }
+          if (true == false) {
+            schemaCheck();
+          }
+          newCmpWrp = RowHeightWrapper(newCmp);
       }
       reversedUpdates.add(
         SyncRequestWithoutHist(newCmpWrp, dataBaseOperationType),
@@ -254,59 +367,96 @@ class HistoryRepositoryImpl implements HistoryRepository {
     return reversedUpdates;
   }
 
-  /* Updates the history cache and returns the changeList without the history 
-  information and with the history requests
-  */
   @override
   void commitHistory(
     int sheetId,
-    HistoryType historyType,
     bool sameHistIdFromLast,
   ) {
-    final updateData = currentChangeList.changeListWithHist;
-
     List<SyncRequestWithoutHist> changeList = [];
-    if (sameHistIdFromLast) {
-      if (lastTimestamp == null || lastChronoId == null) {
-        throw Exception(
-          'Last timestamp or chronoId is null while sameHistIdFromLast is true',
+    for (HistoryType historyType in HistoryType.values) {
+      final currentChanges = currentChangeList.changes[historyType];
+      if (currentChanges == null || currentChanges.isEmpty) {
+          continue;
+      }
+
+      if (sameHistIdFromLast) {
+        if (lastTimestamp == null || lastChronoId == null) {
+          throw Exception(
+            'Last timestamp or chronoId is null while sameHistIdFromLast is true',
+          );
+        }
+      } else {
+        lastTimestamp = DateTime.now();
+        lastChronoId = chronoIdCounter++;
+      }
+      final historyReq = SyncRequestWithoutHist(
+        HistoryWrapper(
+          UpdateHistoriesTableCompanion(
+            timestamp: Value(lastTimestamp!),
+            chronoId: Value(lastChronoId!),
+            sheetId: Value(sheetId),
+            updates: Value(currentChanges),
+            type: Value(historyType),
+          ),
+        ),
+        DataBaseOperationType.insert,
+      );
+      changeList.add(historyReq);
+      changeList.addAll(currentChanges);
+
+      final historyCenter = historyType == HistoryType.selectionChange
+          ? selectionHistoryData
+          : historyData;
+
+      if (historyCenter.historyIndex < historyCenter.updateHistories.length - 1) {
+        for (
+          int i = historyCenter.historyIndex + 1;
+          i < historyCenter.updateHistories.length;
+          i++
+        ) {
+          changeList.add(
+            SyncRequestWithoutHist(
+              HistoryWrapper(
+                UpdateHistoriesTableCompanion(
+                  timestamp: Value(historyCenter.updateHistories[i].timestamp),
+                  chronoId: Value(historyCenter.updateHistories[i].chronoId),
+                  sheetId: Value(sheetId),
+                  type: Value(historyType),
+                ),
+              ),
+              DataBaseOperationType.delete,
+            ),
+          );
+        }
+        historyCenter.updateHistories = historyCenter.updateHistories.sublist(
+          0,
+          historyCenter.historyIndex + 1,
         );
       }
-    } else {
-      lastTimestamp = DateTime.now();
-      lastChronoId = chronoIdCounter++;
-    }
-    final historyReq = SyncRequestWithoutHist(
-      HistoryWrapper(
-        UpdateHistoriesTableCompanion(
-          timestamp: Value(lastTimestamp!),
-          chronoId: Value(lastChronoId!),
-          sheetId: Value(sheetId),
-          updates: Value(currentChangeList.changeListWithHist),
-          type: Value(historyType),
+      historyCenter.updateHistories.add(
+        UpdateHistoriesEntity(
+          sheetId: sheetId,
+          updates: currentChanges,
+          timestamp:
+              (historyReq.companionWrapper as UpdateHistoriesTableCompanion)
+                  .timestamp
+                  .value,
+          chronoId: (historyReq.companionWrapper as UpdateHistoriesTableCompanion)
+              .chronoId
+              .value,
+          type: historyType,
         ),
-      ),
-      DataBaseOperationType.insert,
-    );
-    changeList.add(historyReq);
-    changeList.addAll(updateData);
-
-    final historyCenter = historyType == HistoryType.selectionChange
-        ? selectionHistoryData
-        : historyData;
-
-    if (historyCenter.historyIndex < historyCenter.updateHistories.length - 1) {
-      for (
-        int i = historyCenter.historyIndex + 1;
-        i < historyCenter.updateHistories.length;
-        i++
-      ) {
+      );
+      historyCenter.historyIndex++;
+      if (historyCenter.historyIndex ==
+          SpreadsheetConstants.historyLimitPerSheet) {
+        historyCenter.updateHistories.removeAt(0);
         changeList.add(
           SyncRequestWithoutHist(
             HistoryWrapper(
               UpdateHistoriesTableCompanion(
-                timestamp: Value(historyCenter.updateHistories[i].timestamp),
-                chronoId: Value(historyCenter.updateHistories[i].chronoId),
+                timestamp: Value(historyCenter.updateHistories[0].timestamp),
+                chronoId: Value(historyCenter.updateHistories[0].chronoId),
                 sheetId: Value(sheetId),
                 type: Value(historyType),
               ),
@@ -314,56 +464,20 @@ class HistoryRepositoryImpl implements HistoryRepository {
             DataBaseOperationType.delete,
           ),
         );
+        historyCenter.historyIndex--;
       }
-      historyCenter.updateHistories = historyCenter.updateHistories.sublist(
-        0,
-        historyCenter.historyIndex + 1,
-      );
-    }
-    historyCenter.updateHistories.add(
-      UpdateHistoriesEntity(
-        sheetId: sheetId,
-        updates: currentChangeList.changeListWithHist,
-        timestamp:
-            (historyReq.companionWrapper as UpdateHistoriesTableCompanion)
-                .timestamp
-                .value,
-        chronoId: (historyReq.companionWrapper as UpdateHistoriesTableCompanion)
-            .chronoId
-            .value,
-        type: historyType,
-      ),
-    );
-    historyCenter.historyIndex++;
-    if (historyCenter.historyIndex ==
-        SpreadsheetConstants.historyLimitPerSheet) {
-      historyCenter.updateHistories.removeAt(0);
       changeList.add(
         SyncRequestWithoutHist(
-          HistoryWrapper(
-            UpdateHistoriesTableCompanion(
-              timestamp: Value(historyCenter.updateHistories[0].timestamp),
-              chronoId: Value(historyCenter.updateHistories[0].chronoId),
+          SheetDataWrapper(
+            SheetDataTablesCompanion(
               sheetId: Value(sheetId),
-              type: Value(historyType),
+              historyIndex: Value(historyCenter.historyIndex),
             ),
           ),
-          DataBaseOperationType.delete,
+          DataBaseOperationType.update,
         ),
       );
-      historyCenter.historyIndex--;
     }
-    changeList.add(
-      SyncRequestWithoutHist(
-        SheetDataWrapper(
-          SheetDataTablesCompanion(
-            sheetId: Value(sheetId),
-            historyIndex: Value(historyCenter.historyIndex),
-          ),
-        ),
-        DataBaseOperationType.update,
-      ),
-    );
     localDataSource.save(changeList);
   }
 
@@ -371,12 +485,9 @@ class HistoryRepositoryImpl implements HistoryRepository {
   void addSheetId(int sheetId) {
     final historyData = HistoryData.empty();
     historyCache.setUpdateHistories(sheetId, historyData);
-    currentChangeList.changeListWithHist.add(
-      SyncRequestWithHist(
-        SheetDataWrapper(SheetDataTablesCompanion(sheetId: Value(sheetId))),
-        SheetDataWrapper(SheetDataTablesCompanion(sheetId: Value(sheetId))),
-        DataBaseOperationType.insert,
-      ),
-    );
+    currentChangeList.addChange(HistoryType.other, SyncRequestWithoutHist(
+      SheetDataWrapper(SheetDataTablesCompanion(sheetId: Value(sheetId))),
+      DataBaseOperationType.insert,
+    ));
   }
 }
