@@ -9,6 +9,7 @@ import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dar
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/layout_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
@@ -162,7 +163,7 @@ class GridRepositoryImpl implements GridRepository {
   void adjustRowHeightAfterUpdate() {
     int sheetId = currentChangeList.sheetId;
     final layout = layoutCache.getLayout(sheetId);
-    for (var update in currentChangeList.otherChanges) {
+    for (var update in currentChangeList.changes[HistoryType.other]!) {
       if (update.companionWrapper is SheetCellWrapper) {
         final companion = update.companionWrapper as SheetCellWrapper;
         final int row = companion.insertable.row.value;

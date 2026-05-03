@@ -36,6 +36,7 @@ sealed class DbCompanionWrapper {
   DbCompanionWrapper();
 
   UpdateCompanion<DataClass> get companion;
+  String get getKey;
 
   factory DbCompanionWrapper.fromJson(Map<String, dynamic> json) =>
       _$DbCompanionWrapperFromJson(json);
@@ -49,11 +50,15 @@ sealed class DbCompanionWrapperNotHistory extends DbCompanionWrapper {}
 
 class SheetDataWrapper extends DbCompanionWrapperNotHistory {
   @override
+  String get getKey => "SheetData";
+  @override
   final SheetDataTablesCompanion companion;
   SheetDataWrapper(this.companion);
 }
 
 class SheetCellWrapper extends DbCompanionWrapperNotHistory {
+  @override
+  String get getKey => "SheetCells";
   @override
   final SheetCellsTableCompanion companion;
   SheetCellWrapper(this.companion);
@@ -61,11 +66,15 @@ class SheetCellWrapper extends DbCompanionWrapperNotHistory {
 
 class HistoryWrapper extends DbCompanionWrapper {
   @override
+  String get getKey => "History";
+  @override
   final UpdateHistoriesTableCompanion companion;
   HistoryWrapper(this.companion);
 }
 
 class RowHeightWrapper extends DbCompanionWrapperNotHistory {
+  @override
+  String get getKey => "RowHeight";
   @override
   final RowsBottomPosTableCompanion companion;
   RowHeightWrapper(this.companion);
@@ -73,17 +82,23 @@ class RowHeightWrapper extends DbCompanionWrapperNotHistory {
 
 class ColWidthWrapper extends DbCompanionWrapperNotHistory {
   @override
+  String get getKey => "ColWidth";
+  @override
   final ColRightPosTableCompanion companion;
   ColWidthWrapper(this.companion);
 }
 
 class RowsManuallyAdjustedHeightWrapper extends DbCompanionWrapperNotHistory {
   @override
+  String get getKey => "RowsManuallyAdjustedHeight";
+  @override
   final RowsManuallyAdjustedHeightTableCompanion companion;
   RowsManuallyAdjustedHeightWrapper(this.companion);
 }
 
 class ColsManuallyAdjustedWidthWrapper extends DbCompanionWrapperNotHistory {
+  @override
+  String get getKey => "ColsManuallyAdjustedWidth";
   @override
   final ColsManuallyAdjustedWidthTableCompanion companion;
   ColsManuallyAdjustedWidthWrapper(this.companion);

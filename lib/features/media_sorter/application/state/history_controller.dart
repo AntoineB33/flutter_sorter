@@ -13,7 +13,7 @@ class HistoryController extends ChangeNotifier {
     historyUsecase.moveInUpdateHistory(historyType, direction);
   }
 
-  void commitHistory(int sheetId, HistoryType type, bool sameHistIdFromLast) {
-    historyUsecase.commitHistory(sheetId, type, sameHistIdFromLast);
+  void commitHistory(bool sameHistIdFromLast) {
+    historyUsecase.commitHistory(sameHistIdFromLast);
   }
 }

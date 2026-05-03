@@ -108,12 +108,13 @@ class _SideMenuState extends State<SideMenu> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 10),
 
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min, // Compresses the column to fit its children
+            mainAxisSize:
+                MainAxisSize.min, // Compresses the column to fit its children
             children: [
               // --- Toggle 1 ---
               Row(
@@ -122,16 +123,14 @@ class _SideMenuState extends State<SideMenu> {
                   Transform.scale(
                     scale: 0.7, // Keeps the switch small
                     child: Switch(
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // Removes extra padding
+                      materialTapTargetSize: MaterialTapTargetSize
+                          .shrinkWrap, // Removes extra padding
                       value: sortController.isFindingBestSort(),
                       onChanged: coordinator.findBestSortToggle,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Text(
-                    'Find best sort',
-                    style: TextStyle(fontSize: 12),
-                  ),
+                  const Text('Find best sort', style: TextStyle(fontSize: 12)),
                 ],
               ),
 
@@ -158,7 +157,7 @@ class _SideMenuState extends State<SideMenu> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 10),
@@ -332,7 +331,7 @@ class _SideMenuState extends State<SideMenu> {
             );
           },
           onSelected: (CoreSheetContent selection) {
-            coordinator.loadSheet(selection.id);
+            coordinator.openSheet(selection.id);
           },
           fieldViewBuilder:
               (context, textController, focusNode, onFieldSubmitted) {

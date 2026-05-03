@@ -2,9 +2,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/layout_data.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/selection_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
@@ -62,13 +60,13 @@ class WorkbookUsecase {
   }
 
   void createSheetByName(String title) {
-    workbookRepository.addNewSheetId(0);
+    workbookRepository.addNewSheetId(0, title);
     sheetDataRepository.addNewSheet(currentSheetId, title);
     sortRepository.addSheetId(currentSheetId);
-    selectionRepository.setSelectionData(currentSheetId, SelectionData.empty());
+    selectionRepository.setPrimarySelection(0, 0, false);
     gridRepository.setLayout(currentSheetId, LayoutData.empty());
     historyRepository.addSheetId(currentSheetId);
-    saveRepository.save();
+    historyRepository.scheduleCommit();
   }
 
   Future<Either<Failure, Unit>> loadSheet(int sheetId) async {
@@ -79,9 +77,10 @@ class WorkbookUsecase {
         return result;
       }
     }
-    saveRepository.saveUpdate(
-      SheetDataUpdate(sheetId, true, lastOpened: DateTime.now()),
-    );
     return Right(unit);
+  }
+
+  void openSheet(int sheetId) {
+    workbookRepository.openSheet(sheetId);
   }
 }

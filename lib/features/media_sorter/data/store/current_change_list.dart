@@ -2,12 +2,12 @@ import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_tabl
 import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
 
 class CurrentChangeList {
-  int sheetId = -1;
-  Map<HistoryType, List<SyncRequestWithoutHist>> changes = {};
+  Map<int, Map<HistoryType, Map<String, SyncRequestWithoutHist>>> changes = {};
 
-  void addChange(HistoryType type, SyncRequestWithoutHist change) {
-    final currentChanges = changes[type] ??= [];
-    currentChanges.add(change);
+  void addChange(int sheetId, HistoryType type, SyncRequestWithoutHist change) {
+    final sheetChanges = changes[sheetId] ??= {};
+    final currentChanges = sheetChanges[type] ??= {};
+    currentChanges[change.companionWrapper.getKey()] = change;
   }
 
   void clear() {

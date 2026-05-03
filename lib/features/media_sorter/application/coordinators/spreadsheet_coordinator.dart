@@ -74,7 +74,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
       await workbookController.clearAllData();
     }
     await workbookController.loadRecentSheetIds();
-    await loadSheet(workbookController.currentSheetId);
+    await openSheet(workbookController.currentSheetId);
     pageReady = true;
     notifyListeners();
     sortController.loadSortStatus();
@@ -83,9 +83,10 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     }
   }
 
-  Future<void> loadSheet(int sheetId) async {
+  Future<void> openSheet(int sheetId) async {
     final result = await workbookController.loadSheet(sheetId);
     if (result.isRight()) {
+      await workbookController.openSheet(sheetId);
       afterLoadingSheet();
     }
   }
@@ -103,19 +104,23 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setPrimarySelectionAction(
+    int row,
+    int col,
+    bool keepSelection, {
+    bool scrollTo = true,
+  }) {
+    setPrimarySelection(row, col, keepSelection, scrollTo: scrollTo);
+    historyController.commitHistory(false);
+  }
+
   void setPrimarySelection(
     int row,
     int col,
-    bool keepSelection,
-    bool sameHistIdFromLast, {
+    bool keepSelection, {
     bool scrollTo = true,
   }) {
-    selectionController.setPrimarySelection(
-      row,
-      col,
-      keepSelection,
-      sameHistIdFromLast,
-    );
+    selectionController.setPrimarySelection(row, col, keepSelection);
     treeController.updateMentionsContext();
     if (scrollTo) {
       gridController.scrollToCell();
@@ -136,9 +141,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void setCellContent(String newValue) {
-    sheetDataController.setCellUpdate(
-      newValue,
-    );
+    sheetDataController.setCellUpdate(newValue);
     applyUpdatesAndSort(
       currentSheetId,
       false,
@@ -152,8 +155,14 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     bool isFromHistory,
     bool isFromSort,
     bool isFromEditing,
+    bool sameHistIdFromLast,
   ) {
-    applyUpdatesNoSort(sheetId, isFromHistory, isFromEditing);
+    applyUpdatesNoSort(
+      sheetId,
+      isFromHistory,
+      isFromEditing,
+      sameHistIdFromLast,
+    );
     if (!isFromSort) {
       launchCalculation(sheetId);
     }
@@ -206,17 +215,23 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void _sortTableWithCurrentBestSort(int sheetId) {
     sortController.sortTableWithCurrentBestSort(sheetId);
-    applyUpdatesNoSort(sheetId, false, false);
+    applyUpdatesNoSort(sheetId, false, false, false);
     if (sortController.getToApplyOnce(sheetId)) {
       sortController.setToApplyOnce(sheetId, false);
     }
   }
 
-  void applyUpdatesNoSort(int sheetId, bool isFromHistory, bool isFromEditing) {
+  void applyUpdatesNoSort(
+    int sheetId,
+    bool isFromHistory,
+    bool isFromEditing,
+    bool sameHistIdFromLast,
+  ) {
     sheetDataController.applyUpdatesNoSort(
       sheetId,
       isFromHistory,
       isFromEditing,
+      sameHistIdFromLast,
     );
     gridController.adjustRowHeightAfterUpdate(currentSheetId);
     updateTreeAndRowColCount();
@@ -452,7 +467,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
         max(0, primarySelectedCellX - 1),
         primarySelectedCellY,
         false,
-        false
+        false,
       );
     } else {
       setPrimarySelection(

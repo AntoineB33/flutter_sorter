@@ -10,7 +10,7 @@ class HistoryUsecase {
     historyRepository.moveInUpdateHistory(historyType, direction);
   }
 
-  void commitHistory(int sheetId, HistoryType type, bool sameHistIdFromLast) {
-    historyRepository.commitHistory(sheetId, type, sameHistIdFromLast);
+  void commitHistory(bool sameHistIdFromLast) {
+    historyRepository.commitHistory(sameHistIdFromLast);
   }
 }

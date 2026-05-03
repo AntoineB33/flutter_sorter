@@ -17,6 +17,10 @@ class WorkbookCache {
       ..addAll(recentIds);
   }
 
+  void removeSheetId(int sheetId) {
+    _recentSheetIds.remove(sheetId);
+  }
+
   void addSheetId(int sheetId, int index) {
     _recentSheetIds.insert(index, sheetId);
   }

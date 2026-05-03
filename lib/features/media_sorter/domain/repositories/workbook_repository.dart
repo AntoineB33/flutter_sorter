@@ -8,5 +8,6 @@ abstract class WorkbookRepository {
   Future<Either<Failure, void>> clearAllData();
   Future<Either<Failure, void>> loadRecentSheetIds();
   
-  void addNewSheetId(int index);
+  void openSheet(int sheetId);
+  void addNewSheetId(String title);
 }

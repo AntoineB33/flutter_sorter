@@ -31,6 +31,7 @@ class SelectionUsecase {
   }
 
   void setPrimarySelection(int row, int col, bool keepSelection) {
+    historyRepository.scheduleCommit();
     selectionRepository.setPrimarySelection(row, col, keepSelection);
   }
 }
