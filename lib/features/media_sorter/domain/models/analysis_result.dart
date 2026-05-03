@@ -126,8 +126,6 @@ class AnalysisResult {
   final Map<int, Map<int, List<SortingRule>>> myRules;
   final List<List<int>> groupAttribution;
   final List<List<int>> groupsToMaximize;
-  
-  final bool toAlwaysApplyCurrentBestSort;
 
   final bool validSortIsImpossible;
   final bool isFindingBestSort;
@@ -158,7 +156,6 @@ class AnalysisResult {
     required this.isMedium,
     required this.validRowIndexes,
     required this.currentBestSort,
-    required this.toAlwaysApplyCurrentBestSort,
     required this.validSortIsImpossible,
     required this.isFindingBestSort,
     required this.sortedWithValidSort,

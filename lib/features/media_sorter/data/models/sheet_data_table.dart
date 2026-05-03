@@ -30,37 +30,6 @@ class SyncRequestWithoutHist {
   ).toJson();
 }
 
-@freezed
-@JsonSerializable(explicitToJson: true)
-class SyncRequestWithHist {
-  final DbCompanionWrapperNotHistory companionWrapper;
-  final DbCompanionWrapperNotHistory historyCompW;
-  final DataBaseOperationType dataBaseOperationType;
-
-  SyncRequestWithHist(
-    this.companionWrapper,
-    this.historyCompW,
-    this.dataBaseOperationType,
-  );
-
-  factory SyncRequestWithHist.fromJson(Map<String, dynamic> json) =>
-      _$SyncRequestWithHistImplFromJson(json);
-  Map<String, dynamic> toJson() => _$SyncRequestWithHistImplToJson(this);
-  // ignore: unused_element
-  static void _keepLinterHappy() => SyncRequestWithHist(
-    SheetDataWrapper(SheetDataTablesCompanion()),
-    SheetDataWrapper(SheetDataTablesCompanion()),
-    DataBaseOperationType.insert,
-  ).toJson();
-
-  SyncRequestWithoutHist toSyncRequest() {
-    return SyncRequestWithoutHist(
-      companionWrapper as DbCompanionWrapper,
-      dataBaseOperationType,
-    );
-  }
-}
-
 // wrapper stored in syncRequest to separate the domain (syncRequest) from the data layer (the companions)
 @JsonSerializable(explicitToJson: true)
 sealed class DbCompanionWrapper {
@@ -203,19 +172,19 @@ class HistoryChangeTypeConverter extends TypeConverter<HistoryType, String> {
 }
 
 class ListSyncRequestMapConverter
-    extends TypeConverter<List<SyncRequestWithHist>, String> {
+    extends TypeConverter<List<SyncRequestWithoutHist>, String> {
   const ListSyncRequestMapConverter();
 
   @override
-  List<SyncRequestWithHist> fromSql(String fromDb) {
+  List<SyncRequestWithoutHist> fromSql(String fromDb) {
     final decoded = jsonDecode(fromDb) as List<dynamic>;
     return decoded
-        .map((e) => SyncRequestWithHist.fromJson(e as Map<String, dynamic>))
+        .map((e) => SyncRequestWithoutHist.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
   @override
-  String toSql(List<SyncRequestWithHist> value) {
+  String toSql(List<SyncRequestWithoutHist> value) {
     final encoded = value
         .map((e) => (e).toJson())
         .toList();

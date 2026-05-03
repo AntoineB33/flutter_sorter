@@ -56,25 +56,6 @@ class SheetDataUsecase {
     return sheetDataRepository.getSheet(sheetId);
   }
 
-  void applyUpdatesNoSort(
-    int sheetId,
-    bool isFromHistory,
-    bool isFromEditing,
-    bool sameHistIdFromLast,
-  ) {
-    if (!isFromHistory) {
-      historyRepository.commitHistory(
-        sheetId,
-        isFromEditing ? HistoryType.editModeChange : HistoryType.other,
-        sameHistIdFromLast,
-      );
-      updates
-        ..clear()
-        ..addAll(result);
-    }
-    syncRepository.save();
-  }
-
   void delete() {
     sheetDataRepository.delete();
   }

@@ -10,6 +10,7 @@ class CoreSheetContent {
   Map<int, ColumnType> columnTypes;
   final List<int> usedRows;
   final List<int> usedCols;
+  final bool toAlwaysApplyCurrentBestSort;
 
   static int _idCounter = 0;
 
@@ -21,6 +22,7 @@ class CoreSheetContent {
     required this.columnTypes,
     required this.usedRows,
     required this.usedCols,
+    required this.toAlwaysApplyCurrentBestSort,
   });
 
   factory CoreSheetContent.empty(String title) {
@@ -32,6 +34,7 @@ class CoreSheetContent {
       columnTypes: {},
       usedRows: [],
       usedCols: [],
+      toAlwaysApplyCurrentBestSort: false,
     );
   }
 }
