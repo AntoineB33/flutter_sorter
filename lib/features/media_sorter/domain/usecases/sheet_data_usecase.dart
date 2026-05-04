@@ -9,7 +9,6 @@ import 'package:trying_flutter/features/media_sorter/domain/repositories/history
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/sync_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
 
 class SheetDataUsecase {
@@ -20,15 +19,12 @@ class SheetDataUsecase {
   final HistoryRepository historyRepository;
   final WorkbookRepository workbookRepository;
 
-  final SyncRepository syncRepository;
-
   SheetDataUsecase(
     this.sheetDataRepository,
     this.sortRepository,
     this.gridRepository,
     this.selectionRepository,
     this.historyRepository,
-    this.syncRepository,
     this.workbookRepository,
   );
 

@@ -71,6 +71,7 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   void addNewSheetId(String title) {
     int newSheetId = _getNewSheetId();
     final companionWrapper = SheetDataWrapper(
+      newSheetId,
       SheetDataEntity(
         sheetId: newSheetId,
         title: title,
@@ -100,7 +101,7 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
       ).toCompanion(false),
     );
     workbookCache.addSheetId(newSheetId, workbookCache.getRecentSheetIds().length);
-    currentChangeList.addChange(newSheetId, HistoryType.other, SyncRequestWithoutHist(
+    currentChangeList.addChange(HistoryType.other, SyncRequestWithoutHist(
       companionWrapper,
       DataBaseOperationType.insert,
     ));

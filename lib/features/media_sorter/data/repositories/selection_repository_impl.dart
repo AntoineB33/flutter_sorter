@@ -48,16 +48,18 @@ class SelectionRepositoryImpl implements SelectionRepository {
         companion.selectedCells.value.add(CellPosition(r, c));
       }
     }
-    currentChange.addChange(currentSheetId, HistoryType.selectionChange, SyncRequestWithoutHist(
-      SheetDataWrapper(companion),
+    currentChange.addChange(HistoryType.selectionChange, SyncRequestWithoutHist(
+      SheetDataWrapper(
+      currentSheetId,companion),
       DataBaseOperationType.update,
     ));
   }
 
   @override
   void setPrimarySelection(int row, int col, bool keepSelection) {
-    currentChange.addChange(currentSheetId, HistoryType.selectionChange, SyncRequestWithoutHist(
+    currentChange.addChange(HistoryType.selectionChange, SyncRequestWithoutHist(
       SheetDataWrapper(
+        currentSheetId,
         SheetDataTablesCompanion(
           primarySelectionX: Value(row),
           primarySelectionY: Value(col),

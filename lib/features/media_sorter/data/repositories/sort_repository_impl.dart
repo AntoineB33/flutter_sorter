@@ -69,8 +69,8 @@ class SortRepositoryImpl implements SortRepository {
       HistoryType.other,
       SyncRequestWithoutHist(
         SheetDataWrapper(
+          sheetId,
           SheetDataTablesCompanion(
-            sheetId: Value(sheetId),
             bestSortFound: Value(newProgressData.bestSortFound),
             cursors: Value(newProgressData.cursors),
             possibleInts: Value(newProgressData.possibleIntsById),
@@ -97,8 +97,8 @@ class SortRepositoryImpl implements SortRepository {
     return currentChangeList.addChange(HistoryType.other,
       SyncRequestWithoutHist(
         SheetDataWrapper(
+          sheetId,
           SheetDataTablesCompanion(
-            sheetId: Value(sheetId),
             sortInProgress: Value(false),
             analysisDone: Value(analysisDone),
           ),
@@ -173,8 +173,8 @@ class SortRepositoryImpl implements SortRepository {
       HistoryType.other,
       SyncRequestWithoutHist(
         SheetDataWrapper(
+          sheetId,
           SheetDataTablesCompanion(
-            sheetId: Value(sheetId),
             toAlwaysApplyCurrentBestSort: Value(toAlwaysApply),
           ),
         ),
@@ -190,8 +190,8 @@ class SortRepositoryImpl implements SortRepository {
       HistoryType.other,
       SyncRequestWithoutHist(
         SheetDataWrapper(
+          sheetId,
           SheetDataTablesCompanion(
-            sheetId: Value(sheetId),
             sortInProgress: Value(false),
           ),
         ),
@@ -206,8 +206,8 @@ class SortRepositoryImpl implements SortRepository {
       HistoryType.other,
       SyncRequestWithoutHist(
         SheetDataWrapper(
+          sheetId,
           SheetDataTablesCompanion(
-            sheetId: Value(sheetId),
             analysisResult: Value(newResult),
           ),
         ),
@@ -225,8 +225,8 @@ class SortRepositoryImpl implements SortRepository {
     return currentChangeList.addChange(HistoryType.other,
       SyncRequestWithoutHist(
         SheetDataWrapper(
+          sheetId,
           SheetDataTablesCompanion(
-            sheetId: Value(sheetId),
             sortInProgress: Value(sortInProgress),
             toApplyNextBestSort: Value(newStatus.toApplyNextBestSort),
             analysisDone: Value(newStatus.analysisDone),
@@ -271,8 +271,8 @@ class SortRepositoryImpl implements SortRepository {
       HistoryType.other,
       SyncRequestWithoutHist(
         SheetDataWrapper(
+          sheetId,
           SheetDataTablesCompanion(
-            sheetId: Value(sheetId),
             toApplyNextBestSort: Value(toApplyOnce),
           ),
         ),
@@ -288,8 +288,8 @@ class SortRepositoryImpl implements SortRepository {
       HistoryType.other,
       SyncRequestWithoutHist(
         SheetDataWrapper(
+          sheetId,
           SheetDataTablesCompanion(
-            sheetId: Value(sheetId),
             analysisResult: Value(
               analysisResultCache.getAnalysisResult(sheetId),
             ),
@@ -311,8 +311,8 @@ class SortRepositoryImpl implements SortRepository {
     currentChangeList.addChange(HistoryType.other,
     SyncRequestWithoutHist(
         SheetDataWrapper(
+          sheetId,
             SheetDataTablesCompanion(
-              sheetId: Value(sheetId),
               analysisResult: Value(analysisResultCache.getAnalysisResult(sheetId)),
             ),
           ),
@@ -362,8 +362,8 @@ class SortRepositoryImpl implements SortRepository {
     return currentChangeList.addChange(HistoryType.other,
     SyncRequestWithoutHist(
       SheetDataWrapper(
+        sheetId,
         SheetDataTablesCompanion(
-          sheetId: Value(sheetId),
           analysisResult: Value(analysisResultCache.getAnalysisResult(sheetId)))
       ),
       DataBaseOperationType.update,
@@ -417,8 +417,8 @@ class SortRepositoryImpl implements SortRepository {
     currentChangeList.addChange(HistoryType.other,
       SyncRequestWithoutHist(
         SheetDataWrapper(
+        sheetId,
           SheetDataTablesCompanion(
-            sheetId: Value(sheetId),
             analysisResult: Value(analysisResultCache.getAnalysisResult(sheetId)),
           ),
         ),
@@ -440,8 +440,8 @@ class SortRepositoryImpl implements SortRepository {
     return currentChangeList.addChange(HistoryType.other,
       SyncRequestWithoutHist(
         SheetDataWrapper(
+        sheetId,
           SheetDataTablesCompanion(
-            sheetId: Value(sheetId),
             analysisResult: Value(analysisResultCache.getAnalysisResult(sheetId)),
           ),
         ),
@@ -676,10 +676,10 @@ class SortRepositoryImpl implements SortRepository {
     for (CellPosition pos in sortedTable.keys) {
       final cellUpdate = SyncRequestWithoutHist(
         SheetCellWrapper(
+          sheetId,
+          pos.rowId,
+          pos.colId,
           SheetCellsTableCompanion(
-            sheetId: Value(sheetId),
-            row: Value(pos.rowId),
-            col: Value(pos.colId),
             content: Value(sortedTable[pos]!),
           ),
         ),

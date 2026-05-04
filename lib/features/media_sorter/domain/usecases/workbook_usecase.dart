@@ -1,6 +1,5 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/layout_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
@@ -26,8 +25,6 @@ class WorkbookUsecase {
     this.sheetDataRepository,
     this.gridRepository,
     this.historyRepository,
-
-    this.saveRepository,
   );
 
   int get currentSheetId => workbookRepository.currentSheetId;
@@ -60,7 +57,7 @@ class WorkbookUsecase {
   }
 
   void createSheetByName(String title) {
-    workbookRepository.addNewSheetId(0, title);
+    workbookRepository.addNewSheetId(title);
     sheetDataRepository.addNewSheet(currentSheetId, title);
     sortRepository.addSheetId(currentSheetId);
     selectionRepository.setPrimarySelection(0, 0, false);

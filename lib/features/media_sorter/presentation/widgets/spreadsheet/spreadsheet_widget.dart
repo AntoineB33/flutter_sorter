@@ -325,7 +325,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       onDoubleTap: () {
         coordinator.startEditing();
       },
-      onTapOutside: () => selectionController.stopEditing(false),
+      onTapOutside: () => selectionController.stopEditing(),
       onChanged: (newValue) {
         coordinator.setCellContent(newValue);
       },
@@ -334,7 +334,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         _focusNode.requestFocus();
       },
       onEscape: () {
-        selectionController.stopEditing(true);
+        selectionController.stopEditing();
         _focusNode.requestFocus();
       },
     );

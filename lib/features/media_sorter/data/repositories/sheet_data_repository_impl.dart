@@ -139,10 +139,10 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         String val = columns[c].replaceAll('\r', '');
         final cellUpdate = SyncRequestWithoutHist(
           SheetCellWrapper(
+            currentSheetId,
+            startRow + r,
+            startCol + c,
             SheetCellsTableCompanion(
-              sheetId: Value(currentSheetId),
-              row: Value(startRow + r),
-              col: Value(startCol + c),
               content: Value(val),
             ),
           ),
@@ -257,16 +257,6 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   @override
   void addNewSheet(int sheetId, String title) {
     loadedSheetsCache.setSheet(sheetId, CoreSheetContent.empty(title));
-    currentChangeList.addChange(HistoryType.other, SyncRequestWithoutHist(
-      SheetDataUpdate(
-        sheetId,
-        true,
-        newName: title,
-        lastOpened: loadedSheetsCache.getSheet(sheetId).lastOpened,
-        usedRows: loadedSheetsCache.getSheet(sheetId).usedRows,
-        usedCols: loadedSheetsCache.getSheet(sheetId).usedCols,
-      ),
-    );
   }
 
   @override
@@ -278,10 +268,11 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
             .value) {
       final cellUpdate = SyncRequestWithoutHist(
         SheetCellWrapper(
-          SheetCellsTableCompanion(
-            sheetId: Value(currentSheetId),
-            row: Value(cellPos.rowId),
-            col: Value(cellPos.colId),
+          currentSheetId,
+          cellPos.rowId,
+          cellPos.colId,
+           SheetCellsTableCompanion(
+            content: Value(''),
           ),
         ),
         DataBaseOperationType.delete,
@@ -292,12 +283,21 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
 
   @override
   void setCellUpdate(int rowId, int colId, String newValue, int sheetId) {
+    loadedSheetsCache.updateCell(
+      sheetId,
+      SheetCellsTableCompanion(
+        row: Value(rowId),
+        col: Value(colId),
+        content: Value(newValue),
+      ),
+      DataBaseOperationType.update,
+    );
     currentChangeList.addChange(HistoryType.other, SyncRequestWithoutHist(
       SheetCellWrapper(
+        sheetId,
+        rowId,
+        colId,
         SheetCellsTableCompanion(
-          sheetId: Value(sheetId),
-          row: Value(rowId),
-          col: Value(colId),
           content: Value(newValue),
         ),
       ),

@@ -112,8 +112,8 @@ class LoadedSheetsCache {
       changeList.add(
         SyncRequestWithoutHist(
           SheetDataWrapper(
+            sheetId,
             SheetDataTablesCompanion(
-              sheetId: Value(sheetId),
               usedRows: newUsedRows != null
                   ? Value(newUsedRows)
                   : Value.absent(),

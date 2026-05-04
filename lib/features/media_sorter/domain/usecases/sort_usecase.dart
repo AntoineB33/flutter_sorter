@@ -1,31 +1,28 @@
-import 'package:meta/meta.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/sort_status.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
 
 class SortUsecase {
-  final SaveRepository saveRepository;
-
   final SortRepository sortRepository;
   final SheetDataRepository sheetDataRepository;
   final WorkbookRepository workbookRepository;
   final SelectionRepository selectionRepository;
+  final HistoryRepository historyRepository;
 
   int get currentSheetId => workbookRepository.currentSheetId;
   Map<int, SortStatus> get sortStatusBySheet =>
       sortRepository.sortStatusBySheet;
 
   SortUsecase(
-    this.saveRepository,
     this.sortRepository,
     this.sheetDataRepository,
     this.workbookRepository,
     this.selectionRepository,
+    this.historyRepository,
   );
 
   bool isReordering() {
@@ -57,16 +54,16 @@ class SortUsecase {
   }
 
   void setFindingBestSort(int sheetId, bool value) {
-    final result = sortRepository.setFindingBestSort(sheetId, value);
-    saveRepository.save(result);
+    sortRepository.setFindingBestSort(sheetId, value);
+    historyRepository.scheduleCommit();
   }
 
   void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
-    final update = sortRepository.setToAlwaysApplyBestSort(
+    sortRepository.setToAlwaysApplyBestSort(
       sheetId,
       toAlwaysApply,
     );
-    saveRepository.save(update);
+    historyRepository.scheduleCommit();
   }
 
   Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId) {
@@ -77,11 +74,11 @@ class SortUsecase {
     SortProgressDataMsg sortProgressDataMsg,
     int sheetId,
   ) {
-    changeList changeList = sortRepository.handleSortProgressDataMsg(
+    sortRepository.handleSortProgressDataMsg(
       sortProgressDataMsg,
       sheetId,
     );
-    saveRepository.save(changeList);
+    historyRepository.scheduleCommit();
     return sortRepository.stopLoop(sortProgressDataMsg, sheetId);
   }
 
@@ -117,8 +114,8 @@ class SortUsecase {
     sortRepository.setSortedWithCurrentBestSort(sheetId, value);
   }
 
-  changeList sortTableWithCurrentBestSort(int sheetId) {
-    return sortRepository.sortTableWithCurrentBestSort(sheetId);
+  void sortTableWithCurrentBestSort(int sheetId) {
+    sortRepository.sortTableWithCurrentBestSort(sheetId);
   }
 
   Future<void> loadSortStatus() async {
