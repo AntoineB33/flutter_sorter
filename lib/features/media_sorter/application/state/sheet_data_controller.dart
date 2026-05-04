@@ -43,8 +43,8 @@ class SheetDataController extends ChangeNotifier {
     sheetDataUsecase.delete();
   }
 
-  void applyUpdatesNoSort(int sheetId, bool isFromHistory, bool isFromEditing, bool sameHistIdFromLast) {
-    sheetDataUsecase.applyUpdatesNoSort(sheetId, isFromHistory, isFromEditing, sameHistIdFromLast);
+  void applyUpdatesNoSort(int sheetId, bool isFromHistory, bool isFromEditing) {
+    sheetDataUsecase.applyUpdatesNoSort(sheetId, isFromHistory, isFromEditing);
   }
 
   void setCellUpdate(String newValue) {

@@ -53,7 +53,8 @@ class SheetDataWrapper extends DbCompanionWrapperNotHistory {
   String get getKey => "SheetData";
   @override
   final SheetDataTablesCompanion companion;
-  SheetDataWrapper(this.companion);
+  SheetDataWrapper(int sheetId, SheetDataTablesCompanion companion) :
+    companion = companion.copyWith(sheetId: Value(sheetId));
 }
 
 class SheetCellWrapper extends DbCompanionWrapperNotHistory {
@@ -61,7 +62,8 @@ class SheetCellWrapper extends DbCompanionWrapperNotHistory {
   String get getKey => "SheetCells";
   @override
   final SheetCellsTableCompanion companion;
-  SheetCellWrapper(this.companion);
+  SheetCellWrapper(int sheetId, int row, int col, SheetCellsTableCompanion companion) :
+    companion = companion.copyWith(sheetId: Value(sheetId), row: Value(row), col: Value(col));
 }
 
 class HistoryWrapper extends DbCompanionWrapper {

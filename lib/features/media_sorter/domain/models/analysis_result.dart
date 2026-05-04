@@ -189,7 +189,6 @@ class AnalysisResult {
       validRowIndexes: [],
       formatedTable: [],
       currentBestSort: null,
-      toAlwaysApplyCurrentBestSort: false,
       validSortIsImpossible: false,
       isFindingBestSort: false,
       sortedWithValidSort: false,
@@ -247,8 +246,6 @@ class AnalysisResult {
       isMedium: isMedium ?? this.isMedium,
       validRowIndexes: validRowIndexes ?? this.validRowIndexes,
       currentBestSort: currentBestSort ?? this.currentBestSort,
-      toAlwaysApplyCurrentBestSort:
-          toAlwaysApplyCurrentBestSort ?? this.toAlwaysApplyCurrentBestSort,
       validSortIsImpossible:
           validSortIsImpossible ?? this.validSortIsImpossible,
       isFindingBestSort:

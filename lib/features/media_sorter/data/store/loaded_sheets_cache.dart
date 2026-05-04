@@ -46,6 +46,10 @@ class LoadedSheetsCache {
         ColumnType.attributes;
   }
 
+  bool isCurrentBestSortAlwaysApplied(int sheetId) {
+    return _loadedSheetsData[sheetId]!.toAlwaysApplyCurrentBestSort;
+  }
+
   void setSheet(int sheetId, CoreSheetContent sheetData) {
     _loadedSheetsData[sheetId] = sheetData;
   }
@@ -115,17 +119,6 @@ class LoadedSheetsCache {
                   : Value.absent(),
               usedCols: newUsedCols != null
                   ? Value(newUsedCols)
-                  : Value.absent(),
-            ),
-          ),
-          SheetDataWrapper(
-            SheetDataTablesCompanion(
-              sheetId: Value(sheetId),
-              usedRows: newUsedRows != null
-                  ? Value(getSheet(sheetId).usedRows)
-                  : Value.absent(),
-              usedCols: newUsedCols != null
-                  ? Value(getSheet(sheetId).usedCols)
                   : Value.absent(),
             ),
           ),

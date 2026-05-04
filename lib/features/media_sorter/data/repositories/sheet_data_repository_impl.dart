@@ -284,29 +284,15 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
             col: Value(cellPos.colId),
           ),
         ),
-        SheetCellWrapper(
-          SheetCellsTableCompanion(
-            sheetId: Value(currentSheetId),
-            row: Value(cellPos.rowId),
-            col: Value(cellPos.colId),
-            content: Value(
-              loadedSheetsCache.getCellContent(
-                currentSheetId,
-                cellPos.rowId,
-                cellPos.colId,
-              ),
-            ),
-          ),
-        ),
         DataBaseOperationType.delete,
       );
-      currentChangeList.otherChanges.add(cellUpdate);
+      currentChangeList.addChange(HistoryType.other, cellUpdate);
     }
   }
 
   @override
   void setCellUpdate(int rowId, int colId, String newValue, int sheetId) {
-    final syncRequest = SyncRequestWithoutHist(
+    currentChangeList.addChange(HistoryType.other, SyncRequestWithoutHist(
       SheetCellWrapper(
         SheetCellsTableCompanion(
           sheetId: Value(sheetId),
@@ -315,18 +301,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
           content: Value(newValue),
         ),
       ),
-      SheetCellWrapper(
-        SheetCellsTableCompanion(
-          sheetId: Value(sheetId),
-          row: Value(rowId),
-          col: Value(colId),
-          content: Value(
-            loadedSheetsCache.getCellContent(sheetId, rowId, colId),
-          ),
-        ),
-      ),
       DataBaseOperationType.update,
-    );
-    currentChangeList.otherChanges = [syncRequest];
+    ));
   }
 }

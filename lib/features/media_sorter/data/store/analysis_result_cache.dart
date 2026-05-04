@@ -43,10 +43,6 @@ class AnalysisResultCache {
     return _getAnalysisResult(sheetId).sortedWithValidSort;
   }
 
-  bool isCurrentBestSortAlwaysApplied(int sheetId) {
-    return _getAnalysisResult(sheetId).toAlwaysApplyCurrentBestSort;
-  }
-
   void setSortedWithCurrentBestSort(int sheetId, bool value) {
     updateResults(
       sheetId,

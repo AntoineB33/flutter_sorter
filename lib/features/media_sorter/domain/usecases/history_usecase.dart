@@ -6,11 +6,7 @@ class HistoryUsecase {
 
   HistoryUsecase(this.historyRepository);
 
-  void moveInUpdateHistory(HistoryType historyType, int direction) {
-    historyRepository.moveInUpdateHistory(historyType, direction);
-  }
-
-  void commitHistory(bool sameHistIdFromLast) {
-    historyRepository.commitHistory(sameHistIdFromLast);
+  void moveInUpdateHistory(int sheetId, HistoryType historyType, int direction) {
+    historyRepository.moveInUpdateHistory(sheetId, historyType, direction);
   }
 }

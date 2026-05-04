@@ -160,15 +160,14 @@ class GridRepositoryImpl implements GridRepository {
   }
 
   @override
-  void adjustRowHeightAfterUpdate() {
-    int sheetId = currentChangeList.sheetId;
+  void adjustRowHeightAfterUpdate(int sheetId) {
     final layout = layoutCache.getLayout(sheetId);
-    for (var update in currentChangeList.changes[HistoryType.other]!) {
+    for (var update in currentChangeList.changes[sheetId]?[HistoryType.other]! ?? []) {
       if (update.companionWrapper is SheetCellWrapper) {
         final companion = update.companionWrapper as SheetCellWrapper;
-        final int row = companion.insertable.row.value;
-        final int col = companion.insertable.col.value;
-        final String newValue = companion.insertable.content.value;
+        final int row = companion.companion.row.value;
+        final int col = companion.companion.col.value;
+        final String newValue = companion.companion.content.value;
         final String prevValue = loadedSheetsCache.getCellContent(
           sheetId,
           row,

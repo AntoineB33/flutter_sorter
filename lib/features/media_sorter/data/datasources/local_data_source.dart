@@ -120,22 +120,22 @@ class DriftLocalDataSource
   ) {
     switch (syncRequest.dataBaseOperationType) {
       case DataBaseOperationType.delete:
-        batch.delete(table, syncRequest.companionWrapper.insertable);
+        batch.delete(table, syncRequest.companionWrapper.companion);
         break;
       case DataBaseOperationType.insert:
         batch.insert(
           table,
-          syncRequest.companionWrapper.insertable,
+          syncRequest.companionWrapper.companion,
           mode: InsertMode.insertOrReplace,
         );
         break;
       case DataBaseOperationType.update:
-        batch.update(table, syncRequest.companionWrapper.insertable);
+        batch.update(table, syncRequest.companionWrapper.companion);
         break;
       case DataBaseOperationType.deleteWhere:
         // 1. Extract the explicitly set fields from the companion.
         // The 'false' argument ensures we include Value(null) if explicitly set.
-        final presentColumns = syncRequest.companionWrapper.insertable
+        final presentColumns = syncRequest.companionWrapper.companion
             .toColumns(false);
 
         // If the companion is completely empty, skip to prevent wiping the whole table.

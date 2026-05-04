@@ -86,7 +86,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   Future<void> openSheet(int sheetId) async {
     final result = await workbookController.loadSheet(sheetId);
     if (result.isRight()) {
-      await workbookController.openSheet(sheetId);
+      workbookController.openSheet(sheetId);
       afterLoadingSheet();
     }
   }
@@ -155,13 +155,11 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     bool isFromHistory,
     bool isFromSort,
     bool isFromEditing,
-    bool sameHistIdFromLast,
   ) {
     applyUpdatesNoSort(
       sheetId,
       isFromHistory,
       isFromEditing,
-      sameHistIdFromLast,
     );
     if (!isFromSort) {
       launchCalculation(sheetId);
@@ -225,13 +223,11 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     int sheetId,
     bool isFromHistory,
     bool isFromEditing,
-    bool sameHistIdFromLast,
   ) {
     sheetDataController.applyUpdatesNoSort(
       sheetId,
       isFromHistory,
       isFromEditing,
-      sameHistIdFromLast,
     );
     gridController.adjustRowHeightAfterUpdate(currentSheetId);
     updateTreeAndRowColCount();
