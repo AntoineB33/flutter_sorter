@@ -1,5 +1,5 @@
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
 
 class CurrentChangeList {
   Map<int, Map<HistoryType, List<SyncRequestWithoutHist>>> changes = {};

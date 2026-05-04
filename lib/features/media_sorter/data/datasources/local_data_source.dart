@@ -7,7 +7,7 @@ import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:drift/drift.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
 import 'package:trying_flutter/utils/logger.dart';
 
 class SheetIdAndLastOpened {

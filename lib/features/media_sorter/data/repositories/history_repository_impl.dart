@@ -18,6 +18,7 @@ import 'package:trying_flutter/features/media_sorter/domain/models/analysis_resu
 import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 
 class HistoryRepositoryImpl implements HistoryRepository {
@@ -55,7 +56,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
   );
 
   @override
-  void moveInUpdateHistory(
+  bool moveInUpdateHistory(
     int sheetId,
     HistoryType historyType,
     int direction,
@@ -63,19 +64,19 @@ class HistoryRepositoryImpl implements HistoryRepository {
     int newHistoryIndex = historyData.historyIndex + direction;
     if (newHistoryIndex + direction < 0 ||
         newHistoryIndex + direction >= historyData.updateHistories.length) {
-      return;
+      return false;
     }
     var updateData = historyData.updateHistories[newHistoryIndex];
     if (historyType == HistoryType.editModeChange &&
         updateData.type != HistoryType.editModeChange) {
-      return;
+      return false;
     }
     if (historyType == HistoryType.other) {
       while (updateData.type == HistoryType.editModeChange) {
         newHistoryIndex += direction;
         if (newHistoryIndex + direction < 0 ||
             newHistoryIndex + direction >= historyData.updateHistories.length) {
-          return;
+          return false;
         }
       }
     }
@@ -97,6 +98,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
     );
     historyData.historyIndex = newHistoryIndex;
     localDataSource.save(currentChanges);
+    return true;
   }
 
   List<SyncRequestWithoutHist> reverseHistoryEntity(

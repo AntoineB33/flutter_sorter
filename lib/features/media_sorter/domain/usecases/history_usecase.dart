@@ -1,4 +1,4 @@
-import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 
 class HistoryUsecase {
@@ -6,7 +6,7 @@ class HistoryUsecase {
 
   HistoryUsecase(this.historyRepository);
 
-  void moveInUpdateHistory(int sheetId, HistoryType historyType, int direction) {
-    historyRepository.moveInUpdateHistory(sheetId, historyType, direction);
+  bool moveInUpdateHistory(int sheetId, HistoryType historyType, int direction) {
+    return historyRepository.moveInUpdateHistory(sheetId, historyType, direction);
   }
 }

@@ -5,10 +5,11 @@ import 'package:trying_flutter/features/media_sorter/domain/models/analysis_resu
 import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:drift/drift.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
 
 part 'sheet_data_table.freezed.dart';
+part 'sheet_data_table.g.dart';
 
 enum DataBaseOperationType { insert, update, delete, deleteWhere }
 
@@ -25,7 +26,7 @@ class SyncRequestWithoutHist {
   Map<String, dynamic> toJson() => _$SyncRequestImplToJson(this);
   // ignore: unused_element
   static void _keepLinterHappy() => SyncRequestWithoutHist(
-    SheetDataWrapper(SheetDataTablesCompanion()),
+    SheetDataWrapper(0, SheetDataTablesCompanion()),
     DataBaseOperationType.insert,
   ).toJson();
 }
@@ -43,7 +44,7 @@ sealed class DbCompanionWrapper {
   Map<String, dynamic> toJson() => _$DbCompanionWrapperToJson(this);
   // ignore: unused_element
   static void _keepLinterHappy() =>
-      SheetDataWrapper(SheetDataTablesCompanion()).toJson();
+      SheetDataWrapper(0, SheetDataTablesCompanion()).toJson();
 }
 
 sealed class DbCompanionWrapperNotHistory extends DbCompanionWrapper {}
@@ -144,7 +145,7 @@ class SheetDataTables extends Table {
 @DataClassName('SheetCellEntity')
 class SheetCellsTable extends Table {
   // Foreign key linking to the parent sheet
-  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
+  IntColumn get sheetId => integer().references(SheetDataTables, #sheetId)();
 
   // The position
   IntColumn get row => integer()();
@@ -161,7 +162,7 @@ class SheetCellsTable extends Table {
 @DataClassName('SheetColumnTypeEntity')
 class SheetColumnTypesTable extends Table {
   // Foreign key linking to the parent sheet
-  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
+  IntColumn get sheetId => integer().references(SheetDataTables, #sheetId)();
 
   // The column index (0, 1, 2, etc.)
   IntColumn get columnIndex => integer()();
@@ -213,7 +214,7 @@ class ListSyncRequestMapConverter
 class UpdateHistoriesTable extends Table {
   DateTimeColumn get timestamp => dateTime()();
   IntColumn get chronoId => integer()();
-  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
+  IntColumn get sheetId => integer().references(SheetDataTables, #sheetId)();
   TextColumn get updates => text().map(const ListSyncRequestMapConverter())();
   TextColumn get type => text().map(const HistoryChangeTypeConverter())();
 
@@ -223,7 +224,7 @@ class UpdateHistoriesTable extends Table {
 
 @DataClassName('RowsBottomPosEntity')
 class RowsBottomPosTable extends Table {
-  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
+  IntColumn get sheetId => integer().references(SheetDataTables, #sheetId)();
   IntColumn get rowIndex => integer()();
   RealColumn get bottomPos => real()();
 
@@ -233,7 +234,7 @@ class RowsBottomPosTable extends Table {
 
 @DataClassName('ColRightPosEntity')
 class ColRightPosTable extends Table {
-  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
+  IntColumn get sheetId => integer().references(SheetDataTables, #sheetId)();
   IntColumn get colIndex => integer()();
   RealColumn get rightPos => real()();
 
@@ -243,7 +244,7 @@ class ColRightPosTable extends Table {
 
 @DataClassName('RowsManuallyAdjustedHeightEntity')
 class RowsManuallyAdjustedHeightTable extends Table {
-  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
+  IntColumn get sheetId => integer().references(SheetDataTables, #sheetId)();
   IntColumn get rowIndex => integer()();
   BoolColumn get manuallyAdjusted => boolean()();
 
@@ -253,7 +254,7 @@ class RowsManuallyAdjustedHeightTable extends Table {
 
 @DataClassName('ColsManuallyAdjustedWidthEntity')
 class ColsManuallyAdjustedWidthTable extends Table {
-  IntColumn get sheetId => integer().references(SheetDataTables, #id)();
+  IntColumn get sheetId => integer().references(SheetDataTables, #sheetId)();
   IntColumn get colIndex => integer()();
   BoolColumn get manuallyAdjusted => boolean()();
 

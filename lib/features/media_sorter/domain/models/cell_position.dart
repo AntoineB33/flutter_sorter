@@ -1,6 +1,6 @@
-
-
 import 'package:json_annotation/json_annotation.dart';
+
+part 'cell_position.g.dart';
 
 @JsonSerializable()
 class CellPosition {

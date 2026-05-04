@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 
-enum HistoryType { selectionChange, editModeChange, other }
+part 'history_data.g.dart';
 
 
 @JsonSerializable(explicitToJson: true)

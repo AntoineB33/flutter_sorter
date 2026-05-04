@@ -10,7 +10,7 @@ import 'package:trying_flutter/features/media_sorter/data/datasources/local_data
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/current_change_list.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/isolate_message.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/isolate_receive_ports_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';

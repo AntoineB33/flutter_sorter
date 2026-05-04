@@ -6,7 +6,7 @@ import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_ca
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 
 class SelectionRepositoryImpl implements SelectionRepository {

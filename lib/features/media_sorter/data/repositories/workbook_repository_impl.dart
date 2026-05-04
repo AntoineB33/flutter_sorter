@@ -12,7 +12,7 @@ import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
 
 class WorkbookRepositoryImpl implements WorkbookRepository {

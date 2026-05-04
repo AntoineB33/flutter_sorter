@@ -8,7 +8,7 @@ import 'package:trying_flutter/features/media_sorter/application/state/sheet_dat
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
@@ -102,16 +102,6 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     updateTreeAndRowColCount();
     gridController.scrollToLastSelection();
     notifyListeners();
-  }
-
-  void setPrimarySelectionAction(
-    int row,
-    int col,
-    bool keepSelection, {
-    bool scrollTo = true,
-  }) {
-    setPrimarySelection(row, col, keepSelection, scrollTo: scrollTo);
-    historyController.commitHistory(false);
   }
 
   void setPrimarySelection(
@@ -213,7 +203,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void _sortTableWithCurrentBestSort(int sheetId) {
     sortController.sortTableWithCurrentBestSort(sheetId);
-    applyUpdatesNoSort(sheetId, false, false, false);
+    applyUpdatesNoSort(sheetId, false, false);
     if (sortController.getToApplyOnce(sheetId)) {
       sortController.setToApplyOnce(sheetId, false);
     }
@@ -224,11 +214,6 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     bool isFromHistory,
     bool isFromEditing,
   ) {
-    sheetDataController.applyUpdatesNoSort(
-      sheetId,
-      isFromHistory,
-      isFromEditing,
-    );
     gridController.adjustRowHeightAfterUpdate(currentSheetId);
     updateTreeAndRowColCount();
     if (isFromEditing) {
@@ -326,13 +311,8 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void selectAll() {
-    setPrimarySelection(0, 0, true, false);
+    setPrimarySelection(0, 0, true);
     selectionController.selectAll();
-    historyController.commitHistory(
-      currentSheetId,
-      HistoryType.selectionChange,
-      false,
-    );
   }
 
   void undo() {
@@ -344,9 +324,9 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void moveInUpdateHistory(int direction) {
-    final updateData = historyController.moveInUpdateHistory(direction);
-    if (updateData.isNotEmpty) {
-      applyUpdatesAndSort(updateData, currentSheetId, true, false, false);
+    final success = historyController.moveInUpdateHistory(currentSheetId, HistoryType.other, direction);
+    if (success) {
+      applyUpdatesAndSort(currentSheetId, true, false, false);
     }
   }
 
@@ -440,21 +420,15 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyDefaultColumnSequence() {
-    final updates = sheetDataController.setColumnType(
+    sheetDataController.setColumnType(
       1,
       ColumnType.dependencies,
     );
-    updates.addAll(
-      sheetDataController.setColumnType(2, ColumnType.dependencies),
-    );
-    updates.addAll(
-      sheetDataController.setColumnType(3, ColumnType.dependencies),
-    );
-    updates.addAll(sheetDataController.setColumnType(7, ColumnType.urls));
-    updates.addAll(
-      sheetDataController.setColumnType(8, ColumnType.dependencies),
-    );
-    applyUpdatesAndSort(updates, currentSheetId, false, false, false);
+    sheetDataController.setColumnType(2, ColumnType.dependencies);
+      sheetDataController.setColumnType(3, ColumnType.dependencies);
+    sheetDataController.setColumnType(7, ColumnType.urls);
+    sheetDataController.setColumnType(8, ColumnType.dependencies);
+    applyUpdatesAndSort(currentSheetId, false, false, false);
   }
 
   void onCellSave(bool moveUp) {
@@ -463,13 +437,11 @@ class SpreadsheetCoordinator extends ChangeNotifier {
         max(0, primarySelectedCellX - 1),
         primarySelectedCellY,
         false,
-        false,
       );
     } else {
       setPrimarySelection(
         primarySelectedCellX + 1,
         primarySelectedCellY,
-        false,
         false,
       );
     }
