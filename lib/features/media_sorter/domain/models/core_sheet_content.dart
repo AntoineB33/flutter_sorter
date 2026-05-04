@@ -1,33 +1,25 @@
-
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 
-class CoreSheetContent {
-  final int id;
-  String title;
-  DateTime lastOpened;
-  final Map<CellPosition, String> cells;
-  Map<int, ColumnType> columnTypes;
-  final List<int> usedRows;
-  final List<int> usedCols;
-  final bool toAlwaysApplyCurrentBestSort;
+part 'core_sheet_content.freezed.dart';
 
-  static int _idCounter = 0;
+@freezed
+abstract class CoreSheetContent with _$CoreSheetContent {
+  factory CoreSheetContent({
+    required int sheetId,
+    required String title,
+    required DateTime lastOpened,
+    required Map<CellPosition, String> cells,
+    required Map<int, ColumnType> columnTypes,
+    required List<int> usedRows,
+    required List<int> usedCols,
+    required bool toAlwaysApplyCurrentBestSort,
+  }) = _CoreSheetContent;
 
-  CoreSheetContent({
-    required this.id,
-    required this.title,
-    required this.lastOpened,
-    required this.cells,
-    required this.columnTypes,
-    required this.usedRows,
-    required this.usedCols,
-    required this.toAlwaysApplyCurrentBestSort,
-  });
-
-  factory CoreSheetContent.empty(String title) {
+  factory CoreSheetContent.empty(String title, int sheetId) {
     return CoreSheetContent(
-      id: _idCounter++,
+      sheetId: sheetId,
       title: title,
       lastOpened: DateTime.now(),
       cells: {},

@@ -1,5 +1,6 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/layout_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
@@ -8,10 +9,10 @@ import 'package:trying_flutter/features/media_sorter/domain/repositories/selecti
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
-import 'package:trying_flutter/utils/logger.dart';
 
 class WorkbookUsecase {
   final WorkbookRepository workbookRepository;
+  final LoadedSheetsCache loadedSheetsCache;
   final SelectionRepository selectionRepository;
   final SortRepository sortRepository;
   final SheetDataRepository sheetDataRepository;
@@ -20,6 +21,7 @@ class WorkbookUsecase {
 
   WorkbookUsecase(
     this.workbookRepository,
+    this.loadedSheetsCache,
     this.selectionRepository,
     this.sortRepository,
     this.sheetDataRepository,
@@ -38,7 +40,7 @@ class WorkbookUsecase {
     Either<Failure, void> result;
     result = await workbookRepository.clearAllData();
     if (result.isLeft()) {
-      logger.e('Failed to clear all data.');
+      throw Exception('Failed to clear all data.');
     }
   }
 
@@ -46,7 +48,7 @@ class WorkbookUsecase {
     Either<Failure, void> result;
     result = await workbookRepository.loadRecentSheetIds();
     if (result.isLeft()) {
-      logger.e('Failed to load recent sheet IDs.');
+      throw Exception('Failed to load recent sheet IDs.');
     } else if (workbookRepository.getRecentSheetIds().isEmpty) {
       createDefaultSheet();
     }
@@ -79,5 +81,6 @@ class WorkbookUsecase {
 
   void openSheet(int sheetId) {
     workbookRepository.openSheet(sheetId);
+    loadedSheetsCache.openSheet(sheetId);
   }
 }

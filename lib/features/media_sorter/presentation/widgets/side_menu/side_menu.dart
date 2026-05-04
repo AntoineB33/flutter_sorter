@@ -331,7 +331,7 @@ class _SideMenuState extends State<SideMenu> {
             );
           },
           onSelected: (CoreSheetContent selection) {
-            coordinator.openSheet(selection.id);
+            coordinator.openSheet(selection.sheetId);
           },
           fieldViewBuilder:
               (context, textController, focusNode, onFieldSubmitted) {

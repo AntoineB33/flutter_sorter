@@ -50,6 +50,10 @@ class LoadedSheetsCache {
     return _loadedSheetsData[sheetId]!.toAlwaysApplyCurrentBestSort;
   }
 
+  void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
+    setSheet(sheetId, _loadedSheetsData[sheetId]!.copyWith(toAlwaysApplyCurrentBestSort: toAlwaysApply));
+  }
+
   void setSheet(int sheetId, CoreSheetContent sheetData) {
     _loadedSheetsData[sheetId] = sheetData;
   }
@@ -136,5 +140,9 @@ class LoadedSheetsCache {
     } else {
       sheet.columnTypes[col] = newColumnType;
     }
+  }
+
+  void openSheet(int sheetId) {
+    setSheet(sheetId, _loadedSheetsData[sheetId]!.copyWith(lastOpened: DateTime.now()));
   }
 }

@@ -19,6 +19,7 @@ import 'package:trying_flutter/features/media_sorter/domain/models/cell_position
 import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/update_history_model.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 
 class HistoryRepositoryImpl implements HistoryRepository {
@@ -461,17 +462,11 @@ class HistoryRepositoryImpl implements HistoryRepository {
           );
         }
         historyCenter.updateHistories.add(
-          UpdateHistoriesEntity(
+          UpdateHistoryModel(
+            timestamp: (historyReq.companionWrapper as UpdateHistoriesTableCompanion).timestamp.value,
+            chronoId: (historyReq.companionWrapper as UpdateHistoriesTableCompanion).chronoId.value,
             sheetId: sheetId,
             updates: currentChanges,
-            timestamp:
-                (historyReq.companionWrapper as UpdateHistoriesTableCompanion)
-                    .timestamp
-                    .value,
-            chronoId:
-                (historyReq.companionWrapper as UpdateHistoriesTableCompanion)
-                    .chronoId
-                    .value,
             type: historyType,
           ),
         );

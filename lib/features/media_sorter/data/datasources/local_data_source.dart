@@ -8,6 +8,7 @@ import 'package:trying_flutter/features/media_sorter/data/datasources/app_databa
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:drift/drift.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/update_history_model.dart';
 import 'package:trying_flutter/utils/logger.dart';
 
 class SheetIdAndLastOpened {
@@ -24,8 +25,8 @@ abstract class ILocalDataSource {
   Future<SheetDataEntity> getSheetDataEntity(int sheetId);
   Future<List<SheetCellEntity>> getSheetCellEntities(int sheetId);
   Future<List<SheetColumnTypeEntity>> getSheetColumnTypeEntities(int sheetId);
-  Future<List<UpdateHistoriesEntity>> getUpdateHistoriesEntities(int sheetId);
-  Future<List<UpdateHistoriesEntity>> getSelectHistoriesEntities(int sheetId);
+  Future<List<UpdateHistoryModel>> getUpdateHistoriesEntities(int sheetId);
+  Future<List<UpdateHistoryModel>> getSelectHistoriesEntities(int sheetId);
   Future<List<RowsBottomPosEntity>> getRowsBottomPosEntities(int sheetId);
   Future<List<ColRightPosEntity>> getColRightPosEntities(int sheetId);
   Future<List<RowsManuallyAdjustedHeightEntity>>
@@ -87,7 +88,9 @@ class DriftLocalDataSource
       // We use putIfAbsent so we don't accidentally overwrite newer edits
       // that a user might have made while the DB was failing.
       _pendingSaves.addAll(itemsToSave);
-      logger.e("Database save failed. Items returned to cache. Error: $e");
+      throw Exception(
+        "Database save failed. Items returned to cache. Error: $e",
+      );
     }
   }
 
@@ -135,8 +138,9 @@ class DriftLocalDataSource
       case DataBaseOperationType.deleteWhere:
         // 1. Extract the explicitly set fields from the companion.
         // The 'false' argument ensures we include Value(null) if explicitly set.
-        final presentColumns = syncRequest.companionWrapper.companion
-            .toColumns(false);
+        final presentColumns = syncRequest.companionWrapper.companion.toColumns(
+          false,
+        );
 
         // If the companion is completely empty, skip to prevent wiping the whole table.
         if (presentColumns.isEmpty) return;
@@ -287,7 +291,7 @@ class DriftLocalDataSource
   }
 
   @override
-  Future<List<UpdateHistoriesEntity>> getUpdateHistoriesEntities(
+  Future<List<UpdateHistoryModel>> getUpdateHistoriesEntities(
     int sheetId,
   ) async {
     try {
@@ -295,14 +299,24 @@ class DriftLocalDataSource
         ..where(
           (table) =>
               table.sheetId.equals(sheetId) &
-              table.type.equals(HistoryType.selectionChange).not(),
+              table.type.equals(HistoryType.selectionChange.toString()).not(),
         )
         ..orderBy([
           (t) => OrderingTerm.asc(t.timestamp),
           (t) => OrderingTerm.asc(t.chronoId),
         ]);
       final updateHistories = await query.get();
-      return updateHistories;
+      return updateHistories
+          .map(
+            (e) => UpdateHistoryModel(
+              timestamp: e.timestamp,
+              chronoId: e.chronoId,
+              sheetId: e.sheetId,
+              updates: e.updates,
+              type: e.type,
+            ),
+          )
+          .toList();
     } on SqliteException catch (e) {
       throw CacheException('Failed to retrieve update histories: ${e.message}');
     } catch (e) {
@@ -311,7 +325,7 @@ class DriftLocalDataSource
   }
 
   @override
-  Future<List<UpdateHistoriesEntity>> getSelectHistoriesEntities(
+  Future<List<UpdateHistoryModel>> getSelectHistoriesEntities(
     int sheetId,
   ) async {
     try {
@@ -319,14 +333,24 @@ class DriftLocalDataSource
         ..where(
           (table) =>
               table.sheetId.equals(sheetId) &
-              table.type.equals(HistoryType.selectionChange),
+              table.type.equals(HistoryType.selectionChange.toString()),
         )
         ..orderBy([
           (t) => OrderingTerm.asc(t.timestamp),
           (t) => OrderingTerm.asc(t.chronoId),
         ]);
       final selectHistories = await query.get();
-      return selectHistories;
+      return selectHistories
+          .map(
+            (e) => UpdateHistoryModel(
+              timestamp: e.timestamp,
+              chronoId: e.chronoId,
+              sheetId: e.sheetId,
+              updates: e.updates,
+              type: e.type,
+            ),
+          )
+          .toList();
     } on SqliteException catch (e) {
       throw CacheException(
         'Failed to retrieve selection histories: ${e.message}',

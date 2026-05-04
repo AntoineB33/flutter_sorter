@@ -183,7 +183,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
             colType.columnIndex: colType.columnType,
         };
         final sheetDataTable = CoreSheetContent(
-          id: sheetId,
+          sheetId: sheetId,
           title: sheetData.title,
           lastOpened: sheetData.lastOpened,
           cells: cellMap,
@@ -257,7 +257,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
 
   @override
   void addNewSheet(int sheetId, String title) {
-    loadedSheetsCache.setSheet(sheetId, CoreSheetContent.empty(title));
+    loadedSheetsCache.setSheet(sheetId, CoreSheetContent.empty(title, sheetId));
   }
 
   @override

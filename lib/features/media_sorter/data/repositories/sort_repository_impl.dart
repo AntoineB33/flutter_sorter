@@ -168,7 +168,7 @@ class SortRepositoryImpl implements SortRepository {
 
   @override
   void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
-    analysisResultCache.setToAlwaysApplyBestSort(sheetId, toAlwaysApply);
+    loadedSheetsCache.setToAlwaysApplyBestSort(sheetId, toAlwaysApply);
     return currentChangeList.addChange(
       HistoryType.other,
       SyncRequestWithoutHist(

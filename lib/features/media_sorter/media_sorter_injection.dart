@@ -141,6 +141,7 @@ Future<void> initMediaSorterDependencies() async {
   );
   WorkbookUsecase workbookUsecase = WorkbookUsecase(
     workbookRepository,
+    loadedSheetsCache,
     selectionRepository,
     sortRepository,
     sheetDataRepository,

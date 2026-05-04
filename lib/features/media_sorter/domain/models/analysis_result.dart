@@ -217,7 +217,6 @@ class AnalysisResult {
       List<bool>? isMedium,
       List<int>? validRowIndexes,
       List<int>? currentBestSort,
-      bool? toAlwaysApplyCurrentBestSort,
       bool? validSortIsImpossible,
       bool? isFindingBestSort,
       bool? sortedWithValidSort,

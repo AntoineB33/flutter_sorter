@@ -27,9 +27,3 @@ const _$DataBaseOperationTypeEnumMap = {
   DataBaseOperationType.delete: 'delete',
   DataBaseOperationType.deleteWhere: 'deleteWhere',
 };
-
-DbCompanionWrapper _$DbCompanionWrapperFromJson(Map<String, dynamic> json) =>
-    DbCompanionWrapper();
-
-Map<String, dynamic> _$DbCompanionWrapperToJson(DbCompanionWrapper instance) =>
-    <String, dynamic>{};

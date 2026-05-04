@@ -70,9 +70,5 @@ class AnalysisResultCache {
     updateResults(sheetId, _getAnalysisResult(sheetId).merge(validSortIsImpossible: impossible));
   }
 
-  void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
-    updateResults(sheetId, _getAnalysisResult(sheetId).merge(toAlwaysApplyCurrentBestSort: toAlwaysApply));
-  }
-
   AnalysisResultCache(this.loadedSheetsDataStore);
 }

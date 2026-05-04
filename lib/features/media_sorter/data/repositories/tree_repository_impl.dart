@@ -12,7 +12,6 @@ import 'package:trying_flutter/features/media_sorter/domain/models/column_type.d
 import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/tree_repository.dart';
-import 'package:trying_flutter/utils/logger.dart';
 
 class TreeRepositoryImpl implements TreeRepository {
   final AnalysisResultCache analysisCache;
@@ -120,9 +119,7 @@ class TreeRepositoryImpl implements TreeRepository {
     return _handleSelectionCycling(cells);
   }
 
-  CellPosition _handleSelectionCycling(
-    List<CellPosition> cells,
-  ) {
+  CellPosition _handleSelectionCycling(List<CellPosition> cells) {
     int found = -1;
     for (int i = 0; i < cells.length; i++) {
       final child = cells[i];
@@ -264,7 +261,7 @@ class TreeRepositoryImpl implements TreeRepository {
               populateAttToRefFromDepColNode(result, node, populateChildren);
             }
           } else {
-            logger.e(
+            throw Exception(
               "populateNode: Unhandled CellWithName with name only: ${node.name}",
             );
           }
@@ -380,11 +377,7 @@ class TreeRepositoryImpl implements TreeRepository {
       if (loadedSheetsCache
           .getCellContent(currentSheetId, rowId, colId)
           .isNotEmpty) {
-        rowCells.add(
-          NodeStruct(
-            cell: CellPosition(rowId, colId),
-          ),
-        );
+        rowCells.add(NodeStruct(cell: CellPosition(rowId, colId)));
       }
     }
 
@@ -418,9 +411,7 @@ class TreeRepositoryImpl implements TreeRepository {
           for (final child in node.newChildren ?? []) {
             if (child.rowId != null) {
               if (child.colId != null) {
-                cells.add(
-                  CellPosition(child.rowId!, child.colId!),
-                );
+                cells.add(CellPosition(child.rowId!, child.colId!));
               } else {
                 cells.add(CellPosition(child.rowId!, 0));
               }
