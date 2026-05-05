@@ -55,7 +55,7 @@ class SortUsecase {
 
   void setFindingBestSort(int sheetId, bool value) {
     sortRepository.setFindingBestSort(sheetId, value);
-    historyRepository.scheduleCommit();
+    historyRepository.commitHistory();
   }
 
   void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
@@ -63,7 +63,7 @@ class SortUsecase {
       sheetId,
       toAlwaysApply,
     );
-    historyRepository.scheduleCommit();
+    historyRepository.commitHistory();
   }
 
   Future<Stream<SortProgressDataMsg>> launchCalculation(int sheetId) {
@@ -78,7 +78,7 @@ class SortUsecase {
       sortProgressDataMsg,
       sheetId,
     );
-    historyRepository.scheduleCommit();
+    historyRepository.commitHistory();
     return sortRepository.stopLoop(sortProgressDataMsg, sheetId);
   }
 

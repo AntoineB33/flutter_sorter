@@ -36,7 +36,7 @@ class GridUsecase {
 
   void adjustRowHeightAfterUpdate(int sheetId) {
     gridRepository.adjustRowHeightAfterUpdate(sheetId);
-    historyRepository.scheduleCommit();
+    historyRepository.commitHistory();
   }
 
   bool isRowValid(int rowId) {

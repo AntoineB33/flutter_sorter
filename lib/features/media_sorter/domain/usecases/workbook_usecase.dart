@@ -65,7 +65,7 @@ class WorkbookUsecase {
     selectionRepository.setPrimarySelection(0, 0, false);
     gridRepository.setLayout(currentSheetId, LayoutData.empty());
     historyRepository.addSheetId(currentSheetId);
-    historyRepository.scheduleCommit();
+    historyRepository.commitHistory();
   }
 
   Future<Either<Failure, Unit>> loadSheet(int sheetId) async {

@@ -402,26 +402,40 @@ class HistoryRepositoryImpl implements HistoryRepository {
         if (currentChanges == null || currentChanges.isEmpty) {
           continue;
         }
-        final historyReq = SyncRequestWithoutHist(
-          HistoryWrapper(
-            UpdateHistoriesTableCompanion(
-              timestamp: timestamp,
-              chronoId: chronoId,
-              sheetId: Value(sheetId),
-              updates: Value(currentChanges),
-              type: Value(historyType),
+        final SyncRequestWithoutHist historyReq;
+        if (committedInThisRunTime) {
+          historyReq = currentChangeList.changeList.firstWhere(
+            (element) =>
+                element.companionWrapper is HistoryWrapper &&
+                element.dataBaseOperationType == DataBaseOperationType.insert,
+          );
+          (historyReq.companionWrapper as HistoryWrapper)
+              .companion
+              .updates
+              .value
+              .addAll(currentChanges);
+        } else {
+          historyReq = SyncRequestWithoutHist(
+            HistoryWrapper(
+              UpdateHistoriesTableCompanion(
+                timestamp: timestamp,
+                chronoId: chronoId,
+                sheetId: Value(sheetId),
+                updates: Value(currentChanges),
+                type: Value(historyType),
+              ),
             ),
-          ),
-          DataBaseOperationType.insert,
-        );
-        currentChangeList.changeList.add(historyReq);
+            DataBaseOperationType.insert,
+          );
+          currentChangeList.changeList.add(historyReq);
+        }
         currentChangeList.changeList.addAll(currentChanges);
 
         final historyCenter = historyType == HistoryType.selectionChange
             ? selectionHistoryData
             : historyData;
 
-        if (committedInThisRunTime) {
+        if (!committedInThisRunTime) {
           if (historyCenter.historyIndex <
               historyCenter.updateHistories.length - 1) {
             for (

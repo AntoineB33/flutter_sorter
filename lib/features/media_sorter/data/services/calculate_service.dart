@@ -66,8 +66,8 @@ class CalculateService {
 
   final CoreSheetContent coreSheetContent;
 
-  Map<CellPosition, String> get table => coreSheetContent.cells;
-  Map<int, ColumnType> get columnTypes => coreSheetContent.columnTypes;
+  Map<CellPosition, String> table = {};
+  Map<int, ColumnType> columnTypes = {};
   late Map<int, String> headers;
   List<int> get usedRows => coreSheetContent.usedRows;
   List<int> get usedCols => coreSheetContent.usedCols;
@@ -75,6 +75,8 @@ class CalculateService {
   int get colCount => usedCols.isEmpty ? 0 : usedCols.last + 1;
 
   CalculateService(this.coreSheetContent) {
+    table = Map<CellPosition, String>.from(coreSheetContent.cells);
+    columnTypes = Map<int, ColumnType>.from(coreSheetContent.columnTypes);
     headers = {
       for (int colId = 0; colId < colCount; colId++)
         colId: getCellContent(0, colId),

@@ -59,17 +59,26 @@ class LoadedSheetsCache {
   }
 
   List<SyncRequestWithoutHist> updateCell(
-    int sheetId,
-    SheetCellsTableCompanion update,
-    DataBaseOperationType operationType,
-  ) {
-    _loadedSheetsData[sheetId]!.cells[CellPosition(
-          update.row.value,
-          update.col.value,
-        )] =
-        update.content.value;
-    final usedRows = _loadedSheetsData[sheetId]!.usedRows;
-    final usedCols = _loadedSheetsData[sheetId]!.usedCols;
+      int sheetId,
+      SheetCellsTableCompanion update,
+      DataBaseOperationType operationType,
+      ) {
+    final sheet = _loadedSheetsData[sheetId]!;
+    final cells = Map<CellPosition, String>.from(sheet.cells);
+    final usedRows = List<int>.from(sheet.usedRows);
+    final usedCols = List<int>.from(sheet.usedCols);
+
+    final position = CellPosition(
+      update.row.value,
+      update.col.value,
+    );
+
+    if (operationType == DataBaseOperationType.delete) {
+      cells.remove(position);
+    } else {
+      cells[position] = update.content.value;
+    }
+
     List<int>? newUsedRows;
     List<int>? newUsedCols;
     if (operationType != DataBaseOperationType.delete) {
@@ -130,16 +139,27 @@ class LoadedSheetsCache {
         ),
       );
     }
+
+    _loadedSheetsData[sheetId] = sheet.copyWith(
+      cells: cells,
+      usedRows: usedRows,
+      usedCols: usedCols,
+    );
+
     return changeList;
   }
 
   void setColumnType(int sheetId, int col, ColumnType newColumnType) {
     final sheet = _loadedSheetsData[sheetId]!;
+    final columnTypes = Map<int, ColumnType>.from(sheet.columnTypes);
+
     if (newColumnType == ColumnType.attributes) {
-      sheet.columnTypes.remove(col);
+      columnTypes.remove(col);
     } else {
-      sheet.columnTypes[col] = newColumnType;
+      columnTypes[col] = newColumnType;
     }
+
+    _loadedSheetsData[sheetId] = sheet.copyWith(columnTypes: columnTypes);
   }
 
   void openSheet(int sheetId) {
