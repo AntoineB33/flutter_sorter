@@ -77,7 +77,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     pageReady = true;
     notifyListeners();
     sortController.loadSortStatus();
-    for (var sheetId in sortController.sortStatusBySheet.keys) {
+    for (var sheetId in sortController.sortStatusBySheet.keys.toList()) {
       launchCalculation(sheetId);
     }
   }

@@ -41,7 +41,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
   CoreSheetContent get currentSheet =>
       loadedSheetsDataStore.getSheet(currentSheetId);
   HistoryData get historyData => historyCache[currentSheetId]!;
-  HistoryData get selectionHistoryData => selectionCache[currentSheetId]!;
+  HistoryData get selectionHistoryData => selectionCache.getSelectionData(currentSheetId);
 
   HistoryRepositoryImpl(
     this.localDataSource,
@@ -463,8 +463,8 @@ class HistoryRepositoryImpl implements HistoryRepository {
         }
         historyCenter.updateHistories.add(
           UpdateHistoryModel(
-            timestamp: (historyReq.companionWrapper as UpdateHistoriesTableCompanion).timestamp.value,
-            chronoId: (historyReq.companionWrapper as UpdateHistoriesTableCompanion).chronoId.value,
+            timestamp: (historyReq.companionWrapper.companion as UpdateHistoriesTableCompanion).timestamp.value,
+            chronoId: (historyReq.companionWrapper.companion as UpdateHistoriesTableCompanion).chronoId.value,
             sheetId: sheetId,
             updates: currentChanges,
             type: historyType,

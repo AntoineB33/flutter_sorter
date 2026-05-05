@@ -4,10 +4,6 @@ import 'package:trying_flutter/features/media_sorter/domain/models/history_data.
 class SelectionCache {
   final Map<int, HistoryData> _selections = {};
 
-  HistoryData? operator [](int sheetId) => _selections[sheetId];
-  // ignore: unused_element
-  static void _keepLinterHappy() => SelectionCache()[0];
-
   SheetDataTablesCompanion getSelectionState(int sheetId) {
     return getSelectionData(sheetId).updateHistories[getSelectionData(
       sheetId,
@@ -28,7 +24,10 @@ class SelectionCache {
   Map<String, HistoryData> get selections => Map.unmodifiable(_selections);
 
   HistoryData getSelectionData(int sheetId) {
-    return _selections[sheetId] ??= HistoryData.empty();
+    if (!_selections.containsKey(sheetId)) {
+      setSelectionData(sheetId, HistoryData.empty());
+    }
+    return _selections[sheetId]!;
   }
 
   void setSelectionData(int sheetId, HistoryData selectionData) {

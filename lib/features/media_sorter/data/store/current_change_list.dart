@@ -14,9 +14,13 @@ class CurrentChangeList {
       RowsManuallyAdjustedHeightWrapper() => (change.companionWrapper as RowsManuallyAdjustedHeightWrapper).companion.sheetId.value,
       ColsManuallyAdjustedWidthWrapper() => (change.companionWrapper as ColsManuallyAdjustedWidthWrapper).companion.sheetId.value,
     };
-    final sheetChanges = changes[sheetId] ??= {};
-    final currentChanges = sheetChanges[type] ??= [];
-    currentChanges.add(change);
+    if (!changes.containsKey(sheetId)) {
+      changes[sheetId] = {};
+    }
+    if (!changes[sheetId]!.containsKey(type)) {
+      changes[sheetId]![type] = [];
+    }
+    changes[sheetId]![type]!.add(change);
   }
 
   void clear() {
