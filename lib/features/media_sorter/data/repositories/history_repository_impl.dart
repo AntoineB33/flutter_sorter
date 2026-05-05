@@ -35,7 +35,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
   final AnalysisResultCache analysisResultCache;
   final CurrentChangeList currentChangeList;
   int chronoIdCounter = 0;
-  bool commitScheduled = false;
+  bool committedInThisRunTime = false;
 
   int get currentSheetId => workbookCache.currentSheetId;
   CoreSheetContent get currentSheet =>
@@ -392,19 +392,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
   }
 
   @override
-  void scheduleCommit() {
-    if (commitScheduled) {
-      return;
-    }
-    commitScheduled = true;
-    scheduleMicrotask(() {
-      commitHistory();
-      commitScheduled = false;
-    });
-  }
-
   void commitHistory() {
-    List<SyncRequestWithoutHist> changeList = [];
     final timestamp = Value(DateTime.now());
     final chronoId = Value(chronoIdCounter++);
     for (int sheetId in currentChangeList.changes.keys) {
@@ -426,28 +414,61 @@ class HistoryRepositoryImpl implements HistoryRepository {
           ),
           DataBaseOperationType.insert,
         );
-        changeList.add(historyReq);
-        changeList.addAll(currentChanges);
+        currentChangeList.changeList.add(historyReq);
+        currentChangeList.changeList.addAll(currentChanges);
 
         final historyCenter = historyType == HistoryType.selectionChange
             ? selectionHistoryData
             : historyData;
 
-        if (historyCenter.historyIndex <
-            historyCenter.updateHistories.length - 1) {
-          for (
-            int i = historyCenter.historyIndex + 1;
-            i < historyCenter.updateHistories.length;
-            i++
-          ) {
-            changeList.add(
+        if (committedInThisRunTime) {
+          if (historyCenter.historyIndex <
+              historyCenter.updateHistories.length - 1) {
+            for (
+              int i = historyCenter.historyIndex + 1;
+              i < historyCenter.updateHistories.length;
+              i++
+            ) {
+              currentChangeList.changeList.add(
+                SyncRequestWithoutHist(
+                  HistoryWrapper(
+                    UpdateHistoriesTableCompanion(
+                      timestamp: Value(
+                        historyCenter.updateHistories[i].timestamp,
+                      ),
+                      chronoId: Value(historyCenter.updateHistories[i].chronoId),
+                      sheetId: Value(sheetId),
+                      type: Value(historyType),
+                    ),
+                  ),
+                  DataBaseOperationType.delete,
+                ),
+              );
+            }
+            historyCenter.updateHistories = historyCenter.updateHistories.sublist(
+              0,
+              historyCenter.historyIndex + 1,
+            );
+          }
+          historyCenter.updateHistories.add(
+            UpdateHistoryModel(
+              timestamp: (historyReq.companionWrapper.companion as UpdateHistoriesTableCompanion).timestamp.value,
+              chronoId: (historyReq.companionWrapper.companion as UpdateHistoriesTableCompanion).chronoId.value,
+              sheetId: sheetId,
+              updates: currentChanges,
+              type: historyType,
+            ),
+          );
+          historyCenter.historyIndex++;
+          if (historyCenter.historyIndex ==
+              SpreadsheetConstants.historyLimitPerSheet) {
+            historyCenter.updateHistories.removeAt(0);
+            currentChangeList.changeList.add(
               SyncRequestWithoutHist(
                 HistoryWrapper(
                   UpdateHistoriesTableCompanion(
-                    timestamp: Value(
-                      historyCenter.updateHistories[i].timestamp,
-                    ),
-                    chronoId: Value(historyCenter.updateHistories[i].chronoId),
+                    timestamp: Value(historyCenter.updateHistories[0].timestamp),
+                    chronoId: Value(historyCenter.updateHistories[0].chronoId),
                     sheetId: Value(sheetId),
                     type: Value(historyType),
                   ),
@@ -455,55 +476,33 @@ class HistoryRepositoryImpl implements HistoryRepository {
                 DataBaseOperationType.delete,
               ),
             );
+            historyCenter.historyIndex--;
           }
-          historyCenter.updateHistories = historyCenter.updateHistories.sublist(
-            0,
-            historyCenter.historyIndex + 1,
-          );
-        }
-        historyCenter.updateHistories.add(
-          UpdateHistoryModel(
-            timestamp: (historyReq.companionWrapper.companion as UpdateHistoriesTableCompanion).timestamp.value,
-            chronoId: (historyReq.companionWrapper.companion as UpdateHistoriesTableCompanion).chronoId.value,
-            sheetId: sheetId,
-            updates: currentChanges,
-            type: historyType,
-          ),
-        );
-        historyCenter.historyIndex++;
-        if (historyCenter.historyIndex ==
-            SpreadsheetConstants.historyLimitPerSheet) {
-          historyCenter.updateHistories.removeAt(0);
-          changeList.add(
+          currentChangeList.changeList.add(
             SyncRequestWithoutHist(
-              HistoryWrapper(
-                UpdateHistoriesTableCompanion(
-                  timestamp: Value(historyCenter.updateHistories[0].timestamp),
-                  chronoId: Value(historyCenter.updateHistories[0].chronoId),
-                  sheetId: Value(sheetId),
-                  type: Value(historyType),
+              SheetDataWrapper(
+                sheetId,
+                SheetDataTablesCompanion(
+                  historyIndex: Value(historyCenter.historyIndex),
                 ),
               ),
-              DataBaseOperationType.delete,
+              DataBaseOperationType.update,
             ),
           );
-          historyCenter.historyIndex--;
+        } else {
+          historyCenter.updateHistories[historyCenter.historyIndex].updates.addAll(currentChanges);
         }
-        changeList.add(
-          SyncRequestWithoutHist(
-            SheetDataWrapper(
-              sheetId,
-              SheetDataTablesCompanion(
-                historyIndex: Value(historyCenter.historyIndex),
-              ),
-            ),
-            DataBaseOperationType.update,
-          ),
-        );
       }
     }
-    localDataSource.save(changeList);
-    currentChangeList.clear();
+    currentChangeList.clearChanges();
+    if (!committedInThisRunTime) {
+      committedInThisRunTime = true;
+      scheduleMicrotask(() {
+        localDataSource.save(currentChangeList.changeList);
+        currentChangeList.clearChangeList();
+        committedInThisRunTime = false;
+      });
+    }
   }
 
   @override

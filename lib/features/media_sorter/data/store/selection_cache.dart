@@ -7,7 +7,7 @@ class SelectionCache {
   SheetDataTablesCompanion getSelectionState(int sheetId) {
     return getSelectionData(sheetId).updateHistories[getSelectionData(
       sheetId,
-    ).historyIndex].updates.first.companionWrapper
+    ).historyIndex].updates.first.companionWrapper.companion
         as SheetDataTablesCompanion;
   }
 

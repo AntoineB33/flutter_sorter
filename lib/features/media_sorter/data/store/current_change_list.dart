@@ -2,7 +2,8 @@ import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_tabl
 import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
 
 class CurrentChangeList {
-  Map<int, Map<HistoryType, List<SyncRequestWithoutHist>>> changes = {};
+  final Map<int, Map<HistoryType, List<SyncRequestWithoutHist>>> changes = {};
+  final List<SyncRequestWithoutHist> changeList = [];
 
   void addChange(HistoryType type, SyncRequestWithoutHist change) {
     int sheetId = switch (change.companionWrapper) {
@@ -23,7 +24,11 @@ class CurrentChangeList {
     changes[sheetId]![type]!.add(change);
   }
 
-  void clear() {
+  void clearChanges() {
     changes.clear();
+  }
+
+  void clearChangeList() {
+    changeList.clear();
   }
 }
