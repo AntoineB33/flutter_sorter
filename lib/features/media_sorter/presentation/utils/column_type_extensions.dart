@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 
 extension ColumnTypeX on ColumnType {
   Color get color {

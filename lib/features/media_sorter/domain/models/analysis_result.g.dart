@@ -108,7 +108,6 @@ AnalysisResult _$AnalysisResultFromJson(
   currentBestSort: (json['currentBestSort'] as List<dynamic>?)
       ?.map((e) => (e as num).toInt())
       .toList(),
-  toAlwaysApplyCurrentBestSort: json['toAlwaysApplyCurrentBestSort'] as bool,
   validSortIsImpossible: json['validSortIsImpossible'] as bool,
   isFindingBestSort: json['isFindingBestSort'] as bool,
   sortedWithValidSort: json['sortedWithValidSort'] as bool,
@@ -151,7 +150,6 @@ Map<String, dynamic> _$AnalysisResultToJson(
   ),
   'groupAttribution': instance.groupAttribution,
   'groupsToMaximize': instance.groupsToMaximize,
-  'toAlwaysApplyCurrentBestSort': instance.toAlwaysApplyCurrentBestSort,
   'validSortIsImpossible': instance.validSortIsImpossible,
   'isFindingBestSort': instance.isFindingBestSort,
   'sortedWithValidSort': instance.sortedWithValidSort,

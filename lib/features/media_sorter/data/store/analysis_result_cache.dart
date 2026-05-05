@@ -1,6 +1,6 @@
-import 'package:trying_flutter/features/media_sorter/data/models/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sorting_rule.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sorting_rule.dart';
 
 class AnalysisResultCache {
   final Map<int, AnalysisResult> _analysisResults = {};
@@ -43,10 +43,6 @@ class AnalysisResultCache {
     return _getAnalysisResult(sheetId).sortedWithValidSort;
   }
 
-  bool isCurrentBestSortAlwaysApplied(int sheetId) {
-    return _getAnalysisResult(sheetId).toAlwaysApplyCurrentBestSort;
-  }
-
   void setSortedWithCurrentBestSort(int sheetId, bool value) {
     updateResults(
       sheetId,
@@ -72,10 +68,6 @@ class AnalysisResultCache {
 
   void setValidSortIsImpossible(int sheetId, bool impossible) {
     updateResults(sheetId, _getAnalysisResult(sheetId).merge(validSortIsImpossible: impossible));
-  }
-
-  void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
-    updateResults(sheetId, _getAnalysisResult(sheetId).merge(toAlwaysApplyCurrentBestSort: toAlwaysApply));
   }
 
   AnalysisResultCache(this.loadedSheetsDataStore);

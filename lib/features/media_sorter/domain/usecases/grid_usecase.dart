@@ -1,16 +1,14 @@
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/layout_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/layout_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
+import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/tree_repository.dart';
 
 class GridUsecase {
   final GridRepository gridRepository;
   final TreeRepository treeRepository;
-  final SaveRepository saveRepository;
+  final HistoryRepository historyRepository;
 
-  GridUsecase(this.gridRepository, this.treeRepository, this.saveRepository);
+  GridUsecase(this.gridRepository, this.treeRepository, this.historyRepository);
 
   LayoutData getLayout(int sheetId) {
     return gridRepository.getLayout(sheetId);
@@ -36,13 +34,9 @@ class GridUsecase {
     return gridRepository.getTargetTop(sheetId, rowId);
   }
 
-  void adjustRowHeightAfterUpdate(
-    int sheetId,
-    IMap<String, UpdateUnit> updateData,
-  ) {
-    saveRepository.save(
-      gridRepository.adjustRowHeightAfterUpdate(sheetId, updateData),
-    );
+  void adjustRowHeightAfterUpdate(int sheetId) {
+    gridRepository.adjustRowHeightAfterUpdate(sheetId);
+    historyRepository.commitHistory();
   }
 
   bool isRowValid(int rowId) {

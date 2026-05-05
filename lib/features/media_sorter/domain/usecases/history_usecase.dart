@@ -1,18 +1,12 @@
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 
 class HistoryUsecase {
   final HistoryRepository historyRepository;
-  final SaveRepository saveRepository;
 
-  HistoryUsecase(this.historyRepository, this.saveRepository);
+  HistoryUsecase(this.historyRepository);
 
-  UpdateData? moveInUpdateHistory(int direction) {
-    return historyRepository.moveInUpdateHistory(direction);
-  }
-
-  void stopEditing(bool escape) {
-    saveRepository.save(historyRepository.stopEditing(escape));
+  bool moveInUpdateHistory(int sheetId, HistoryType historyType, int direction) {
+    return historyRepository.moveInUpdateHistory(sheetId, historyType, direction);
   }
 }

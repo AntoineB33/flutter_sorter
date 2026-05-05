@@ -1,26 +1,28 @@
 import 'dart:async';
 
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'package:drift/drift.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/spreadsheet_clipboard_service.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/analysis_result_cache.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/current_change_list.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/history_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/layout_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sorting_progress_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/core_sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/history_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/layout_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sort_progress_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/layout_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 
 class SheetDataRepositoryImpl implements SheetDataRepository {
@@ -33,6 +35,8 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   final WorkbookCache workbookCache;
   final LayoutCache layoutCache;
   final HistoryCache historyCache;
+
+  final CurrentChangeList currentChangeList;
 
   int get currentSheetId => workbookCache.currentSheetId;
 
@@ -48,10 +52,10 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     this.workbookCache,
     this.layoutCache,
     this.historyCache,
+    this.currentChangeList,
   );
-  SelectionData get selection =>
-      selectionCache.getSelectionData(currentSheetId);
-  SelectionState get selectionState =>
+  HistoryData get selection => selectionCache.getSelectionData(currentSheetId);
+  SheetDataTablesCompanion get selectionState =>
       selectionCache.getSelectionState(currentSheetId);
 
   @override
@@ -80,7 +84,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
     int endRow = selectionCache.primarySelectedCellX(currentSheetId);
     int startCol = selectionCache.primarySelectedCellY(currentSheetId);
     int endCol = selectionCache.primarySelectedCellY(currentSheetId);
-    for (CellPosition cell in selectionState.selectedCells) {
+    for (CellPosition cell in selectionState.selectedCells.value) {
       if (cell.rowId < startRow) startRow = cell.rowId;
       if (cell.colId < startCol) startCol = cell.colId;
       if (cell.rowId > endRow) endRow = cell.rowId;
@@ -90,7 +94,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       endRow - startRow + 1,
       (_) => List.generate(endCol - startCol + 1, (_) => false),
     );
-    for (CellPosition cell in selectionState.selectedCells) {
+    for (CellPosition cell in selectionState.selectedCells.value) {
       selectedCellsTable[cell.rowId - startRow][cell.colId - startCol] = true;
     }
     if (!selectedCellsTable.every((row) => row.every((cell) => !cell))) {
@@ -120,15 +124,13 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  Future<Either<Failure, IMap<String, UpdateUnit>>> pasteSelection() async {
+  Future<Either<Failure, Unit>> pasteSelection() async {
     final text = await _clipboardService.getText();
     if (text == null) return Left(ClipboardEmptyFailure());
     // if contains "
     if (text.contains('"')) {
       return Left(ClipboardUnsupportedCharactersFailure());
     }
-
-    final Map<String, UpdateUnit> updates = {};
     final rows = text.split('\n');
     int startRow = selectionCache.primarySelectedCellX(currentSheetId);
     int startCol = selectionCache.primarySelectedCellY(currentSheetId);
@@ -136,21 +138,21 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
       final columns = rows[r].split('\t');
       for (int c = 0; c < columns.length; c++) {
         String val = columns[c].replaceAll('\r', '');
-        final cellUpdate = CellUpdate(
-          currentSheetId,
-          startRow + r,
-          startCol + c,
-          val,
-          loadedSheetsCache.getCellContent(
+        final cellUpdate = SyncRequestWithoutHist(
+          SheetCellWrapper(
             currentSheetId,
             startRow + r,
             startCol + c,
+            SheetCellsTableCompanion(
+              content: Value(val),
+            ),
           ),
+          DataBaseOperationType.update,
         );
-        updates[cellUpdate.getKey()] = cellUpdate;
+        currentChangeList.addChange(HistoryType.other, cellUpdate);
       }
     }
-    return Right(updates.lock);
+    return Right(unit);
   }
 
   @override
@@ -159,17 +161,8 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  ColumnTypeUpdate getColumnTypeUpdate(
-    int colId,
-    ColumnType newColumnType,
-    int sheetId,
-  ) {
-    return ColumnTypeUpdate(
-      sheetId,
-      colId,
-      newColumnType,
-      loadedSheetsCache.getColumnType(sheetId, colId),
-    );
+  void setColumnType(int colId, ColumnType newColumnType, int sheetId) {
+    loadedSheetsCache.setColumnType(sheetId, colId, newColumnType);
   }
 
   @override
@@ -190,13 +183,14 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
             colType.columnIndex: colType.columnType,
         };
         final sheetDataTable = CoreSheetContent(
-          id: sheetId,
+          sheetId: sheetId,
           title: sheetData.title,
           lastOpened: sheetData.lastOpened,
           cells: cellMap,
           columnTypes: columnTypeMap,
           usedRows: sheetData.usedRows,
           usedCols: sheetData.usedCols,
+          toAlwaysApplyCurrentBestSort: sheetData.toAlwaysApplyCurrentBestSort,
         );
         loadedSheetsCache.setSheet(sheetId, sheetDataTable);
         final rowsBottomPos = await dataSource.getRowsBottomPosEntities(
@@ -210,10 +204,10 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         final layoutDataTable = LayoutData(
           rowsBottomPos: rowsBottomPos.map((pos) => pos.bottomPos).toList(),
           colRightPos: colRightPos.map((pos) => pos.rightPos).toList(),
-          rowsManuallyAdjustedHeight: rowsManuallyAdjustedHeightTable
+          rowsManuallyAdjusted: rowsManuallyAdjustedHeightTable
               .map((pos) => pos.manuallyAdjusted)
               .toList(),
-          colsManuallyAdjustedWidth: colManuallyAdjustedWidthTable
+          colsManuallyAdjusted: colManuallyAdjustedWidthTable
               .map((pos) => pos.manuallyAdjusted)
               .toList(),
           colHeaderHeight: sheetData.colHeaderHeight,
@@ -222,7 +216,16 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
           scrollOffsetY: sheetData.scrollOffsetY,
         );
         layoutCache.setLayout(sheetId, layoutDataTable);
-        selectionCache.setSelectionData(sheetId, sheetData.selectionHistory);
+        final selectHistories = await dataSource.getSelectHistoriesEntities(
+          sheetId,
+        );
+        selectionCache.setSelectionData(
+          sheetId,
+          HistoryData(
+            updateHistories: selectHistories,
+            historyIndex: sheetData.selectionHistoryId,
+          ),
+        );
         final sortProgression = SortProgressData(
           bestDistFound: sheetData.bestDistFound,
           bestSortFound: sheetData.bestSortFound,
@@ -239,17 +242,7 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
         historyCache.setUpdateHistories(
           sheetId,
           HistoryData(
-            updateHistories: historyTable
-                .map(
-                  (e) => UpdateData(
-                    e.chronoId,
-                    sheetId,
-                    e.updates,
-                    true,
-                    timestamp: e.timestamp,
-                  ),
-                )
-                .toList(),
+            updateHistories: historyTable,
             historyIndex: sheetData.historyIndex,
           ),
         );
@@ -263,45 +256,53 @@ class SheetDataRepositoryImpl implements SheetDataRepository {
   }
 
   @override
-  ChangeSet addNewSheet(int sheetId, String title) {
-    loadedSheetsCache.setSheet(sheetId, CoreSheetContent.empty(title));
-    final changeSet = ChangeSet();
-    changeSet.addUpdate(
-      SheetDataUpdate(
-        sheetId,
-        true,
-        newName: title,
-        lastOpened: loadedSheetsCache.getSheet(sheetId).lastOpened,
-        usedRows: loadedSheetsCache.getSheet(sheetId).usedRows,
-        usedCols: loadedSheetsCache.getSheet(sheetId).usedCols,
-      ),
-    );
-    return changeSet;
+  void addNewSheet(int sheetId, String title) {
+    loadedSheetsCache.setSheet(sheetId, CoreSheetContent.empty(title, sheetId));
   }
 
   @override
-  ChangeSet delete() {
-    final updates = ChangeSet();
+  void delete() {
     for (CellPosition cellPos
-        in selectionCache.getSelectionState(currentSheetId).selectedCells) {
-      final cellUpdate = CellUpdate(
-        currentSheetId,
-        cellPos.rowId,
-        cellPos.colId,
-        '',
-        loadedSheetsCache.getCellContent(
+        in selectionCache
+            .getSelectionState(currentSheetId)
+            .selectedCells
+            .value) {
+      final cellUpdate = SyncRequestWithoutHist(
+        SheetCellWrapper(
           currentSheetId,
           cellPos.rowId,
           cellPos.colId,
+           SheetCellsTableCompanion(
+            content: Value(''),
+          ),
         ),
+        DataBaseOperationType.delete,
       );
-      updates.addUpdate(cellUpdate);
+      currentChangeList.addChange(HistoryType.other, cellUpdate);
     }
-    return updates;
   }
 
   @override
-  ChangeSet update(IMap<String, UpdateUnit> updates, int sheetId) {
-    return loadedSheetsCache.update(updates, sheetId);
+  void setCellUpdate(int rowId, int colId, String newValue, int sheetId) {
+    loadedSheetsCache.updateCell(
+      sheetId,
+      SheetCellsTableCompanion(
+        row: Value(rowId),
+        col: Value(colId),
+        content: Value(newValue),
+      ),
+      DataBaseOperationType.update,
+    );
+    currentChangeList.addChange(HistoryType.other, SyncRequestWithoutHist(
+      SheetCellWrapper(
+        sheetId,
+        rowId,
+        colId,
+        SheetCellsTableCompanion(
+          content: Value(newValue),
+        ),
+      ),
+      DataBaseOperationType.update,
+    ));
   }
 }

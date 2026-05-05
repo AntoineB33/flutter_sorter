@@ -1,6 +1,6 @@
 
-import 'package:trying_flutter/features/media_sorter/data/models/attribute.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/attribute.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 
 
 
@@ -43,7 +43,7 @@ class GetNames {
     return columnTypes[col] ?? ColumnType.attributes;
   }
 
-  static bool isSourceColumn(ColumnType type) {
-    return type == ColumnType.urls || type == ColumnType.filePath;
+  static bool isSourceColumn(Map<int, ColumnType> columnTypes, int col) {
+    return columnTypes.containsKey(col) && (columnTypes[col] == ColumnType.urls || columnTypes[col] == ColumnType.filePath);
   }
 }

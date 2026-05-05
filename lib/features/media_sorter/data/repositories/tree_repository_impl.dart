@@ -5,14 +5,13 @@ import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/attribute.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/core_sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/attribute.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/tree_repository.dart';
-import 'package:trying_flutter/utils/logger.dart';
 
 class TreeRepositoryImpl implements TreeRepository {
   final AnalysisResultCache analysisCache;
@@ -78,7 +77,8 @@ class TreeRepositoryImpl implements TreeRepository {
     }
     for (int srcColId = 0; srcColId < colCount(currentSheetId); srcColId++) {
       if (GetNames.isSourceColumn(
-            loadedSheetsCache.getColumnType(currentSheetId, srcColId),
+            sheetContent.columnTypes,
+            srcColId,
           ) &&
           loadedSheetsCache
               .getCellContent(currentSheetId, rowId, srcColId)
@@ -120,9 +120,7 @@ class TreeRepositoryImpl implements TreeRepository {
     return _handleSelectionCycling(cells);
   }
 
-  CellPosition _handleSelectionCycling(
-    List<CellPosition> cells,
-  ) {
+  CellPosition _handleSelectionCycling(List<CellPosition> cells) {
     int found = -1;
     for (int i = 0; i < cells.length; i++) {
       final child = cells[i];
@@ -264,7 +262,7 @@ class TreeRepositoryImpl implements TreeRepository {
               populateAttToRefFromDepColNode(result, node, populateChildren);
             }
           } else {
-            logger.e(
+            throw Exception(
               "populateNode: Unhandled CellWithName with name only: ${node.name}",
             );
           }
@@ -380,11 +378,7 @@ class TreeRepositoryImpl implements TreeRepository {
       if (loadedSheetsCache
           .getCellContent(currentSheetId, rowId, colId)
           .isNotEmpty) {
-        rowCells.add(
-          NodeStruct(
-            cell: CellPosition(rowId, colId),
-          ),
-        );
+        rowCells.add(NodeStruct(cell: CellPosition(rowId, colId)));
       }
     }
 
@@ -418,9 +412,7 @@ class TreeRepositoryImpl implements TreeRepository {
           for (final child in node.newChildren ?? []) {
             if (child.rowId != null) {
               if (child.colId != null) {
-                cells.add(
-                  CellPosition(child.rowId!, child.colId!),
-                );
+                cells.add(CellPosition(child.rowId!, child.colId!));
               } else {
                 cells.add(CellPosition(child.rowId!, 0));
               }

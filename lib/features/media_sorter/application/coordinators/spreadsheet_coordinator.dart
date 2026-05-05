@@ -1,21 +1,20 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/history_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sort_progress_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sort_progress_data.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/grid_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/selection_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
-import 'package:trying_flutter/utils/logger.dart';
 
 class SpreadsheetCoordinator extends ChangeNotifier {
   bool pageReady = false;
@@ -68,23 +67,25 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   Future<void> _init() async {
     bool shouldClearData = false;
-    shouldClearData = true; // DEV ONLY: Clear all data on every app start to avoid issues with changing data models during development
-    if (shouldClearData == true) {
+    shouldClearData =
+        true; // DEV ONLY: Clear all data on every app start to avoid issues with changing data models during development
+    if (shouldClearData) {
       await workbookController.clearAllData();
     }
     await workbookController.loadRecentSheetIds();
-    await loadSheet(workbookController.currentSheetId);
+    await openSheet(workbookController.currentSheetId);
     pageReady = true;
     notifyListeners();
     sortController.loadSortStatus();
-    for (var sheetId in sortController.getRecentSheetIds()) {
+    for (var sheetId in sortController.sortStatusBySheet.keys.toList()) {
       launchCalculation(sheetId);
     }
   }
 
-  Future<void> loadSheet(int sheetId) async {
+  Future<void> openSheet(int sheetId) async {
     final result = await workbookController.loadSheet(sheetId);
     if (result.isRight()) {
+      workbookController.openSheet(sheetId);
       afterLoadingSheet();
     }
   }
@@ -116,41 +117,26 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void delete() {
-    final updates = sheetDataController.delete();
-    applyUpdatesAndSort(updates.toMap(), currentSheetId, false, false, false);
+    sheetDataController.delete();
+    applyUpdatesAndSort(currentSheetId, false, false);
   }
 
   void paste() async {
     final result = await sheetDataController.paste();
     result.fold(
-      (failure) => logger.e("The pasted text contains unsupported characters."),
-      (updates) =>
-          applyUpdatesAndSort(updates, currentSheetId, false, false, false),
+      (failure) =>
+          throw Exception("The pasted text contains unsupported characters."),
+      (updates) => applyUpdatesAndSort(currentSheetId, false, false),
     );
   }
 
   void setCellContent(String newValue) {
-    int rowId = primarySelectedCellX;
-    int colId = primarySelectedCellY;
-    final cellUpdate = CellUpdate(currentSheetId, rowId, colId, newValue, sheetDataController.getCellContentCurrentSheet(rowId, colId));
-    Map<String, UpdateUnit> updates = {cellUpdate.getKey(): cellUpdate};
-    applyUpdatesAndSort(
-      updates.lock,
-      currentSheetId,
-      false,
-      false,
-      selectionController.editingMode,
-    );
+    sheetDataController.setCellUpdate(newValue);
+    applyUpdatesAndSort(currentSheetId, false, selectionController.editingMode);
   }
 
-  void applyUpdatesAndSort(
-    IMap<String, UpdateUnit> updates,
-    int sheetId,
-    bool isFromHistory,
-    bool isFromSort,
-    bool isFromEditing,
-  ) {
-    applyUpdatesNoSort(updates, sheetId, isFromHistory, isFromEditing);
+  void applyUpdatesAndSort(int sheetId, bool isFromSort, bool isFromEditing) {
+    applyUpdatesNoSort(isFromEditing);
     if (!isFromSort) {
       launchCalculation(sheetId);
     }
@@ -177,7 +163,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
 
   void alwaysApplySortToggle(bool toAlwaysApply) {
     if (!sortController.sortedWithCurrentBestSort(currentSheetId)) {
-      sortTableWithCurrentBestSort(currentSheetId);
+      _sortTableWithCurrentBestSort(currentSheetId);
     }
     sortController.setToAlwaysApplyBestSort(currentSheetId, toAlwaysApply);
   }
@@ -193,7 +179,7 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     );
     if (sortProgressDataMsg.newBestSortFound) {
       if (sortController.willNextBestSortBeApplied(sheetId)) {
-        sortTableWithCurrentBestSort(sheetId);
+        _sortTableWithCurrentBestSort(sheetId);
       } else {
         sortController.setSortedWithCurrentBestSort(sheetId, false);
       }
@@ -201,27 +187,16 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     return stopLoop;
   }
 
-  void sortTableWithCurrentBestSort(int sheetId) {
-    final updates = sortController.sortTableWithCurrentBestSort(sheetId);
-    applyUpdatesNoSort(updates.toMap(), sheetId, false, false);
+  void _sortTableWithCurrentBestSort(int sheetId) {
+    sortController.sortTableWithCurrentBestSort(sheetId);
+    applyUpdatesNoSort(false);
     if (sortController.getToApplyOnce(sheetId)) {
       sortController.setToApplyOnce(sheetId, false);
     }
   }
 
-  void applyUpdatesNoSort(
-    IMap<String, UpdateUnit> updates,
-    int sheetId,
-    bool isFromHistory,
-    bool isFromEditing,
-  ) {
-    sheetDataController.applyUpdatesNoSort(
-      updates,
-      sheetId,
-      isFromHistory,
-      isFromEditing,
-    );
-    gridController.adjustRowHeightAfterUpdate(currentSheetId, updates);
+  void applyUpdatesNoSort(bool isFromEditing) {
+    gridController.adjustRowHeightAfterUpdate(currentSheetId);
     updateTreeAndRowColCount();
     if (isFromEditing) {
       gridController.scrollToCell();
@@ -293,13 +268,13 @@ class SpreadsheetCoordinator extends ChangeNotifier {
         );
         break;
       default:
-        logger.e("No onTap handler for node: ${node.message}");
+        throw Exception("No onTap handler for node: ${node.message}");
     }
   }
 
   void reorderBetterButton() {
     if (!sortController.sortedWithCurrentBestSort(currentSheetId)) {
-      sortTableWithCurrentBestSort(currentSheetId);
+      _sortTableWithCurrentBestSort(currentSheetId);
     } else {
       sortController.setToApplyOnce(currentSheetId, true);
       if (!sortController.isCalculating(currentSheetId)) {
@@ -331,15 +306,13 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void moveInUpdateHistory(int direction) {
-    final updateData = historyController.moveInUpdateHistory(direction);
-    if (updateData != null) {
-      applyUpdatesAndSort(
-        updateData.updates,
-        updateData.sheetId,
-        true,
-        false,
-        false,
-      );
+    final success = historyController.moveInUpdateHistory(
+      currentSheetId,
+      HistoryType.other,
+      direction,
+    );
+    if (success) {
+      applyUpdatesAndSort(currentSheetId, true, false);
     }
   }
 
@@ -433,17 +406,12 @@ class SpreadsheetCoordinator extends ChangeNotifier {
   }
 
   void applyDefaultColumnSequence() {
-    final updatesLst = [
-      sheetDataController.getCurrentSheetColumnTypeUpdate(1, ColumnType.dependencies),
-      sheetDataController.getCurrentSheetColumnTypeUpdate(2, ColumnType.dependencies),
-      sheetDataController.getCurrentSheetColumnTypeUpdate(3, ColumnType.dependencies),
-      sheetDataController.getCurrentSheetColumnTypeUpdate(7, ColumnType.urls),
-      sheetDataController.getCurrentSheetColumnTypeUpdate(8, ColumnType.dependencies),
-    ];
-    Map<String, UpdateUnit> updates = {
-      for (var update in updatesLst) update.getKey(): update,
-    };
-    applyUpdatesAndSort(updates.lock, currentSheetId, false, false, false);
+    sheetDataController.setColumnType(1, ColumnType.dependencies);
+    sheetDataController.setColumnType(2, ColumnType.dependencies);
+    sheetDataController.setColumnType(3, ColumnType.dependencies);
+    sheetDataController.setColumnType(7, ColumnType.urls);
+    sheetDataController.setColumnType(8, ColumnType.dependencies);
+    applyUpdatesAndSort(currentSheetId, false, false);
   }
 
   void onCellSave(bool moveUp) {
@@ -460,13 +428,12 @@ class SpreadsheetCoordinator extends ChangeNotifier {
         false,
       );
     }
-    selectionController.stopEditing(true);
+    selectionController.stopEditing();
   }
 
   void setColumnType(int col, ColumnType type) {
-    final update = sheetDataController.getCurrentSheetColumnTypeUpdate(col, type);
-    final updates = {update.getKey(): update};
-    applyUpdatesAndSort(updates.lock, currentSheetId, false, false, false);
+    sheetDataController.setColumnType(col, type);
+    applyUpdatesAndSort(currentSheetId, false, false);
   }
 
   void createSheetByName(String name) {

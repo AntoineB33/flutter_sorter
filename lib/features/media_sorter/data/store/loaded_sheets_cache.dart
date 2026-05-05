@@ -1,10 +1,10 @@
 import 'package:collection/collection.dart';
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:meta/meta.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/core_sheet_content.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:drift/drift.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
 
 class LoadedSheetsCache {
   final Map<int, CoreSheetContent> _loadedSheetsData = {};
@@ -31,10 +31,18 @@ class LoadedSheetsCache {
         : getSheet(sheetId).usedRows.last + 1;
   }
 
+  int usedRowsLength(int sheetId) {
+    return getSheet(sheetId).usedRows.length;
+  }
+
   int colCount(int sheetId) {
     return getSheet(sheetId).usedCols.isEmpty
         ? 0
         : getSheet(sheetId).usedCols.last + 1;
+  }
+
+  int usedColsLength(int sheetId) {
+    return getSheet(sheetId).usedCols.length;
   }
 
   String getCellContent(int sheetId, int row, int col) {
@@ -46,99 +54,123 @@ class LoadedSheetsCache {
         ColumnType.attributes;
   }
 
+  bool isCurrentBestSortAlwaysApplied(int sheetId) {
+    return _loadedSheetsData[sheetId]!.toAlwaysApplyCurrentBestSort;
+  }
+
+  void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
+    setSheet(sheetId, _loadedSheetsData[sheetId]!.copyWith(toAlwaysApplyCurrentBestSort: toAlwaysApply));
+  }
+
   void setSheet(int sheetId, CoreSheetContent sheetData) {
     _loadedSheetsData[sheetId] = sheetData;
   }
 
-  @useResult
-  ChangeSet _updateCell(int sheetId, CellUpdate update) {
-    final changeSet = ChangeSet();
-    _loadedSheetsData[sheetId]!.cells[CellPosition(
-          update.rowId,
-          update.colId,
-        )] =
-        update.newValue;
-    final usedRows = _loadedSheetsData[sheetId]!.usedRows;
-    final usedCols = _loadedSheetsData[sheetId]!.usedCols;
+  List<SyncRequestWithoutHist> updateCell(
+      int sheetId,
+      SheetCellsTableCompanion update,
+      DataBaseOperationType operationType,
+      ) {
+    final sheet = _loadedSheetsData[sheetId]!;
+    final cells = Map<CellPosition, String>.from(sheet.cells);
+    final usedRows = List<int>.from(sheet.usedRows);
+    final usedCols = List<int>.from(sheet.usedCols);
+
+    final position = CellPosition(
+      update.row.value,
+      update.col.value,
+    );
+
+    if (operationType == DataBaseOperationType.delete) {
+      cells.remove(position);
+    } else {
+      cells[position] = update.content.value;
+    }
+
     List<int>? newUsedRows;
     List<int>? newUsedCols;
-    if (update.newValue.isNotEmpty) {
-      if (!usedRows.contains(update.rowId)) {
-        usedRows.insert(lowerBound(usedRows, update.rowId), update.rowId);
+    if (operationType != DataBaseOperationType.delete) {
+      if (!usedRows.contains(update.row.value)) {
+        usedRows.insert(
+          lowerBound(usedRows, update.row.value),
+          update.row.value,
+        );
         newUsedRows = usedRows;
       }
-      if (!usedCols.contains(update.colId)) {
-        usedCols.insert(lowerBound(usedCols, update.colId), update.colId);
+      if (!usedCols.contains(update.col.value)) {
+        usedCols.insert(
+          lowerBound(usedCols, update.col.value),
+          update.col.value,
+        );
         newUsedCols = usedCols;
       }
     } else {
       bool isRowUsed = false;
       for (int row in usedRows) {
-        if (getCellContent(sheetId, row, update.colId).isNotEmpty) {
+        if (getCellContent(sheetId, row, update.col.value).isNotEmpty) {
           isRowUsed = true;
           break;
         }
       }
       if (!isRowUsed) {
-        usedCols.remove(update.colId);
+        usedCols.remove(update.col.value);
         newUsedCols = usedCols;
       }
       bool isColUsed = false;
       for (int col in usedCols) {
-        if (getCellContent(sheetId, update.rowId, col).isNotEmpty) {
+        if (getCellContent(sheetId, update.row.value, col).isNotEmpty) {
           isColUsed = true;
           break;
         }
       }
       if (!isColUsed) {
-        usedRows.remove(update.rowId);
+        usedRows.remove(update.row.value);
         newUsedRows = usedRows;
       }
     }
+    List<SyncRequestWithoutHist> changeList = [];
     if (newUsedRows != null || newUsedCols != null) {
-      changeSet.addUpdate(
-        SheetDataUpdate(
-          sheetId,
-          true,
-          usedRows: newUsedRows,
-          usedCols: newUsedCols,
+      changeList.add(
+        SyncRequestWithoutHist(
+          SheetDataWrapper(
+            sheetId,
+            SheetDataTablesCompanion(
+              usedRows: newUsedRows != null
+                  ? Value(newUsedRows)
+                  : Value.absent(),
+              usedCols: newUsedCols != null
+                  ? Value(newUsedCols)
+                  : Value.absent(),
+            ),
+          ),
+          DataBaseOperationType.update,
         ),
       );
     }
-    return changeSet;
+
+    _loadedSheetsData[sheetId] = sheet.copyWith(
+      cells: cells,
+      usedRows: usedRows,
+      usedCols: usedCols,
+    );
+
+    return changeList;
   }
 
-  @useResult
-  ChangeSet update(IMap<String, UpdateUnit> updates, int sheetId) {
-    final changeSet = ChangeSet();
-    for (var update in updates.values) {
-      switch (update) {
-        case CellUpdate():
-          changeSet.merge(_updateCell(sheetId, update));
-          break;
-        case ColumnTypeUpdate():
-          _setColumnType(sheetId, update);
-          break;
-        case SheetDataUpdate():
-          if (update.newName != null) {
-            _loadedSheetsData[sheetId]!.title = update.newName!;
-          }
-          break;
-        default:
-          break;
-      }
-    }
-    return changeSet;
-  }
-
-  void _setColumnType(int sheetId, ColumnTypeUpdate update) {
-    int col = update.colId;
-    ColumnType type = update.newColumnType;
+  void setColumnType(int sheetId, int col, ColumnType newColumnType) {
     final sheet = _loadedSheetsData[sheetId]!;
-    if (type == ColumnType.attributes) {
-      sheet.columnTypes.remove(col);
+    final columnTypes = Map<int, ColumnType>.from(sheet.columnTypes);
+
+    if (newColumnType == ColumnType.attributes) {
+      columnTypes.remove(col);
     } else {
-      sheet.columnTypes[col] = type;
+      columnTypes[col] = newColumnType;
     }
+
+    _loadedSheetsData[sheetId] = sheet.copyWith(columnTypes: columnTypes);
+  }
+
+  void openSheet(int sheetId) {
+    setSheet(sheetId, _loadedSheetsData[sheetId]!.copyWith(lastOpened: DateTime.now()));
   }
 }

@@ -1,10 +1,10 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/attribute.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sorting_rule.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/attribute.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sorting_rule.dart';
 import 'package:trying_flutter/features/media_sorter/data/services/calculate_service.dart';
 import 'dart:convert';
 
@@ -126,8 +126,6 @@ class AnalysisResult {
   final Map<int, Map<int, List<SortingRule>>> myRules;
   final List<List<int>> groupAttribution;
   final List<List<int>> groupsToMaximize;
-  
-  final bool toAlwaysApplyCurrentBestSort;
 
   final bool validSortIsImpossible;
   final bool isFindingBestSort;
@@ -158,7 +156,6 @@ class AnalysisResult {
     required this.isMedium,
     required this.validRowIndexes,
     required this.currentBestSort,
-    required this.toAlwaysApplyCurrentBestSort,
     required this.validSortIsImpossible,
     required this.isFindingBestSort,
     required this.sortedWithValidSort,
@@ -192,7 +189,6 @@ class AnalysisResult {
       validRowIndexes: [],
       formatedTable: [],
       currentBestSort: null,
-      toAlwaysApplyCurrentBestSort: false,
       validSortIsImpossible: false,
       isFindingBestSort: false,
       sortedWithValidSort: false,
@@ -221,7 +217,6 @@ class AnalysisResult {
       List<bool>? isMedium,
       List<int>? validRowIndexes,
       List<int>? currentBestSort,
-      bool? toAlwaysApplyCurrentBestSort,
       bool? validSortIsImpossible,
       bool? isFindingBestSort,
       bool? sortedWithValidSort,
@@ -250,8 +245,6 @@ class AnalysisResult {
       isMedium: isMedium ?? this.isMedium,
       validRowIndexes: validRowIndexes ?? this.validRowIndexes,
       currentBestSort: currentBestSort ?? this.currentBestSort,
-      toAlwaysApplyCurrentBestSort:
-          toAlwaysApplyCurrentBestSort ?? this.toAlwaysApplyCurrentBestSort,
       validSortIsImpossible:
           validSortIsImpossible ?? this.validSortIsImpossible,
       isFindingBestSort:

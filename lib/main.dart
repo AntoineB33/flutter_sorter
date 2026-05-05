@@ -15,6 +15,22 @@ void main() async {
   // Load the saved route before the app interface renders
   final String savedRoute = await StorageService.getLastRoute();
 
+
+  // // 1. Catch Widget / Layout exceptions
+  // FlutterError.onError = (FlutterErrorDetails details) {
+  //   FlutterError.presentError(details); // Keeps the standard console logging
+    
+  //   // 🔴 PLACE A BREAKPOINT ON THE LINE BELOW 🔴
+  //   debugPrint('Widget Error Intercepted: ${details.exception}'); 
+  // };
+
+  // // 2. Catch Asynchronous / Future exceptions (Optional but recommended)
+  // PlatformDispatcher.instance.onError = (error, stack) {
+  //   // 🔴 PLACE A BREAKPOINT ON THE LINE BELOW 🔴
+  //   debugPrint('Async Error Intercepted: $error');
+  //   return true;
+  // };
+
   runApp(MyApp(initialRoute: savedRoute));
 }
 

@@ -3,12 +3,16 @@ import 'dart:async';
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/current_change_list.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sort_status_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
 
 class WorkbookRepositoryImpl implements WorkbookRepository {
@@ -18,6 +22,7 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   final SelectionCache selectionCache;
   final SortStatusCache sortStatusCache;
   final WorkbookCache workbookCache;
+  final CurrentChangeList currentChangeList;
 
   @override
   int get currentSheetId => workbookCache.currentSheetId;
@@ -30,6 +35,7 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
     this.selectionCache,
     this.sortStatusCache,
     this.workbookCache,
+    this.currentChangeList,
   );
 
   int _getNewSheetId() {
@@ -56,9 +62,49 @@ class WorkbookRepositoryImpl implements WorkbookRepository {
   }
 
   @override
-  SheetDataUpdate addNewSheetId(int index) {
-    workbookCache.addSheetId(_getNewSheetId(), index);
-    return SheetDataUpdate(workbookCache.currentSheetId, true);
+  void openSheet(int sheetId) {
+    workbookCache.removeSheetId(sheetId);
+    workbookCache.addSheetId(sheetId, 0);
+  }
+
+  @override
+  void addNewSheetId(String title) {
+    int newSheetId = _getNewSheetId();
+    final companionWrapper = SheetDataWrapper(
+      newSheetId,
+      SheetDataEntity(
+        sheetId: newSheetId,
+        title: title,
+        lastOpened: DateTime.now(),
+        usedRows: [],
+        usedCols: [],
+        historyIndex: 0,
+        colHeaderHeight: 0.0,
+        rowHeaderWidth: 0.0,
+        primarySelectionX: 0,
+        primarySelectionY: 0,
+        selectedCells: {},
+        selectionHistoryId: 0,
+        scrollOffsetX: 0.0,
+        scrollOffsetY: 0.0,
+        bestSortFound: [],
+        bestDistFound: [],
+        cursors: [],
+        possibleInts: [],
+        validAreas: [],
+        sortIndex: 0,
+        analysisResult: AnalysisResult.empty(),
+        sortInProgress: false,
+        toAlwaysApplyCurrentBestSort: false,
+        toApplyNextBestSort: false,
+        analysisDone: false,
+      ).toCompanion(false),
+    );
+    workbookCache.addSheetId(newSheetId, workbookCache.getRecentSheetIds().length);
+    currentChangeList.addChange(HistoryType.other, SyncRequestWithoutHist(
+      companionWrapper,
+      DataBaseOperationType.insert,
+    ));
   }
 
   @override

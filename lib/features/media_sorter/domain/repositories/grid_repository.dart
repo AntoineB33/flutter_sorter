@@ -1,21 +1,14 @@
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:meta/meta.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/layout_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/layout_data.dart';
 
 abstract class GridRepository {
   LayoutData getLayout(int sheetId);
-  @useResult
-  ChangeSet adjustRowHeightAfterUpdate(
-    int sheetId,
-    IMap<String, UpdateUnit> updateData,
-  );
+  
+  void adjustRowHeightAfterUpdate(int sheetId);
   double getRowHeight(int sheetId, int rowId);
   int minRows(int sheetId, int rowCount, double height);
   int minCols(int sheetId, int colCount, double width);
   double getTargetLeft(int sheetId, int colId);
   double getTargetTop(int sheetId, int rowId);
-  @useResult
-  SheetDataUpdate setLayout(int sheetId, LayoutData layoutData);
+  
+  void setLayout(int sheetId, LayoutData layoutData);
 }

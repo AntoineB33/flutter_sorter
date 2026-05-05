@@ -1,22 +1,25 @@
 import 'dart:isolate';
 
+import 'package:drift/drift.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:meta/meta.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/calculation_datasource.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/local_data_source.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/isolate_message.dart';
+import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/current_change_list.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/isolate_message.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/isolate_receive_ports_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/sorting_progress_cache.dart';
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/analysis_result.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/attribute.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sort_progress_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sort_status.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/attribute.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sort_progress_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sort_status.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/helpers/calculation_service.dart';
 import 'dart:async';
@@ -36,14 +39,18 @@ class SortRepositoryImpl implements SortRepository {
   final IsolateReceivePortsCache isolateReceivePortsCache;
   final SelectionCache selectionCache;
   final WorkbookCache workbookCache;
+  final CurrentChangeList currentChangeList;
 
   int get currentSheetId => workbookCache.currentSheetId;
+  @override
+  Map<int, SortStatus> get sortStatusBySheet =>
+      sortStatusCache.sortStatusBySheet;
 
   @override
   bool isReordering(int sheetId) {
     return sortStatusCache.containsSheet(sheetId) &&
         (sortStatusCache.getToApplyOnce(sheetId) ||
-            analysisResultCache.isCurrentBestSortAlwaysApplied(sheetId));
+            loadedSheetsCache.isCurrentBestSortAlwaysApplied(sheetId));
   }
 
   @override
@@ -56,47 +63,56 @@ class SortRepositoryImpl implements SortRepository {
     return analysisResultCache.bestSortPossibleFound(sheetId);
   }
 
-  @override
-  AnalysisResult getAnalysisResult(int sheetId) {
-    return analysisResultCache.getAnalysisResult(sheetId);
-  }
-
-  @useResult
-  UpdateUnit _setAnalysisDone(int sheetId, bool analysisDone) {
-    sortStatusCache.setAnalysisDone(sheetId, analysisDone);
-    return SheetDataUpdate(sheetId, true, analysisDone: analysisDone);
-  }
-
-  @useResult
-  ChangeSet _updateSortProgress(int sheetId, SortProgressData newProgressData) {
+  void _updateSortProgress(int sheetId, SortProgressData newProgressData) {
     sortProgressCache.update(sheetId, newProgressData);
-    final changeSet = ChangeSet();
-    changeSet.addUpdate(
-      SheetDataUpdate(
-        sheetId,
-        true,
-        bestSortFound: newProgressData.bestSortFound,
-        cursors: newProgressData.cursors,
-        possibleInts: newProgressData.possibleIntsById,
-        validAreas: newProgressData.validAreasById,
-        bestDistFound: newProgressData.bestDistFound,
-        sortIndex: newProgressData.sortIndex,
+    currentChangeList.addChange(
+      HistoryType.other,
+      SyncRequestWithoutHist(
+        SheetDataWrapper(
+          sheetId,
+          SheetDataTablesCompanion(
+            bestSortFound: Value(newProgressData.bestSortFound),
+            cursors: Value(newProgressData.cursors),
+            possibleInts: Value(newProgressData.possibleIntsById),
+            validAreas: Value(newProgressData.validAreasById),
+            bestDistFound: Value(newProgressData.bestDistFound),
+            sortIndex: Value(newProgressData.sortIndex),
+          ),
+        ),
+        DataBaseOperationType.update,
       ),
     );
-    return changeSet;
+  }
+
+  void _noNeedToFindSort(int sheetId) {
+    removeSortStatus(sheetId);
+    setValidSortIsImpossible(sheetId, false);
+    setSortedWithValidSort(sheetId, true);
+    setSortedWithCurrentBestSort(sheetId, true);
+    _setBestSortPossibleFound(sheetId, true);
+  }
+
+  void setAnalysisDone(int sheetId, bool analysisDone) {
+    sortStatusCache.setAnalysisDone(sheetId, true);
+    return currentChangeList.addChange(HistoryType.other,
+      SyncRequestWithoutHist(
+        SheetDataWrapper(
+          sheetId,
+          SheetDataTablesCompanion(
+            sortInProgress: Value(false),
+            analysisDone: Value(analysisDone),
+          ),
+        ),
+        DataBaseOperationType.update,
+      )
+    );
   }
 
   @override
-  Future<ChangeSet> analyze(int sheetId) async {
-    final changeSet = ChangeSet();
-    changeSet.merge(_updateSortProgress(sheetId, SortProgressData.empty()));
-    if (loadedSheetsCache.rowCount(sheetId) == 0) {
-      changeSet.addUpdate(_setAnalysisDone(sheetId, true));
-      changeSet.addUpdate(setValidSortIsImpossible(sheetId, false));
-      changeSet.addUpdate(setSortedWithValidSort(sheetId, true));
-      changeSet.addUpdate(setSortedWithCurrentBestSort(sheetId, true));
-      changeSet.addUpdate(_setBestSortPossibleFound(sheetId, true));
-      return changeSet;
+  Future<void> analyze(int sheetId) async {
+    _updateSortProgress(sheetId, SortProgressData.empty());
+    if (loadedSheetsCache.usedRowsLength(sheetId) < 2) {
+      return _noNeedToFindSort(sheetId);
     }
     isolateReceivePortsCache.cancelB(sheetId);
     AnalysisReturn resultB = await runHeavyCalculationB(
@@ -104,26 +120,20 @@ class SortRepositoryImpl implements SortRepository {
       analysisResultCache.getAnalysisResult(sheetId),
     );
     if (resultB.toFindValidSort) {
-      sortStatusCache.setAnalysisDone(sheetId, true);
+      setAnalysisDone(sheetId, true);
     } else {
-      sortStatusCache.removeSortStatus(sheetId);
+      _noNeedToFindSort(sheetId);
     }
     if (resultB.changed) {
-      analysisResultCache.updateResults(sheetId, resultB.result);
-      changeSet.addUpdate(
-        SheetDataUpdate(sheetId, true, analysisResult: resultB.result),
-      );
+      _updateResults(sheetId, resultB.result);
     }
     if (!resultB.toFindValidSort) {
-      return changeSet;
+      return;
     }
-    changeSet.merge(
-      _updateSortProgress(
+    _updateSortProgress(
         sheetId,
         SortProgressData.empty(resultB.result.validRowIndexes.length),
-      ),
-    );
-    return changeSet;
+      );
   }
 
   @override
@@ -135,7 +145,7 @@ class SortRepositoryImpl implements SortRepository {
 
   @override
   bool isCurrentBestSortAlwaysApplied(int sheetId) {
-    return analysisResultCache.isCurrentBestSortAlwaysApplied(sheetId);
+    return loadedSheetsCache.isCurrentBestSortAlwaysApplied(sheetId);
   }
 
   @override
@@ -148,7 +158,7 @@ class SortRepositoryImpl implements SortRepository {
   @override
   bool willNextBestSortBeApplied(int sheetId) {
     return sortStatusCache.getToApplyOnce(sheetId) ||
-        analysisResultCache.isCurrentBestSortAlwaysApplied(sheetId);
+        loadedSheetsCache.isCurrentBestSortAlwaysApplied(sheetId);
   }
 
   @override
@@ -157,55 +167,81 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  ChangeSet setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
-    analysisResultCache.setToAlwaysApplyBestSort(sheetId, toAlwaysApply);
-    return ChangeSet()..addUpdate(
-      SheetDataUpdate(
-        sheetId,
-        true,
-        toAlwaysApplyCurrentBestSort: toAlwaysApply,
+  void setToAlwaysApplyBestSort(int sheetId, bool toAlwaysApply) {
+    loadedSheetsCache.setToAlwaysApplyBestSort(sheetId, toAlwaysApply);
+    return currentChangeList.addChange(
+      HistoryType.other,
+      SyncRequestWithoutHist(
+        SheetDataWrapper(
+          sheetId,
+          SheetDataTablesCompanion(
+            toAlwaysApplyCurrentBestSort: Value(toAlwaysApply),
+          ),
+        ),
+        DataBaseOperationType.update,
       ),
     );
   }
 
   @override
-  UpdateUnit removeSortStatus(int sheetId) {
+  void removeSortStatus(int sheetId) {
     sortStatusCache.removeSortStatus(sheetId);
-    return SheetDataUpdate(sheetId, true, sortInProgress: false);
+    return currentChangeList.addChange(
+      HistoryType.other,
+      SyncRequestWithoutHist(
+        SheetDataWrapper(
+          sheetId,
+          SheetDataTablesCompanion(
+            sortInProgress: Value(false),
+          ),
+        ),
+        DataBaseOperationType.update,
+      ),
+    );
   }
 
-  @useResult
-  ChangeSet _updateResults(int sheetId, AnalysisResult newResult) {
+  void _updateResults(int sheetId, AnalysisResult newResult) {
     analysisResultCache.updateResults(sheetId, newResult);
-    return ChangeSet()
-      ..addUpdate(SheetDataUpdate(sheetId, true, analysisResult: newResult));
+    return currentChangeList.addChange(
+      HistoryType.other,
+      SyncRequestWithoutHist(
+        SheetDataWrapper(
+          sheetId,
+          SheetDataTablesCompanion(
+            analysisResult: Value(newResult),
+          ),
+        ),
+        DataBaseOperationType.update,
+      ),
+    );
   }
 
-  @useResult
-  ChangeSet _updateSortStatus(
+  void _updateSortStatus(
     int sheetId,
     SortStatus newStatus,
     sortInProgress,
   ) {
     sortStatusCache.updateSortStatus(sheetId, newStatus);
-    return ChangeSet()..addUpdate(
-      SheetDataUpdate(
-        sheetId,
-        true,
-        sortInProgress: sortInProgress,
-        toApplyNextBestSort: newStatus.toApplyNextBestSort,
-        analysisDone: newStatus.analysisDone,
+    return currentChangeList.addChange(HistoryType.other,
+      SyncRequestWithoutHist(
+        SheetDataWrapper(
+          sheetId,
+          SheetDataTablesCompanion(
+            sortInProgress: Value(sortInProgress),
+            toApplyNextBestSort: Value(newStatus.toApplyNextBestSort),
+            analysisDone: Value(newStatus.analysisDone),
+          ),
+        ),
+        DataBaseOperationType.update,
       ),
     );
   }
 
   @override
-  ChangeSet addSheetId(int sheetId) {
-    final changeSet = ChangeSet();
-    changeSet.merge(_updateResults(sheetId, AnalysisResult.empty()));
-    changeSet.merge(_updateSortStatus(sheetId, SortStatus.initial(), false));
-    changeSet.merge(_updateSortProgress(sheetId, SortProgressData.empty()));
-    return changeSet;
+  void addSheetId(int sheetId) {
+    _updateResults(sheetId, AnalysisResult.empty());
+    _updateSortStatus(sheetId, SortStatus.initial(), false);
+    _updateSortProgress(sheetId, SortProgressData.empty());
   }
 
   @override
@@ -225,30 +261,46 @@ class SortRepositoryImpl implements SortRepository {
     this.isolateReceivePortsCache,
     this.selectionCache,
     this.workbookCache,
+    this.currentChangeList,
   );
 
   @override
-  @useResult
-  UpdateUnit setToApplyOnce(int sheetId, bool toApplyOnce) {
+  void setToApplyOnce(int sheetId, bool toApplyOnce) {
     sortStatusCache.setToApplyOnce(sheetId, toApplyOnce);
-    return SheetDataUpdate(sheetId, true, toApplyNextBestSort: toApplyOnce);
-  }
-
-  @override
-  @useResult
-  UpdateUnit setSortedWithCurrentBestSort(int sheetId, bool value) {
-    analysisResultCache.setSortedWithCurrentBestSort(sheetId, value);
-    return SheetDataUpdate(
-      sheetId,
-      true,
-      analysisResult: analysisResultCache
-          .getAnalysisResult(sheetId)
-          .merge(sortedWithCurrentBestSort: value),
+    currentChangeList.addChange(
+      HistoryType.other,
+      SyncRequestWithoutHist(
+        SheetDataWrapper(
+          sheetId,
+          SheetDataTablesCompanion(
+            toApplyNextBestSort: Value(toApplyOnce),
+          ),
+        ),
+        DataBaseOperationType.update,
+      ),
     );
   }
 
-  @useResult
-  UpdateUnit _setBestSortPossibleFound(
+  @override
+  void setSortedWithCurrentBestSort(int sheetId, bool value) {
+    analysisResultCache.setSortedWithCurrentBestSort(sheetId, value);
+    currentChangeList.addChange(
+      HistoryType.other,
+      SyncRequestWithoutHist(
+        SheetDataWrapper(
+          sheetId,
+          SheetDataTablesCompanion(
+            analysisResult: Value(
+              analysisResultCache.getAnalysisResult(sheetId),
+            ),
+          ),
+        ),
+        DataBaseOperationType.update,
+      ),
+    );
+  }
+
+  void _setBestSortPossibleFound(
     int sheetId,
     bool bestSortPossibleFound,
   ) {
@@ -256,12 +308,16 @@ class SortRepositoryImpl implements SortRepository {
       sheetId,
       bestSortPossibleFound,
     );
-    return SheetDataUpdate(
-      sheetId,
-      true,
-      analysisResult: analysisResultCache
-          .getAnalysisResult(sheetId)
-          .merge(bestSortPossibleFound: bestSortPossibleFound),
+    currentChangeList.addChange(HistoryType.other,
+    SyncRequestWithoutHist(
+        SheetDataWrapper(
+          sheetId,
+            SheetDataTablesCompanion(
+              analysisResult: Value(analysisResultCache.getAnalysisResult(sheetId)),
+            ),
+          ),
+          DataBaseOperationType.update,
+        ),
     );
   }
 
@@ -301,24 +357,24 @@ class SortRepositoryImpl implements SortRepository {
         .cast<SortProgressDataMsg>();
   }
 
-  @useResult
-  UpdateUnit setSortedWithValidSort(int sheetId, bool sorted) {
+  void setSortedWithValidSort(int sheetId, bool sorted) {
     analysisResultCache.setSortedWithValidSort(sheetId, sorted);
-    return SheetDataUpdate(
-      sheetId,
-      true,
-      analysisResult: analysisResultCache
-          .getAnalysisResult(sheetId)
-          .merge(sortedWithValidSort: sorted),
-    );
+    return currentChangeList.addChange(HistoryType.other,
+    SyncRequestWithoutHist(
+      SheetDataWrapper(
+        sheetId,
+        SheetDataTablesCompanion(
+          analysisResult: Value(analysisResultCache.getAnalysisResult(sheetId)))
+      ),
+      DataBaseOperationType.update,
+    ));
   }
 
   @override
-  ChangeSet handleSortProgressDataMsg(
+  void handleSortProgressDataMsg(
     SortProgressDataMsg sortProgressDataMsg,
     int sheetId,
   ) {
-    final changeSet = ChangeSet();
     SortProgressData sort = sortProgressDataMsg.sortProgressData;
     if (sortProgressDataMsg.newBestSortFound &&
         sortProgressCache.getSortProgressData(sheetId).bestDistFound.isEmpty) {
@@ -331,21 +387,16 @@ class SortRepositoryImpl implements SortRepository {
           }
         }
       }
-      final result = setSortedWithValidSort(sheetId, isNaturalOrderValid);
-      changeSet.addUpdate(result);
+      setSortedWithValidSort(sheetId, isNaturalOrderValid);
     }
-    changeSet.merge(_updateSortProgress(sheetId, sort));
+    _updateSortProgress(sheetId, sort);
     if (!sort.hasMoreToExplore()) {
-      final result = removeSortStatus(sheetId);
-      changeSet.addUpdate(result);
+      removeSortStatus(sheetId);
       if (sort.bestDistFound.isEmpty) {
-        final result = setValidSortIsImpossible(sheetId, true);
-        changeSet.addUpdate(result);
-        final result2 = setSortedWithCurrentBestSort(sheetId, true);
-        changeSet.addUpdate(result2);
+        setValidSortIsImpossible(sheetId, true);
+        setSortedWithCurrentBestSort(sheetId, true);
       }
     }
-    return changeSet;
   }
 
   @override
@@ -361,14 +412,18 @@ class SortRepositoryImpl implements SortRepository {
         !analysisResultCache.isFindingBestSort(sheetId);
   }
 
-  UpdateUnit setValidSortIsImpossible(int sheetId, bool impossible) {
+  void setValidSortIsImpossible(int sheetId, bool impossible) {
     analysisResultCache.setValidSortIsImpossible(sheetId, impossible);
-    return SheetDataUpdate(
-      sheetId,
-      true,
-      analysisResult: analysisResultCache
-          .getAnalysisResult(sheetId)
-          .merge(validSortIsImpossible: impossible),
+    currentChangeList.addChange(HistoryType.other,
+      SyncRequestWithoutHist(
+        SheetDataWrapper(
+        sheetId,
+          SheetDataTablesCompanion(
+            analysisResult: Value(analysisResultCache.getAnalysisResult(sheetId)),
+          ),
+        ),
+        DataBaseOperationType.update,
+      ),
     );
   }
 
@@ -382,6 +437,17 @@ class SortRepositoryImpl implements SortRepository {
             .isNotEmpty) {
       isolateReceivePortsCache.cancelC(sheetId);
     }
+    return currentChangeList.addChange(HistoryType.other,
+      SyncRequestWithoutHist(
+        SheetDataWrapper(
+        sheetId,
+          SheetDataTablesCompanion(
+            analysisResult: Value(analysisResultCache.getAnalysisResult(sheetId)),
+          ),
+        ),
+        DataBaseOperationType.update,
+      ),
+    );
   }
 
   @override
@@ -532,8 +598,7 @@ class SortRepositoryImpl implements SortRepository {
   }
 
   @override
-  ChangeSet sortTableWithCurrentBestSort(int sheetId) {
-    final changeSet = ChangeSet();
+  void sortTableWithCurrentBestSort(int sheetId) {
     List<int> sortOrder = [0];
     AnalysisResult result = analysisResultCache.getAnalysisResult(sheetId);
     List<int> stack = result.currentBestSort!
@@ -608,18 +673,20 @@ class SortRepositoryImpl implements SortRepository {
         }
       }
     }
-    final Map<String, UpdateUnit> updates = {};
     for (CellPosition pos in sortedTable.keys) {
-      final cellUpdate = CellUpdate(
-        sheetId,
-        pos.rowId,
-        pos.colId,
-        sortedTable[pos]!,
-        loadedSheetsCache.getCellContent(sheetId, pos.rowId, pos.colId),
+      final cellUpdate = SyncRequestWithoutHist(
+        SheetCellWrapper(
+          sheetId,
+          pos.rowId,
+          pos.colId,
+          SheetCellsTableCompanion(
+            content: Value(sortedTable[pos]!),
+          ),
+        ),
+        DataBaseOperationType.update,
       );
-      updates[cellUpdate.getKey()] = cellUpdate;
+      currentChangeList.addChange(HistoryType.other, cellUpdate);
     }
     _sortResult(sortOrder, sheetId);
-    return changeSet;
   }
 }

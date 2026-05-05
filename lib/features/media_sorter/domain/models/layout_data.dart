@@ -3,8 +3,8 @@ import 'package:trying_flutter/features/media_sorter/presentation/constants/page
 class LayoutData {
   List<double> rowsBottomPos;
   List<double> colRightPos;
-  final List<bool> rowsManuallyAdjustedHeight;
-  final List<bool> colsManuallyAdjustedWidth;
+  final List<bool> rowsManuallyAdjusted;
+  final List<bool> colsManuallyAdjusted;
   double colHeaderHeight;
   double rowHeaderWidth;
   double scrollOffsetX;
@@ -13,8 +13,8 @@ class LayoutData {
   LayoutData({
     required this.rowsBottomPos,
     required this.colRightPos,
-    required this.rowsManuallyAdjustedHeight,
-    required this.colsManuallyAdjustedWidth,
+    required this.rowsManuallyAdjusted,
+    required this.colsManuallyAdjusted,
     required this.colHeaderHeight,
     required this.rowHeaderWidth,
     required this.scrollOffsetX,
@@ -25,8 +25,8 @@ class LayoutData {
     return LayoutData(
       rowsBottomPos: [],
       colRightPos: [],
-      rowsManuallyAdjustedHeight: [],
-      colsManuallyAdjustedWidth: [],
+      rowsManuallyAdjusted: [],
+      colsManuallyAdjusted: [],
       colHeaderHeight: PageConstants.defaultColHeaderHeight,
       rowHeaderWidth: PageConstants.defaultRowHeaderWidth,
       scrollOffsetX: 0,

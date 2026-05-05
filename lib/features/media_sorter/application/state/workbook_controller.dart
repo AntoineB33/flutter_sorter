@@ -33,6 +33,11 @@ class WorkbookController extends ChangeNotifier {
     return workbookUseCase.loadSheet(sheetId);
   }
 
+  void openSheet(int sheetId) {
+    workbookUseCase.openSheet(sheetId);
+    notifyListeners();
+  }
+
   void createSheetByName(String name) {
     workbookUseCase.createSheetByName(name);
   }

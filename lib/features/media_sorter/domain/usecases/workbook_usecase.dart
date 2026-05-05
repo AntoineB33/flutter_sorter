@@ -1,37 +1,32 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:trying_flutter/core/error/failures.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/change_set.dart';
+import 'package:trying_flutter/features/media_sorter/data/store/loaded_sheets_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/layout_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/selection_data.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/layout_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/grid_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/history_repository.dart';
-import 'package:trying_flutter/features/media_sorter/domain/repositories/save_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sheet_data_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/sort_repository.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/workbook_repository.dart';
-import 'package:trying_flutter/utils/logger.dart';
 
 class WorkbookUsecase {
   final WorkbookRepository workbookRepository;
+  final LoadedSheetsCache loadedSheetsCache;
   final SelectionRepository selectionRepository;
   final SortRepository sortRepository;
   final SheetDataRepository sheetDataRepository;
   final GridRepository gridRepository;
   final HistoryRepository historyRepository;
-  final SaveRepository saveRepository;
 
   WorkbookUsecase(
     this.workbookRepository,
+    this.loadedSheetsCache,
     this.selectionRepository,
     this.sortRepository,
     this.sheetDataRepository,
     this.gridRepository,
     this.historyRepository,
-
-    this.saveRepository,
   );
 
   int get currentSheetId => workbookRepository.currentSheetId;
@@ -45,7 +40,7 @@ class WorkbookUsecase {
     Either<Failure, void> result;
     result = await workbookRepository.clearAllData();
     if (result.isLeft()) {
-      logger.e('Failed to clear all data.');
+      throw Exception('Failed to clear all data.');
     }
   }
 
@@ -53,7 +48,7 @@ class WorkbookUsecase {
     Either<Failure, void> result;
     result = await workbookRepository.loadRecentSheetIds();
     if (result.isLeft()) {
-      logger.e('Failed to load recent sheet IDs.');
+      throw Exception('Failed to load recent sheet IDs.');
     } else if (workbookRepository.getRecentSheetIds().isEmpty) {
       createDefaultSheet();
     }
@@ -64,18 +59,13 @@ class WorkbookUsecase {
   }
 
   void createSheetByName(String title) {
-    ChangeSet changeSet = ChangeSet();
-    final sheetDataUpdate = workbookRepository.addNewSheetId(0);
-    final sheetId = sheetDataUpdate.sheetId;
-    changeSet.addUpdate(sheetDataUpdate);
-    changeSet.merge(sheetDataRepository.addNewSheet(sheetId, title));
-    changeSet.merge(sortRepository.addSheetId(sheetId));
-    changeSet.addUpdate(
-      selectionRepository.setSelectionData(sheetId, SelectionData.empty()),
-    );
-    changeSet.addUpdate(gridRepository.setLayout(sheetId, LayoutData.empty()));
-    changeSet.merge(historyRepository.addSheetId(sheetId));
-    saveRepository.save(changeSet);
+    workbookRepository.addNewSheetId(title);
+    sheetDataRepository.addNewSheet(currentSheetId, title);
+    sortRepository.addSheetId(currentSheetId);
+    selectionRepository.setPrimarySelection(0, 0, false);
+    gridRepository.setLayout(currentSheetId, LayoutData.empty());
+    historyRepository.addSheetId(currentSheetId);
+    historyRepository.commitHistory();
   }
 
   Future<Either<Failure, Unit>> loadSheet(int sheetId) async {
@@ -86,9 +76,11 @@ class WorkbookUsecase {
         return result;
       }
     }
-    saveRepository.saveUpdate(
-      SheetDataUpdate(sheetId, true, lastOpened: DateTime.now()),
-    );
     return Right(unit);
+  }
+
+  void openSheet(int sheetId) {
+    workbookRepository.openSheet(sheetId);
+    loadedSheetsCache.openSheet(sheetId);
   }
 }

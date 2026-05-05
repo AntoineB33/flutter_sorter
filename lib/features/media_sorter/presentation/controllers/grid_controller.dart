@@ -1,8 +1,6 @@
 import 'dart:async';
 
-import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/material.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/grid_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/selection_usecase.dart';
 import 'package:trying_flutter/features/media_sorter/domain/usecases/sheet_data_usecase.dart';
@@ -68,9 +66,8 @@ class GridController extends ChangeNotifier {
 
   void adjustRowHeightAfterUpdate(
     int sheetId,
-    IMap<String, UpdateUnit> updateData,
   ) {
-    gridUsecase.adjustRowHeightAfterUpdate(sheetId, updateData);
+    gridUsecase.adjustRowHeightAfterUpdate(sheetId);
   }
 
   void scrollToCell() {
@@ -177,12 +174,12 @@ class GridController extends ChangeNotifier {
     double? row0TopToScreenBottomHeight =
         (heightViewport != null || heightPixels != null)
         ? (heightPixels ?? layout.scrollOffsetX) +
-                  (heightViewport ?? this.row0TopToScreenBottomHeight)
+              (heightViewport ?? this.row0TopToScreenBottomHeight)
         : null;
     double? colALeftToScreenRightWidth =
         (widthViewport != null || widthPixels != null)
         ? (widthPixels ?? layout.scrollOffsetY) +
-                  (widthViewport ?? this.colALeftToScreenRightWidth)
+              (widthViewport ?? this.colALeftToScreenRightWidth)
         : null;
     if (row0TopToScreenBottomHeight != null) {
       this.row0TopToScreenBottomHeight = row0TopToScreenBottomHeight;

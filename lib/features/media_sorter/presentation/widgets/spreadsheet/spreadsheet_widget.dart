@@ -10,7 +10,7 @@ import 'package:trying_flutter/features/media_sorter/application/state/workbook_
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/get_default_sizes.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/utils/column_type_extensions.dart';
 import 'spreadsheet_components.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/constants/page_constants.dart';
@@ -325,7 +325,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
       onDoubleTap: () {
         coordinator.startEditing();
       },
-      onTapOutside: () => selectionController.stopEditing(false),
+      onTapOutside: () => selectionController.stopEditing(),
       onChanged: (newValue) {
         coordinator.setCellContent(newValue);
       },
@@ -334,7 +334,7 @@ class _SpreadsheetWidgetState extends State<SpreadsheetWidget> {
         _focusNode.requestFocus();
       },
       onEscape: () {
-        selectionController.stopEditing(true);
+        selectionController.stopEditing();
         _focusNode.requestFocus();
       },
     );

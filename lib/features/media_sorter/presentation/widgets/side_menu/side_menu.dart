@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:trying_flutter/features/media_sorter/application/coordinators/spreadsheet_coordinator.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sheet_data_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/sort_controller.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/core_sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
 import 'package:trying_flutter/features/media_sorter/presentation/controllers/tree_controller.dart';
 import 'package:trying_flutter/features/media_sorter/application/state/workbook_controller.dart';
 import 'analysis_tree_node.dart';
@@ -115,7 +115,7 @@ class _SideMenuState extends State<SideMenu> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 10),
 SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -170,7 +170,7 @@ SingleChildScrollView(
               ],
             ),
           ),
-          
+
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 10),
@@ -344,7 +344,7 @@ SingleChildScrollView(
             );
           },
           onSelected: (CoreSheetContent selection) {
-            coordinator.loadSheet(selection.id);
+            coordinator.openSheet(selection.sheetId);
           },
           fieldViewBuilder:
               (context, textController, focusNode, onFieldSubmitted) {

@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart' hide Table;
+import 'package:rxdart/rxdart.dart';
 import 'package:trying_flutter/core/error/exceptions.dart';
 import 'package:trying_flutter/features/media_sorter/data/datasources/app_database.dart';
 import 'package:trying_flutter/features/media_sorter/data/models/sheet_data_table.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
 import 'package:drift/drift.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/update_history_model.dart';
+import 'package:trying_flutter/utils/logger.dart';
 
 class SheetIdAndLastOpened {
   final int sheetId;
@@ -14,12 +19,14 @@ class SheetIdAndLastOpened {
 }
 
 abstract class ILocalDataSource {
-  Future<void> batchInsertOrUpdate(List<UpdateUnit> items);
+  void save(List<SyncRequestWithoutHist> updates);
+  void dispose();
   Future<List<SheetIdAndLastOpened>> getSheetIdAndLastOpened();
   Future<SheetDataEntity> getSheetDataEntity(int sheetId);
   Future<List<SheetCellEntity>> getSheetCellEntities(int sheetId);
   Future<List<SheetColumnTypeEntity>> getSheetColumnTypeEntities(int sheetId);
-  Future<List<UpdateHistoriesEntity>> getUpdateHistoriesEntities(int sheetId);
+  Future<List<UpdateHistoryModel>> getUpdateHistoriesEntities(int sheetId);
+  Future<List<UpdateHistoryModel>> getSelectHistoriesEntities(int sheetId);
   Future<List<RowsBottomPosEntity>> getRowsBottomPosEntities(int sheetId);
   Future<List<ColRightPosEntity>> getColRightPosEntities(int sheetId);
   Future<List<RowsManuallyAdjustedHeightEntity>>
@@ -30,234 +37,180 @@ abstract class ILocalDataSource {
   Future<void> clearAllData();
 }
 
-class DriftLocalDataSource implements ILocalDataSource {
+class DriftLocalDataSource
+    with WidgetsBindingObserver
+    implements ILocalDataSource {
   final AppDatabase db;
 
-  DriftLocalDataSource(this.db);
+  // The Map acts as our cache. Using the entity's ID as the key
+  // guarantees the "latest wins" behavior automatically.
+  final List<SyncRequestWithoutHist> _pendingSaves = [];
+
+  // The trigger for our debounce logic
+  final PublishSubject<void> _saveTrigger = PublishSubject<void>();
+  StreamSubscription? _saveSubscription;
+
+  DriftLocalDataSource(this.db) {
+    // Listen to app lifecycle changes (pause, background, etc.)
+    WidgetsBinding.instance.addObserver(this);
+
+    // Set up the debounce listener
+    _saveSubscription = _saveTrigger
+        .debounceTime(
+          const Duration(milliseconds: 500),
+        ) // Adjust time as needed
+        .listen((_) => _flushToDatabase());
+  }
 
   @override
-  Future<void> batchInsertOrUpdate(List<UpdateUnit> items) async {
-    await db.batch((batch) {
-      for (final item in items) {
-        switch (item) {
-          case SheetDataUpdate():
-            final companion = SheetDataTablesCompanion(
-              id: Value(item.sheetId),
-              title: item.newName != null
-                  ? Value(item.newName!)
-                  : Value.absent(),
-              lastOpened: item.lastOpened != null
-                  ? Value(item.lastOpened!)
-                  : Value.absent(),
-              usedRows: item.usedRows != null
-                  ? Value(item.usedRows!)
-                  : Value.absent(),
-              usedCols: item.usedCols != null
-                  ? Value(item.usedCols!)
-                  : Value.absent(),
-              historyIndex: item.historyIndex != null
-                  ? Value(item.historyIndex!)
-                  : Value.absent(),
-              colHeaderHeight: item.colHeaderHeight != null
-                  ? Value(item.colHeaderHeight!)
-                  : Value.absent(),
-              rowHeaderWidth: item.rowHeaderWidth != null
-                  ? Value(item.rowHeaderWidth!)
-                  : Value.absent(),
-              selectionHistory: item.selectionHistory != null
-                  ? Value(item.selectionHistory!)
-                  : Value.absent(),
-              scrollOffsetX: item.scrollOffsetX != null
-                  ? Value(item.scrollOffsetX!)
-                  : Value.absent(),
-              scrollOffsetY: item.scrollOffsetY != null
-                  ? Value(item.scrollOffsetY!)
-                  : Value.absent(),
-              bestSortFound: item.bestSortFound != null
-                  ? Value(item.bestSortFound!)
-                  : Value.absent(),
-              bestDistFound: item.bestDistFound != null
-                  ? Value(item.bestDistFound!)
-                  : Value.absent(),
-              cursors: item.cursors != null
-                  ? Value(item.cursors!)
-                  : Value.absent(),
-              possibleInts: item.possibleInts != null
-                  ? Value(item.possibleInts!)
-                  : Value.absent(),
-              validAreas: item.validAreas != null
-                  ? Value(item.validAreas!)
-                  : Value.absent(),
-              sortIndex: item.sortIndex != null
-                  ? Value(item.sortIndex!)
-                  : Value.absent(),
-              analysisResult: item.analysisResult != null
-                  ? Value(item.analysisResult!)
-                  : Value.absent(),
-              sortInProgress: item.sortInProgress != null
-                  ? Value(item.sortInProgress!)
-                  : Value.absent(),
-              toApplyNextBestSort: item.toApplyNextBestSort != null
-                  ? Value(item.toApplyNextBestSort!)
-                  : Value.absent(),
-              analysisDone: item.analysisDone != null
-                  ? Value(item.analysisDone!)
-                  : Value.absent(),
-            );
-            if (item.addOtherwiseRemove) {
-              // 1. Check if all required fields are present
-              final hasAllRequiredFields = item.newName != null &&
-                  item.lastOpened != null &&
-                  item.historyIndex != null &&
-                  item.colHeaderHeight != null &&
-                  item.rowHeaderWidth != null &&
-                  item.scrollOffsetX != null &&
-                  item.scrollOffsetY != null &&
-                  item.sortIndex != null &&
-                  item.sortInProgress != null &&
-                  item.toApplyNextBestSort != null &&
-                  item.analysisDone != null;
+  void save(List<SyncRequestWithoutHist> updates) {
+    _pendingSaves.addAll(updates);
+    if (updates.isNotEmpty) {
+      _saveTrigger.add(null);
+    }
+  }
 
-              if (hasAllRequiredFields) {
-                // 2. If we have a complete set of data, we can safely insert or replace
-                batch.insert(
-                  db.sheetDataTables,
-                  companion,
-                  mode: InsertMode.insertOrReplace,
-                );
-              } else {
-                // 3. If we only have partial data (like just selectionHistory), we MUST update.
-                // Note: If the row doesn't exist, this simply updates nothing.
-                batch.update(
-                  db.sheetDataTables,
-                  companion,
-                );
-              }
+  /// Takes the current cache, clears it, and writes to Drift
+  Future<void> _flushToDatabase() async {
+    if (_pendingSaves.isEmpty) return;
+
+    // 1. Extract the items AND clear the map synchronously.
+    // Doing this immediately prevents asynchronous race conditions where
+    // a Use Case might add a new item while the DB is busy writing.
+    final itemsToSave = _pendingSaves.toList();
+    _pendingSaves.clear();
+
+    // 2. Write to the database
+    try {
+      await _batchInsertOrUpdate(itemsToSave);
+    } catch (e) {
+      // ERROR HANDLING: If the save fails, we return the items to the cache.
+      // We use putIfAbsent so we don't accidentally overwrite newer edits
+      // that a user might have made while the DB was failing.
+      _pendingSaves.addAll(itemsToSave);
+      throw Exception(
+        "Database save failed. Items returned to cache. Error: $e",
+      );
+    }
+  }
+
+  /// App Lifecycle Hook
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // If the user minimizes the app or it gets killed, force a save immediately.
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached ||
+        state == AppLifecycleState.hidden) {
+      logger.i("App going to background! Forcing emergency flush...");
+      _flushToDatabase();
+    }
+  }
+
+  /// Clean up when the repository is destroyed
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _saveSubscription?.cancel();
+    _saveTrigger.close();
+    // Do one final flush just in case
+    _flushToDatabase();
+  }
+
+  void _executeBatchOperation<T extends Table, D>(
+    Batch batch,
+    TableInfo<T, D> table,
+    SyncRequestWithoutHist syncRequest,
+  ) {
+    switch (syncRequest.dataBaseOperationType) {
+      case DataBaseOperationType.delete:
+        batch.delete(table, syncRequest.companionWrapper.companion);
+        break;
+      case DataBaseOperationType.insert:
+        batch.insert(
+          table,
+          syncRequest.companionWrapper.companion,
+          mode: InsertMode.insertOrReplace,
+        );
+        break;
+      case DataBaseOperationType.update:
+        batch.update(table, syncRequest.companionWrapper.companion);
+        break;
+      case DataBaseOperationType.deleteWhere:
+        // 1. Extract the explicitly set fields from the companion.
+        // The 'false' argument ensures we include Value(null) if explicitly set.
+        final presentColumns = syncRequest.companionWrapper.companion.toColumns(
+          false,
+        );
+
+        // If the companion is completely empty, skip to prevent wiping the whole table.
+        if (presentColumns.isEmpty) return;
+
+        Expression<bool>? filter;
+
+        // 2. Iterate over the fields present in the companion.
+        for (final entry in presentColumns.entries) {
+          final columnName = entry.key;
+          final valueExpression = entry.value;
+
+          // 3. Look up the actual column object on the table.
+          final tableColumn = table.columnsByName[columnName];
+
+          if (tableColumn != null) {
+            // 4. Build the SQL equality expression: (tableColumn = value)
+            final condition = tableColumn.equalsExp(valueExpression);
+
+            // 5. Chain multiple conditions together using the bitwise AND operator (&),
+            // which Drift overrides to generate SQL's logical AND.
+            if (filter == null) {
+              filter = condition;
             } else {
-              batch.delete(db.sheetDataTables, companion);
+              filter = filter & condition;
             }
+          }
+        }
+
+        // 6. Apply the dynamic filter to the batch.
+        if (filter != null) {
+          batch.deleteWhere(table, (_) => filter!);
+        }
+        break;
+    }
+  }
+
+  Future<void> _batchInsertOrUpdate(
+    List<SyncRequestWithoutHist> syncRequests,
+  ) async {
+    await db.batch((batch) {
+      for (final syncRequest in syncRequests) {
+        switch (syncRequest.companionWrapper) {
+          case SheetDataWrapper():
+            _executeBatchOperation(batch, db.sheetDataTables, syncRequest);
             break;
-          case CellUpdate():
-            // Create a companion object mapped to your SheetCells table
-            final companion = SheetCellsTableCompanion(
-              sheetId: Value(item.sheetId),
-              row: Value(item.rowId),
-              col: Value(item.colId),
-              content: Value(item.newValue),
+          case SheetCellWrapper():
+            _executeBatchOperation(batch, db.sheetCellsTable, syncRequest);
+            break;
+          case HistoryWrapper():
+            _executeBatchOperation(batch, db.updateHistoriesTable, syncRequest);
+            break;
+          case RowHeightWrapper():
+            _executeBatchOperation(batch, db.rowsBottomPosTable, syncRequest);
+            break;
+          case ColWidthWrapper():
+            _executeBatchOperation(batch, db.colRightPosTable, syncRequest);
+            break;
+          case RowsManuallyAdjustedHeightWrapper():
+            _executeBatchOperation(
+              batch,
+              db.rowsManuallyAdjustedHeightTable,
+              syncRequest,
             );
-            if (item.newValue.isNotEmpty) {
-              batch.insert(
-                db.sheetCellsTable,
-                companion,
-                mode: InsertMode.insertOrReplace,
-              );
-            } else {
-              batch.delete(db.sheetCellsTable, companion);
-            }
             break;
-          case ColumnTypeUpdate():
-            final companion = SheetColumnTypesTableCompanion(
-              sheetId: Value(item.sheetId),
-              columnIndex: Value(item.colId),
-              columnType: Value(item.newColumnType),
+          case ColsManuallyAdjustedWidthWrapper():
+            _executeBatchOperation(
+              batch,
+              db.colsManuallyAdjustedWidthTable,
+              syncRequest,
             );
-            if (item.newColumnType != ColumnType.attributes) {
-              batch.insert(
-                db.sheetColumnTypesTable,
-                companion,
-                mode: InsertMode.insertOrReplace,
-              );
-            } else {
-              batch.delete(db.sheetColumnTypesTable, companion);
-            }
-            break;
-          case UpdateData():
-            UpdateData updateData = item;
-            if (updateData.addOtherwiseRemove) {
-              batch.insert(
-                db.updateHistoriesTable,
-                UpdateHistoriesTableCompanion(
-                  timestamp: Value(updateData.timestamp),
-                  chronoId: Value(updateData.chronoId),
-                  updates: Value(updateData.updates),
-                ),
-                mode: InsertMode.insertOrReplace,
-              );
-            } else {
-              batch.delete(
-                db.updateHistoriesTable,
-                UpdateHistoriesTableCompanion(
-                  timestamp: Value(updateData.timestamp),
-                  chronoId: Value(updateData.chronoId),
-                ),
-              );
-            }
-            break;
-          case RowsBottomPosUpdate():
-            final companion = RowsBottomPosTableCompanion(
-              sheetId: Value(item.sheetId),
-              rowIndex: Value(item.rowIndex),
-              bottomPos: item.newBottomPos != null
-                  ? Value(item.newBottomPos!)
-                  : Value.absent(),
-            );
-            if (item.newBottomPos != null) {
-              batch.insert(
-                db.rowsBottomPosTable,
-                companion,
-                mode: InsertMode.insertOrReplace,
-              );
-            } else {
-              batch.delete(db.rowsBottomPosTable, companion);
-            }
-            break;
-          case ColRightPosUpdate():
-            final companion = ColRightPosTableCompanion(
-              sheetId: Value(item.sheetId),
-              colIndex: Value(item.colIndex),
-              rightPos: Value(item.newRightPos),
-            );
-            if (item.addOtherwiseRemove) {
-              batch.insert(
-                db.colRightPosTable,
-                companion,
-                mode: InsertMode.insertOrReplace,
-              );
-            } else {
-              batch.delete(db.colRightPosTable, companion);
-            }
-            break;
-          case RowsManuallyAdjustedHeightUpdate():
-            final companion = RowsManuallyAdjustedHeightTableCompanion(
-              sheetId: Value(item.sheetId),
-              rowIndex: Value(item.rowIndex),
-              manuallyAdjusted: Value(item.manuallyAdjusted),
-            );
-            if (item.addOtherwiseRemove) {
-              batch.insert(
-                db.rowsManuallyAdjustedHeightTable,
-                companion,
-                mode: InsertMode.insertOrReplace,
-              );
-            } else {
-              batch.delete(db.rowsManuallyAdjustedHeightTable, companion);
-            }
-            break;
-          case ColsManuallyAdjustedWidthUpdate():
-            final companion = ColsManuallyAdjustedWidthTableCompanion(
-              sheetId: Value(item.sheetId),
-              colIndex: Value(item.colIndex),
-              manuallyAdjusted: Value(item.manuallyAdjusted),
-            );
-            if (item.addOtherwiseRemove) {
-              batch.insert(
-                db.colsManuallyAdjustedWidthTable,
-                companion,
-                mode: InsertMode.insertOrReplace,
-              );
-            } else {
-              batch.delete(db.colsManuallyAdjustedWidthTable, companion);
-            }
             break;
         }
       }
@@ -268,12 +221,15 @@ class DriftLocalDataSource implements ILocalDataSource {
   Future<List<SheetIdAndLastOpened>> getSheetIdAndLastOpened() async {
     try {
       final query = db.selectOnly(db.sheetDataTables)
-        ..addColumns([db.sheetDataTables.id, db.sheetDataTables.lastOpened]);
+        ..addColumns([
+          db.sheetDataTables.sheetId,
+          db.sheetDataTables.lastOpened,
+        ]);
       final result = await query.get();
       return result
           .map(
             (row) => SheetIdAndLastOpened(
-              row.read(db.sheetDataTables.id)!,
+              row.read(db.sheetDataTables.sheetId)!,
               row.read(db.sheetDataTables.lastOpened)!,
             ),
           )
@@ -291,7 +247,7 @@ class DriftLocalDataSource implements ILocalDataSource {
   Future<SheetDataEntity> getSheetDataEntity(int sheetId) async {
     try {
       final query = db.select(db.sheetDataTables)
-        ..where((table) => table.id.equals(sheetId));
+        ..where((table) => table.sheetId.equals(sheetId));
       final coreSheetContents = await query.getSingleOrNull();
       if (coreSheetContents == null) {
         throw CacheException("Sheet with id $sheetId not found");
@@ -335,20 +291,70 @@ class DriftLocalDataSource implements ILocalDataSource {
   }
 
   @override
-  Future<List<UpdateHistoriesEntity>> getUpdateHistoriesEntities(
+  Future<List<UpdateHistoryModel>> getUpdateHistoriesEntities(
     int sheetId,
   ) async {
     try {
       final query = db.select(db.updateHistoriesTable)
-        ..where((table) => table.sheetId.equals(sheetId))
+        ..where(
+          (table) =>
+              table.sheetId.equals(sheetId) &
+              table.type.equals(HistoryType.selectionChange.toString()).not(),
+        )
         ..orderBy([
           (t) => OrderingTerm.asc(t.timestamp),
           (t) => OrderingTerm.asc(t.chronoId),
         ]);
       final updateHistories = await query.get();
-      return updateHistories;
+      return updateHistories
+          .map(
+            (e) => UpdateHistoryModel(
+              timestamp: e.timestamp,
+              chronoId: e.chronoId,
+              sheetId: e.sheetId,
+              updates: e.updates,
+              type: e.type,
+            ),
+          )
+          .toList();
     } on SqliteException catch (e) {
       throw CacheException('Failed to retrieve update histories: ${e.message}');
+    } catch (e) {
+      throw CacheException('An unknown database error occurred.');
+    }
+  }
+
+  @override
+  Future<List<UpdateHistoryModel>> getSelectHistoriesEntities(
+    int sheetId,
+  ) async {
+    try {
+      final query = db.select(db.updateHistoriesTable)
+        ..where(
+          (table) =>
+              table.sheetId.equals(sheetId) &
+              table.type.equals(HistoryType.selectionChange.toString()),
+        )
+        ..orderBy([
+          (t) => OrderingTerm.asc(t.timestamp),
+          (t) => OrderingTerm.asc(t.chronoId),
+        ]);
+      final selectHistories = await query.get();
+      return selectHistories
+          .map(
+            (e) => UpdateHistoryModel(
+              timestamp: e.timestamp,
+              chronoId: e.chronoId,
+              sheetId: e.sheetId,
+              updates: e.updates,
+              type: e.type,
+            ),
+          )
+          .toList();
+    } on SqliteException catch (e) {
+      throw CacheException(
+        'Failed to retrieve selection histories: ${e.message}',
+      );
     } catch (e) {
       throw CacheException('An unknown database error occurred.');
     }
@@ -427,7 +433,7 @@ class DriftLocalDataSource implements ILocalDataSource {
     try {
       final query = db.selectOnly(db.sheetDataTables)
         ..addColumns([
-          db.sheetDataTables.id,
+          db.sheetDataTables.sheetId,
           db.sheetDataTables.sortInProgress,
           db.sheetDataTables.toApplyNextBestSort,
           db.sheetDataTables.analysisDone,
@@ -437,7 +443,7 @@ class DriftLocalDataSource implements ILocalDataSource {
       return result
           .map(
             (row) => SortStatusData(
-              sheetId: row.read(db.sheetDataTables.id)!,
+              sheetId: row.read(db.sheetDataTables.sheetId)!,
               toApplyNextBestSort:
                   row.read(db.sheetDataTables.toApplyNextBestSort) ?? false,
               analysisDone: row.read(db.sheetDataTables.analysisDone) ?? false,

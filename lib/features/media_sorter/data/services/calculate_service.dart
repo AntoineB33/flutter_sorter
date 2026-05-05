@@ -1,14 +1,14 @@
-import 'package:trying_flutter/features/media_sorter/data/models/core_sheet_content.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_content.dart';
 import 'dart:collection';
-import 'package:trying_flutter/features/media_sorter/data/models/node_struct.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/attribute.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/instr_struct.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/analysis_result.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/node_struct.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/attribute.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/instr_struct.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/analysis_result.dart';
 import 'package:trying_flutter/features/media_sorter/domain/constants/spreadsheet_constants.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/column_type.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/column_type.dart';
 import 'package:trying_flutter/features/media_sorter/core/utility/get_names.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/sorting_rule.dart';
-import 'package:trying_flutter/features/media_sorter/data/models/update_data.dart';
+import 'package:trying_flutter/features/media_sorter/domain/models/sorting_rule.dart';
 
 class Cols {
   final List<int> colIndexes = [];
@@ -66,8 +66,8 @@ class CalculateService {
 
   final CoreSheetContent coreSheetContent;
 
-  Map<CellPosition, String> get table => coreSheetContent.cells;
-  Map<int, ColumnType> get columnTypes => coreSheetContent.columnTypes;
+  Map<CellPosition, String> table = {};
+  Map<int, ColumnType> columnTypes = {};
   late Map<int, String> headers;
   List<int> get usedRows => coreSheetContent.usedRows;
   List<int> get usedCols => coreSheetContent.usedCols;
@@ -75,6 +75,8 @@ class CalculateService {
   int get colCount => usedCols.isEmpty ? 0 : usedCols.last + 1;
 
   CalculateService(this.coreSheetContent) {
+    table = Map<CellPosition, String>.from(coreSheetContent.cells);
+    columnTypes = Map<int, ColumnType>.from(coreSheetContent.columnTypes);
     headers = {
       for (int colId = 0; colId < colCount; colId++)
         colId: getCellContent(0, colId),
@@ -534,7 +536,7 @@ class CalculateService {
       ..addAll(List<bool>.filled(rowCount, false));
     for (int rowId = 1; rowId < rowCount; rowId++) {
       for (int colId = 0; colId < colCount; colId++) {
-        if (GetNames.isSourceColumn(columnTypes[colId]!)) {
+        if (GetNames.isSourceColumn(columnTypes, colId)) {
           isMedium[rowId] =
               isMedium[rowId] || getCellContent(rowId, colId).isNotEmpty;
         }

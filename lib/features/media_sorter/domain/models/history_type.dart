@@ -1,0 +1,1 @@
+enum HistoryType { selectionChange, editModeChange, other }
