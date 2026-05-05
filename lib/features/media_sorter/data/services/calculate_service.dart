@@ -536,7 +536,7 @@ class CalculateService {
       ..addAll(List<bool>.filled(rowCount, false));
     for (int rowId = 1; rowId < rowCount; rowId++) {
       for (int colId = 0; colId < colCount; colId++) {
-        if (GetNames.isSourceColumn(columnTypes[colId]!)) {
+        if (GetNames.isSourceColumn(columnTypes, colId)) {
           isMedium[rowId] =
               isMedium[rowId] || getCellContent(rowId, colId).isNotEmpty;
         }

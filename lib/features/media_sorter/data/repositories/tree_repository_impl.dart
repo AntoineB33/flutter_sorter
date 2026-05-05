@@ -77,7 +77,8 @@ class TreeRepositoryImpl implements TreeRepository {
     }
     for (int srcColId = 0; srcColId < colCount(currentSheetId); srcColId++) {
       if (GetNames.isSourceColumn(
-            loadedSheetsCache.getColumnType(currentSheetId, srcColId),
+            sheetContent.columnTypes,
+            srcColId,
           ) &&
           loadedSheetsCache
               .getCellContent(currentSheetId, rowId, srcColId)

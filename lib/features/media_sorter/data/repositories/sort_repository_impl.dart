@@ -111,7 +111,7 @@ class SortRepositoryImpl implements SortRepository {
   @override
   Future<void> analyze(int sheetId) async {
     _updateSortProgress(sheetId, SortProgressData.empty());
-    if (loadedSheetsCache.rowCount(sheetId) < 2) {
+    if (loadedSheetsCache.usedRowsLength(sheetId) < 2) {
       return _noNeedToFindSort(sheetId);
     }
     isolateReceivePortsCache.cancelB(sheetId);

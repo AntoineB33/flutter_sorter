@@ -31,10 +31,18 @@ class LoadedSheetsCache {
         : getSheet(sheetId).usedRows.last + 1;
   }
 
+  int usedRowsLength(int sheetId) {
+    return getSheet(sheetId).usedRows.length;
+  }
+
   int colCount(int sheetId) {
     return getSheet(sheetId).usedCols.isEmpty
         ? 0
         : getSheet(sheetId).usedCols.last + 1;
+  }
+
+  int usedColsLength(int sheetId) {
+    return getSheet(sheetId).usedCols.length;
   }
 
   String getCellContent(int sheetId, int row, int col) {
