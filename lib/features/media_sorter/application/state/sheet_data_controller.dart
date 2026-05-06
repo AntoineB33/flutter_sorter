@@ -37,6 +37,7 @@ class SheetDataController extends ChangeNotifier {
 
   void setColumnType(int colId, ColumnType newColumnType) {
     sheetDataUsecase.setColumnType(colId, newColumnType, currentSheetId);
+    notifyListeners();
   }
 
   void delete() {

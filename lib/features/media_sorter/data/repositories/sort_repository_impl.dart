@@ -99,7 +99,6 @@ class SortRepositoryImpl implements SortRepository {
         SheetDataWrapper(
           sheetId,
           SheetDataTablesCompanion(
-            sortInProgress: Value(false),
             analysisDone: Value(analysisDone),
           ),
         ),
@@ -119,15 +118,16 @@ class SortRepositoryImpl implements SortRepository {
       sheetId,
       analysisResultCache.getAnalysisResult(sheetId),
     );
-    if (resultB.toFindValidSort) {
-      setAnalysisDone(sheetId, true);
+    if (resultB.result.bestSortPossibleFound) {
+      removeSortStatus(sheetId);
     } else {
       _noNeedToFindSort(sheetId);
     }
+    setAnalysisDone(sheetId, true);
     if (resultB.changed) {
       _updateResults(sheetId, resultB.result);
     }
-    if (!resultB.toFindValidSort) {
+    if (!resultB.result.bestSortPossibleFound) {
       return;
     }
     _updateSortProgress(

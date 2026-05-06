@@ -20,9 +20,9 @@ Map<String, dynamic> _$StrIntToJson(StrInt instance) => <String, dynamic>{
   'integers': instance.integers,
 };
 
-AnalysisResult _$AnalysisResultFromJson(
+_AnalysisResult _$AnalysisResultFromJson(
   Map<String, dynamic> json,
-) => AnalysisResult(
+) => _AnalysisResult(
   errorChildren: (json['errorChildren'] as List<dynamic>)
       .map((e) => NodeStruct.fromJson(e as Map<String, dynamic>))
       .toList(),
@@ -58,12 +58,6 @@ AnalysisResult _$AnalysisResultFromJson(
   nameIndexes: (json['nameIndexes'] as List<dynamic>)
       .map((e) => (e as num).toInt())
       .toList(),
-  attToRefFromAttColToCol: _attColMapFromJson(
-    json['attToRefFromAttColToCol'] as Map<String, dynamic>,
-  ),
-  attToRefFromDepColToCol: _depColMapFromJson(
-    json['attToRefFromDepColToCol'] as Map<String, dynamic>,
-  ),
   formatedTable: (json['formatedTable'] as List<dynamic>)
       .map(
         (e) => (e as List<dynamic>)
@@ -71,6 +65,12 @@ AnalysisResult _$AnalysisResultFromJson(
             .toList(),
       )
       .toList(),
+  attToRefFromAttColToCol: _attColMapFromJson(
+    json['attToRefFromAttColToCol'] as Map<String, dynamic>,
+  ),
+  attToRefFromDepColToCol: _depColMapFromJson(
+    json['attToRefFromDepColToCol'] as Map<String, dynamic>,
+  ),
   colToAtt: (json['colToAtt'] as Map<String, dynamic>).map(
     (k, e) => MapEntry(
       int.parse(k),
@@ -79,6 +79,16 @@ AnalysisResult _$AnalysisResultFromJson(
           .toSet(),
     ),
   ),
+  isMedium: (json['isMedium'] as List<dynamic>).map((e) => e as bool).toList(),
+  validRowIndexes: (json['validRowIndexes'] as List<dynamic>)
+      .map((e) => (e as num).toInt())
+      .toList(),
+  currentBestSort: (json['currentBestSort'] as List<dynamic>?)
+      ?.map((e) => (e as num).toInt())
+      .toList(),
+  validAreas: (json['validAreas'] as List<dynamic>)
+      .map((e) => (e as List<dynamic>).map((e) => (e as num).toInt()).toList())
+      .toList(),
   myRules: (json['myRules'] as Map<String, dynamic>).map(
     (k, e) => MapEntry(
       int.parse(k),
@@ -95,18 +105,8 @@ AnalysisResult _$AnalysisResultFromJson(
   groupAttribution: (json['groupAttribution'] as List<dynamic>)
       .map((e) => (e as List<dynamic>).map((e) => (e as num).toInt()).toList())
       .toList(),
-  validAreas: (json['validAreas'] as List<dynamic>)
-      .map((e) => (e as List<dynamic>).map((e) => (e as num).toInt()).toList())
-      .toList(),
   groupsToMaximize: (json['groupsToMaximize'] as List<dynamic>)
       .map((e) => (e as List<dynamic>).map((e) => (e as num).toInt()).toList())
-      .toList(),
-  isMedium: (json['isMedium'] as List<dynamic>).map((e) => e as bool).toList(),
-  validRowIndexes: (json['validRowIndexes'] as List<dynamic>)
-      .map((e) => (e as num).toInt())
-      .toList(),
-  currentBestSort: (json['currentBestSort'] as List<dynamic>?)
-      ?.map((e) => (e as num).toInt())
       .toList(),
   validSortIsImpossible: json['validSortIsImpossible'] as bool,
   isFindingBestSort: json['isFindingBestSort'] as bool,
@@ -116,37 +116,31 @@ AnalysisResult _$AnalysisResultFromJson(
 );
 
 Map<String, dynamic> _$AnalysisResultToJson(
-  AnalysisResult instance,
+  _AnalysisResult instance,
 ) => <String, dynamic>{
-  'errorChildren': instance.errorChildren.map((e) => e.toJson()).toList(),
-  'warningChildren': instance.warningChildren.map((e) => e.toJson()).toList(),
-  'categoryChildren': instance.categoryChildren.map((e) => e.toJson()).toList(),
-  'distPairChildren': instance.distPairChildren.map((e) => e.toJson()).toList(),
+  'errorChildren': instance.errorChildren,
+  'warningChildren': instance.warningChildren,
+  'categoryChildren': instance.categoryChildren,
+  'distPairChildren': instance.distPairChildren,
   'tableToAtt': instance.tableToAtt
-      .map((e) => e.map((e) => e.map((e) => e.toJson()).toList()).toList())
+      .map((e) => e.map((e) => e.toList()).toList())
       .toList(),
-  'names': instance.names.map((k, e) => MapEntry(k, e.toJson())),
+  'names': instance.names,
   'attToCol': instance.attToCol,
   'nameIndexes': instance.nameIndexes,
-  'formatedTable': instance.formatedTable
-      .map((e) => e.map((e) => e.toJson()).toList())
-      .toList(),
+  'formatedTable': instance.formatedTable,
   'attToRefFromAttColToCol': _attColMapToJson(instance.attToRefFromAttColToCol),
   'attToRefFromDepColToCol': _depColMapToJson(instance.attToRefFromDepColToCol),
   'colToAtt': instance.colToAtt.map(
-    (k, e) => MapEntry(k.toString(), e.map((e) => e.toJson()).toList()),
+    (k, e) => MapEntry(k.toString(), e.toList()),
   ),
   'isMedium': instance.isMedium,
   'validRowIndexes': instance.validRowIndexes,
   'currentBestSort': instance.currentBestSort,
   'validAreas': instance.validAreas,
   'myRules': instance.myRules.map(
-    (k, e) => MapEntry(
-      k.toString(),
-      e.map(
-        (k, e) => MapEntry(k.toString(), e.map((e) => e.toJson()).toList()),
-      ),
-    ),
+    (k, e) =>
+        MapEntry(k.toString(), e.map((k, e) => MapEntry(k.toString(), e))),
   ),
   'groupAttribution': instance.groupAttribution,
   'groupsToMaximize': instance.groupsToMaximize,

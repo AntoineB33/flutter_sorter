@@ -35,7 +35,6 @@ class HistoryRepositoryImpl implements HistoryRepository {
   final AnalysisResultCache analysisResultCache;
   final CurrentChangeList currentChangeList;
   int chronoIdCounter = 0;
-  bool committedInThisRunTime = false;
 
   int get currentSheetId => workbookCache.currentSheetId;
   CoreSheetContent get currentSheet =>
@@ -63,8 +62,8 @@ class HistoryRepositoryImpl implements HistoryRepository {
     int direction,
   ) {
     int newHistoryIndex = historyData.historyIndex + direction;
-    if (newHistoryIndex + direction < 0 ||
-        newHistoryIndex + direction >= historyData.updateHistories.length) {
+    if (newHistoryIndex < 0 ||
+        newHistoryIndex >= historyData.updateHistories.length) {
       return false;
     }
     var updateData = historyData.updateHistories[newHistoryIndex];
@@ -75,8 +74,8 @@ class HistoryRepositoryImpl implements HistoryRepository {
     if (historyType == HistoryType.other) {
       while (updateData.type == HistoryType.editModeChange) {
         newHistoryIndex += direction;
-        if (newHistoryIndex + direction < 0 ||
-            newHistoryIndex + direction >= historyData.updateHistories.length) {
+        if (newHistoryIndex < 0 ||
+            newHistoryIndex >= historyData.updateHistories.length) {
           return false;
         }
       }
@@ -403,7 +402,7 @@ class HistoryRepositoryImpl implements HistoryRepository {
           continue;
         }
         final SyncRequestWithoutHist historyReq;
-        if (committedInThisRunTime) {
+        if (currentChangeList.committedInThisRunTime[historyType]!) {
           historyReq = currentChangeList.changeList.firstWhere(
             (element) =>
                 element.companionWrapper is HistoryWrapper &&
@@ -435,7 +434,14 @@ class HistoryRepositoryImpl implements HistoryRepository {
             ? selectionHistoryData
             : historyData;
 
-        if (!committedInThisRunTime) {
+        if (!currentChangeList.committedInThisRunTime[historyType]!) {
+          if (!currentChangeList.committed) {
+            scheduleMicrotask(() {
+              localDataSource.save(currentChangeList.changeList);
+              currentChangeList.clearChangeList();
+            });
+          }
+          currentChangeList.committedInThisRunTime[historyType] = true;
           if (historyCenter.historyIndex <
               historyCenter.updateHistories.length - 1) {
             for (
@@ -509,14 +515,6 @@ class HistoryRepositoryImpl implements HistoryRepository {
       }
     }
     currentChangeList.clearChanges();
-    if (!committedInThisRunTime) {
-      committedInThisRunTime = true;
-      scheduleMicrotask(() {
-        localDataSource.save(currentChangeList.changeList);
-        currentChangeList.clearChangeList();
-        committedInThisRunTime = false;
-      });
-    }
   }
 
   @override

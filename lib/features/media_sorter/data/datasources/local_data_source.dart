@@ -121,59 +121,88 @@ class DriftLocalDataSource
     TableInfo<T, D> table,
     SyncRequestWithoutHist syncRequest,
   ) {
-    switch (syncRequest.dataBaseOperationType) {
-      case DataBaseOperationType.delete:
-        batch.delete(table, syncRequest.companionWrapper.companion);
-        break;
-      case DataBaseOperationType.insert:
-        batch.insert(
-          table,
-          syncRequest.companionWrapper.companion,
-          mode: InsertMode.insertOrReplace,
-        );
-        break;
-      case DataBaseOperationType.update:
-        batch.update(table, syncRequest.companionWrapper.companion);
-        break;
-      case DataBaseOperationType.deleteWhere:
-        // 1. Extract the explicitly set fields from the companion.
-        // The 'false' argument ensures we include Value(null) if explicitly set.
-        final presentColumns = syncRequest.companionWrapper.companion.toColumns(
-          false,
-        );
+    try {
+      switch (syncRequest.dataBaseOperationType) {
+        case DataBaseOperationType.delete:
+          batch.delete(table, syncRequest.companionWrapper.companion);
+          break;
+        case DataBaseOperationType.insert:
+          batch.insert(
+            table,
+            syncRequest.companionWrapper.companion,
+            mode: InsertMode.insertOrReplace,
+          );
+          break;
+        case DataBaseOperationType.update:
+          final row = syncRequest.companionWrapper.companion;
+          final presentColumns = row.toColumns(false);
+          if (presentColumns.isEmpty) return;
+          final primaryKeyColumns = table.$primaryKey.toList(growable: false);
+          if (primaryKeyColumns.isEmpty) {
+            throw Exception(
+              'Update requested for table without primary key: ${table.actualTableName}',
+            );
+          }
+          Expression<bool>? pkFilter;
+          for (final pkColumn in primaryKeyColumns) {
+            final pkName = pkColumn.$name;
+            final pkValue = presentColumns[pkName];
+            if (pkValue == null) {
+              throw Exception(
+                'Update requested without primary key field "$pkName" for table ${table.actualTableName}',
+              );
+            }
+            final condition = pkColumn.equalsExp(pkValue);
+            pkFilter = pkFilter == null ? condition : (pkFilter & condition);
+          }
+          batch.update(
+            table,
+            row,
+            where: (_) => pkFilter!,
+          );
+          break;
+        case DataBaseOperationType.deleteWhere:
+          // 1. Extract the explicitly set fields from the companion.
+          // The 'false' argument ensures we include Value(null) if explicitly set.
+          final presentColumns = syncRequest.companionWrapper.companion
+              .toColumns(false);
 
-        // If the companion is completely empty, skip to prevent wiping the whole table.
-        if (presentColumns.isEmpty) return;
+          // If the companion is completely empty, skip to prevent wiping the whole table.
+          if (presentColumns.isEmpty) return;
 
-        Expression<bool>? filter;
+          Expression<bool>? filter;
 
-        // 2. Iterate over the fields present in the companion.
-        for (final entry in presentColumns.entries) {
-          final columnName = entry.key;
-          final valueExpression = entry.value;
+          // 2. Iterate over the fields present in the companion.
+          for (final entry in presentColumns.entries) {
+            final columnName = entry.key;
+            final valueExpression = entry.value;
 
-          // 3. Look up the actual column object on the table.
-          final tableColumn = table.columnsByName[columnName];
+            // 3. Look up the actual column object on the table.
+            final tableColumn = table.columnsByName[columnName];
 
-          if (tableColumn != null) {
-            // 4. Build the SQL equality expression: (tableColumn = value)
-            final condition = tableColumn.equalsExp(valueExpression);
+            if (tableColumn != null) {
+              // 4. Build the SQL equality expression: (tableColumn = value)
+              final condition = tableColumn.equalsExp(valueExpression);
 
-            // 5. Chain multiple conditions together using the bitwise AND operator (&),
-            // which Drift overrides to generate SQL's logical AND.
-            if (filter == null) {
-              filter = condition;
-            } else {
-              filter = filter & condition;
+              // 5. Chain multiple conditions together using the bitwise AND operator (&),
+              // which Drift overrides to generate SQL's logical AND.
+              if (filter == null) {
+                filter = condition;
+              } else {
+                filter = filter & condition;
+              }
             }
           }
-        }
 
-        // 6. Apply the dynamic filter to the batch.
-        if (filter != null) {
-          batch.deleteWhere(table, (_) => filter!);
-        }
-        break;
+          // 6. Apply the dynamic filter to the batch.
+          if (filter != null) {
+            batch.deleteWhere(table, (_) => filter!);
+          }
+          break;
+      }
+    } catch (e) {
+      logger.e("Error executing batch operation: $e");
+      throw Exception(e);
     }
   }
 

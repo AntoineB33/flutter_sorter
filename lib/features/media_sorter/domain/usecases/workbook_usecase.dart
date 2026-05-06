@@ -60,11 +60,12 @@ class WorkbookUsecase {
 
   void createSheetByName(String title) {
     workbookRepository.addNewSheetId(title);
+    historyRepository.addSheetId(currentSheetId);
+    historyRepository.commitHistory();
     sheetDataRepository.addNewSheet(currentSheetId, title);
     sortRepository.addSheetId(currentSheetId);
     selectionRepository.setPrimarySelection(0, 0, false);
     gridRepository.setLayout(currentSheetId, LayoutData.empty());
-    historyRepository.addSheetId(currentSheetId);
     historyRepository.commitHistory();
   }
 

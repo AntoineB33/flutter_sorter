@@ -46,16 +46,16 @@ class AnalysisResultCache {
   void setSortedWithCurrentBestSort(int sheetId, bool value) {
     updateResults(
       sheetId,
-       _getAnalysisResult(sheetId).merge(sortedWithCurrentBestSort: value),
+       _getAnalysisResult(sheetId).copyWith(sortedWithCurrentBestSort: value),
     );
   }
 
   void setBestSortPossibleFound(int sheetId, bool bestSortPossibleFound) {
-    updateResults(sheetId, _getAnalysisResult(sheetId).merge(bestSortPossibleFound: bestSortPossibleFound));
+    updateResults(sheetId, _getAnalysisResult(sheetId).copyWith(bestSortPossibleFound: bestSortPossibleFound));
   }
 
   void setFindingBestSort(int sheetId, bool findingBestSort) {
-    updateResults(sheetId, _getAnalysisResult(sheetId).merge(isFindingBestSort: findingBestSort));
+    updateResults(sheetId, _getAnalysisResult(sheetId).copyWith(isFindingBestSort: findingBestSort));
   }
 
   void updateResults(int sheetId, AnalysisResult newResult) {
@@ -63,11 +63,11 @@ class AnalysisResultCache {
   }
 
   void setSortedWithValidSort(int sheetId, bool sorted) {
-    updateResults(sheetId, _getAnalysisResult(sheetId).merge(sortedWithValidSort: sorted));
+    updateResults(sheetId, _getAnalysisResult(sheetId).copyWith(sortedWithValidSort: sorted));
   }
 
   void setValidSortIsImpossible(int sheetId, bool impossible) {
-    updateResults(sheetId, _getAnalysisResult(sheetId).merge(validSortIsImpossible: impossible));
+    updateResults(sheetId, _getAnalysisResult(sheetId).copyWith(validSortIsImpossible: impossible));
   }
 
   AnalysisResultCache(this.loadedSheetsDataStore);

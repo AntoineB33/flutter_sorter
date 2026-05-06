@@ -8,9 +8,8 @@ import 'package:trying_flutter/features/media_sorter/domain/models/core_sheet_co
 class AnalysisReturn {
   final AnalysisResult result;
   final bool changed;
-  final bool toFindValidSort;
 
-  AnalysisReturn(this.result, this.changed, this.toFindValidSort);
+  AnalysisReturn(this.result, this.changed);
 }
 
 class CalculationService {
@@ -20,10 +19,10 @@ class CalculationService {
     // AnalysisResult prevResult = args.prevResult;
 
     final worker = CalculateService(sheetContent);
-    AnalysisResult result = worker.run();
+    final result = worker.run();
     Isolate.exit(
       sendPort,
-      AnalysisReturn(result, true, result.errorChildren.length < 2),
+      AnalysisReturn(result, true),
     );
   }
 }

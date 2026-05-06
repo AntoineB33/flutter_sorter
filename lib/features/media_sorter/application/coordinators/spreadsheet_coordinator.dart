@@ -409,6 +409,9 @@ class SpreadsheetCoordinator extends ChangeNotifier {
     sheetDataController.setColumnType(1, ColumnType.dependencies);
     sheetDataController.setColumnType(2, ColumnType.dependencies);
     sheetDataController.setColumnType(3, ColumnType.dependencies);
+    sheetDataController.setColumnType(4, ColumnType.sprawl);
+    sheetDataController.setColumnType(5, ColumnType.sprawl);
+    sheetDataController.setColumnType(6, ColumnType.sprawl);
     sheetDataController.setColumnType(7, ColumnType.urls);
     sheetDataController.setColumnType(8, ColumnType.dependencies);
     applyUpdatesAndSort(currentSheetId, false, false);

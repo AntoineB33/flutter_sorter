@@ -103,8 +103,8 @@ class CalculateService {
       (_) => {},
     );
     _getEverything(instrTable);
-    getRules(result, instrTable);
-    return result;
+    getRules(instrTable);
+    return result.copyWith(bestSortPossibleFound: result.errorChildren.length < 2);
   }
 
   int getIndexFromString(String s) {
@@ -1493,7 +1493,6 @@ class CalculateService {
   }
 
   void getRules(
-    AnalysisResult result,
     List<Map<InstrStruct, CellPosition>> instrTable,
   ) {
     int nVal = instrTable.length;

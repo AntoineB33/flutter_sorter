@@ -7,7 +7,6 @@ import 'package:trying_flutter/features/media_sorter/data/store/selection_cache.
 import 'package:trying_flutter/features/media_sorter/data/store/workbook_cache.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/cell_position.dart';
 import 'package:trying_flutter/features/media_sorter/domain/models/history_type.dart';
-import 'package:trying_flutter/features/media_sorter/domain/models/update_history_model.dart';
 import 'package:trying_flutter/features/media_sorter/domain/repositories/selection_repository.dart';
 
 class SelectionRepositoryImpl implements SelectionRepository {
@@ -27,8 +26,6 @@ class SelectionRepositoryImpl implements SelectionRepository {
   @override
   Set<CellPosition> get selectedCells =>
       _selectionCache.getSelectionState(currentSheetId).selectedCells.value;
-  List<UpdateHistoryModel> get selection =>
-      _selectionCache.getSelectionData(currentSheetId).updateHistories;
   SheetDataTablesCompanion get selectionState =>
       _selectionCache.getSelectionState(currentSheetId);
 
